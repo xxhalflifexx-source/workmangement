@@ -9,7 +9,7 @@ export default function FinancePage() {
 	const [endDate, setEndDate] = useState<string>(new Date().toISOString().split("T")[0]);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | undefined>();
-	const [summary, setSummary] = useState<any>();
+	   const [summary, setSummary] = useState<any | null>(null);
 	const [topExpenses, setTopExpenses] = useState<{ category: string; total: number }[]>([]);
 
 	const load = async () => {
@@ -20,9 +20,13 @@ export default function FinancePage() {
 			getTopExpenseCategories(5, startDate, endDate),
 		]);
 		if (!s.ok) setError(s.error);
-		if (s.ok) setSummary(s.summary);
-		if (cats.ok) setTopExpenses(cats.categories);
-		setLoading(false);
+if (s.ok && s.summary) setSummary(s.summary);
+else setSummary(null);
+
+if (cats.ok && cats.categories) setTopExpenses(cats.categories);
+else setTopExpenses([]);
+
+setLoading(false);
 	};
 
 	useEffect(() => {
