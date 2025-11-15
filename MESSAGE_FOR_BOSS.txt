@@ -1,0 +1,29 @@
+Hi [Boss Name],
+
+I'm setting up the project locally to continue development and improvements. Could you please provide the following credentials so I can connect to the database and test the system:
+
+1. SUPABASE CREDENTIALS:
+   - Supabase Project URL (looks like https://xxxxx.supabase.co)
+   - Supabase Service Role Key
+   - Database Connection Strings:
+     * DATABASE_URL (Transaction Pooler connection)
+     * DIRECT_URL (Direct connection for migrations)
+
+2. OPTIONAL BUT HELPFUL:
+   - Git repository URL (if the project is on GitHub/GitLab/Bitbucket)
+   - Vercel project access (or exported environment variables)
+
+WHERE TO FIND THESE IN SUPABASE:
+1. Go to https://supabase.com/dashboard
+2. Select your project
+3. Settings → Database → Copy connection strings
+4. Settings → API → Copy Project URL and service_role key
+
+Once I have these, I'll be able to:
+- Connect to the database locally
+- Test features before deploying
+- Make improvements safely
+- Push changes to preview deployments for testing
+
+Thanks!
+

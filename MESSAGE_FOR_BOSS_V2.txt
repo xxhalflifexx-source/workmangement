@@ -1,0 +1,26 @@
+Hi [Boss Name],
+
+I'm setting up the project locally to continue development. Since you didn't write the code, I need access to the dashboards where the credentials are stored.
+
+Could you please provide access to one of these:
+
+OPTION 1 (Easiest): Vercel Dashboard
+- Go to https://vercel.com
+- Give me access to the project, OR
+- Export the environment variables and send them to me
+- This has all the credentials in one place
+
+OPTION 2: Supabase Dashboard  
+- Go to https://supabase.com/dashboard
+- Give me access to the project
+- I can get the database credentials from there
+
+OPTION 3: Export from Vercel
+- Go to Vercel Dashboard → Project → Settings → Environment Variables
+- Export/download the variables
+- Send me the file
+
+I need these to connect to the database and test the system locally. Once I have them, I can start making improvements right away.
+
+Thanks!
+

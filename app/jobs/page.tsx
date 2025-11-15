@@ -1,0 +1,2085 @@
+"use client";
+
+import { useEffect, useState, useRef } from "react";
+import { getJobs, getAllUsers, createJob, updateJob, deleteJob, getJobActivities, addJobActivity, getAllCustomers, createCustomer } from "./actions";
+import { createMaterialRequest, getJobMaterialRequests } from "../material-requests/actions";
+import { getJobForInvoice, getCompanySettingsForInvoice } from "./invoice-actions";
+import Link from "next/link";
+import { useSession } from "next-auth/react";
+
+interface Job {
+  id: string;
+  title: string;
+  description: string | null;
+  status: string;
+  priority: string;
+  pricingType: string;
+  estimatedPrice: number | null;
+  finalPrice: number | null;
+  dueDate: string | null;
+  assignee: { name: string; email: string } | null;
+  creator: { name: string };
+  customer: { id: string; name: string; phone: string | null; email: string | null; company: string | null } | null;
+  createdAt: string;
+}
+
+interface User {
+  id: string;
+  name: string | null;
+  email: string | null;
+  role: string;
+}
+
+interface Customer {
+  id: string;
+  name: string;
+  phone: string | null;
+  email: string | null;
+  company: string | null;
+}
+
+interface JobActivity {
+  id: string;
+  type: string;
+  timeEntryId: string | null;
+  notes: string | null;
+  images: string | null;
+  createdAt: Date;
+  user: {
+    name: string | null;
+    email: string | null;
+  };
+}
+
+interface MaterialRequest {
+  id: string;
+  itemName: string;
+  quantity: number;
+  unit: string;
+  description: string | null;
+  priority: string;
+  status: string;
+  requestedDate: string;
+  fulfilledDate: string | null;
+  notes: string | null;
+  user: {
+    name: string | null;
+    email: string | null;
+  };
+}
+
+export default function JobsPage() {
+  const { data: session } = useSession();
+  const userRole = (session?.user as any)?.role;
+  const canManage = userRole === "MANAGER" || userRole === "ADMIN";
+
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | undefined>();
+  const [success, setSuccess] = useState<string | undefined>();
+  
+  const [showModal, setShowModal] = useState(false);
+  const [editingJob, setEditingJob] = useState<Job | null>(null);
+  const [filterStatus, setFilterStatus] = useState("ALL");
+  const [filterPriority, setFilterPriority] = useState("ALL");
+  
+  const [showCustomerForm, setShowCustomerForm] = useState(false);
+  const [newCustomerName, setNewCustomerName] = useState("");
+  const [newCustomerPhone, setNewCustomerPhone] = useState("");
+  const [newCustomerEmail, setNewCustomerEmail] = useState("");
+  const [newCustomerCompany, setNewCustomerCompany] = useState("");
+  
+  const [showActivityModal, setShowActivityModal] = useState(false);
+  const [selectedJobForActivity, setSelectedJobForActivity] = useState<Job | null>(null);
+  const [jobActivities, setJobActivities] = useState<JobActivity[]>([]);
+  const [loadingActivities, setLoadingActivities] = useState(false);
+  
+  const [newActivityNotes, setNewActivityNotes] = useState("");
+  const [newActivityFiles, setNewActivityFiles] = useState<File[]>([]);
+  const [addingActivity, setAddingActivity] = useState(false);
+  
+  const [showMaterialModal, setShowMaterialModal] = useState(false);
+  const [selectedJobForMaterial, setSelectedJobForMaterial] = useState<Job | null>(null);
+  const [jobMaterialRequests, setJobMaterialRequests] = useState<MaterialRequest[]>([]);
+  const [loadingMaterials, setLoadingMaterials] = useState(false);
+  
+  const [materialItemName, setMaterialItemName] = useState("");
+  const [materialQuantity, setMaterialQuantity] = useState(1);
+  const [materialUnit, setMaterialUnit] = useState("pcs");
+  const [materialDescription, setMaterialDescription] = useState("");
+  const [materialPriority, setMaterialPriority] = useState("MEDIUM");
+  const [materialNotes, setMaterialNotes] = useState("");
+  const [submittingMaterial, setSubmittingMaterial] = useState(false);
+  
+  // Invoice states
+  const [showInvoiceModal, setShowInvoiceModal] = useState(false);
+  const [selectedJobForInvoice, setSelectedJobForInvoice] = useState<any>(null);
+  const [loadingInvoice, setLoadingInvoice] = useState(false);
+  const [invoiceNumber, setInvoiceNumber] = useState("");
+  const [invoiceDate, setInvoiceDate] = useState(new Date().toISOString().split('T')[0]);
+  const [laborRate, setLaborRate] = useState(75);
+  const [invoiceLineItems, setInvoiceLineItems] = useState<any[]>([]);
+  const [invoiceNotes, setInvoiceNotes] = useState("");
+  const [companySettings, setCompanySettings] = useState<any>(null);
+  const invoiceRef = useRef<HTMLDivElement>(null);
+  
+  // Estimate states
+  const [showEstimateModal, setShowEstimateModal] = useState(false);
+  const [selectedJobForEstimate, setSelectedJobForEstimate] = useState<Job | null>(null);
+  const [estimateNumber, setEstimateNumber] = useState("");
+  const [estimateDate, setEstimateDate] = useState(new Date().toISOString().split('T')[0]);
+  const [estimateValidUntil, setEstimateValidUntil] = useState("");
+  const [estimateLineItems, setEstimateLineItems] = useState<any[]>([]);
+  const [estimateNotes, setEstimateNotes] = useState("");
+  const estimateRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    setLoading(true);
+    const [jobsRes, usersRes, customersRes] = await Promise.all([
+      getJobs(),
+      canManage ? getAllUsers() : Promise.resolve({ ok: true, users: [] }),
+      canManage ? getAllCustomers() : Promise.resolve({ ok: true, customers: [] }),
+    ]);
+
+    if (jobsRes.ok) {
+      setJobs(jobsRes.jobs as any);
+    }
+
+    if (usersRes.ok) {
+      setUsers(usersRes.users as any);
+    }
+
+    if (customersRes.ok) {
+      setCustomers(customersRes.customers as any);
+    }
+
+    setLoading(false);
+  };
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setError(undefined);
+    setSuccess(undefined);
+
+    const formData = new FormData(e.currentTarget);
+
+    const res = editingJob
+      ? await updateJob(editingJob.id, formData)
+      : await createJob(formData);
+
+    if (!res.ok) {
+      setError(res.error);
+      return;
+    }
+
+    setSuccess(editingJob ? "Job updated successfully!" : "Job created successfully!");
+    setShowModal(false);
+    setEditingJob(null);
+    loadData();
+  };
+
+  const handleDelete = async (jobId: string) => {
+    if (!confirm("Are you sure you want to delete this job?")) return;
+
+    const res = await deleteJob(jobId);
+
+    if (!res.ok) {
+      setError(res.error);
+      return;
+    }
+
+    setSuccess("Job deleted successfully!");
+    loadData();
+  };
+
+  const openCreateModal = () => {
+    setEditingJob(null);
+    setShowModal(true);
+  };
+
+  const openEditModal = (job: Job) => {
+    setEditingJob(job);
+    setShowModal(true);
+  };
+
+  const openActivityModal = async (job: Job) => {
+    setSelectedJobForActivity(job);
+    setShowActivityModal(true);
+    setLoadingActivities(true);
+    
+    const res = await getJobActivities(job.id);
+    if (res.ok && res.activities) {
+      setJobActivities(res.activities);
+    } else {
+      setError(res.error || "Failed to load activities");
+    }
+    setLoadingActivities(false);
+  };
+
+  const handleAddActivity = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedJobForActivity) return;
+
+    setAddingActivity(true);
+    setError(undefined);
+
+    let imagePaths: string[] = [];
+
+    // Upload images if any selected
+    if (newActivityFiles.length > 0) {
+      try {
+        const formData = new FormData();
+        newActivityFiles.forEach((file) => formData.append("files", file));
+
+        const uploadRes = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (uploadRes.ok) {
+          const data = await uploadRes.json();
+          imagePaths = data.paths || [];
+        }
+      } catch (err) {
+        console.error("Upload error:", err);
+      }
+    }
+
+    const formData = new FormData();
+    formData.append("jobId", selectedJobForActivity.id);
+    formData.append("notes", newActivityNotes);
+    if (imagePaths.length > 0) {
+      formData.append("images", JSON.stringify(imagePaths));
+    }
+
+    const res = await addJobActivity(formData);
+    if (res.ok) {
+      setNewActivityNotes("");
+      setNewActivityFiles([]);
+      setSuccess("Activity added successfully!");
+      // Refresh activities
+      openActivityModal(selectedJobForActivity);
+    } else {
+      setError(res.error);
+    }
+
+    setAddingActivity(false);
+  };
+
+  const handleActivityFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    setNewActivityFiles((prev) => [...prev, ...files]);
+  };
+
+  const removeActivityFile = (index: number) => {
+    setNewActivityFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const openMaterialModal = async (job: Job) => {
+    setSelectedJobForMaterial(job);
+    setShowMaterialModal(true);
+    setLoadingMaterials(true);
+    
+    const res = await getJobMaterialRequests(job.id);
+    if (res.ok) {
+      setJobMaterialRequests(res.requests as any);
+    } else {
+      setError(res.error);
+    }
+    setLoadingMaterials(false);
+  };
+
+  const handleMaterialRequest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedJobForMaterial) return;
+
+    setSubmittingMaterial(true);
+    setError(undefined);
+
+    const formData = new FormData();
+    formData.append("jobId", selectedJobForMaterial.id);
+    formData.append("itemName", materialItemName);
+    formData.append("quantity", materialQuantity.toString());
+    formData.append("unit", materialUnit);
+    formData.append("description", materialDescription);
+    formData.append("priority", materialPriority);
+    formData.append("notes", materialNotes);
+
+    const res = await createMaterialRequest(formData);
+    
+    if (!res.ok) {
+      setError(res.error);
+      setSubmittingMaterial(false);
+      return;
+    }
+
+    setSuccess(`Material request submitted for ${materialItemName}!`);
+    setMaterialItemName("");
+    setMaterialQuantity(1);
+    setMaterialUnit("pcs");
+    setMaterialDescription("");
+    setMaterialPriority("MEDIUM");
+    setMaterialNotes("");
+    
+    // Refresh material requests
+    openMaterialModal(selectedJobForMaterial);
+    setSubmittingMaterial(false);
+  };
+
+  const handleCreateCustomer = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(undefined);
+
+    const formData = new FormData();
+    formData.append("name", newCustomerName);
+    formData.append("phone", newCustomerPhone);
+    formData.append("email", newCustomerEmail);
+    formData.append("company", newCustomerCompany);
+
+    const res = await createCustomer(formData);
+    if (res.ok && res.customer) {
+      setCustomers([...customers, res.customer as any]);
+      setNewCustomerName("");
+      setNewCustomerPhone("");
+      setNewCustomerEmail("");
+      setNewCustomerCompany("");
+      setShowCustomerForm(false);
+      setSuccess("Customer created successfully!");
+    } else {
+      setError(res.error);
+    }
+  };
+
+  const openInvoiceModal = async (job: Job) => {
+    if (!canManage) {
+      setError("Only managers and admins can generate invoices");
+      return;
+    }
+
+    setSelectedJobForInvoice(null);
+    setShowInvoiceModal(true);
+    setLoadingInvoice(true);
+    setInvoiceNumber(`INV-${Date.now()}`);
+    setInvoiceDate(new Date().toISOString().split('T')[0]);
+    
+    // Load both job data and company settings
+    const [jobRes, settings] = await Promise.all([
+      getJobForInvoice(job.id),
+      getCompanySettingsForInvoice(),
+    ]);
+
+    // Set company settings
+    setCompanySettings(settings);
+
+    if (jobRes.ok && jobRes.job) {
+      setSelectedJobForInvoice(jobRes.job);
+      
+      // Auto-generate line items based on pricing type
+      const lineItems = [];
+      
+      // For Fixed Price jobs, add a single line item with the final/estimated price
+      if (job.pricingType === "FIXED" && (job.finalPrice || job.estimatedPrice)) {
+        lineItems.push({
+          description: job.title,
+          quantity: 1,
+          rate: job.finalPrice || job.estimatedPrice || 0,
+          amount: job.finalPrice || job.estimatedPrice || 0,
+        });
+      } else {
+        // For T&M jobs, itemize labor and expenses
+        
+        // Add labor breakdown by user if available
+        if (jobRes.job.laborBreakdown && jobRes.job.laborBreakdown.length > 0) {
+          jobRes.job.laborBreakdown.forEach((labor: any) => {
+            if (labor.hours > 0) {
+              lineItems.push({
+                description: `Labor - ${labor.name}`,
+                quantity: Math.round(labor.hours * 100) / 100,
+                rate: labor.rate,
+                amount: Math.round(labor.cost * 100) / 100,
+              });
+            }
+          });
+        }
+        
+        // Add expenses
+        if (jobRes.job.expenses && jobRes.job.expenses.length > 0) {
+          jobRes.job.expenses.forEach((expense: any) => {
+            lineItems.push({
+              description: `${expense.category} - ${expense.description}`,
+              quantity: expense.quantity || 1,
+              rate: expense.amount / (expense.quantity || 1),
+              amount: expense.amount,
+            });
+          });
+        }
+      }
+      
+      // If no line items were generated, add a placeholder
+      if (lineItems.length === 0) {
+        lineItems.push({
+          description: job.title,
+          quantity: 1,
+          rate: 0,
+          amount: 0,
+        });
+      }
+      
+      setInvoiceLineItems(lineItems);
+    } else {
+      setError(jobRes.error);
+    }
+    setLoadingInvoice(false);
+  };
+
+  const addInvoiceLineItem = () => {
+    setInvoiceLineItems([
+      ...invoiceLineItems,
+      { description: "", quantity: 1, rate: 0, amount: 0 },
+    ]);
+  };
+
+  const updateInvoiceLineItem = (index: number, field: string, value: any) => {
+    const updated = [...invoiceLineItems];
+    updated[index][field] = value;
+    
+    // Auto-calculate amount
+    if (field === "quantity" || field === "rate") {
+      updated[index].amount = updated[index].quantity * updated[index].rate;
+    }
+    
+    setInvoiceLineItems(updated);
+  };
+
+  const removeInvoiceLineItem = (index: number) => {
+    setInvoiceLineItems(invoiceLineItems.filter((_, i) => i !== index));
+  };
+
+  const calculateInvoiceTotal = () => {
+    return invoiceLineItems.reduce((sum, item) => sum + (item.amount || 0), 0);
+  };
+
+  const handlePrintInvoice = () => {
+    window.print();
+  };
+
+  // Estimate Functions
+  const openEstimateModal = async (job: Job) => {
+    if (!canManage) {
+      setError("Only managers and admins can generate estimates");
+      return;
+    }
+
+    setSelectedJobForEstimate(job);
+    setShowEstimateModal(true);
+    setEstimateNumber(`EST-${Date.now()}`);
+    setEstimateDate(new Date().toISOString().split('T')[0]);
+    
+    // Set valid until date to 30 days from now
+    const validUntil = new Date();
+    validUntil.setDate(validUntil.getDate() + 30);
+    setEstimateValidUntil(validUntil.toISOString().split('T')[0]);
+    
+    // Load company settings if not already loaded
+    if (!companySettings) {
+      const settings = await getCompanySettingsForInvoice();
+      setCompanySettings(settings);
+    }
+    
+    // Auto-generate estimate line items based on job pricing
+    const lineItems = [];
+    
+    if (job.estimatedPrice && job.estimatedPrice > 0) {
+      // If there's an estimated price, use it
+      lineItems.push({
+        description: job.title,
+        quantity: 1,
+        rate: job.estimatedPrice,
+        amount: job.estimatedPrice,
+      });
+    } else {
+      // Otherwise add a placeholder
+      lineItems.push({
+        description: job.title,
+        quantity: 1,
+        rate: 0,
+        amount: 0,
+      });
+    }
+    
+    setEstimateLineItems(lineItems);
+    setEstimateNotes("This estimate is valid for 30 days from the date above. Final pricing may vary based on actual work performed.");
+  };
+
+  const addEstimateLineItem = () => {
+    setEstimateLineItems([
+      ...estimateLineItems,
+      { description: "", quantity: 1, rate: 0, amount: 0 },
+    ]);
+  };
+
+  const updateEstimateLineItem = (index: number, field: string, value: any) => {
+    const updated = [...estimateLineItems];
+    updated[index][field] = value;
+    
+    // Auto-calculate amount
+    if (field === "quantity" || field === "rate") {
+      updated[index].amount = updated[index].quantity * updated[index].rate;
+    }
+    
+    setEstimateLineItems(updated);
+  };
+
+  const removeEstimateLineItem = (index: number) => {
+    setEstimateLineItems(estimateLineItems.filter((_, i) => i !== index));
+  };
+
+  const calculateEstimateTotal = () => {
+    return estimateLineItems.reduce((sum, item) => sum + (item.amount || 0), 0);
+  };
+
+  const handlePrintEstimate = () => {
+    window.print();
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "PENDING":
+        return "bg-yellow-100 text-yellow-800";
+      case "IN_PROGRESS":
+        return "bg-blue-100 text-blue-800";
+      case "COMPLETED":
+        return "bg-green-100 text-green-800";
+      case "CANCELLED":
+        return "bg-gray-100 text-gray-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case "URGENT":
+        return "bg-red-100 text-red-800";
+      case "HIGH":
+        return "bg-orange-100 text-orange-800";
+      case "MEDIUM":
+        return "bg-yellow-100 text-yellow-800";
+      case "LOW":
+        return "bg-green-100 text-green-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  const filteredJobs = jobs.filter((job) => {
+    if (filterStatus !== "ALL" && job.status !== filterStatus) return false;
+    if (filterPriority !== "ALL" && job.priority !== filterPriority) return false;
+    return true;
+  });
+
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return "No due date";
+    return new Date(dateString).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  };
+
+  return (
+    <main className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <header className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Job Management</h1>
+            <p className="text-sm text-gray-500">View and manage all jobs</p>
+          </div>
+          <Link
+            href="/dashboard"
+            className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
+          >
+            ← Back to Dashboard
+          </Link>
+        </div>
+      </header>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Status Messages */}
+        {error && (
+          <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+            {error}
+          </div>
+        )}
+        {success && (
+          <div className="mb-6 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg">
+            ✓ {success}
+          </div>
+        )}
+
+        {/* Controls */}
+        <div className="mb-6 flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
+          <div className="flex gap-3">
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+              className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+            >
+              <option value="ALL">All Status</option>
+              <option value="PENDING">Pending</option>
+              <option value="IN_PROGRESS">In Progress</option>
+              <option value="COMPLETED">Completed</option>
+              <option value="CANCELLED">Cancelled</option>
+            </select>
+
+            <select
+              value={filterPriority}
+              onChange={(e) => setFilterPriority(e.target.value)}
+              className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+            >
+              <option value="ALL">All Priority</option>
+              <option value="URGENT">Urgent</option>
+              <option value="HIGH">High</option>
+              <option value="MEDIUM">Medium</option>
+              <option value="LOW">Low</option>
+            </select>
+          </div>
+
+          {canManage && (
+            <button
+              onClick={openCreateModal}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+            >
+              + Create Job
+            </button>
+          )}
+        </div>
+
+        {/* Jobs Grid */}
+        {loading ? (
+          <div className="text-center py-12">
+            <div className="text-gray-500">Loading jobs...</div>
+          </div>
+        ) : filteredJobs.length === 0 ? (
+          <div className="bg-white rounded-xl shadow p-12 text-center">
+            <div className="text-6xl mb-4">📋</div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">No jobs found</h3>
+            <p className="text-gray-600 mb-6">
+              {jobs.length === 0
+                ? canManage
+                  ? "Create your first job to get started"
+                  : "No jobs assigned to you yet"
+                : "Try adjusting your filters"}
+            </p>
+            {canManage && jobs.length === 0 && (
+              <button
+                onClick={openCreateModal}
+                className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+              >
+                Create First Job
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredJobs.map((job) => (
+              <div
+                key={job.id}
+                className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow p-6 border border-gray-200"
+              >
+                {/* Header */}
+                <div className="flex justify-between items-start mb-4">
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">{job.title}</h3>
+                    <div className="flex gap-2 flex-wrap">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(job.status)}`}>
+                        {job.status.replace("_", " ")}
+                      </span>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(job.priority)}`}>
+                        {job.priority}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Description */}
+                {job.description && (
+                  <p className="text-sm text-gray-600 mb-4 line-clamp-2">{job.description}</p>
+                )}
+
+                {/* Details */}
+                <div className="space-y-2 text-sm border-t pt-4">
+                  {canManage && job.customer && (
+                    <div className="mb-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-xs font-semibold text-blue-700 uppercase">Customer</span>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="font-medium text-gray-900">{job.customer.name}</p>
+                        {job.customer.company && (
+                          <p className="text-xs text-gray-600">🏢 {job.customer.company}</p>
+                        )}
+                        {job.customer.phone && (
+                          <p className="text-xs text-gray-600">📞 {job.customer.phone}</p>
+                        )}
+                        {job.customer.email && (
+                          <p className="text-xs text-gray-600">📧 {job.customer.email}</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Pricing Info */}
+                  {canManage && (job.estimatedPrice || job.finalPrice) && (
+                    <div className="mb-3 p-3 bg-green-50 rounded-lg border border-green-200">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-xs font-semibold text-green-700 uppercase">
+                          💰 {job.pricingType === "T&M" ? "Time & Materials" : "Fixed Price"}
+                        </span>
+                      </div>
+                      <div className="space-y-1">
+                        {job.estimatedPrice && (
+                          <div className="flex justify-between text-sm">
+                            <span className="text-gray-600">Estimated:</span>
+                            <span className="font-medium text-gray-900">${job.estimatedPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                          </div>
+                        )}
+                        {job.finalPrice && (
+                          <div className="flex justify-between text-sm">
+                            <span className="text-gray-600">Final Price:</span>
+                            <span className="font-bold text-green-700">${job.finalPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Assigned to:</span>
+                    <span className="font-medium text-gray-900">
+                      {job.assignee ? job.assignee.name : "Unassigned"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Due date:</span>
+                    <span className="font-medium text-gray-900">{formatDate(job.dueDate)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Started:</span>
+                    <span className="font-medium text-gray-900">{formatDate(job.createdAt)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Created by:</span>
+                    <span className="font-medium text-gray-900">{job.creator.name}</span>
+                  </div>
+                </div>
+
+                       {/* Actions */}
+                       <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t">
+                         <button
+                           onClick={() => openActivityModal(job)}
+                           className="px-3 py-2 text-sm border border-blue-300 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors font-medium"
+                           title="View notes, photos, and updates for this job"
+                         >
+                           📝 Activity
+                         </button>
+                         <button
+                           onClick={() => openMaterialModal(job)}
+                           className="px-3 py-2 text-sm border border-green-300 text-green-600 rounded-lg hover:bg-green-50 transition-colors font-medium"
+                           title="View and request materials for this job"
+                         >
+                           📦 Materials
+                         </button>
+                         {canManage && (
+                          <>
+                            <button
+                              onClick={() => openEstimateModal(job)}
+                              className="px-3 py-2 text-sm border border-orange-300 text-orange-600 rounded-lg hover:bg-orange-50 transition-colors font-medium"
+                              title="Generate estimate/quote for this job"
+                            >
+                              💰 Estimate
+                            </button>
+                            <button
+                              onClick={() => openInvoiceModal(job)}
+                              className="px-3 py-2 text-sm border border-purple-300 text-purple-600 rounded-lg hover:bg-purple-50 transition-colors font-medium"
+                              title="Generate invoice for this job"
+                            >
+                              📄 Invoice
+                            </button>
+                          </>
+                        )}
+                        <button
+                          onClick={() => openEditModal(job)}
+                          className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                        >
+                          Edit
+                        </button>
+                         {canManage && (
+                           <button
+                             onClick={() => handleDelete(job.id)}
+                             className="px-3 py-2 text-sm border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition-colors"
+                           >
+                             Delete
+                           </button>
+                         )}
+                       </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Create/Edit Modal */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">
+                {editingJob ? "Edit Job" : "Create New Job"}
+              </h2>
+
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Title *
+                  </label>
+                  <input
+                    name="title"
+                    type="text"
+                    defaultValue={editingJob?.title}
+                    required
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Description
+                  </label>
+                  <textarea
+                    name="description"
+                    defaultValue={editingJob?.description || ""}
+                    rows={4}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Status *
+                    </label>
+                    <select
+                      name="status"
+                      defaultValue={editingJob?.status || "PENDING"}
+                      required
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                    >
+                      <option value="PENDING">Pending</option>
+                      <option value="IN_PROGRESS">In Progress</option>
+                      <option value="COMPLETED">Completed</option>
+                      <option value="CANCELLED">Cancelled</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Priority *
+                    </label>
+                    <select
+                      name="priority"
+                      defaultValue={editingJob?.priority || "MEDIUM"}
+                      required
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                    >
+                      <option value="LOW">Low</option>
+                      <option value="MEDIUM">Medium</option>
+                      <option value="HIGH">High</option>
+                      <option value="URGENT">Urgent</option>
+                    </select>
+                  </div>
+                </div>
+
+                {canManage && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Assign to
+                      </label>
+                      <select
+                        name="assignedTo"
+                        defaultValue={editingJob?.assignee ? (editingJob as any).assignedTo : ""}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                      >
+                        <option value="">Unassigned</option>
+                        {users.map((user) => (
+                          <option key={user.id} value={user.id}>
+                            {user.name} ({user.role})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="block text-sm font-medium text-gray-700">
+                          Customer
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => setShowCustomerForm(!showCustomerForm)}
+                          className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                        >
+                          {showCustomerForm ? "Cancel" : "+ New Customer"}
+                        </button>
+                      </div>
+
+                      {showCustomerForm ? (
+                        <div className="border-2 border-blue-200 rounded-lg p-3 bg-blue-50 space-y-2">
+                          <input
+                            type="text"
+                            value={newCustomerName}
+                            onChange={(e) => setNewCustomerName(e.target.value)}
+                            placeholder="Customer name *"
+                            className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
+                            required
+                          />
+                          <input
+                            type="tel"
+                            value={newCustomerPhone}
+                            onChange={(e) => setNewCustomerPhone(e.target.value)}
+                            placeholder="Phone"
+                            className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
+                          />
+                          <input
+                            type="email"
+                            value={newCustomerEmail}
+                            onChange={(e) => setNewCustomerEmail(e.target.value)}
+                            placeholder="Email"
+                            className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
+                          />
+                          <input
+                            type="text"
+                            value={newCustomerCompany}
+                            onChange={(e) => setNewCustomerCompany(e.target.value)}
+                            placeholder="Company"
+                            className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
+                          />
+                          <button
+                            type="button"
+                            onClick={handleCreateCustomer}
+                            disabled={!newCustomerName}
+                            className="w-full bg-blue-600 text-white py-2 rounded text-sm font-medium hover:bg-blue-700 disabled:bg-gray-300"
+                          >
+                            Create Customer
+                          </button>
+                        </div>
+                      ) : (
+                        <select
+                          name="customerId"
+                          defaultValue={editingJob?.customer?.id || ""}
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                        >
+                          <option value="">No Customer</option>
+                          {customers.map((customer) => (
+                            <option key={customer.id} value={customer.id}>
+                              {customer.name} {customer.company && `(${customer.company})`}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                    </div>
+                  </>
+                )}
+
+                {/* Pricing Section */}
+                {canManage && (
+                  <div className="border-t-2 border-gray-200 pt-4">
+                    <h3 className="text-md font-semibold text-gray-900 mb-3">💰 Pricing</h3>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Pricing Type *
+                        </label>
+                        <select
+                          name="pricingType"
+                          defaultValue={editingJob?.pricingType || "FIXED"}
+                          required
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                        >
+                          <option value="FIXED">Fixed Price</option>
+                          <option value="T&M">Time & Materials (T&M)</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Estimated Price
+                        </label>
+                        <div className="relative">
+                          <span className="absolute left-3 top-2.5 text-gray-500">$</span>
+                          <input
+                            name="estimatedPrice"
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            defaultValue={editingJob?.estimatedPrice || ""}
+                            placeholder="0.00"
+                            className="w-full border border-gray-300 rounded-lg pl-7 pr-3 py-2"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Final/Agreed Price
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-2.5 text-gray-500">$</span>
+                        <input
+                          name="finalPrice"
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          defaultValue={editingJob?.finalPrice || ""}
+                          placeholder="0.00"
+                          className="w-full border border-gray-300 rounded-lg pl-7 pr-3 py-2"
+                        />
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Leave empty until price is finalized with customer
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Due Date
+                  </label>
+                  <input
+                    name="dueDate"
+                    type="date"
+                    defaultValue={editingJob?.dueDate ? new Date(editingJob.dueDate).toISOString().split("T")[0] : ""}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                  />
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowModal(false);
+                      setEditingJob(null);
+                    }}
+                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                  >
+                    {editingJob ? "Update Job" : "Create Job"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Activity Modal */}
+      {showActivityModal && selectedJobForActivity && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            {/* Header */}
+            <div className="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center z-10">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">📝 Job Activity & Notes</h2>
+                <p className="text-sm text-gray-600 mt-1">{selectedJobForActivity.title}</p>
+              </div>
+              <button
+                onClick={() => {
+                  setShowActivityModal(false);
+                  setSelectedJobForActivity(null);
+                  setJobActivities([]);
+                  setNewActivityNotes("");
+                  setNewActivityFiles([]);
+                }}
+                className="text-gray-400 hover:text-gray-600 text-2xl"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 space-y-6">
+              {/* Add Activity Form */}
+              <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-6">
+                <h3 className="text-lg font-bold text-gray-900 mb-4">➕ Add Update</h3>
+                <form onSubmit={handleAddActivity} className="space-y-4">
+                  <textarea
+                    value={newActivityNotes}
+                    onChange={(e) => setNewActivityNotes(e.target.value)}
+                    placeholder="Add notes, updates, or progress report..."
+                    className="w-full border border-gray-300 rounded-lg p-3 text-sm resize-none"
+                    rows={3}
+                    required={newActivityFiles.length === 0}
+                  />
+
+                  {/* Photo Upload */}
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 bg-white">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handleActivityFileSelect}
+                      className="hidden"
+                      id="activity-photo-upload"
+                    />
+                    <label
+                      htmlFor="activity-photo-upload"
+                      className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50"
+                    >
+                      <span>📷</span>
+                      Attach Photos
+                    </label>
+
+                    {newActivityFiles.length > 0 && (
+                      <div className="mt-3 grid grid-cols-2 gap-2">
+                        {newActivityFiles.map((file, index) => (
+                          <div key={index} className="relative bg-gray-100 border border-gray-200 rounded p-2 flex items-center gap-2">
+                            <div className="w-10 h-10 bg-gray-200 rounded overflow-hidden">
+                              <img
+                                src={URL.createObjectURL(file)}
+                                alt={`Preview ${index + 1}`}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                            <p className="text-xs flex-1 truncate">{file.name}</p>
+                            <button
+                              onClick={() => removeActivityFile(index)}
+                              type="button"
+                              className="text-red-500 hover:text-red-700"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={addingActivity || (!newActivityNotes && newActivityFiles.length === 0)}
+                    className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                  >
+                    {addingActivity ? "Adding..." : "Add Update"}
+                  </button>
+                </form>
+              </div>
+
+              {/* Activity Feed */}
+              <div>
+                <h3 className="text-lg font-bold text-gray-900 mb-4">📋 Activity History</h3>
+                {loadingActivities ? (
+                  <div className="text-center py-12">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+                    <p className="text-gray-600 mt-4">Loading activities...</p>
+                  </div>
+                ) : jobActivities.length === 0 ? (
+                  <div className="text-center py-12 bg-gray-50 rounded-lg">
+                    <div className="text-4xl mb-3">📝</div>
+                    <p className="text-gray-600">No activity yet for this job</p>
+                    <p className="text-gray-500 text-sm mt-1">Updates from time clock and manual notes will appear here</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {jobActivities.map((activity) => {
+                      const images = activity.images ? JSON.parse(activity.images) : [];
+                      return (
+                        <div key={activity.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                          {/* Activity Header */}
+                          <div className="flex justify-between items-start mb-3">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <p className="font-medium text-gray-900">
+                                  {activity.user.name || activity.user.email}
+                                </p>
+                                <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                                  activity.type === "TIME_ENTRY"
+                                    ? "bg-green-100 text-green-700"
+                                    : "bg-blue-100 text-blue-700"
+                                }`}>
+                                  {activity.type === "TIME_ENTRY" ? "⏰ Clock Out" : "📝 Update"}
+                                </span>
+                              </div>
+                              <p className="text-xs text-gray-500">
+                                {new Date(activity.createdAt).toLocaleString("en-US", {
+                                  month: "short",
+                                  day: "numeric",
+                                  year: "numeric",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })}
+                              </p>
+                              {activity.notes && (
+                                <p className="text-sm text-gray-700 mt-2">{activity.notes}</p>
+                              )}
+                            </div>
+                            {images.length > 0 && (
+                              <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full font-medium">
+                                📸 {images.length}
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Photo Gallery */}
+                          {images.length > 0 && (
+                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 mt-3">
+                              {images.map((imgPath: string, idx: number) => (
+                                <a
+                                  key={idx}
+                                  href={imgPath}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="group relative aspect-square rounded-lg overflow-hidden border-2 border-gray-300 hover:border-blue-500 transition-all"
+                                >
+                                  <img
+                                    src={imgPath}
+                                    alt={`Photo ${idx + 1}`}
+                                    className="w-full h-full object-cover group-hover:scale-110 transition-transform"
+                                  />
+                                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-opacity flex items-center justify-center">
+                                    <span className="opacity-0 group-hover:opacity-100 text-white text-xl">🔍</span>
+                                  </div>
+                                </a>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Material Request Modal */}
+      {showMaterialModal && selectedJobForMaterial && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            {/* Header */}
+            <div className="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center z-10">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">📦 Material Requests</h2>
+                <p className="text-sm text-gray-600 mt-1">{selectedJobForMaterial.title}</p>
+              </div>
+              <button
+                onClick={() => {
+                  setShowMaterialModal(false);
+                  setSelectedJobForMaterial(null);
+                  setJobMaterialRequests([]);
+                  setMaterialItemName("");
+                  setMaterialQuantity(1);
+                  setMaterialUnit("pcs");
+                  setMaterialDescription("");
+                  setMaterialPriority("MEDIUM");
+                  setMaterialNotes("");
+                }}
+                className="text-gray-400 hover:text-gray-600 text-2xl"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 space-y-6">
+              {/* Add Material Request Form */}
+              <div className="bg-green-50 border-2 border-green-200 rounded-xl p-6">
+                <h3 className="text-lg font-bold text-gray-900 mb-4">➕ Request New Material</h3>
+                <form onSubmit={handleMaterialRequest} className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Item Name *
+                      </label>
+                      <input
+                        type="text"
+                        value={materialItemName}
+                        onChange={(e) => setMaterialItemName(e.target.value)}
+                        placeholder="e.g., Steel Handrail, Concrete Mix"
+                        required
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Priority
+                      </label>
+                      <select
+                        value={materialPriority}
+                        onChange={(e) => setMaterialPriority(e.target.value)}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                      >
+                        <option value="LOW">Low - Can wait</option>
+                        <option value="MEDIUM">Medium - Normal priority</option>
+                        <option value="HIGH">High - Needed soon</option>
+                        <option value="URGENT">Urgent - Needed immediately</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Quantity *
+                      </label>
+                      <input
+                        type="number"
+                        value={materialQuantity}
+                        onChange={(e) => setMaterialQuantity(Number(e.target.value))}
+                        min="1"
+                        required
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Unit *</label>
+                      <input
+                        type="text"
+                        value={materialUnit}
+                        onChange={(e) => setMaterialUnit(e.target.value)}
+                        placeholder="pcs, kg, lbs"
+                        required
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Description
+                    </label>
+                    <textarea
+                      value={materialDescription}
+                      onChange={(e) => setMaterialDescription(e.target.value)}
+                      placeholder="Additional details about the material needed..."
+                      rows={3}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Notes
+                    </label>
+                    <textarea
+                      value={materialNotes}
+                      onChange={(e) => setMaterialNotes(e.target.value)}
+                      placeholder="Any additional notes or requirements..."
+                      rows={2}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={submittingMaterial || !materialItemName}
+                    className="w-full bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {submittingMaterial ? "Submitting..." : "Submit Material Request"}
+                  </button>
+                </form>
+              </div>
+
+              {/* Material Requests History */}
+              <div>
+                <h3 className="text-lg font-bold text-gray-900 mb-4">📋 Material Request History</h3>
+                {loadingMaterials ? (
+                  <div className="text-center py-12">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
+                    <p className="text-gray-600 mt-4">Loading material requests...</p>
+                  </div>
+                ) : jobMaterialRequests.length === 0 ? (
+                  <div className="text-center py-12 bg-gray-50 rounded-lg">
+                    <div className="text-4xl mb-3">📦</div>
+                    <p className="text-gray-600">No material requests yet for this job</p>
+                    <p className="text-gray-500 text-sm mt-1">Submit your first material request above</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {jobMaterialRequests.map((request) => (
+                      <div key={request.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                        <div className="flex justify-between items-start mb-3">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <p className="font-medium text-gray-900">{request.itemName}</p>
+                              <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                                request.priority === "URGENT"
+                                  ? "bg-red-100 text-red-700"
+                                  : request.priority === "HIGH"
+                                  ? "bg-orange-100 text-orange-700"
+                                  : request.priority === "MEDIUM"
+                                  ? "bg-yellow-100 text-yellow-700"
+                                  : "bg-green-100 text-green-700"
+                              }`}>
+                                {request.priority}
+                              </span>
+                              <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                                request.status === "FULFILLED"
+                                  ? "bg-green-100 text-green-700"
+                                  : request.status === "APPROVED"
+                                  ? "bg-blue-100 text-blue-700"
+                                  : request.status === "REJECTED"
+                                  ? "bg-red-100 text-red-700"
+                                  : "bg-gray-100 text-gray-700"
+                              }`}>
+                                {request.status}
+                              </span>
+                            </div>
+                            <p className="text-sm text-gray-600 mb-1">
+                              Quantity: <span className="font-medium">{request.quantity} {request.unit}</span>
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              Requested by {request.user.name || request.user.email} • {new Date(request.requestedDate).toLocaleString("en-US", {
+                                month: "short",
+                                day: "numeric",
+                                year: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </p>
+                            {request.description && (
+                              <p className="text-sm text-gray-700 mt-2">{request.description}</p>
+                            )}
+                            {request.notes && (
+                              <p className="text-sm text-gray-600 mt-1 italic">"{request.notes}"</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Invoice Modal */}
+      {showInvoiceModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 no-print">
+          <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[95vh] overflow-y-auto">
+            {loadingInvoice ? (
+              <div className="p-12 text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+                <p className="text-gray-600">Loading invoice data...</p>
+              </div>
+            ) : selectedJobForInvoice ? (
+              <div ref={invoiceRef}>
+                {/* Invoice Header - Print & Edit Section */}
+                <div className="p-6 border-b bg-gray-50 no-print">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-2xl font-bold text-gray-900">Generate Invoice</h2>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handlePrintInvoice}
+                        className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium"
+                      >
+                        🖨️ Print Invoice
+                      </button>
+                      <button
+                        onClick={() => {
+                          setShowInvoiceModal(false);
+                          setSelectedJobForInvoice(null);
+                          setInvoiceLineItems([]);
+                        }}
+                        className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                      >
+                        Close
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Invoice Content - Printable */}
+                <div className="p-8 print-area">
+                  {/* Company Header */}
+                  <div className="mb-8 pb-6 border-b-2 border-gray-300">
+                    <h1 className="text-4xl font-bold text-gray-900 mb-2">INVOICE</h1>
+                    {companySettings && (
+                      <div className="text-gray-600">
+                        <p className="font-semibold text-lg">{companySettings.companyName}</p>
+                        {companySettings.address && <p>{companySettings.address}</p>}
+                        {(companySettings.city || companySettings.state || companySettings.zipCode) && (
+                          <p>
+                            {companySettings.city}{companySettings.city && companySettings.state ? ", " : ""}{companySettings.state} {companySettings.zipCode}
+                          </p>
+                        )}
+                        {companySettings.phone && <p>Phone: {companySettings.phone}</p>}
+                        {companySettings.email && <p>Email: {companySettings.email}</p>}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Invoice Details Grid */}
+                  <div className="grid grid-cols-2 gap-8 mb-8">
+                    {/* Bill To */}
+                    <div>
+                      <h3 className="text-sm font-bold text-gray-700 uppercase mb-2">Bill To:</h3>
+                      {selectedJobForInvoice.customer ? (
+                        <div className="text-gray-900">
+                          <p className="font-semibold">{selectedJobForInvoice.customer.name}</p>
+                          {selectedJobForInvoice.customer.company && (
+                            <p>{selectedJobForInvoice.customer.company}</p>
+                          )}
+                          {selectedJobForInvoice.customer.phone && (
+                            <p>{selectedJobForInvoice.customer.phone}</p>
+                          )}
+                          {selectedJobForInvoice.customer.email && (
+                            <p>{selectedJobForInvoice.customer.email}</p>
+                          )}
+                        </div>
+                      ) : (
+                        <p className="text-gray-500 italic">No customer assigned</p>
+                      )}
+                    </div>
+
+                    {/* Invoice Info */}
+                    <div className="text-right">
+                      <div className="space-y-2">
+                        <div className="grid grid-cols-2 gap-4">
+                          <span className="text-gray-600 text-right">Invoice #:</span>
+                          <input
+                            type="text"
+                            value={invoiceNumber}
+                            onChange={(e) => setInvoiceNumber(e.target.value)}
+                            className="font-semibold text-right border-b border-gray-300 focus:border-purple-500 outline-none print-no-border"
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <span className="text-gray-600 text-right">Date:</span>
+                          <input
+                            type="date"
+                            value={invoiceDate}
+                            onChange={(e) => setInvoiceDate(e.target.value)}
+                            className="font-semibold text-right border-b border-gray-300 focus:border-purple-500 outline-none print-no-border"
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <span className="text-gray-600 text-right">Job:</span>
+                          <span className="font-semibold text-right">{selectedJobForInvoice.title}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Line Items Table */}
+                  <div className="mb-8">
+                    <table className="w-full border-collapse">
+                      <thead>
+                        <tr className="bg-gray-100">
+                          <th className="border border-gray-300 px-4 py-3 text-left text-sm font-semibold">Description</th>
+                          <th className="border border-gray-300 px-4 py-3 text-center text-sm font-semibold w-24">Qty</th>
+                          <th className="border border-gray-300 px-4 py-3 text-right text-sm font-semibold w-32">Rate</th>
+                          <th className="border border-gray-300 px-4 py-3 text-right text-sm font-semibold w-32">Amount</th>
+                          <th className="border border-gray-300 px-4 py-3 text-center w-20 no-print">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {invoiceLineItems.map((item, index) => (
+                          <tr key={index}>
+                            <td className="border border-gray-300 px-4 py-2">
+                              <input
+                                type="text"
+                                value={item.description}
+                                onChange={(e) => updateInvoiceLineItem(index, "description", e.target.value)}
+                                className="w-full outline-none print-no-border"
+                                placeholder="Description"
+                              />
+                            </td>
+                            <td className="border border-gray-300 px-4 py-2 text-center">
+                              <input
+                                type="number"
+                                value={item.quantity}
+                                onChange={(e) => updateInvoiceLineItem(index, "quantity", parseFloat(e.target.value) || 0)}
+                                className="w-full text-center outline-none print-no-border"
+                                step="0.01"
+                              />
+                            </td>
+                            <td className="border border-gray-300 px-4 py-2 text-right">
+                              <input
+                                type="number"
+                                value={item.rate}
+                                onChange={(e) => updateInvoiceLineItem(index, "rate", parseFloat(e.target.value) || 0)}
+                                className="w-full text-right outline-none print-no-border"
+                                step="0.01"
+                              />
+                            </td>
+                            <td className="border border-gray-300 px-4 py-2 text-right font-semibold">
+                              ${item.amount.toFixed(2)}
+                            </td>
+                            <td className="border border-gray-300 px-4 py-2 text-center no-print">
+                              <button
+                                onClick={() => removeInvoiceLineItem(index)}
+                                className="text-red-600 hover:text-red-800 text-sm"
+                              >
+                                ✕
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+
+                    <button
+                      onClick={addInvoiceLineItem}
+                      className="mt-3 px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg hover:border-purple-400 hover:bg-purple-50 transition-colors text-sm font-medium text-gray-600 w-full no-print"
+                    >
+                      + Add Line Item
+                    </button>
+                  </div>
+
+                  {/* Total Section */}
+                  <div className="flex justify-end mb-8">
+                    <div className="w-80">
+                      <div className="border-t-2 border-gray-300 pt-4">
+                        <div className="flex justify-between items-center mb-4">
+                          <span className="text-lg font-bold text-gray-900">TOTAL:</span>
+                          <span className="text-2xl font-bold text-purple-600">
+                            ${calculateInvoiceTotal().toFixed(2)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Notes / Terms */}
+                  <div className="mb-8">
+                    <h3 className="text-sm font-bold text-gray-700 uppercase mb-2">Terms & Conditions:</h3>
+                    <textarea
+                      value={invoiceNotes}
+                      onChange={(e) => setInvoiceNotes(e.target.value)}
+                      placeholder="Payment terms, work scope, warranty information, or special instructions..."
+                      rows={4}
+                      className="w-full border border-gray-300 rounded-lg p-3 text-sm outline-none focus:border-purple-500 print-no-border"
+                    />
+                  </div>
+
+                  {/* Contract Agreement & Signatures */}
+                  <div className="mb-8 border-t-2 border-gray-800 pt-8">
+                    <h3 className="text-md font-bold text-gray-900 mb-4">AGREEMENT & AUTHORIZATION</h3>
+                    <p className="text-sm text-gray-700 mb-6 leading-relaxed">
+                      By signing below, the customer authorizes the work described above and agrees to pay the total amount 
+                      shown. The customer acknowledges receipt of this invoice and accepts the terms and conditions outlined above.
+                    </p>
+
+                    <div className="grid grid-cols-2 gap-8 mt-8">
+                      {/* Customer Signature */}
+                      <div>
+                        <div className="mb-4">
+                          <label className="block text-xs font-semibold text-gray-600 uppercase mb-2">
+                            Customer Signature
+                          </label>
+                          <div className="border-b-2 border-gray-800 pb-1 h-16 flex items-end">
+                            <span className="text-gray-400 text-sm italic">Signature</span>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                          <div>
+                            <label className="block text-xs font-semibold text-gray-600 uppercase mb-1">
+                              Print Name
+                            </label>
+                            <div className="border-b border-gray-400 pb-1">
+                              {selectedJobForInvoice?.customer?.name || "________________"}
+                            </div>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-semibold text-gray-600 uppercase mb-1">
+                              Date
+                            </label>
+                            <div className="border-b border-gray-400 pb-1">
+                              ________________
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Company Representative Signature */}
+                      <div>
+                        <div className="mb-4">
+                          <label className="block text-xs font-semibold text-gray-600 uppercase mb-2">
+                            Company Representative
+                          </label>
+                          <div className="border-b-2 border-gray-800 pb-1 h-16 flex items-end">
+                            <span className="text-gray-400 text-sm italic">Signature</span>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                          <div>
+                            <label className="block text-xs font-semibold text-gray-600 uppercase mb-1">
+                              Print Name
+                            </label>
+                            <div className="border-b border-gray-400 pb-1">
+                              ________________
+                            </div>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-semibold text-gray-600 uppercase mb-1">
+                              Date
+                            </label>
+                            <div className="border-b border-gray-400 pb-1">
+                              ________________
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Footer */}
+                  <div className="text-center text-sm text-gray-600 pt-6 border-t border-gray-300">
+                    <p className="font-semibold mb-1">Thank you for your business!</p>
+                    <p>This document serves as both an invoice and work authorization contract.</p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="p-12 text-center">
+                <p className="text-gray-600">Failed to load job data</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Estimate Modal */}
+      {showEstimateModal && selectedJobForEstimate && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 no-print">
+          <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[95vh] overflow-y-auto">
+            <div ref={estimateRef}>
+              {/* Estimate Header */}
+              <div className="p-6 border-b bg-gray-50 no-print">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-2xl font-bold text-gray-900">Generate Estimate</h2>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handlePrintEstimate}
+                      className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors font-medium"
+                    >
+                      🖨️ Print Estimate
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowEstimateModal(false);
+                        setSelectedJobForEstimate(null);
+                        setEstimateLineItems([]);
+                      }}
+                      className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Estimate Content */}
+              <div className="p-8 print-area">
+                {/* Company Header */}
+                <div className="mb-8 pb-6 border-b-2 border-gray-300">
+                  <h1 className="text-4xl font-bold text-gray-900 mb-2">ESTIMATE</h1>
+                  {companySettings && (
+                    <div className="text-gray-600">
+                      <p className="font-semibold text-lg">{companySettings.companyName}</p>
+                      {companySettings.address && <p>{companySettings.address}</p>}
+                      {(companySettings.city || companySettings.state || companySettings.zipCode) && (
+                        <p>
+                          {companySettings.city}{companySettings.city && companySettings.state ? ", " : ""}{companySettings.state} {companySettings.zipCode}
+                        </p>
+                      )}
+                      {companySettings.phone && <p>Phone: {companySettings.phone}</p>}
+                      {companySettings.email && <p>Email: {companySettings.email}</p>}
+                    </div>
+                  )}
+                </div>
+
+                {/* Estimate Details Grid */}
+                <div className="grid grid-cols-2 gap-8 mb-8">
+                  {/* Quote For */}
+                  <div>
+                    <h3 className="text-sm font-bold text-gray-700 uppercase mb-2">Quote For:</h3>
+                    {selectedJobForEstimate.customer ? (
+                      <div className="text-gray-900">
+                        <p className="font-semibold">{selectedJobForEstimate.customer.name}</p>
+                        {selectedJobForEstimate.customer.company && (
+                          <p>{selectedJobForEstimate.customer.company}</p>
+                        )}
+                        {selectedJobForEstimate.customer.phone && (
+                          <p>{selectedJobForEstimate.customer.phone}</p>
+                        )}
+                        {selectedJobForEstimate.customer.email && (
+                          <p>{selectedJobForEstimate.customer.email}</p>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-gray-500 italic">No customer assigned</p>
+                    )}
+                  </div>
+
+                  {/* Estimate Info */}
+                  <div className="text-right">
+                    <div className="space-y-2">
+                      <div className="grid grid-cols-2 gap-4">
+                        <span className="text-gray-600 text-right">Estimate #:</span>
+                        <input
+                          type="text"
+                          value={estimateNumber}
+                          onChange={(e) => setEstimateNumber(e.target.value)}
+                          className="font-semibold text-right border-b border-gray-300 focus:border-orange-500 outline-none print-no-border"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <span className="text-gray-600 text-right">Date:</span>
+                        <input
+                          type="date"
+                          value={estimateDate}
+                          onChange={(e) => setEstimateDate(e.target.value)}
+                          className="font-semibold text-right border-b border-gray-300 focus:border-orange-500 outline-none print-no-border"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <span className="text-gray-600 text-right">Valid Until:</span>
+                        <input
+                          type="date"
+                          value={estimateValidUntil}
+                          onChange={(e) => setEstimateValidUntil(e.target.value)}
+                          className="font-semibold text-right border-b border-gray-300 focus:border-orange-500 outline-none print-no-border"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <span className="text-gray-600 text-right">Job:</span>
+                        <span className="font-semibold text-right">{selectedJobForEstimate.title}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Line Items Table */}
+                <div className="mb-8">
+                  <table className="w-full border-collapse">
+                    <thead>
+                      <tr className="bg-gray-100">
+                        <th className="border border-gray-300 px-4 py-3 text-left text-sm font-semibold">Description</th>
+                        <th className="border border-gray-300 px-4 py-3 text-center text-sm font-semibold w-24">Qty</th>
+                        <th className="border border-gray-300 px-4 py-3 text-right text-sm font-semibold w-32">Rate</th>
+                        <th className="border border-gray-300 px-4 py-3 text-right text-sm font-semibold w-32">Amount</th>
+                        <th className="border border-gray-300 px-4 py-3 text-center w-20 no-print">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {estimateLineItems.map((item, index) => (
+                        <tr key={index}>
+                          <td className="border border-gray-300 px-4 py-2">
+                            <input
+                              type="text"
+                              value={item.description}
+                              onChange={(e) => updateEstimateLineItem(index, "description", e.target.value)}
+                              className="w-full outline-none print-no-border"
+                              placeholder="Description"
+                            />
+                          </td>
+                          <td className="border border-gray-300 px-4 py-2 text-center">
+                            <input
+                              type="number"
+                              value={item.quantity}
+                              onChange={(e) => updateEstimateLineItem(index, "quantity", parseFloat(e.target.value) || 0)}
+                              className="w-full text-center outline-none print-no-border"
+                              step="0.01"
+                            />
+                          </td>
+                          <td className="border border-gray-300 px-4 py-2 text-right">
+                            <input
+                              type="number"
+                              value={item.rate}
+                              onChange={(e) => updateEstimateLineItem(index, "rate", parseFloat(e.target.value) || 0)}
+                              className="w-full text-right outline-none print-no-border"
+                              step="0.01"
+                            />
+                          </td>
+                          <td className="border border-gray-300 px-4 py-2 text-right font-medium">
+                            ${item.amount.toFixed(2)}
+                          </td>
+                          <td className="border border-gray-300 px-4 py-2 text-center no-print">
+                            <button
+                              onClick={() => removeEstimateLineItem(index)}
+                              className="text-red-600 hover:text-red-800 text-sm"
+                            >
+                              ✕
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  
+                  <button
+                    onClick={addEstimateLineItem}
+                    className="mt-4 px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 transition-colors no-print"
+                  >
+                    + Add Line Item
+                  </button>
+                </div>
+
+                {/* Total */}
+                <div className="flex justify-end mb-8">
+                  <div className="w-64">
+                    <div className="flex justify-between py-2 border-b border-gray-300">
+                      <span className="font-semibold">Subtotal:</span>
+                      <span>${calculateEstimateTotal().toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between py-3 border-t-2 border-gray-800">
+                      <span className="text-lg font-bold">Total Estimate:</span>
+                      <span className="text-lg font-bold">${calculateEstimateTotal().toFixed(2)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Terms & Notes */}
+                <div className="mb-8">
+                  <h3 className="text-sm font-bold text-gray-700 uppercase mb-2">Terms & Conditions:</h3>
+                  <textarea
+                    value={estimateNotes}
+                    onChange={(e) => setEstimateNotes(e.target.value)}
+                    rows={4}
+                    className="w-full border border-gray-300 rounded-lg p-3 text-sm resize-none print-no-border"
+                    placeholder="Add any terms, conditions, or notes..."
+                  />
+                </div>
+
+                {/* Contract Agreement & Signatures */}
+                <div className="mb-8 border-t-2 border-gray-800 pt-8">
+                  <h3 className="text-md font-bold text-gray-900 mb-4">ESTIMATE APPROVAL & AUTHORIZATION</h3>
+                  <p className="text-sm text-gray-700 mb-6 leading-relaxed">
+                    By signing below, the customer approves this estimate and authorizes the work to proceed as described. 
+                    The customer understands that this is an estimate and final costs may vary based on actual work performed. 
+                    Any significant changes will be communicated before proceeding.
+                  </p>
+
+                  <div className="grid grid-cols-2 gap-8 mt-8">
+                    {/* Customer Signature */}
+                    <div>
+                      <div className="mb-4">
+                        <label className="block text-xs font-semibold text-gray-600 uppercase mb-2">
+                          Customer Signature
+                        </label>
+                        <div className="border-b-2 border-gray-800 pb-1 h-16 flex items-end">
+                          <span className="text-gray-400 text-sm italic">Signature</span>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <label className="block text-xs font-semibold text-gray-600 uppercase mb-1">
+                            Print Name
+                          </label>
+                          <div className="border-b border-gray-400 pb-1">
+                            {selectedJobForEstimate?.customer?.name || "________________"}
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-semibold text-gray-600 uppercase mb-1">
+                            Date
+                          </label>
+                          <div className="border-b border-gray-400 pb-1">
+                            ________________
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Company Representative Signature */}
+                    <div>
+                      <div className="mb-4">
+                        <label className="block text-xs font-semibold text-gray-600 uppercase mb-2">
+                          Company Representative
+                        </label>
+                        <div className="border-b-2 border-gray-800 pb-1 h-16 flex items-end">
+                          <span className="text-gray-400 text-sm italic">Signature</span>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <label className="block text-xs font-semibold text-gray-600 uppercase mb-1">
+                            Print Name
+                          </label>
+                          <div className="border-b border-gray-400 pb-1">
+                            ________________
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-semibold text-gray-600 uppercase mb-1">
+                            Date
+                          </label>
+                          <div className="border-b border-gray-400 pb-1">
+                            ________________
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Footer */}
+                <div className="text-center text-gray-500 text-sm border-t pt-6">
+                  <p className="font-semibold">This document serves as both an estimate and work authorization agreement.</p>
+                  <p className="mt-2">Thank you for your business!</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <style jsx global>{`
+        @media print {
+          body * {
+            visibility: hidden;
+          }
+          .print-area, .print-area * {
+            visibility: visible;
+          }
+          .print-area {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+          }
+          .no-print {
+            display: none !important;
+          }
+          .print-no-border {
+            border: none !important;
+          }
+        }
+      `}</style>
+    </main>
+  );
+}
+

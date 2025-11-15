@@ -1,0 +1,245 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+  // Note: Switch back to postgresql when you get production credentials
+  // provider = "postgresql"
+  // url      = env("DATABASE_URL")
+  // directUrl = env("DIRECT_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id                    String                 @id @default(cuid())
+  name                  String?
+  email                 String?                @unique
+  phone                 String?
+  passwordHash          String?
+  role                  String                 @default("EMPLOYEE")
+  hourlyRate            Float?                 // Labor cost per hour
+  isVerified            Boolean                @default(false)
+  verificationCode      String?
+  codeExpiresAt         DateTime?
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  accounts              Account[]
+  sessions              Session[]
+  timeEntries           TimeEntry[]
+  assignedJobs          Job[]                  @relation("AssignedJobs")
+  createdJobs           Job[]                  @relation("CreatedJobs")
+  jobActivities         JobActivity[]
+  inventoryAdjustments  InventoryAdjustment[]
+  materialRequests      MaterialRequest[]
+  jobExpenses           JobExpense[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model TimeEntry {
+  id        String    @id @default(cuid())
+  userId    String
+  jobId     String?
+  clockIn   DateTime
+  clockOut  DateTime?
+  notes     String?
+  images    String?   // JSON array of image paths
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  job       Job?      @relation(fields: [jobId], references: [id], onDelete: SetNull)
+}
+
+model Customer {
+  id        String   @id @default(cuid())
+  name      String
+  phone     String?
+  email     String?
+  company   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  jobs      Job[]
+  invoices  Invoice[]
+}
+
+model Job {
+  id               String            @id @default(cuid())
+  title            String
+  description      String?
+  status           String            @default("PENDING")
+  priority         String            @default("MEDIUM")
+  assignedTo       String?
+  createdBy        String
+  customerId       String?
+  pricingType      String            @default("FIXED") // FIXED or T&M (Time & Materials)
+  estimatedPrice   Float?            // Quoted/estimated price
+  finalPrice       Float?            // Final agreed price
+  dueDate          DateTime?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  assignee         User?             @relation("AssignedJobs", fields: [assignedTo], references: [id], onDelete: SetNull)
+  creator          User              @relation("CreatedJobs", fields: [createdBy], references: [id], onDelete: Cascade)
+  customer         Customer?         @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  timeEntries      TimeEntry[]
+  activities       JobActivity[]
+  materialRequests MaterialRequest[]
+  expenses         JobExpense[]
+  invoices         Invoice[]
+}
+
+model JobActivity {
+  id          String    @id @default(cuid())
+  jobId       String
+  userId      String
+  type        String    // "TIME_ENTRY" or "UPDATE"
+  timeEntryId String?   // Link to time entry if type is TIME_ENTRY
+  notes       String?
+  images      String?   // JSON array of image paths
+  createdAt   DateTime  @default(now())
+  job         Job       @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model InventoryItem {
+  id                   String                 @id @default(cuid())
+  name                 String
+  sku                  String?                @unique
+  description          String?
+  category             String?
+  quantity             Int                    @default(0)
+  unit                 String                 @default("pcs") // pcs, kg, lbs, etc.
+  minStockLevel        Int                    @default(0)
+  location             String?
+  supplier             String?
+  costPerUnit          Float?
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
+  adjustments          InventoryAdjustment[]
+}
+
+model InventoryAdjustment {
+  id              String         @id @default(cuid())
+  itemId          String
+  userId          String
+  quantityChange  Int            // Positive for additions, negative for reductions
+  reason          String?
+  notes           String?
+  createdAt       DateTime       @default(now())
+  item            InventoryItem  @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model MaterialRequest {
+  id              String         @id @default(cuid())
+  jobId           String?
+  userId          String
+  itemName        String
+  quantity        Int
+  unit            String
+  description     String?
+  priority        String         @default("MEDIUM") // LOW, MEDIUM, HIGH, URGENT
+  status          String         @default("PENDING") // PENDING, APPROVED, REJECTED, FULFILLED
+  requestedDate   DateTime       @default(now())
+  fulfilledDate   DateTime?
+  notes           String?
+  job             Job?           @relation(fields: [jobId], references: [id], onDelete: SetNull)
+  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model CompanySettings {
+  id          String   @id @default(cuid())
+  companyName String
+  address     String?
+  city        String?
+  state       String?
+  zipCode     String?
+  phone       String?
+  email       String?
+  website     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model JobExpense {
+  id          String   @id @default(cuid())
+  jobId       String
+  userId      String   // Who recorded the expense
+  category    String   // Materials, Equipment, Subcontractor, Other
+  description String
+  amount      Float
+  quantity    Float    @default(1)
+  unit        String?  // pcs, hours, lbs, etc.
+  receiptUrl  String?  // Path to receipt image
+  notes       String?
+  expenseDate DateTime @default(now())
+  createdAt   DateTime @default(now())
+  job         Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Invoice {
+  id          String       @id @default(cuid())
+  jobId       String?
+  customerId  String?
+  customerName String?
+  customerEmail String?
+  status      String       @default("DRAFT") // DRAFT, SENT, PAID, OVERDUE, VOID
+  issueDate   DateTime     @default(now())
+  dueDate     DateTime?
+  total       Float        @default(0)
+  balance     Float        @default(0)
+  notes       String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  job         Job?         @relation(fields: [jobId], references: [id], onDelete: SetNull)
+  customer    Customer?    @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  lines       InvoiceLine[]
+  payments    Payment[]
+}
+
+model InvoiceLine {
+  id          String   @id @default(cuid())
+  invoiceId   String
+  description String
+  quantity    Float    @default(1)
+  rate        Float    @default(0)
+  amount      Float    @default(0)
+  invoice     Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+}
+
+model Payment {
+  id          String   @id @default(cuid())
+  invoiceId   String
+  amount      Float
+  method      String?
+  notes       String?
+  paymentDate DateTime @default(now())
+  createdAt   DateTime @default(now())
+  invoice     Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+}
+

@@ -1,0 +1,125 @@
+========================================
+  QUICK REFERENCE CARD
+========================================
+
+📍 PROJECT: nextjs-auth-roles
+📂 LOCATION: C:\Users\xxhal\nextjs-auth-roles
+🌐 URL: http://localhost:3000
+
+
+🔑 REGISTRATION CODES:
+----------------------
+sunrise   → EMPLOYEE role
+sunset    → MANAGER role
+moonlight → ADMIN role
+
+(Leave empty for default EMPLOYEE role)
+
+
+🧪 EXISTING TEST ACCOUNTS:
+--------------------------
+Email: admin@example.com
+Password: Passw0rd!
+Role: ADMIN
+
+Email: manager@example.com
+Password: Passw0rd!
+Role: MANAGER
+
+Email: employee@example.com
+Password: Passw0rd!
+Role: EMPLOYEE
+
+
+📄 KEY PAGES:
+-------------
+/                → Home page
+/register        → Create account (with role codes!)
+/login           → Sign in
+/dashboard       → Protected dashboard (shows your role)
+
+
+🛠️ USEFUL COMMANDS:
+-------------------
+# Start dev server
+npm run dev
+
+# View database GUI
+npx prisma studio
+
+# Check running server
+netstat -ano | findstr :3000
+
+
+🔒 PROTECTED ROUTES:
+--------------------
+/dashboard
+/jobs
+/time-clock
+/inventory
+/admin
+/hr
+
+(All require authentication)
+
+
+💡 REGISTRATION EXAMPLES:
+-------------------------
+NEW EMPLOYEE:
+  Name: Bob Worker
+  Email: bob@company.com
+  Password: password123
+  Code: sunrise (or leave empty)
+
+NEW MANAGER:
+  Name: Sarah Lead
+  Email: sarah@company.com
+  Password: password123
+  Code: sunset
+
+NEW ADMIN:
+  Name: Tom Boss
+  Email: tom@company.com
+  Password: password123
+  Code: moonlight
+
+
+📚 DOCUMENTATION:
+-----------------
+README.md              → Full documentation
+SETUP.md               → Setup instructions
+REGISTRATION_CODES.md  → Role codes guide
+PROJECT_OVERVIEW.md    → Architecture
+SETUP_COMPLETE.txt     → Installation summary
+
+
+🎯 TESTING CHECKLIST:
+---------------------
+□ Register without code → Should be EMPLOYEE
+□ Register with "sunrise" → Should be EMPLOYEE
+□ Register with "sunset" → Should be MANAGER
+□ Register with "moonlight" → Should be ADMIN
+□ Register with invalid code → Should be EMPLOYEE
+□ Login and check dashboard → Should show correct role
+
+
+🔧 TROUBLESHOOTING:
+-------------------
+Server not running?
+  → npm run dev
+
+Can't access npm?
+  → Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process -Force
+  → Then: npm run dev
+
+Database issues?
+  → npx prisma studio (to view data)
+  → npx prisma migrate reset (to reset database)
+
+
+========================================
+Keep this card handy while developing!
+========================================
+
+
+

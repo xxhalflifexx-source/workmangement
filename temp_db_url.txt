@@ -1,0 +1,2 @@
+postgresql://postgres:2003Chevys10!@db.ldemxccbzxsibaddvxbz.supabase.co:5432/postgres
+
