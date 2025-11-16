@@ -373,7 +373,10 @@ export async function getFinancialSummary(startDate?: string, endDate?: string) 
       select: { amount: true, category: true },
     });
 
-    const totalExpenses = expenses.reduce((sum: number, e) => sum + e.amount, 0);
+    const totalExpenses = expenses.reduce(
+      (sum: number, e: { amount: number; category: string }) => sum + e.amount,
+      0
+    );
     const expensesByCategory: Record<string, number> = {};
     for (const e of expenses) {
       expensesByCategory[e.category] = (expensesByCategory[e.category] || 0) + e.amount;
