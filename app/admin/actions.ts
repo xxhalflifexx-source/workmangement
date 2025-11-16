@@ -342,7 +342,8 @@ export async function getFinancialSummary(startDate?: string, endDate?: string) 
       },
     });
 
-    const revenue = jobs.reduce((sum: number, j) => {
+    const revenue = jobs.reduce(
+      (sum: number, j: { status: string; finalPrice: number | null; estimatedPrice: number | null }) => {
       if (j.finalPrice) return sum + j.finalPrice;
       if (j.status === "COMPLETED" && j.estimatedPrice) return sum + j.estimatedPrice;
       return sum;
