@@ -342,7 +342,7 @@ export async function getFinancialSummary(startDate?: string, endDate?: string) 
       },
     });
 
-    const revenue = jobs.reduce<number>((sum, j) => {
+    const revenue = jobs.reduce((sum: number, j) => {
       if (j.finalPrice) return sum + j.finalPrice;
       if (j.status === "COMPLETED" && j.estimatedPrice) return sum + j.estimatedPrice;
       return sum;
@@ -372,7 +372,7 @@ export async function getFinancialSummary(startDate?: string, endDate?: string) 
       select: { amount: true, category: true },
     });
 
-    const totalExpenses = expenses.reduce<number>((sum, e) => sum + e.amount, 0);
+    const totalExpenses = expenses.reduce((sum: number, e) => sum + e.amount, 0);
     const expensesByCategory: Record<string, number> = {};
     for (const e of expenses) {
       expensesByCategory[e.category] = (expensesByCategory[e.category] || 0) + e.amount;
