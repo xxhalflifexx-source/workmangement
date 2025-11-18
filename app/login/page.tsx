@@ -8,8 +8,15 @@ export default function LoginPage() {
   const router = useRouter();
   const searchParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
   const verified = searchParams?.get("verified");
+  const passwordReset = searchParams?.get("passwordReset");
   const [error, setError] = useState<string | undefined>();
-  const [success, setSuccess] = useState(verified === "true" ? "Email verified! You can now sign in." : undefined);
+  const [success, setSuccess] = useState(
+    verified === "true" 
+      ? "Email verified! You can now sign in." 
+      : passwordReset === "true"
+      ? "Password reset successfully! You can now sign in with your new password."
+      : undefined
+  );
 
   return (
     <main className="mx-auto max-w-sm p-6">
