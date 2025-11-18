@@ -253,13 +253,26 @@ export async function requestPasswordReset(formData: FormData) {
     const tokenExpiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
     
     // Save reset token to user
-    await prisma.user.update({
-      where: { email },
-      data: {
-        resetToken,
-        resetTokenExpiresAt: tokenExpiresAt,
-      },
-    });
+    try {
+      await prisma.user.update({
+        where: { email },
+        data: {
+          resetToken,
+          resetTokenExpiresAt: tokenExpiresAt,
+        },
+      });
+    } catch (dbError) {
+      console.error("Database error updating reset token:", dbError);
+      // Check if it's a missing column error
+      if (dbError && typeof dbError === 'object' && 'code' in dbError) {
+        const errorCode = (dbError as any).code;
+        if (errorCode === '42703' || errorCode === '42P01') {
+          console.error("❌ Database migration not run! resetToken fields don't exist.");
+          return { ok: false, error: "Database migration required. Please contact administrator." };
+        }
+      }
+      throw dbError; // Re-throw if it's a different error
+    }
     
     // Send password reset email
     try {

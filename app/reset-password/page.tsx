@@ -12,10 +12,14 @@ function ResetPasswordForm() {
   const [loading, setLoading] = useState(false);
   const [token, setToken] = useState<string | null>(null);
   const [email, setEmail] = useState<string | null>(null);
+  const [isLoadingParams, setIsLoadingParams] = useState(true);
 
   useEffect(() => {
+    // Get parameters from URL
     const tokenParam = searchParams.get("token");
     const emailParam = searchParams.get("email");
+    
+    setIsLoadingParams(false);
     
     if (!tokenParam || !emailParam) {
       setError("Invalid reset link. Please request a new password reset.");
@@ -25,6 +29,17 @@ function ResetPasswordForm() {
     }
   }, [searchParams]);
 
+  // Show loading state while reading URL parameters
+  if (isLoadingParams) {
+    return (
+      <main className="mx-auto max-w-sm p-6">
+        <h1 className="text-2xl font-bold mb-4">Reset Password</h1>
+        <p className="text-gray-600 text-sm">Loading...</p>
+      </main>
+    );
+  }
+
+  // Show error if token or email is missing
   if (!token || !email) {
     return (
       <main className="mx-auto max-w-sm p-6">
@@ -63,8 +78,9 @@ function ResetPasswordForm() {
         <div className="mb-4 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded text-sm">
           ✅ {success}
           <div className="mt-2">
-            <a href="/login" className="underline font-semibold">
-              Go to Sign In
+            <p className="text-sm">Redirecting to login page...</p>
+            <a href="/login?passwordReset=true" className="underline font-semibold">
+              Go to Sign In Now
             </a>
           </div>
         </div>
@@ -90,10 +106,10 @@ function ResetPasswordForm() {
             }
             
             setSuccess(res.message);
-            // Redirect to login after 3 seconds
+            // Redirect to login after 2 seconds
             setTimeout(() => {
-              router.push("/login");
-            }, 3000);
+              router.push("/login?passwordReset=true");
+            }, 2000);
           }}
           className="space-y-3"
         >
