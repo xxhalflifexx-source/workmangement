@@ -56,6 +56,11 @@ export default function LoginPage() {
           required
         />
         {error && <p className="text-red-600 text-sm">{error}</p>}
+        <div className="text-right">
+          <a href="/forgot-password" className="text-sm text-blue-600 hover:underline">
+            Forgot password?
+          </a>
+        </div>
         <button className="border px-4 py-2 w-full rounded bg-blue-600 text-white hover:bg-blue-700">
           Sign In
         </button>
@@ -69,4 +74,3 @@ export default function LoginPage() {
     </main>
   );
 }
-

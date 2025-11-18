@@ -19,6 +19,8 @@ model User {
   isVerified            Boolean                @default(false)
   verificationCode      String?
   codeExpiresAt         DateTime?
+  resetToken            String?
+  resetTokenExpiresAt   DateTime?
   createdAt             DateTime               @default(now())
   updatedAt             DateTime               @updatedAt
   accounts              Account[]

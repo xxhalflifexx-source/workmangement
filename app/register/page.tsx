@@ -18,7 +18,6 @@ export default function RegisterPage() {
             setError(res.error);
             return;
           }
-          // Redirect to verification page with email
           router.push(`/verify?email=${encodeURIComponent(res.email || "")}`);
         }}
         className="space-y-3"
@@ -42,6 +41,15 @@ export default function RegisterPage() {
           placeholder="Password (min 6 chars)"
           className="border p-2 w-full rounded"
           required
+          minLength={6}
+        />
+        <input
+          name="confirmPassword"
+          type="password"
+          placeholder="Confirm Password"
+          className="border p-2 w-full rounded"
+          required
+          minLength={6}
         />
         <input
           name="registrationCode"
@@ -63,4 +71,3 @@ export default function RegisterPage() {
     </main>
   );
 }
-
