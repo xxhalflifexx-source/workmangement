@@ -75,7 +75,25 @@ export async function registerUser(formData: FormData) {
       },
     });
     
-    // Send verification email (non-fatal)
+    // If we're in temporary dev/production recovery mode, auto-verify to keep the site usable
+    const autoVerify =
+      process.env.DEV_AUTO_VERIFY === "true" ||
+      !process.env.RESEND_API_KEY ||
+      process.env.RESEND_API_KEY.toLowerCase().includes("placeholder");
+
+    if (autoVerify) {
+      await prisma.user.update({
+        where: { email },
+        data: {
+          isVerified: true,
+          verificationCode: null,
+          codeExpiresAt: null,
+        },
+      });
+      return { ok: true, email, autoVerified: true };
+    }
+
+    // Otherwise, attempt to send the verification email (non-fatal if it fails)
     try {
       const emailResult = await sendVerificationEmail(email, name, verificationCode, role);
       if (!emailResult.success) {
@@ -84,10 +102,18 @@ export async function registerUser(formData: FormData) {
     } catch (err) {
       console.error("Email send threw:", err);
     }
-    
-    return { ok: true, email };
+    return { ok: true, email, autoVerified: false };
   } catch (error) {
     console.error("Register error:", error);
+    // Log more details for debugging
+    if (error instanceof Error) {
+      console.error("Error message:", error.message);
+      console.error("Error stack:", error.stack);
+    }
+    // Check for Prisma errors
+    if (error && typeof error === 'object' && 'code' in error) {
+      console.error("Prisma error code:", (error as any).code);
+    }
     return { ok: false, error: "Registration failed. Please try again." };
   }
 }
@@ -183,4 +209,3 @@ export async function resendVerificationCode(email: string) {
     return { ok: false, error: "Something went wrong. Please try again." };
   }
 }
-
