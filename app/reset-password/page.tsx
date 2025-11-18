@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { resetPassword } from "../(auth)/actions";
 
-export default function ResetPasswordPage() {
+function ResetPasswordForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [error, setError] = useState<string | undefined>();
@@ -135,3 +135,15 @@ export default function ResetPasswordPage() {
   );
 }
 
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={
+      <main className="mx-auto max-w-sm p-6">
+        <h1 className="text-2xl font-bold mb-4">Reset Password</h1>
+        <p className="text-gray-600 text-sm">Loading...</p>
+      </main>
+    }>
+      <ResetPasswordForm />
+    </Suspense>
+  );
+}
