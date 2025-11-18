@@ -43,7 +43,7 @@ export async function sendVerificationEmail(
   
   try {
     const { data, error } = await resend.emails.send({
-      from: "TCB Metal Works <onboarding@resend.dev>",
+      from: "TCB Metal Works <noreply@send.tcbmetalworks.com>",
       to: [email],
       subject: "Verify Your Account - Security Code",
       html: `
