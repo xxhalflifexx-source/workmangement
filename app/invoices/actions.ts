@@ -31,6 +31,34 @@ export async function getInvoice(id: string) {
 	return { ok: true, invoice };
 }
 
+// Helper function to generate next invoice number
+async function getNextInvoiceNumber(): Promise<string> {
+	// Find the highest invoice number
+	const lastInvoice = await prisma.invoice.findFirst({
+		where: {
+			invoiceNumber: { not: null },
+		},
+		orderBy: {
+			createdAt: "desc",
+		},
+		select: {
+			invoiceNumber: true,
+		},
+	});
+
+	let nextNumber = 250001; // Starting number
+
+	if (lastInvoice?.invoiceNumber) {
+		// Extract number from format "INV-250001" or "250001"
+		const match = lastInvoice.invoiceNumber.match(/(\d+)$/);
+		if (match) {
+			nextNumber = parseInt(match[1], 10) + 1;
+		}
+	}
+
+	return `INV-${nextNumber.toString().padStart(6, "0")}`;
+}
+
 export async function createInvoice(formData: FormData) {
 	const session = await getServerSession(authOptions);
 	if (!session?.user) return { ok: false, error: "Not authenticated" };
@@ -42,6 +70,7 @@ export async function createInvoice(formData: FormData) {
 	const issueDate = formData.get("issueDate") as string;
 	const dueDate = (formData.get("dueDate") as string) || "";
 	const notes = (formData.get("notes") as string) || "";
+	const sentDate = (formData.get("sentDate") as string) || "";
 
 	const linesJson = (formData.get("lines") as string) || "[]";
 	let lines: Array<{ description: string; quantity: number; rate: number; amount: number }> = [];
@@ -49,13 +78,18 @@ export async function createInvoice(formData: FormData) {
 
 	const total = lines.reduce((s, l) => s + (l.amount || l.quantity * l.rate), 0);
 
+	// Generate invoice number
+	const invoiceNumber = await getNextInvoiceNumber();
+
 	const invoice = await prisma.invoice.create({
 		data: {
+			invoiceNumber,
 			jobId: jobId || null,
 			customerId: customerId || null,
 			status: "SENT",
 			issueDate: issueDate ? new Date(issueDate) : new Date(),
 			dueDate: dueDate ? new Date(dueDate) : null,
+			sentDate: sentDate ? new Date(sentDate) : new Date(), // Auto-set sent date when creating
 			notes: notes || null,
 			total,
 			balance: total,
@@ -93,6 +127,7 @@ export async function recordPayment(formData: FormData) {
 
 	const newBalance = Math.max(0, (invoice.balance || 0) - amount);
 	const newStatus = newBalance === 0 ? "PAID" : invoice.status;
+	const paymentDateObj = paymentDate ? new Date(paymentDate) : new Date();
 
 	const payment = await prisma.payment.create({
 		data: {
@@ -100,16 +135,134 @@ export async function recordPayment(formData: FormData) {
 			amount,
 			method: method || null,
 			notes: notes || null,
-			paymentDate: paymentDate ? new Date(paymentDate) : new Date(),
+			paymentDate: paymentDateObj,
 		},
 	});
 
+	// Update invoice with collection date when fully paid
+	const updateData: any = { balance: newBalance, status: newStatus };
+	if (newBalance === 0 && !invoice.collectionDate) {
+		updateData.collectionDate = paymentDateObj;
+	}
+
 	await prisma.invoice.update({
 		where: { id: invoiceId },
-		data: { balance: newBalance, status: newStatus },
+		data: updateData,
 	});
 
 	return { ok: true, payment, balance: newBalance, status: newStatus };
+}
+
+// Get invoice statistics for charts
+export async function getInvoiceStatistics(startDate?: string, endDate?: string) {
+	const session = await getServerSession(authOptions);
+	if (!session?.user) return { ok: false, error: "Not authenticated" };
+	const role = (session.user as any).role;
+	if (role !== "ADMIN" && role !== "MANAGER") return { ok: false, error: "Unauthorized" };
+
+	const where: any = {};
+	if (startDate || endDate) {
+		where.issueDate = {};
+		if (startDate) where.issueDate.gte = new Date(startDate);
+		if (endDate) where.issueDate.lte = new Date(endDate);
+	}
+
+	const invoices = await prisma.invoice.findMany({
+		where,
+		include: { payments: true },
+	});
+
+	// Calculate statistics
+	const activeInvoices = invoices.filter((inv) => inv.status !== "PAID" && inv.status !== "VOID");
+	const completedPayments = invoices.filter((inv) => inv.status === "PAID");
+	const outstandingInvoices = invoices.filter((inv) => inv.balance > 0);
+
+	const activeInvoicesTotal = activeInvoices.reduce((sum, inv) => sum + inv.total, 0);
+	const completedPaymentsTotal = completedPayments.reduce((sum, inv) => sum + inv.total, 0);
+	const outstandingInvoicesTotal = outstandingInvoices.reduce((sum, inv) => sum + inv.balance, 0);
+
+	// Group by month for chart data
+	const monthlyData: Record<string, { invoices: number; payments: number; outstanding: number }> = {};
+
+	invoices.forEach((inv) => {
+		const monthKey = inv.issueDate.toISOString().slice(0, 7); // YYYY-MM
+		if (!monthlyData[monthKey]) {
+			monthlyData[monthKey] = { invoices: 0, payments: 0, outstanding: 0 };
+		}
+		monthlyData[monthKey].invoices += inv.total;
+		if (inv.status === "PAID") {
+			monthlyData[monthKey].payments += inv.total;
+		}
+		monthlyData[monthKey].outstanding += inv.balance;
+	});
+
+	const chartData = Object.entries(monthlyData)
+		.map(([month, data]) => ({
+			month,
+			invoices: data.invoices,
+			payments: data.payments,
+			outstanding: data.outstanding,
+		}))
+		.sort((a, b) => a.month.localeCompare(b.month));
+
+	return {
+		ok: true,
+		stats: {
+			activeInvoices: activeInvoicesTotal,
+			completedPayments: completedPaymentsTotal,
+			outstandingInvoices: outstandingInvoicesTotal,
+		},
+		chartData,
+	};
+}
+
+// Filter invoices
+export async function filterInvoices(filters: {
+	customerId?: string;
+	month?: string;
+	year?: string;
+	status?: string;
+}) {
+	const session = await getServerSession(authOptions);
+	if (!session?.user) return { ok: false, error: "Not authenticated" };
+	const role = (session.user as any).role;
+	if (role !== "ADMIN" && role !== "MANAGER") return { ok: false, error: "Unauthorized" };
+
+	const where: any = {};
+
+	if (filters.customerId) {
+		where.customerId = filters.customerId;
+	}
+
+	if (filters.status) {
+		where.status = filters.status;
+	}
+
+	if (filters.month || filters.year) {
+		where.issueDate = {};
+		if (filters.year) {
+			const year = parseInt(filters.year);
+			const startDate = new Date(year, 0, 1);
+			const endDate = new Date(year, 11, 31, 23, 59, 59);
+			where.issueDate.gte = startDate;
+			where.issueDate.lte = endDate;
+		}
+		if (filters.month) {
+			const [year, month] = filters.month.split("-").map(Number);
+			const startDate = new Date(year, month - 1, 1);
+			const endDate = new Date(year, month, 0, 23, 59, 59);
+			where.issueDate.gte = startDate;
+			where.issueDate.lte = endDate;
+		}
+	}
+
+	const invoices = await prisma.invoice.findMany({
+		where,
+		include: { payments: true, lines: true, customer: true, job: { select: { title: true } } },
+		orderBy: { issueDate: "desc" },
+	});
+
+	return { ok: true, invoices };
 }
 
 

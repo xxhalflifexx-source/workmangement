@@ -1,0 +1,94 @@
+═══════════════════════════════════════════════════════════════
+  QUICK MIGRATION STEPS - Add Invoice Number & Date Fields
+═══════════════════════════════════════════════════════════════
+
+STEP 1: Open Terminal in Cursor
+─────────────────────────────────
+  • Press: Ctrl + ~  (Control + Tilde key)
+  • OR click "Terminal" tab at bottom of Cursor
+
+
+STEP 2: Choose Your Database Type
+───────────────────────────────────
+  You have 2 options:
+
+  OPTION A: Use SQLite (EASIER - Recommended for Testing)
+  ────────────────────────────────────────────────────────
+  1. Open file: prisma/schema.prisma
+  2. Find this section (around line 1-5):
+     
+     datasource db {
+       provider  = "postgresql"
+       url       = env("DATABASE_URL")
+       directUrl = env("DIRECT_URL")
+     }
+  
+  3. Replace it with:
+     
+     datasource db {
+       provider = "sqlite"
+       url      = "file:./dev.db"
+     }
+  
+  4. Save the file (Ctrl + S)
+
+
+  OPTION B: Use PostgreSQL (If you have database credentials)
+  ───────────────────────────────────────────────────────────
+  • Skip to STEP 3
+  • Make sure you have a .env file with DATABASE_URL and DIRECT_URL
+
+
+STEP 3: Run the Migration
+──────────────────────────
+  In the terminal, type this command and press Enter:
+
+    npx prisma migrate dev --name add_invoice_number_and_dates
+
+  Wait for it to finish. You should see:
+    ✔ Generated Prisma Client
+    ✔ Migration applied successfully
+
+
+STEP 4: Regenerate Prisma Client
+──────────────────────────────────
+  Type this command and press Enter:
+
+    npx prisma generate
+
+  You should see:
+    ✔ Generated Prisma Client
+
+
+STEP 5: Test It!
+─────────────────
+  1. Start the server:
+     npm run dev
+
+  2. Go to: http://localhost:3000/invoices
+
+  3. Create a new invoice - it should get number INV-250001!
+
+
+═══════════════════════════════════════════════════════════════
+  TROUBLESHOOTING
+═══════════════════════════════════════════════════════════════
+
+❌ Error: "Environment variable not found"
+   → Use OPTION A (SQLite) in STEP 2
+
+❌ Error: "Cannot find module"
+   → Run: npm install
+
+❌ Error: "Migration already exists"
+   → Skip to STEP 4 (regenerate client)
+
+❌ Error: "Database locked"
+   → Close Prisma Studio if it's open
+   → Close any other programs using the database
+
+
+═══════════════════════════════════════════════════════════════
+  THAT'S IT! 🎉
+═══════════════════════════════════════════════════════════════
+

@@ -1,7 +1,6 @@
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider = "sqlite"
+  url      = "file:./dev.db"
 }
 
 generator client {
@@ -202,23 +201,28 @@ model JobExpense {
 }
 
 model Invoice {
-  id          String       @id @default(cuid())
-  jobId       String?
-  customerId  String?
-  customerName String?
-  customerEmail String?
-  status      String       @default("DRAFT") // DRAFT, SENT, PAID, OVERDUE, VOID
-  issueDate   DateTime     @default(now())
-  dueDate     DateTime?
-  total       Float        @default(0)
-  balance     Float        @default(0)
-  notes       String?
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  job         Job?         @relation(fields: [jobId], references: [id], onDelete: SetNull)
-  customer    Customer?    @relation(fields: [customerId], references: [id], onDelete: SetNull)
-  lines       InvoiceLine[]
-  payments    Payment[]
+  id             String       @id @default(cuid())
+  invoiceNumber  String?      @unique // Auto-generated: INV-250001, INV-250002, etc.
+  jobId          String?
+  customerId     String?
+  customerName   String?
+  customerEmail  String?
+  status         String       @default("DRAFT") // DRAFT, SENT, PAID, OVERDUE, VOID
+  issueDate      DateTime     @default(now())
+  dueDate        DateTime?
+  sentDate       DateTime?    // When invoice was sent to customer
+  releaseDate    DateTime?    // When invoice was released/approved
+  collectionDate DateTime?    // When payment was collected
+  creditDate     DateTime?    // Credit memo date if applicable
+  total          Float        @default(0)
+  balance        Float        @default(0)
+  notes          String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  job            Job?         @relation(fields: [jobId], references: [id], onDelete: SetNull)
+  customer       Customer?    @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  lines          InvoiceLine[]
+  payments       Payment[]
 }
 
 model InvoiceLine {
