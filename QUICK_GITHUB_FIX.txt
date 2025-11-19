@@ -1,0 +1,51 @@
+═══════════════════════════════════════════════════════════════
+  QUICK GITHUB STEPS - Fix Vercel Build Error
+═══════════════════════════════════════════════════════════════
+
+STEP 1: Open Terminal
+─────────────────────
+  • Press: Ctrl + ~  (in Cursor)
+  • OR click "Terminal" tab
+
+
+STEP 2: Check What Changed
+───────────────────────────
+  Type: git status
+
+  You should see:
+    modified:   app/invoices/page.tsx
+
+
+STEP 3: Add the File
+────────────────────
+  Type: git add app/invoices/page.tsx
+
+  (This stages the file for commit)
+
+
+STEP 4: Commit the Change
+──────────────────────────
+  Type: git commit -m "Fix TypeScript error in invoices statistics"
+
+  (This saves your change with a message)
+
+
+STEP 5: Push to GitHub
+───────────────────────
+  Type: git push
+
+  (This uploads to GitHub and triggers Vercel rebuild)
+
+
+STEP 6: Check Vercel
+────────────────────
+  1. Go to: https://vercel.com/dashboard
+  2. Find your project
+  3. Watch the new build
+  4. Should show "Ready" ✅ instead of "Error" ❌
+
+
+═══════════════════════════════════════════════════════════════
+  THAT'S IT! 🎉
+═══════════════════════════════════════════════════════════════
+

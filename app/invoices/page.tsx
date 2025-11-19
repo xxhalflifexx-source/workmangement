@@ -81,9 +81,9 @@ export default function InvoicesPage() {
 
 	const loadStatistics = async () => {
 		const res = await getInvoiceStatistics(dateRange.start, dateRange.end);
-		if (res.ok) {
+		if (res.ok && res.stats) {
 			setStats(res.stats);
-			setChartData(res.chartData);
+			setChartData(res.chartData || []);
 		}
 	};
 
