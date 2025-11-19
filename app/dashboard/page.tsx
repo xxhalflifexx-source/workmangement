@@ -1,6 +1,7 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authOptions";
 import Link from "next/link";
+import RegistrationCodes from "./RegistrationCodes";
 
 export default async function Dashboard() {
   const session = await getServerSession(authOptions);
@@ -56,6 +57,9 @@ export default async function Dashboard() {
             </div>
           </div>
         </div>
+
+        {/* Registration Codes Section - For ADMIN and MANAGER */}
+        {(role === "ADMIN" || role === "MANAGER") && <RegistrationCodes />}
 
         {/* Quick Actions Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
