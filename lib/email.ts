@@ -132,7 +132,10 @@ export async function sendPasswordResetEmail(
     return { success: false, error: "Email service not configured" };
   }
 
-  const resetUrl = `${process.env.NEXTAUTH_URL || "https://nextjs-auth-roles.vercel.app"}/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}`;
+  // Always use production URL for password reset emails so links work reliably
+  // Preview deployments can fail, but production is always available
+  const productionUrl = process.env.PRODUCTION_URL || "https://nextjs-auth-roles.vercel.app";
+  const resetUrl = `${productionUrl}/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}`;
   
   try {
     const { data, error } = await resend.emails.send({
@@ -197,3 +200,4 @@ export async function sendPasswordResetEmail(
     return { success: false, error };
   }
 }
+
