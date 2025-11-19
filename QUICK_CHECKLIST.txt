@@ -1,0 +1,26 @@
+═══════════════════════════════════════════════════════════════
+  QUICK CHECKLIST - What To Do
+═══════════════════════════════════════════════════════════════
+
+STEP 1: Update Database
+────────────────────────
+  [ ] Run migration in Supabase Dashboard (easiest)
+      OR run: npx prisma migrate deploy
+
+STEP 2: Push to GitHub ⚠️ REQUIRED!
+───────────────────────────────────
+  [ ] Open terminal (Ctrl + ~)
+  [ ] Run: git add .
+  [ ] Run: git commit -m "Add invoice fields and fix TypeScript"
+  [ ] Run: git push
+
+STEP 3: Wait & Check
+────────────────────
+  [ ] Wait 2 minutes
+  [ ] Check Vercel dashboard
+  [ ] Build should succeed ✅
+
+═══════════════════════════════════════════════════════════════
+  ⚠️ IMPORTANT: You MUST push to GitHub after Step 1!
+═══════════════════════════════════════════════════════════════
+

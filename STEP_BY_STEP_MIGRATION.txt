@@ -1,0 +1,116 @@
+═══════════════════════════════════════════════════════════════
+  STEP-BY-STEP: Add New Invoice Fields to Your Database
+═══════════════════════════════════════════════════════════════
+
+OPTION 1: Using Supabase Dashboard (EASIEST - No Commands!)
+─────────────────────────────────────────────────────────────
+
+STEP 1: Open Supabase
+  • Go to: https://supabase.com/dashboard
+  • Login to your account
+  • Click on your project
+
+STEP 2: Open SQL Editor
+  • In the left sidebar, click "SQL Editor"
+  • Click "New query"
+
+STEP 3: Copy and Paste This SQL
+  Copy ALL of this text:
+
+─────────────────────────────────────────────────────────────
+ALTER TABLE "Invoice" ADD COLUMN IF NOT EXISTS "invoiceNumber" TEXT;
+ALTER TABLE "Invoice" ADD COLUMN IF NOT EXISTS "sentDate" TIMESTAMP;
+ALTER TABLE "Invoice" ADD COLUMN IF NOT EXISTS "releaseDate" TIMESTAMP;
+ALTER TABLE "Invoice" ADD COLUMN IF NOT EXISTS "collectionDate" TIMESTAMP;
+ALTER TABLE "Invoice" ADD COLUMN IF NOT EXISTS "creditDate" TIMESTAMP;
+
+CREATE UNIQUE INDEX IF NOT EXISTS "Invoice_invoiceNumber_key" ON "Invoice"("invoiceNumber");
+─────────────────────────────────────────────────────────────
+
+STEP 4: Run It
+  • Paste the SQL into the editor
+  • Click "Run" button (or press Ctrl+Enter)
+  • You should see "Success. No rows returned"
+
+STEP 5: Done! ✅
+  That's it! The new fields are added to your database.
+
+
+═══════════════════════════════════════════════════════════════
+
+OPTION 2: Using Terminal Commands
+──────────────────────────────────
+
+STEP 1: Open Terminal in Cursor
+  • Press: Ctrl + ~  (Control + Tilde key)
+  • OR click "Terminal" tab at bottom
+
+STEP 2: Install Vercel CLI (if you don't have it)
+  Copy and paste this command, press Enter:
+
+    npm i -g vercel
+
+  Wait for it to finish (might take 1-2 minutes)
+
+STEP 3: Login to Vercel
+  Copy and paste this command, press Enter:
+
+    vercel login
+
+  • It will open a browser window
+  • Click "Authorize" or "Continue"
+  • Come back to the terminal
+
+STEP 4: Get Your Database Connection
+  Copy and paste this command, press Enter:
+
+    vercel env pull .env.local
+
+  This downloads your database connection info from Vercel
+
+STEP 5: Run the Migration
+  Copy and paste this command, press Enter:
+
+    npx prisma migrate deploy
+
+  Wait for it to finish. You should see "Applied migration..."
+
+STEP 6: Done! ✅
+
+
+═══════════════════════════════════════════════════════════════
+
+WHICH OPTION SHOULD YOU USE?
+─────────────────────────────
+
+✅ Use OPTION 1 (Supabase Dashboard) if:
+  • You can access Supabase dashboard
+  • You want the easiest way
+  • You don't want to use terminal commands
+
+✅ Use OPTION 2 (Terminal) if:
+  • You're comfortable with commands
+  • You want to automate it
+  • You prefer command line
+
+
+═══════════════════════════════════════════════════════════════
+
+AFTER RUNNING THE MIGRATION:
+─────────────────────────────
+
+1. Push your code to GitHub:
+   
+   In terminal, run:
+   
+   git add .
+   git commit -m "Add invoice fields migration"
+   git push
+
+2. Wait 2 minutes for Vercel to rebuild
+
+3. Check Vercel dashboard - should work! ✅
+
+
+═══════════════════════════════════════════════════════════════
+
