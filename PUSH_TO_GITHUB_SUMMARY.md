@@ -1,42 +1,61 @@
-# GitHub Push Summary - Invoice Design Update
+# GitHub Push Summary - Invoice Redesign for TCB Metal Works
 
 ## Files Changed
 - `app/jobs/page.tsx`
 
 ## Changes Made
-1. **Redesigned Invoice Layout** to match the provided design:
-   - Updated header with large "INVOICE" title, invoice number and date on left, purple logo placeholder on right
-   - Reorganized company info and billing information in a two-column layout
-   - Updated table columns to: "Item & Description", "Unit Price", "Qty", "Amount"
-   - Added alternating row colors (white and light gray) for better readability
-   - Moved Notes/Terms to left side, Summary table to right side
-   - Replaced Tax with Shipping Fee in the summary section
-   - Added editable shipping fee input field (visible only when editing, hidden when printing)
-   - Updated footer with "PAYMENT METHOD" and "PREPARED BY" sections
-   - Added purple border at the bottom of the invoice
-   - Removed signature sections to match the simpler design
 
-2. **Added Shipping Fee Functionality**:
-   - Added `shippingFee` state variable
-   - Updated `calculateInvoiceSubtotal()` function to separate subtotal calculation
-   - Updated `calculateInvoiceTotal()` to include shipping fee
-   - Added shipping fee input field in the summary table (editable when not printing)
+### 1. **Branding Updates**
+   - Changed company name from "STUDIO SHODWE" to "TCB METAL WORKS"
+   - Updated logo placeholder to navy blue with "TCB METAL WORKS" text
+   - Changed all purple color accents to navy blue (#1e3a8a / blue-900)
 
-3. **Improved Invoice Styling**:
-   - Added light gray background (`bg-gray-50`) to the invoice area
-   - Enhanced table styling with better borders and alternating row colors
-   - Improved typography and spacing throughout
-   - Made invoice number and date fields editable inline
+### 2. **Editable Customer Details**
+   - Made all customer fields editable (Name, Address, Phone, Email)
+   - Fields are editable when viewing/editing, but display cleanly when printing
+   - Customer information can now be customized per invoice
+
+### 3. **Editable Payment Method**
+   - Made payment method fields editable:
+     - Bank name
+     - Account name
+     - Account number
+   - Fields default to company settings but can be customized per invoice
+
+### 4. **Editable Prepared By Section**
+   - Made "Prepared By" name and title editable
+   - Defaults to the logged-in user's name automatically
+   - Title can be customized per invoice
+
+### 5. **Fixed Shipping Fee Duplication**
+   - Fixed the shipping fee display issue where it appeared duplicated
+   - Shipping fee input is now properly hidden when printing
+   - Only shows the value when printing, not the input field
+
+### 6. **Color Theme Update**
+   - Replaced all purple colors with navy blue:
+     - Logo background: `bg-blue-900`
+     - Border accents: `border-blue-900`
+     - Button colors: `bg-blue-900 hover:bg-blue-800`
+     - Focus states: `focus:border-blue-900`
+     - Bottom border: `border-blue-900`
+
+### 7. **Invoice Layout Improvements**
+   - Maintained the professional layout matching the screenshot
+   - All editable fields have proper print styles (hidden borders when printing)
+   - Improved spacing and typography
 
 ## Commit Message
 ```
-feat: Redesign invoice layout with shipping fee and improved styling
+feat: Redesign invoice for TCB Metal Works with editable fields and navy blue theme
 
-- Redesigned invoice to match modern professional layout
-- Added shipping fee field (replaces tax)
-- Updated table columns and styling
-- Added payment method and prepared by footer sections
-- Improved print styling and layout
+- Updated branding to TCB Metal Works
+- Changed color theme from purple to navy blue
+- Made customer details editable
+- Made payment method editable
+- Made prepared by editable (defaults to logged-in user)
+- Fixed shipping fee duplication issue
+- Improved invoice layout and print styling
 ```
 
 ## How to Push to GitHub
@@ -56,12 +75,16 @@ feat: Redesign invoice layout with shipping fee and improved styling
 
 ## Testing Checklist
 - [ ] Open a job and generate an invoice
-- [ ] Verify the new invoice layout matches the design
-- [ ] Test adding/editing line items
-- [ ] Test shipping fee input and calculation
-- [ ] Test printing the invoice (should print cleanly on one page)
-- [ ] Verify all fields are editable when not printing
+- [ ] Verify TCB Metal Works branding appears correctly
+- [ ] Verify navy blue color theme throughout
+- [ ] Test editing customer details (name, address, phone, email)
+- [ ] Test editing payment method fields
+- [ ] Verify "Prepared By" defaults to logged-in user's name
+- [ ] Test editing "Prepared By" name and title
+- [ ] Verify shipping fee input works and doesn't duplicate
+- [ ] Test printing the invoice (should print cleanly with all edits)
+- [ ] Verify all editable fields are hidden when printing
 
 ---
 
-**Note**: Remember to test the invoice generation and printing functionality after deployment to ensure everything works correctly in production.
+**Note**: The invoice now matches the screenshot design with TCB Metal Works branding, navy blue theme, and all requested editable fields. The "Prepared By" field automatically defaults to the logged-in user's name, but can be edited if needed.

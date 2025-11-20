@@ -126,6 +126,17 @@ export default function JobsPage() {
   const [companySettings, setCompanySettings] = useState<any>(null);
   const invoiceRef = useRef<HTMLDivElement>(null);
   
+  // Editable invoice fields
+  const [editableCustomerName, setEditableCustomerName] = useState("");
+  const [editableCustomerAddress, setEditableCustomerAddress] = useState("");
+  const [editableCustomerPhone, setEditableCustomerPhone] = useState("");
+  const [editableCustomerEmail, setEditableCustomerEmail] = useState("");
+  const [paymentBank, setPaymentBank] = useState("");
+  const [paymentAccountName, setPaymentAccountName] = useState("");
+  const [paymentAccountNumber, setPaymentAccountNumber] = useState("");
+  const [preparedByName, setPreparedByName] = useState("");
+  const [preparedByTitle, setPreparedByTitle] = useState("");
+  
   // Estimate states
   const [showEstimateModal, setShowEstimateModal] = useState(false);
   const [selectedJobForEstimate, setSelectedJobForEstimate] = useState<Job | null>(null);
@@ -433,6 +444,29 @@ export default function JobsPage() {
       }
       
       setInvoiceLineItems(lineItems);
+      
+      // Initialize editable fields
+      if (jobRes.job.customer) {
+        setEditableCustomerName(jobRes.job.customer.name || "");
+        setEditableCustomerAddress(jobRes.job.customer.company || "");
+        setEditableCustomerPhone(jobRes.job.customer.phone || "");
+        setEditableCustomerEmail(jobRes.job.customer.email || "");
+      } else {
+        setEditableCustomerName("");
+        setEditableCustomerAddress("");
+        setEditableCustomerPhone("");
+        setEditableCustomerEmail("");
+      }
+      
+      // Initialize payment method from company settings or defaults
+      setPaymentBank(settingsRes.settings?.bankName || "");
+      setPaymentAccountName(settingsRes.settings?.companyName || "TCB Metal Works");
+      setPaymentAccountNumber(settingsRes.settings?.accountNumber || "");
+      
+      // Initialize prepared by with logged-in user
+      const currentUserName = session?.user?.name || "";
+      setPreparedByName(currentUserName);
+      setPreparedByTitle(settingsRes.settings?.preparedByTitle || "");
     } else {
       setError(jobRes.error);
     }
@@ -981,7 +1015,7 @@ export default function JobsPage() {
                             </button>
                             <button
                               onClick={() => openInvoiceModal(job)}
-                              className="px-3 py-2 text-sm border border-purple-300 text-purple-600 rounded-lg hover:bg-purple-50 transition-colors font-medium"
+                              className="px-3 py-2 text-sm border border-blue-900 text-blue-900 rounded-lg hover:bg-blue-50 transition-colors font-medium"
                               title="Generate invoice for this job"
                             >
                               📄 Invoice
@@ -1412,7 +1446,7 @@ export default function JobsPage() {
                               )}
                             </div>
                             {images.length > 0 && (
-                              <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full font-medium">
+                              <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full font-medium">
                                 📸 {images.length}
                               </span>
                             )}
@@ -1663,7 +1697,7 @@ export default function JobsPage() {
           <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[95vh] overflow-y-auto">
             {loadingInvoice ? (
               <div className="p-12 text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-900 mx-auto mb-4"></div>
                 <p className="text-gray-600">Loading invoice data...</p>
               </div>
             ) : selectedJobForInvoice ? (
@@ -1675,7 +1709,7 @@ export default function JobsPage() {
                     <div className="flex gap-2">
                       <button
                         onClick={handlePrintInvoice}
-                        className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium"
+                        className="px-4 py-2 bg-blue-900 text-white rounded-lg hover:bg-blue-800 transition-colors font-medium"
                       >
                         🖨️ Print Invoice
                       </button>
@@ -1708,7 +1742,7 @@ export default function JobsPage() {
                             type="text"
                             value={invoiceNumber}
                             onChange={(e) => setInvoiceNumber(e.target.value)}
-                            className="font-semibold border-b border-gray-300 focus:border-purple-500 outline-none print-no-border bg-transparent w-32"
+                            className="font-semibold border-b border-gray-300 focus:border-blue-900 outline-none print-no-border bg-transparent w-32"
                             placeholder="123456"
                           />
                         </div>
@@ -1718,17 +1752,20 @@ export default function JobsPage() {
                             type="date"
                             value={invoiceDate}
                             onChange={(e) => setInvoiceDate(e.target.value)}
-                            className="font-semibold border-b border-gray-300 focus:border-purple-500 outline-none print-no-border bg-transparent"
+                            className="font-semibold border-b border-gray-300 focus:border-blue-900 outline-none print-no-border bg-transparent"
                           />
+                          <span className="font-semibold print-only ml-2">
+                            {invoiceDate ? new Date(invoiceDate).toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "numeric" }) : ""}
+                          </span>
                         </div>
                       </div>
                     </div>
-                    {/* Right: Logo Placeholder (Purple square) */}
-                    <div className="bg-purple-600 w-24 h-24 flex flex-col items-center justify-center text-white rounded-lg">
-                      <div className="text-3xl mb-1">∞</div>
+                    {/* Right: Logo Placeholder (Navy blue square) */}
+                    <div className="bg-blue-900 w-24 h-24 flex flex-col items-center justify-center text-white rounded-lg">
+                      <div className="text-2xl font-bold mb-1">TCB</div>
                       <div className="text-xs font-bold leading-tight text-center">
-                        <div>STUDIO</div>
-                        <div>SHODWE</div>
+                        <div>METAL</div>
+                        <div>WORKS</div>
                       </div>
                     </div>
                   </div>
@@ -1738,7 +1775,7 @@ export default function JobsPage() {
                     {/* Left: Company Info */}
                     <div>
                       <p className="font-bold text-gray-900 text-lg mb-2">
-                        {companySettings?.companyName || "STUDIO SHODWE"}
+                        {companySettings?.companyName || "TCB METAL WORKS"}
                       </p>
                       <div className="text-gray-700 text-sm space-y-1">
                         {companySettings?.address && <p>{companySettings.address}</p>}
@@ -1752,25 +1789,39 @@ export default function JobsPage() {
                       </div>
                     </div>
 
-                    {/* Right: Bill To */}
+                    {/* Right: Bill To - Editable */}
                     <div>
                       <h3 className="font-bold text-gray-900 mb-2">BILL TO</h3>
-                      {selectedJobForInvoice.customer ? (
-                        <div className="text-gray-700 text-sm space-y-1">
-                          <p className="font-semibold">{selectedJobForInvoice.customer.name}</p>
-                          {selectedJobForInvoice.customer.company && (
-                            <p>{selectedJobForInvoice.customer.company}</p>
-                          )}
-                          {selectedJobForInvoice.customer.phone && (
-                            <p>{selectedJobForInvoice.customer.phone}</p>
-                          )}
-                          {selectedJobForInvoice.customer.email && (
-                            <p>{selectedJobForInvoice.customer.email}</p>
-                          )}
-                        </div>
-                      ) : (
-                        <p className="text-gray-500 italic text-sm">No customer assigned</p>
-                      )}
+                      <div className="text-gray-700 text-sm space-y-1">
+                        <input
+                          type="text"
+                          value={editableCustomerName}
+                          onChange={(e) => setEditableCustomerName(e.target.value)}
+                          className="font-semibold w-full border-b border-gray-300 focus:border-blue-900 outline-none print-no-border bg-transparent mb-1"
+                          placeholder="Customer Name"
+                        />
+                        <input
+                          type="text"
+                          value={editableCustomerAddress}
+                          onChange={(e) => setEditableCustomerAddress(e.target.value)}
+                          className="w-full border-b border-gray-300 focus:border-blue-900 outline-none print-no-border bg-transparent mb-1"
+                          placeholder="Address"
+                        />
+                        <input
+                          type="text"
+                          value={editableCustomerPhone}
+                          onChange={(e) => setEditableCustomerPhone(e.target.value)}
+                          className="w-full border-b border-gray-300 focus:border-blue-900 outline-none print-no-border bg-transparent mb-1"
+                          placeholder="Phone"
+                        />
+                        <input
+                          type="email"
+                          value={editableCustomerEmail}
+                          onChange={(e) => setEditableCustomerEmail(e.target.value)}
+                          className="w-full border-b border-gray-300 focus:border-blue-900 outline-none print-no-border bg-transparent"
+                          placeholder="Email"
+                        />
+                      </div>
                     </div>
                   </div>
 
@@ -1836,7 +1887,7 @@ export default function JobsPage() {
 
                     <button
                       onClick={addInvoiceLineItem}
-                      className="mt-3 px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg hover:border-purple-400 hover:bg-purple-50 transition-colors text-sm font-medium text-gray-600 w-full no-print"
+                      className="mt-3 px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-900 hover:bg-blue-50 transition-colors text-sm font-medium text-gray-600 w-full no-print"
                     >
                       + Add Line Item
                     </button>
@@ -1852,7 +1903,7 @@ export default function JobsPage() {
                         onChange={(e) => setInvoiceNotes(e.target.value)}
                         placeholder="Payment terms, work scope, warranty information..."
                         rows={4}
-                        className="w-full border border-gray-300 rounded-lg p-3 text-sm outline-none focus:border-purple-500 print-no-border bg-white"
+                        className="w-full border border-gray-300 rounded-lg p-3 text-sm outline-none focus:border-blue-900 print-no-border bg-white"
                       />
                     </div>
 
@@ -1868,16 +1919,18 @@ export default function JobsPage() {
                           </tr>
                           <tr>
                             <td className="border border-gray-300 px-4 py-2 text-left">
-                              <div className="flex items-center gap-2 no-print">
-                                <span>Shipping Fee</span>
-                                <input
-                                  type="number"
-                                  value={shippingFee}
-                                  onChange={(e) => setShippingFee(parseFloat(e.target.value) || 0)}
-                                  className="w-24 border border-gray-300 rounded px-2 py-1 text-sm"
-                                  step="0.01"
-                                  placeholder="0.00"
-                                />
+                              <div className="no-print">
+                                <div className="flex items-center gap-2">
+                                  <span>Shipping Fee</span>
+                                  <input
+                                    type="number"
+                                    value={shippingFee}
+                                    onChange={(e) => setShippingFee(parseFloat(e.target.value) || 0)}
+                                    className="w-24 border border-gray-300 rounded px-2 py-1 text-sm"
+                                    step="0.01"
+                                    placeholder="0.00"
+                                  />
+                                </div>
                               </div>
                               <span className="print-only">Shipping Fee</span>
                             </td>
@@ -1898,28 +1951,67 @@ export default function JobsPage() {
 
                   {/* Footer - Payment Method and Prepared By */}
                   <div className="grid grid-cols-2 gap-12 mb-4">
-                    {/* Left: Payment Method */}
+                    {/* Left: Payment Method - Editable */}
                     <div>
                       <h3 className="font-bold text-gray-900 mb-2">PAYMENT METHOD</h3>
                       <div className="text-gray-700 text-sm space-y-1">
-                        <p><span className="font-semibold">Bank:</span> {companySettings?.bankName || "Borcelle Bank"}</p>
-                        <p><span className="font-semibold">Account Name:</span> {companySettings?.companyName || "Studio Shodwe"}</p>
-                        <p><span className="font-semibold">Account Number:</span> {companySettings?.accountNumber || "1234567890"}</p>
+                        <div>
+                          <span className="font-semibold">Bank: </span>
+                          <input
+                            type="text"
+                            value={paymentBank}
+                            onChange={(e) => setPaymentBank(e.target.value)}
+                            className="border-b border-gray-300 focus:border-blue-900 outline-none print-no-border bg-transparent w-48"
+                            placeholder="Bank Name"
+                          />
+                        </div>
+                        <div>
+                          <span className="font-semibold">Account Name: </span>
+                          <input
+                            type="text"
+                            value={paymentAccountName}
+                            onChange={(e) => setPaymentAccountName(e.target.value)}
+                            className="border-b border-gray-300 focus:border-blue-900 outline-none print-no-border bg-transparent w-48"
+                            placeholder="Account Name"
+                          />
+                        </div>
+                        <div>
+                          <span className="font-semibold">Account Number: </span>
+                          <input
+                            type="text"
+                            value={paymentAccountNumber}
+                            onChange={(e) => setPaymentAccountNumber(e.target.value)}
+                            className="border-b border-gray-300 focus:border-blue-900 outline-none print-no-border bg-transparent w-48"
+                            placeholder="Account Number"
+                          />
+                        </div>
                       </div>
                     </div>
 
-                    {/* Right: Prepared By */}
+                    {/* Right: Prepared By - Editable */}
                     <div>
                       <h3 className="font-bold text-gray-900 mb-2">PREPARED BY</h3>
                       <div className="text-gray-700 text-sm space-y-1">
-                        <p>{companySettings?.preparedBy || "Benjamin Shah"}</p>
-                        <p>{companySettings?.preparedByTitle || "Sales Administrator, Studio Shodwe"}</p>
+                        <input
+                          type="text"
+                          value={preparedByName}
+                          onChange={(e) => setPreparedByName(e.target.value)}
+                          className="w-full border-b border-gray-300 focus:border-blue-900 outline-none print-no-border bg-transparent mb-1"
+                          placeholder="Name"
+                        />
+                        <input
+                          type="text"
+                          value={preparedByTitle}
+                          onChange={(e) => setPreparedByTitle(e.target.value)}
+                          className="w-full border-b border-gray-300 focus:border-blue-900 outline-none print-no-border bg-transparent"
+                          placeholder="Title"
+                        />
                       </div>
                     </div>
                   </div>
 
-                  {/* Purple Border at Bottom */}
-                  <div className="border-b-4 border-purple-600 mt-6"></div>
+                  {/* Navy Blue Border at Bottom */}
+                  <div className="border-b-4 border-blue-900 mt-6"></div>
                 </div>
               </div>
             ) : (
