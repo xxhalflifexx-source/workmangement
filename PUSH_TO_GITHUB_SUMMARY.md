@@ -1,36 +1,35 @@
-# GitHub Push Summary - Add Green Circle Background to Logo
+# GitHub Push Summary - Move Logo Back to Left Side, Centered
 
 ## Files Changed
-- `lib/pdf-generator.ts` - Added green circle background to logo
-- `app/jobs/page.tsx` - Added green circle background to logo in modal
+- `lib/pdf-generator.ts` - Moved logo back to left side
+- `app/jobs/page.tsx` - Moved logo back to left side in modal
 
 ## Changes Made
 
-### Added Green Circle Background
-- **PDF**: 
-  - Light green circular background behind logo text
-  - Logo positioned top right in green circle
-  - "TCB" and "METAL WORKS" centered within circle
-  - Circle size: 30mm diameter
-  - Light green color: RGB(200, 255, 200)
-- **Modal**: 
-  - Green circular background using `bg-green-200`
-  - Circle size: 24x24 (w-24 h-24)
-  - Logo text centered within circle
-  - Positioned top right
+### Moved Logo Back to Original Location
+- **PDF**: Logo moved back to left side, below invoice details
+  - Positioned below invoice date
+  - Centered within left section
+  - Green circle background maintained
+  - Logo centered within the circle
+- **Modal**: Logo moved back to left column
+  - Positioned below invoice details
+  - Centered within left section using `flex justify-center`
+  - Green circle background maintained
+  - Same styling as PDF
 
-### Logo Positioning
-- **PDF**: Top right corner, centered in green circle
-- **Modal**: Top right, in rounded green circle container
-- Text remains navy blue, centered within green circle
+### Layout Updates
+- **PDF**: Logo appears on left side, below invoice date, centered within left half
+- **Modal**: Logo integrated into left column, below invoice details, centered
+- Both maintain green circular background with navy blue text
 
 ## Commit Message
 ```
-feat: Add green circle background to TCB METAL WORKS logo
+refactor: Move logo back to left side, centered in original location
 
-- Added light green circular background behind logo
-- Logo positioned top right in green circle
-- Text remains navy blue, centered within circle
+- Logo moved back to left side below invoice details
+- Centered within left section
+- Green circle background maintained
 - Updated both PDF generator and invoice modal
 ```
 
@@ -52,12 +51,13 @@ feat: Add green circle background to TCB METAL WORKS logo
 
 ## Testing Checklist
 - [ ] Generate a PDF invoice
-- [ ] Verify green circle appears behind logo text
-- [ ] Verify logo is positioned top right
-- [ ] Verify text is centered within green circle
-- [ ] Check invoice modal - verify green circle background
-- [ ] Verify navy blue text is visible on green background
+- [ ] Verify logo appears on left side, below invoice details
+- [ ] Verify logo is centered within left section
+- [ ] Verify green circle background is present
+- [ ] Check invoice modal - verify logo is on left side
+- [ ] Verify logo appears below invoice details
+- [ ] Verify centered alignment
 
 ---
 
-**Note**: The logo now appears in a light green circular background in the top right corner, with the navy blue "TCB METAL WORKS" text centered within it.
+**Note**: The logo is now back in its original location on the left side, below the invoice details, centered within that section, with the green circular background.
