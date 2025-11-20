@@ -65,20 +65,13 @@ export function generateInvoicePDF(data: InvoicePDFData): jsPDF {
   doc.text(`Invoice Date: ${invoiceDateFormatted}`, margin, yPos);
   yPos += 12;
 
-  // Logo placeholder (Navy blue square) - positioned top right
-  const logoSize = 22;
-  const logoX = pageWidth - margin - logoSize;
-  const logoY = margin;
-  doc.setFillColor(navyBlueR, navyBlueG, navyBlueB);
-  doc.rect(logoX, logoY, logoSize, logoSize, "F");
-  
-  // Logo text
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(9);
+  // Logo text - Large "TCB METAL WORKS" positioned top right
+  const logoX = pageWidth - margin;
+  const logoY = margin + 8;
+  doc.setTextColor(navyBlueR, navyBlueG, navyBlueB);
+  doc.setFontSize(16);
   doc.setFont("helvetica", "bold");
-  doc.text("TCB", logoX + logoSize / 2, logoY + 7, { align: "center" });
-  doc.setFontSize(5.5);
-  doc.text("METAL WORKS", logoX + logoSize / 2, logoY + 14, { align: "center" });
+  doc.text("TCB METAL WORKS", logoX, logoY, { align: "right" });
 
   // Reset text color
   doc.setTextColor(50, 50, 50);

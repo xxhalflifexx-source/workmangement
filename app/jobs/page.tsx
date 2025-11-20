@@ -1800,11 +1800,10 @@ export default function JobsPage() {
                         </div>
                       </div>
                     </div>
-                    {/* Right: Logo Placeholder (Navy blue square) */}
-                    <div className="bg-blue-900 w-24 h-24 flex flex-col items-center justify-center text-white rounded-lg">
-                      <div className="text-xl font-bold mb-1">TCB</div>
-                      <div className="text-xs font-bold text-center leading-tight">
-                        METAL WORKS
+                    {/* Right: Logo Text - Large TCB METAL WORKS */}
+                    <div className="text-right">
+                      <div className="text-2xl font-bold text-blue-900">
+                        TCB METAL WORKS
                       </div>
                     </div>
                   </div>

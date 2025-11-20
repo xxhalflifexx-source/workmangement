@@ -1,41 +1,31 @@
-# GitHub Push Summary - Fix PDF Overlapping and Make Compact
+# GitHub Push Summary - Replace Logo Box with Large Text
 
 ## Files Changed
-- `lib/pdf-generator.ts` - Fixed overlapping issues and made layout more compact
+- `lib/pdf-generator.ts` - Replaced box logo with large text
+- `app/jobs/page.tsx` - Updated invoice modal to match
 
 ## Changes Made
 
-### Fixed Overlapping Issues
-- **Problem**: Elements were overlapping in the PDF invoice
-- **Solution**: 
-  - Track maximum Y positions for left/right columns separately
-  - Calculate proper spacing based on actual content height
-  - Use `Math.max()` to ensure no overlapping between columns
+### Replaced Logo Box with Large Text
+- **Removed**: Navy blue square box logo
+- **Added**: Large "TCB METAL WORKS" text in navy blue
+- **PDF**: Large text positioned top right, navy blue color
+- **Invoice Modal**: Large text in navy blue, right-aligned
+- More professional and cleaner appearance
 
-### Made PDF More Compact
-- **Reduced margins**: Changed from 20 to 15
-- **Reduced font sizes**: Slightly smaller fonts throughout
-- **Tighter spacing**: Reduced spacing between elements:
-  - Header spacing: 10px (was 12px)
-  - Line spacing: 4-5px (was 5-6px)
-  - Table row height: 6px (was 7px)
-  - Summary row height: 6px (was 7px)
-- **Compact layout**: All sections now use minimal spacing while maintaining readability
-
-### Layout Improvements
-- **Company/Billing Info**: Tracks max Y position for both columns to prevent overlap
-- **Notes/Summary**: Calculates actual height needed for notes text
-- **Footer**: Properly positions based on content height
-- **Border**: Positioned relative to footer content, not fixed page position
+### Design Updates
+- **PDF Logo**: 16pt bold navy blue text, right-aligned
+- **Modal Logo**: 2xl bold navy blue text, right-aligned
+- Consistent branding across PDF and web view
 
 ## Commit Message
 ```
-fix: Fix PDF overlapping issues and make invoice more compact
+refactor: Replace logo box with large TCB METAL WORKS text
 
-- Fixed overlapping elements by tracking max Y positions
-- Reduced margins and spacing for more compact layout
-- Improved column positioning calculations
-- Made all sections properly spaced without overlap
+- Removed navy blue square box logo
+- Added large "TCB METAL WORKS" text in navy blue
+- Updated both PDF generator and invoice modal
+- More professional and cleaner appearance
 ```
 
 ## How to Push to GitHub
@@ -43,7 +33,8 @@ fix: Fix PDF overlapping issues and make invoice more compact
 1. **Open GitHub Desktop** (or your Git client)
 
 2. **Review the changes**:
-   - You should see `lib/pdf-generator.ts` in the changed files list
+   - You should see `lib/pdf-generator.ts` (Modified)
+   - You should see `app/jobs/page.tsx` (Modified)
 
 3. **Write the commit message** (copy from above)
 
@@ -55,14 +46,11 @@ fix: Fix PDF overlapping issues and make invoice more compact
 
 ## Testing Checklist
 - [ ] Generate a PDF invoice
-- [ ] Verify no overlapping elements
-- [ ] Verify compact layout (everything fits nicely)
-- [ ] Check that all sections are properly spaced
-- [ ] Verify company info and billing info don't overlap
-- [ ] Verify notes and summary don't overlap
-- [ ] Verify footer sections don't overlap
-- [ ] Check that PDF looks professional and compact
+- [ ] Verify large "TCB METAL WORKS" text appears in navy blue (top right)
+- [ ] Verify no box logo is present
+- [ ] Check invoice modal - verify large text appears
+- [ ] Verify text is properly aligned and styled
 
 ---
 
-**Note**: The PDF invoice is now more compact and all overlapping issues have been resolved. The layout properly calculates spacing to prevent any element overlap.
+**Note**: The logo is now displayed as large navy blue text instead of a box, giving a more professional and modern appearance.
