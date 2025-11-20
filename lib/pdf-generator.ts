@@ -44,7 +44,7 @@ export function generateInvoicePDF(data: InvoicePDFData): jsPDF {
   const navyBlueG = 58;
   const navyBlueB = 138;
 
-  // Header Section - INVOICE title and details on left, logo on right
+  // Header Section - INVOICE title and details on left, logo on top right
   const headerY = yPos;
   
   // Left: INVOICE title and details
@@ -67,21 +67,19 @@ export function generateInvoicePDF(data: InvoicePDFData): jsPDF {
   });
   doc.text(`Invoice Date: ${invoiceDateFormatted}`, margin, yPos);
   
-  // Right: Logo text - Large "TCB" above "METAL WORKS", centered in right section
-  const rightSectionStart = pageWidth / 2 + 10;
-  const rightSectionWidth = pageWidth - rightSectionStart - margin;
-  const logoX = rightSectionStart + (rightSectionWidth / 2);
-  const logoY = headerY + 15; // Position aligned with invoice details
+  // Top Right: Logo text - Large "TCB" above "METAL WORKS" in top right corner (arrow area)
+  const logoX = pageWidth - margin;
+  const logoY = margin + 8;
   
-  // TCB - Larger text on top, centered
+  // TCB - Larger text on top, right-aligned
   doc.setTextColor(navyBlueR, navyBlueG, navyBlueB);
-  doc.setFontSize(18);
+  doc.setFontSize(20);
   doc.setFont("helvetica", "bold");
-  doc.text("TCB", logoX, logoY, { align: "center" });
+  doc.text("TCB", logoX, logoY, { align: "right" });
   
-  // METAL WORKS - Smaller text below, centered
-  doc.setFontSize(10);
-  doc.text("METAL WORKS", logoX, logoY + 7, { align: "center" });
+  // METAL WORKS - Smaller text below, right-aligned
+  doc.setFontSize(11);
+  doc.text("METAL WORKS", logoX, logoY + 8, { align: "right" });
   
   // Update yPos to continue with company info
   yPos += 12;

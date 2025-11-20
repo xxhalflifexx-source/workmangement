@@ -1800,15 +1800,13 @@ export default function JobsPage() {
                         </div>
                       </div>
                     </div>
-                    {/* Right: Logo Text - TCB above METAL WORKS, centered within right section */}
-                    <div className="flex-1 flex items-center justify-center">
-                      <div className="flex flex-col items-center justify-center">
-                        <div className="text-3xl font-bold text-blue-900 mb-1">
-                          TCB
-                        </div>
-                        <div className="text-lg font-bold text-blue-900">
-                          METAL WORKS
-                        </div>
+                    {/* Top Right: Logo Text - TCB above METAL WORKS in top right corner (arrow area) */}
+                    <div className="text-right">
+                      <div className="text-3xl font-bold text-blue-900 mb-1">
+                        TCB
+                      </div>
+                      <div className="text-lg font-bold text-blue-900">
+                        METAL WORKS
                       </div>
                     </div>
                   </div>

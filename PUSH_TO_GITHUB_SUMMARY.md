@@ -1,39 +1,36 @@
-# GitHub Push Summary - Remove Green Circle Background from Logo
+# GitHub Push Summary - Move Logo to Top Right Corner (Arrow Area)
 
 ## Files Changed
-- `lib/pdf-generator.ts` - Removed green circle background
-- `app/jobs/page.tsx` - Removed green circle background from modal
+- `lib/pdf-generator.ts` - Moved logo to top right corner
+- `app/jobs/page.tsx` - Moved logo to top right in modal
 
 ## Changes Made
 
-### Removed Green Circle Background
-- **PDF**: Removed green circle drawing code
-  - Logo now displays as navy blue text only
-  - No background circle
-  - Text remains centered in right section
-  - Slightly increased font sizes for better visibility
-- **Modal**: Removed green circle background
-  - Removed `bg-green-200` and `rounded-full` classes
-  - Removed fixed width/height container
-  - Logo now displays as navy blue text only
-  - Text remains centered in right section
-
-### Logo Styling
-- **PDF**: 
-  - "TCB": 18pt bold navy blue
-  - "METAL WORKS": 10pt bold navy blue
-- **Modal**: 
+### Moved Logo to Top Right Corner
+- **PDF**: Logo moved to top right corner (where arrows point)
+  - Positioned at top right: `pageWidth - margin`
+  - Right-aligned text
+  - "TCB": 20pt bold navy blue
+  - "METAL WORKS": 11pt bold navy blue, 8px below TCB
+  - Positioned near top margin
+- **Modal**: Logo moved to top right
+  - Right-aligned using `text-right`
   - "TCB": text-3xl bold navy blue
   - "METAL WORKS": text-lg bold navy blue
+  - Positioned in top right corner
+
+### Layout Updates
+- **PDF**: Logo in top right corner, right-aligned
+- **Modal**: Logo in top right corner, right-aligned
+- Both positioned where the arrows point in the reference image
 
 ## Commit Message
 ```
-refactor: Remove green circle background from logo
+refactor: Move TCB METAL WORKS logo to top right corner
 
-- Removed green circle background
-- Logo now displays as navy blue text only
+- Logo positioned in top right corner (arrow area)
+- Right-aligned navy blue text
 - Updated both PDF generator and invoice modal
-- Cleaner, simpler appearance
 ```
 
 ## How to Push to GitHub
@@ -54,12 +51,13 @@ refactor: Remove green circle background from logo
 
 ## Testing Checklist
 - [ ] Generate a PDF invoice
-- [ ] Verify no green circle background appears
-- [ ] Verify logo displays as navy blue text only
-- [ ] Verify logo is centered in right section
-- [ ] Check invoice modal - verify no green circle
-- [ ] Verify text is properly styled and visible
+- [ ] Verify logo appears in top right corner
+- [ ] Verify logo is right-aligned
+- [ ] Verify navy blue color
+- [ ] Check invoice modal - verify logo is in top right
+- [ ] Verify "TCB" is above "METAL WORKS"
+- [ ] Verify positioning matches arrow area
 
 ---
 
-**Note**: The logo now displays as clean navy blue text without any background circle, creating a simpler and cleaner appearance.
+**Note**: The logo is now positioned in the top right corner where the arrows point, with navy blue "TCB METAL WORKS" text, right-aligned.
