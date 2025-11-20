@@ -44,7 +44,10 @@ export function generateInvoicePDF(data: InvoicePDFData): jsPDF {
   const navyBlueG = 58;
   const navyBlueB = 138;
 
-  // Header Section - INVOICE title and details
+  // Header Section - INVOICE title and details on left, logo on right
+  const headerY = yPos;
+  
+  // Left: INVOICE title and details
   doc.setFontSize(32);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(50, 50, 50);
@@ -63,12 +66,12 @@ export function generateInvoicePDF(data: InvoicePDFData): jsPDF {
     year: "numeric"
   });
   doc.text(`Invoice Date: ${invoiceDateFormatted}`, margin, yPos);
-  yPos += 12;
-
-  // Logo text - Large "TCB" above "METAL WORKS" in green circle, positioned on left side below invoice details
-  const leftSectionWidth = (pageWidth / 2) - margin;
-  const logoX = margin + (leftSectionWidth / 2);
-  const logoY = yPos + 8; // Position below invoice date
+  
+  // Right: Logo text - Large "TCB" above "METAL WORKS" in green circle, centered in right section
+  const rightSectionStart = pageWidth / 2 + 10;
+  const rightSectionWidth = pageWidth - rightSectionStart - margin;
+  const logoX = rightSectionStart + (rightSectionWidth / 2);
+  const logoY = headerY + 15; // Position aligned with invoice details
   const logoSize = 28;
   
   // Draw subtle green circle background
@@ -85,8 +88,8 @@ export function generateInvoicePDF(data: InvoicePDFData): jsPDF {
   doc.setFontSize(8);
   doc.text("METAL WORKS", logoX, logoY + 5, { align: "center" });
   
-  // Update yPos to account for logo
-  yPos = logoY + logoSize / 2 + 5;
+  // Update yPos to continue with company info
+  yPos += 12;
 
   // Reset text color
   doc.setTextColor(50, 50, 50);

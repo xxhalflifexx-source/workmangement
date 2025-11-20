@@ -1771,7 +1771,7 @@ export default function JobsPage() {
                 <div className="p-8 print-area bg-white">
                   {/* Header Section - Invoice Title, Number, Date, and Logo Area */}
                   <div className="flex justify-between items-start mb-8">
-                    {/* Left: Invoice Title, Details, and Logo */}
+                    {/* Left: Invoice Title and Details */}
                     <div className="flex-1">
                       <h1 className="text-5xl font-bold text-gray-900 mb-4">INVOICE</h1>
                       <div className="space-y-1 text-gray-700">
@@ -1799,15 +1799,15 @@ export default function JobsPage() {
                           </span>
                         </div>
                       </div>
-                      {/* Logo Text - TCB above METAL WORKS in green circle, centered within left section */}
-                      <div className="mt-4 flex justify-center">
-                        <div className="w-24 h-24 rounded-full bg-green-200 flex flex-col items-center justify-center">
-                          <div className="text-2xl font-bold text-blue-900 mb-1">
-                            TCB
-                          </div>
-                          <div className="text-xs font-bold text-blue-900">
-                            METAL WORKS
-                          </div>
+                    </div>
+                    {/* Right: Logo Text - TCB above METAL WORKS in green circle, centered within right section */}
+                    <div className="flex-1 flex items-center justify-center">
+                      <div className="w-24 h-24 rounded-full bg-green-200 flex flex-col items-center justify-center">
+                        <div className="text-2xl font-bold text-blue-900 mb-1">
+                          TCB
+                        </div>
+                        <div className="text-xs font-bold text-blue-900">
+                          METAL WORKS
                         </div>
                       </div>
                     </div>

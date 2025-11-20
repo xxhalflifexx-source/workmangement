@@ -1,34 +1,36 @@
-# GitHub Push Summary - Move Logo Back to Left Side, Centered
+# GitHub Push Summary - Move Logo to Right Side, Centered
 
 ## Files Changed
-- `lib/pdf-generator.ts` - Moved logo back to left side
-- `app/jobs/page.tsx` - Moved logo back to left side in modal
+- `lib/pdf-generator.ts` - Moved logo to right side
+- `app/jobs/page.tsx` - Moved logo to right side in modal
 
 ## Changes Made
 
-### Moved Logo Back to Original Location
-- **PDF**: Logo moved back to left side, below invoice details
-  - Positioned below invoice date
-  - Centered within left section
+### Moved Logo to Right Side
+- **PDF**: Logo moved to right side, beside invoice details
+  - Positioned in right section (right half of page)
+  - Centered within right section
+  - Aligned vertically with invoice details
   - Green circle background maintained
-  - Logo centered within the circle
-- **Modal**: Logo moved back to left column
-  - Positioned below invoice details
-  - Centered within left section using `flex justify-center`
+- **Modal**: Logo moved to right column
+  - Positioned beside invoice details using flex layout
+  - Centered within right section using `flex items-center justify-center`
   - Green circle background maintained
-  - Same styling as PDF
 
 ### Layout Updates
-- **PDF**: Logo appears on left side, below invoice date, centered within left half
-- **Modal**: Logo integrated into left column, below invoice details, centered
-- Both maintain green circular background with navy blue text
+- **PDF**: Two-column header layout
+  - Left: Invoice title and details
+  - Right: Logo centered within right section
+- **Modal**: Two-column flex layout
+  - Left: Invoice title and details
+  - Right: Logo centered within right section
 
 ## Commit Message
 ```
-refactor: Move logo back to left side, centered in original location
+refactor: Move logo to right side, centered beside invoice details
 
-- Logo moved back to left side below invoice details
-- Centered within left section
+- Logo positioned on right side, beside invoice details
+- Centered within right section
 - Green circle background maintained
 - Updated both PDF generator and invoice modal
 ```
@@ -51,13 +53,13 @@ refactor: Move logo back to left side, centered in original location
 
 ## Testing Checklist
 - [ ] Generate a PDF invoice
-- [ ] Verify logo appears on left side, below invoice details
-- [ ] Verify logo is centered within left section
+- [ ] Verify logo appears on right side, beside invoice details
+- [ ] Verify logo is centered within right section
 - [ ] Verify green circle background is present
-- [ ] Check invoice modal - verify logo is on left side
-- [ ] Verify logo appears below invoice details
-- [ ] Verify centered alignment
+- [ ] Check invoice modal - verify logo is on right side
+- [ ] Verify logo appears beside invoice details
+- [ ] Verify centered alignment within right section
 
 ---
 
-**Note**: The logo is now back in its original location on the left side, below the invoice details, centered within that section, with the green circular background.
+**Note**: The logo is now positioned on the right side, beside the invoice details, centered within that right section, with the green circular background.
