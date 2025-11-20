@@ -1800,10 +1800,13 @@ export default function JobsPage() {
                         </div>
                       </div>
                     </div>
-                    {/* Right: Logo Text - Large TCB METAL WORKS */}
+                    {/* Right: Logo Text - TCB above METAL WORKS */}
                     <div className="text-right">
-                      <div className="text-2xl font-bold text-blue-900">
-                        TCB METAL WORKS
+                      <div className="text-4xl font-bold text-blue-900 mb-1">
+                        TCB
+                      </div>
+                      <div className="text-xl font-bold text-blue-900">
+                        METAL WORKS
                       </div>
                     </div>
                   </div>

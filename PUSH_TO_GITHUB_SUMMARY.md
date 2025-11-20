@@ -1,31 +1,36 @@
-# GitHub Push Summary - Replace Logo Box with Large Text
+# GitHub Push Summary - Update Logo Layout with TCB Above METAL WORKS
 
 ## Files Changed
-- `lib/pdf-generator.ts` - Replaced box logo with large text
-- `app/jobs/page.tsx` - Updated invoice modal to match
+- `lib/pdf-generator.ts` - Updated logo layout
+- `app/jobs/page.tsx` - Updated invoice modal logo
 
 ## Changes Made
 
-### Replaced Logo Box with Large Text
-- **Removed**: Navy blue square box logo
-- **Added**: Large "TCB METAL WORKS" text in navy blue
-- **PDF**: Large text positioned top right, navy blue color
-- **Invoice Modal**: Large text in navy blue, right-aligned
-- More professional and cleaner appearance
+### Updated Logo Layout
+- **TCB**: Now displayed on top, larger font size
+  - PDF: 22pt (was 16pt)
+  - Modal: text-4xl (was text-2xl)
+- **METAL WORKS**: Displayed below TCB, smaller font size
+  - PDF: 12pt
+  - Modal: text-xl
+- **Layout**: Stacked vertically with TCB above METAL WORKS
+- **Styling**: Both in navy blue, bold, right-aligned
 
 ### Design Updates
-- **PDF Logo**: 16pt bold navy blue text, right-aligned
-- **Modal Logo**: 2xl bold navy blue text, right-aligned
-- Consistent branding across PDF and web view
+- **PDF Logo**: 
+  - "TCB" at 22pt, positioned at top
+  - "METAL WORKS" at 12pt, positioned 8px below TCB
+- **Modal Logo**: 
+  - "TCB" at text-4xl with mb-1 spacing
+  - "METAL WORKS" at text-xl below
 
 ## Commit Message
 ```
-refactor: Replace logo box with large TCB METAL WORKS text
+refactor: Update logo layout - TCB above METAL WORKS with larger TCB
 
-- Removed navy blue square box logo
-- Added large "TCB METAL WORKS" text in navy blue
-- Updated both PDF generator and invoice modal
-- More professional and cleaner appearance
+- TCB displayed on top with larger font (22pt PDF, 4xl modal)
+- METAL WORKS displayed below with smaller font (12pt PDF, xl modal)
+- Stacked vertically, right-aligned, navy blue
 ```
 
 ## How to Push to GitHub
@@ -46,11 +51,12 @@ refactor: Replace logo box with large TCB METAL WORKS text
 
 ## Testing Checklist
 - [ ] Generate a PDF invoice
-- [ ] Verify large "TCB METAL WORKS" text appears in navy blue (top right)
-- [ ] Verify no box logo is present
-- [ ] Check invoice modal - verify large text appears
+- [ ] Verify "TCB" appears on top, larger than "METAL WORKS"
+- [ ] Verify "METAL WORKS" appears below TCB
+- [ ] Check invoice modal - verify same layout
 - [ ] Verify text is properly aligned and styled
+- [ ] Verify navy blue color is applied
 
 ---
 
-**Note**: The logo is now displayed as large navy blue text instead of a box, giving a more professional and modern appearance.
+**Note**: The logo now displays "TCB" prominently on top with "METAL WORKS" below, creating a more hierarchical and professional appearance.
