@@ -6,6 +6,7 @@ import { createMaterialRequest, getJobMaterialRequests } from "../material-reque
 import { getJobForInvoice, getCompanySettingsForInvoice } from "./invoice-actions";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
+import { generateInvoicePDF, InvoicePDFData } from "@/lib/pdf-generator";
 
 interface Job {
   id: string;
@@ -503,6 +504,44 @@ export default function JobsPage() {
 
   const calculateInvoiceTotal = () => {
     return calculateInvoiceSubtotal() + (shippingFee || 0);
+  };
+
+  const handleDownloadPDF = () => {
+    if (!selectedJobForInvoice || !companySettings) return;
+
+    const pdfData: InvoicePDFData = {
+      invoiceNumber: invoiceNumber || "123456",
+      invoiceDate: invoiceDate,
+      companyName: companySettings?.companyName || "TCB METAL WORKS",
+      companyAddress: companySettings?.address || undefined,
+      companyCity: companySettings?.city || undefined,
+      companyState: companySettings?.state || undefined,
+      companyZipCode: companySettings?.zipCode || undefined,
+      companyPhone: companySettings?.phone || undefined,
+      companyEmail: companySettings?.email || undefined,
+      customerName: editableCustomerName || selectedJobForInvoice.customer?.name || "Customer",
+      customerAddress: editableCustomerAddress || selectedJobForInvoice.customer?.company || undefined,
+      customerPhone: editableCustomerPhone || selectedJobForInvoice.customer?.phone || undefined,
+      customerEmail: editableCustomerEmail || selectedJobForInvoice.customer?.email || undefined,
+      lineItems: invoiceLineItems.map(item => ({
+        description: item.description || "Service",
+        quantity: item.quantity || 1,
+        rate: item.rate || 0,
+        amount: item.amount || 0,
+      })),
+      subtotal: calculateInvoiceSubtotal(),
+      shippingFee: shippingFee || 0,
+      total: calculateInvoiceTotal(),
+      notes: invoiceNotes || undefined,
+      paymentBank: paymentBank || undefined,
+      paymentAccountName: paymentAccountName || companySettings?.companyName || "TCB Metal Works",
+      paymentAccountNumber: paymentAccountNumber || undefined,
+      preparedByName: preparedByName || undefined,
+      preparedByTitle: preparedByTitle || undefined,
+    };
+
+    const pdf = generateInvoicePDF(pdfData);
+    pdf.save(`Invoice-${invoiceNumber || "INV"}-${new Date().toISOString().split('T')[0]}.pdf`);
   };
 
   const handlePrintInvoice = () => {
@@ -1708,6 +1747,12 @@ export default function JobsPage() {
                   <div className="flex items-center justify-between">
                     <h2 className="text-2xl font-bold text-gray-900">Generate Invoice</h2>
                     <div className="flex gap-2">
+                      <button
+                        onClick={handleDownloadPDF}
+                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+                      >
+                        📥 Download PDF
+                      </button>
                       <button
                         onClick={handlePrintInvoice}
                         className="px-4 py-2 bg-blue-900 text-white rounded-lg hover:bg-blue-800 transition-colors font-medium"
