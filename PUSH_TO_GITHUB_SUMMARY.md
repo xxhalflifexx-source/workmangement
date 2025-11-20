@@ -1,151 +1,67 @@
-# 📦 Changes Ready to Push to GitHub
+# GitHub Push Summary - Invoice Design Update
 
-## ⚠️ IMPORTANT: You MUST Push These Changes!
+## Files Changed
+- `app/jobs/page.tsx`
 
-**Date:** Current Session  
-**Status:** ✅ Ready to Push
+## Changes Made
+1. **Redesigned Invoice Layout** to match the provided design:
+   - Updated header with large "INVOICE" title, invoice number and date on left, purple logo placeholder on right
+   - Reorganized company info and billing information in a two-column layout
+   - Updated table columns to: "Item & Description", "Unit Price", "Qty", "Amount"
+   - Added alternating row colors (white and light gray) for better readability
+   - Moved Notes/Terms to left side, Summary table to right side
+   - Replaced Tax with Shipping Fee in the summary section
+   - Added editable shipping fee input field (visible only when editing, hidden when printing)
+   - Updated footer with "PAYMENT METHOD" and "PREPARED BY" sections
+   - Added purple border at the bottom of the invoice
+   - Removed signature sections to match the simpler design
 
----
+2. **Added Shipping Fee Functionality**:
+   - Added `shippingFee` state variable
+   - Updated `calculateInvoiceSubtotal()` function to separate subtotal calculation
+   - Updated `calculateInvoiceTotal()` to include shipping fee
+   - Added shipping fee input field in the summary table (editable when not printing)
 
-## 📝 Summary of Changes
+3. **Improved Invoice Styling**:
+   - Added light gray background (`bg-gray-50`) to the invoice area
+   - Enhanced table styling with better borders and alternating row colors
+   - Improved typography and spacing throughout
+   - Made invoice number and date fields editable inline
 
-### What Was Changed:
+## Commit Message
+```
+feat: Redesign invoice layout with shipping fee and improved styling
 
-1. **Fixed Invoice Print Function** ⬅️ **UPDATED**
-   - File: `app/jobs/page.tsx`
-   - Fixed: Invoice printing now opens in a new window for clean printing
-   - Why: Invoice printing was showing blank pages or "NextAuth with Roles" in headers
-   - Changes:
-     - Opens invoice in a new print window (cleaner, more reliable)
-     - Temporarily changes page title to "Invoice [number]" when printing
-     - Improved print CSS as fallback
-     - Better page margins and formatting
-     - New window approach avoids modal/overlay printing issues
-
-2. **Fixed TypeScript Error in Invoices Page** (Previous)
-   - File: `app/invoices/page.tsx`
-   - Fixed: Added type guard for `res.stats` to prevent undefined errors
-   - Why: This was causing Vercel build to fail
-
-3. **Switched Database Schema Back to PostgreSQL** (Previous)
-   - File: `prisma/schema.prisma`
-   - Changed: From SQLite back to PostgreSQL (for Vercel deployment)
-   - Why: Vercel can't use SQLite, needs PostgreSQL
-
-4. **Updated Migration Lock File** (Previous)
-   - File: `prisma/migrations/migration_lock.toml`
-   - Changed: Provider from SQLite back to PostgreSQL
-   - Why: Matches the schema change
-
----
-
-## 📁 Files Changed
-
-### Modified Files:
-- ✅ `app/jobs/page.tsx` - **NEW:** Fixed invoice print function
-- ✅ `app/invoices/page.tsx` - TypeScript fix
-- ✅ `prisma/schema.prisma` - PostgreSQL configuration
-- ✅ `prisma/migrations/migration_lock.toml` - PostgreSQL provider
-
----
-
-## 🚀 How to Push to GitHub
-
-### Using GitHub Desktop:
-
-1. **Open GitHub Desktop**
-2. **You should see these files in "Changes" tab:**
-   - `app/jobs/page.tsx` (Modified) ⬅️ **NEW**
-   - `app/invoices/page.tsx` (Modified)
-   - `prisma/schema.prisma` (Modified)
-   - `prisma/migrations/migration_lock.toml` (Modified)
-
-3. **Write Commit Message:**
-   ```
-   Fix invoice and estimate printing - open in new window for clean print
-   ```
-
-4. **Click "Commit to main"**
-
-5. **Click "Push origin"** (or "Push" button)
-
-6. **Wait 2-3 minutes** - Vercel will automatically rebuild!
-
----
-
-### Using Terminal (Alternative):
-
-```bash
-# Add all changes
-git add .
-
-# Commit with message
-git commit -m "Fix invoice print function and improve print styling"
-
-# Push to GitHub
-git push
+- Redesigned invoice to match modern professional layout
+- Added shipping fee field (replaces tax)
+- Updated table columns and styling
+- Added payment method and prepared by footer sections
+- Improved print styling and layout
 ```
 
----
+## How to Push to GitHub
 
-## ✅ After Pushing
+1. **Open GitHub Desktop** (or your Git client)
 
-1. **Check Vercel Dashboard:**
-   - Go to: https://vercel.com/dashboard
-   - Your project should show a new deployment starting
-   - Wait for it to show "Ready" ✅
+2. **Review the changes**:
+   - You should see `app/jobs/page.tsx` in the changed files list
 
-2. **Test Invoice Printing:**
-   - Go to Jobs page
-   - Click "📄 Invoice" on any job
-   - Click "🖨️ Print Invoice"
-   - A new window will open with just the invoice
-   - Print dialog will appear automatically
-   - **In the print dialog, uncheck "Headers and footers"** (optional, but recommended)
-   - Print should now show clean invoice without any page title/date
+3. **Write the commit message** (copy from above)
 
-3. **Run Database Migration** (if not done yet):
-   - Go to Supabase Dashboard
-   - Run the SQL migration (see `COMPLETE_STEP_BY_STEP.md`)
-   - This adds the new invoice fields to your database
+4. **Click "Commit to main"** (or your branch name)
 
----
+5. **Click "Push origin"** to push to GitHub
 
-## 🎯 What These Changes Do
+6. **Verify on Vercel**: After pushing, Vercel will automatically deploy the changes. Check your Vercel dashboard to see the deployment status.
 
-- ✅ **Fixes invoice printing** - No more "NextAuth with Roles" in print
-- ✅ **Better print formatting** - Clean invoice layout
-- ✅ **Fixes the build error** - TypeScript error resolved
-- ✅ **Restores PostgreSQL** - Works with Vercel deployment
+## Testing Checklist
+- [ ] Open a job and generate an invoice
+- [ ] Verify the new invoice layout matches the design
+- [ ] Test adding/editing line items
+- [ ] Test shipping fee input and calculation
+- [ ] Test printing the invoice (should print cleanly on one page)
+- [ ] Verify all fields are editable when not printing
 
 ---
 
-## 💡 How It Works Now
-
-When printing invoices:
-
-1. Click "🖨️ Print Invoice" button
-2. **A new window opens** with just the invoice content (no website UI)
-3. Print dialog appears automatically
-4. **Optional:** In print dialog, uncheck "Headers and footers" for cleanest result
-5. Print!
-
-**The new window approach** ensures:
-- ✅ No website UI elements
-- ✅ No modal overlays
-- ✅ Clean invoice-only content
-- ✅ Better print formatting
-
----
-
-## ⚠️ REMINDER
-
-**You MUST:**
-1. ✅ Push these changes to GitHub (above)
-2. ✅ Wait for Vercel to rebuild
-3. ✅ Test invoice printing
-4. ✅ Disable headers/footers in browser print dialog when printing
-
----
-
-**Status:** Ready to push! 🚀
+**Note**: Remember to test the invoice generation and printing functionality after deployment to ensure everything works correctly in production.

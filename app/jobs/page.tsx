@@ -122,6 +122,7 @@ export default function JobsPage() {
   const [laborRate, setLaborRate] = useState(75);
   const [invoiceLineItems, setInvoiceLineItems] = useState<any[]>([]);
   const [invoiceNotes, setInvoiceNotes] = useState("");
+  const [shippingFee, setShippingFee] = useState(0);
   const [companySettings, setCompanySettings] = useState<any>(null);
   const invoiceRef = useRef<HTMLDivElement>(null);
   
@@ -461,8 +462,12 @@ export default function JobsPage() {
     setInvoiceLineItems(invoiceLineItems.filter((_, i) => i !== index));
   };
 
-  const calculateInvoiceTotal = () => {
+  const calculateInvoiceSubtotal = () => {
     return invoiceLineItems.reduce((sum, item) => sum + (item.amount || 0), 0);
+  };
+
+  const calculateInvoiceTotal = () => {
+    return calculateInvoiceSubtotal() + (shippingFee || 0);
   };
 
   const handlePrintInvoice = () => {
@@ -1689,32 +1694,69 @@ export default function JobsPage() {
                 </div>
 
                 {/* Invoice Content - Printable */}
-                <div className="p-8 print-area">
-                  {/* Company Header */}
-                  <div className="mb-8 pb-6 border-b-2 border-gray-300">
-                    <h1 className="text-4xl font-bold text-gray-900 mb-2">INVOICE</h1>
-                    {companySettings && (
-                      <div className="text-gray-600">
-                        <p className="font-semibold text-lg">{companySettings.companyName}</p>
-                        {companySettings.address && <p>{companySettings.address}</p>}
-                        {(companySettings.city || companySettings.state || companySettings.zipCode) && (
+                <div className="p-8 print-area bg-gray-50">
+                  {/* Header Section - Invoice Title, Number, Date, and Logo Area */}
+                  <div className="flex justify-between items-start mb-8">
+                    {/* Left: Invoice Title and Details */}
+                    <div>
+                      <h1 className="text-5xl font-bold text-gray-900 mb-4">INVOICE</h1>
+                      <div className="space-y-1 text-gray-700">
+                        <div>
+                          <span className="font-medium">Invoice Number: </span>
+                          <span className="font-semibold">#</span>
+                          <input
+                            type="text"
+                            value={invoiceNumber}
+                            onChange={(e) => setInvoiceNumber(e.target.value)}
+                            className="font-semibold border-b border-gray-300 focus:border-purple-500 outline-none print-no-border bg-transparent w-32"
+                            placeholder="123456"
+                          />
+                        </div>
+                        <div>
+                          <span className="font-medium">Invoice Date: </span>
+                          <input
+                            type="date"
+                            value={invoiceDate}
+                            onChange={(e) => setInvoiceDate(e.target.value)}
+                            className="font-semibold border-b border-gray-300 focus:border-purple-500 outline-none print-no-border bg-transparent"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    {/* Right: Logo Placeholder (Purple square) */}
+                    <div className="bg-purple-600 w-24 h-24 flex flex-col items-center justify-center text-white rounded-lg">
+                      <div className="text-3xl mb-1">∞</div>
+                      <div className="text-xs font-bold leading-tight text-center">
+                        <div>STUDIO</div>
+                        <div>SHODWE</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Company and Billing Information */}
+                  <div className="grid grid-cols-2 gap-12 mb-8">
+                    {/* Left: Company Info */}
+                    <div>
+                      <p className="font-bold text-gray-900 text-lg mb-2">
+                        {companySettings?.companyName || "STUDIO SHODWE"}
+                      </p>
+                      <div className="text-gray-700 text-sm space-y-1">
+                        {companySettings?.address && <p>{companySettings.address}</p>}
+                        {(companySettings?.city || companySettings?.state || companySettings?.zipCode) && (
                           <p>
                             {companySettings.city}{companySettings.city && companySettings.state ? ", " : ""}{companySettings.state} {companySettings.zipCode}
                           </p>
                         )}
-                        {companySettings.phone && <p>Phone: {companySettings.phone}</p>}
-                        {companySettings.email && <p>Email: {companySettings.email}</p>}
+                        {companySettings?.phone && <p>{companySettings.phone}</p>}
+                        {companySettings?.email && <p>{companySettings.email}</p>}
                       </div>
-                    )}
-                  </div>
+                    </div>
 
-                  {/* Invoice Details Grid */}
-                  <div className="grid grid-cols-2 gap-8 mb-8">
-                    {/* Bill To */}
+                    {/* Right: Bill To */}
                     <div>
-                      <h3 className="text-sm font-bold text-gray-700 uppercase mb-2">Bill To:</h3>
+                      <h3 className="font-bold text-gray-900 mb-2">BILL TO</h3>
                       {selectedJobForInvoice.customer ? (
-                        <div className="text-gray-900">
+                        <div className="text-gray-700 text-sm space-y-1">
                           <p className="font-semibold">{selectedJobForInvoice.customer.name}</p>
                           {selectedJobForInvoice.customer.company && (
                             <p>{selectedJobForInvoice.customer.company}</p>
@@ -1727,85 +1769,59 @@ export default function JobsPage() {
                           )}
                         </div>
                       ) : (
-                        <p className="text-gray-500 italic">No customer assigned</p>
+                        <p className="text-gray-500 italic text-sm">No customer assigned</p>
                       )}
-                    </div>
-
-                    {/* Invoice Info */}
-                    <div className="text-right">
-                      <div className="space-y-2">
-                        <div className="grid grid-cols-2 gap-4">
-                          <span className="text-gray-600 text-right">Invoice #:</span>
-                          <input
-                            type="text"
-                            value={invoiceNumber}
-                            onChange={(e) => setInvoiceNumber(e.target.value)}
-                            className="font-semibold text-right border-b border-gray-300 focus:border-purple-500 outline-none print-no-border"
-                          />
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                          <span className="text-gray-600 text-right">Date:</span>
-                          <input
-                            type="date"
-                            value={invoiceDate}
-                            onChange={(e) => setInvoiceDate(e.target.value)}
-                            className="font-semibold text-right border-b border-gray-300 focus:border-purple-500 outline-none print-no-border"
-                          />
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                          <span className="text-gray-600 text-right">Job:</span>
-                          <span className="font-semibold text-right">{selectedJobForInvoice.title}</span>
-                        </div>
-                      </div>
                     </div>
                   </div>
 
                   {/* Line Items Table */}
                   <div className="mb-8">
-                    <table className="w-full border-collapse">
+                    <table className="w-full border-collapse bg-white">
                       <thead>
-                        <tr className="bg-gray-100">
-                          <th className="border border-gray-300 px-4 py-3 text-left text-sm font-semibold">Description</th>
-                          <th className="border border-gray-300 px-4 py-3 text-center text-sm font-semibold w-24">Qty</th>
-                          <th className="border border-gray-300 px-4 py-3 text-right text-sm font-semibold w-32">Rate</th>
-                          <th className="border border-gray-300 px-4 py-3 text-right text-sm font-semibold w-32">Amount</th>
-                          <th className="border border-gray-300 px-4 py-3 text-center w-20 no-print">Action</th>
+                        <tr className="bg-gray-200">
+                          <th className="border border-gray-400 px-4 py-3 text-left text-sm font-semibold text-gray-900">Item & Description</th>
+                          <th className="border border-gray-400 px-4 py-3 text-right text-sm font-semibold text-gray-900">Unit Price</th>
+                          <th className="border border-gray-400 px-4 py-3 text-center text-sm font-semibold text-gray-900">Qty</th>
+                          <th className="border border-gray-400 px-4 py-3 text-right text-sm font-semibold text-gray-900">Amount</th>
+                          <th className="border border-gray-400 px-4 py-3 text-center w-20 no-print">Action</th>
                         </tr>
                       </thead>
                       <tbody>
                         {invoiceLineItems.map((item, index) => (
-                          <tr key={index}>
-                            <td className="border border-gray-300 px-4 py-2">
+                          <tr key={index} className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}>
+                            <td className="border border-gray-300 px-4 py-3">
                               <input
                                 type="text"
                                 value={item.description}
                                 onChange={(e) => updateInvoiceLineItem(index, "description", e.target.value)}
-                                className="w-full outline-none print-no-border"
-                                placeholder="Description"
+                                className="w-full outline-none print-no-border bg-transparent"
+                                placeholder="Service description"
                               />
                             </td>
-                            <td className="border border-gray-300 px-4 py-2 text-center">
-                              <input
-                                type="number"
-                                value={item.quantity}
-                                onChange={(e) => updateInvoiceLineItem(index, "quantity", parseFloat(e.target.value) || 0)}
-                                className="w-full text-center outline-none print-no-border"
-                                step="0.01"
-                              />
-                            </td>
-                            <td className="border border-gray-300 px-4 py-2 text-right">
+                            <td className="border border-gray-300 px-4 py-3 text-right">
                               <input
                                 type="number"
                                 value={item.rate}
                                 onChange={(e) => updateInvoiceLineItem(index, "rate", parseFloat(e.target.value) || 0)}
-                                className="w-full text-right outline-none print-no-border"
+                                className="w-full text-right outline-none print-no-border bg-transparent"
                                 step="0.01"
+                                placeholder="0.00"
                               />
                             </td>
-                            <td className="border border-gray-300 px-4 py-2 text-right font-semibold">
+                            <td className="border border-gray-300 px-4 py-3 text-center">
+                              <input
+                                type="number"
+                                value={item.quantity}
+                                onChange={(e) => updateInvoiceLineItem(index, "quantity", parseFloat(e.target.value) || 0)}
+                                className="w-full text-center outline-none print-no-border bg-transparent"
+                                step="0.01"
+                                placeholder="1"
+                              />
+                            </td>
+                            <td className="border border-gray-300 px-4 py-3 text-right font-semibold">
                               ${item.amount.toFixed(2)}
                             </td>
-                            <td className="border border-gray-300 px-4 py-2 text-center no-print">
+                            <td className="border border-gray-300 px-4 py-3 text-center no-print">
                               <button
                                 onClick={() => removeInvoiceLineItem(index)}
                                 className="text-red-600 hover:text-red-800 text-sm"
@@ -1826,108 +1842,84 @@ export default function JobsPage() {
                     </button>
                   </div>
 
-                  {/* Total Section */}
-                  <div className="flex justify-end mb-8">
-                    <div className="w-80">
-                      <div className="border-t-2 border-gray-300 pt-4">
-                        <div className="flex justify-between items-center mb-4">
-                          <span className="text-lg font-bold text-gray-900">TOTAL:</span>
-                          <span className="text-2xl font-bold text-purple-600">
-                            ${calculateInvoiceTotal().toFixed(2)}
-                          </span>
-                        </div>
+                  {/* Notes and Summary Section */}
+                  <div className="grid grid-cols-2 gap-8 mb-8">
+                    {/* Left: Notes/Terms */}
+                    <div>
+                      <h3 className="font-bold text-gray-900 mb-2">NOTES / TERMS:</h3>
+                      <textarea
+                        value={invoiceNotes || "Payment is due within 15 days of receiving this invoice."}
+                        onChange={(e) => setInvoiceNotes(e.target.value)}
+                        placeholder="Payment terms, work scope, warranty information..."
+                        rows={4}
+                        className="w-full border border-gray-300 rounded-lg p-3 text-sm outline-none focus:border-purple-500 print-no-border bg-white"
+                      />
+                    </div>
+
+                    {/* Right: Summary Table */}
+                    <div>
+                      <table className="w-full border-collapse">
+                        <tbody>
+                          <tr>
+                            <td className="border border-gray-300 px-4 py-2 text-left font-semibold bg-gray-100">Sub-Total</td>
+                            <td className="border border-gray-300 px-4 py-2 text-right font-semibold bg-gray-100">
+                              ${calculateInvoiceSubtotal().toFixed(2)}
+                            </td>
+                          </tr>
+                          <tr>
+                            <td className="border border-gray-300 px-4 py-2 text-left">
+                              <div className="flex items-center gap-2 no-print">
+                                <span>Shipping Fee</span>
+                                <input
+                                  type="number"
+                                  value={shippingFee}
+                                  onChange={(e) => setShippingFee(parseFloat(e.target.value) || 0)}
+                                  className="w-24 border border-gray-300 rounded px-2 py-1 text-sm"
+                                  step="0.01"
+                                  placeholder="0.00"
+                                />
+                              </div>
+                              <span className="print-only">Shipping Fee</span>
+                            </td>
+                            <td className="border border-gray-300 px-4 py-2 text-right">
+                              ${(shippingFee || 0).toFixed(2)}
+                            </td>
+                          </tr>
+                          <tr className="bg-gray-200">
+                            <td className="border border-gray-400 px-4 py-3 text-left font-bold text-gray-900">Total</td>
+                            <td className="border border-gray-400 px-4 py-3 text-right font-bold text-gray-900">
+                              ${calculateInvoiceTotal().toFixed(2)}
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* Footer - Payment Method and Prepared By */}
+                  <div className="grid grid-cols-2 gap-12 mb-4">
+                    {/* Left: Payment Method */}
+                    <div>
+                      <h3 className="font-bold text-gray-900 mb-2">PAYMENT METHOD</h3>
+                      <div className="text-gray-700 text-sm space-y-1">
+                        <p><span className="font-semibold">Bank:</span> {companySettings?.bankName || "Borcelle Bank"}</p>
+                        <p><span className="font-semibold">Account Name:</span> {companySettings?.companyName || "Studio Shodwe"}</p>
+                        <p><span className="font-semibold">Account Number:</span> {companySettings?.accountNumber || "1234567890"}</p>
+                      </div>
+                    </div>
+
+                    {/* Right: Prepared By */}
+                    <div>
+                      <h3 className="font-bold text-gray-900 mb-2">PREPARED BY</h3>
+                      <div className="text-gray-700 text-sm space-y-1">
+                        <p>{companySettings?.preparedBy || "Benjamin Shah"}</p>
+                        <p>{companySettings?.preparedByTitle || "Sales Administrator, Studio Shodwe"}</p>
                       </div>
                     </div>
                   </div>
 
-                  {/* Notes / Terms */}
-                  <div className="mb-8">
-                    <h3 className="text-sm font-bold text-gray-700 uppercase mb-2">Terms & Conditions:</h3>
-                    <textarea
-                      value={invoiceNotes}
-                      onChange={(e) => setInvoiceNotes(e.target.value)}
-                      placeholder="Payment terms, work scope, warranty information, or special instructions..."
-                      rows={4}
-                      className="w-full border border-gray-300 rounded-lg p-3 text-sm outline-none focus:border-purple-500 print-no-border"
-                    />
-                  </div>
-
-                  {/* Contract Agreement & Signatures */}
-                  <div className="mb-8 border-t-2 border-gray-800 pt-8">
-                    <h3 className="text-md font-bold text-gray-900 mb-4">AGREEMENT & AUTHORIZATION</h3>
-                    <p className="text-sm text-gray-700 mb-6 leading-relaxed">
-                      By signing below, the customer authorizes the work described above and agrees to pay the total amount 
-                      shown. The customer acknowledges receipt of this invoice and accepts the terms and conditions outlined above.
-                    </p>
-
-                    <div className="grid grid-cols-2 gap-8 mt-8">
-                      {/* Customer Signature */}
-                      <div>
-                        <div className="mb-4">
-                          <label className="block text-xs font-semibold text-gray-600 uppercase mb-2">
-                            Customer Signature
-                          </label>
-                          <div className="border-b-2 border-gray-800 pb-1 h-16 flex items-end">
-                            <span className="text-gray-400 text-sm italic">Signature</span>
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4 text-sm">
-                          <div>
-                            <label className="block text-xs font-semibold text-gray-600 uppercase mb-1">
-                              Print Name
-                            </label>
-                            <div className="border-b border-gray-400 pb-1">
-                              {selectedJobForInvoice?.customer?.name || "________________"}
-                            </div>
-                          </div>
-                          <div>
-                            <label className="block text-xs font-semibold text-gray-600 uppercase mb-1">
-                              Date
-                            </label>
-                            <div className="border-b border-gray-400 pb-1">
-                              ________________
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Company Representative Signature */}
-                      <div>
-                        <div className="mb-4">
-                          <label className="block text-xs font-semibold text-gray-600 uppercase mb-2">
-                            Company Representative
-                          </label>
-                          <div className="border-b-2 border-gray-800 pb-1 h-16 flex items-end">
-                            <span className="text-gray-400 text-sm italic">Signature</span>
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4 text-sm">
-                          <div>
-                            <label className="block text-xs font-semibold text-gray-600 uppercase mb-1">
-                              Print Name
-                            </label>
-                            <div className="border-b border-gray-400 pb-1">
-                              ________________
-                            </div>
-                          </div>
-                          <div>
-                            <label className="block text-xs font-semibold text-gray-600 uppercase mb-1">
-                              Date
-                            </label>
-                            <div className="border-b border-gray-400 pb-1">
-                              ________________
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Footer */}
-                  <div className="text-center text-sm text-gray-600 pt-6 border-t border-gray-300">
-                    <p className="font-semibold mb-1">Thank you for your business!</p>
-                    <p>This document serves as both an invoice and work authorization contract.</p>
-                  </div>
+                  {/* Purple Border at Bottom */}
+                  <div className="border-b-4 border-purple-600 mt-6"></div>
                 </div>
               </div>
             ) : (
