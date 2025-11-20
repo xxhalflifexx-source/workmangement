@@ -708,11 +708,11 @@ export default function JobsPage() {
   };
 
   const handlePrintEstimate = () => {
-    if (!selectedJobForInvoice || !estimateRef.current) return;
+    if (!selectedJobForEstimate || !estimateRef.current) return;
     
     // Temporarily change page title for printing
     const originalTitle = document.title;
-    document.title = `Estimate ${selectedJobForInvoice?.title || ''}`;
+    document.title = `Estimate ${selectedJobForEstimate?.title || ''}`;
     
     // Get the estimate content
     const estimateContent = estimateRef.current.querySelector('.print-area');
@@ -736,7 +736,7 @@ export default function JobsPage() {
       <!DOCTYPE html>
       <html>
         <head>
-          <title>Estimate ${selectedJobForInvoice?.title || ''}</title>
+          <title>Estimate ${selectedJobForEstimate?.title || ''}</title>
           <style>
             @page {
               margin: 0.5in;
@@ -1808,8 +1808,6 @@ export default function JobsPage() {
                       <div className="text-lg font-bold text-blue-900">
                         METAL WORKS
                       </div>
-                    </div>
-                  </div>
                     </div>
                   </div>
 
