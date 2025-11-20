@@ -11,14 +11,16 @@
 
 ### What Was Changed:
 
-1. **Fixed Invoice Print Function**
+1. **Fixed Invoice Print Function** ⬅️ **UPDATED**
    - File: `app/jobs/page.tsx`
-   - Fixed: Improved print CSS and page title handling
-   - Why: Invoice printing was showing "NextAuth with Roles" and date in headers
+   - Fixed: Invoice printing now opens in a new window for clean printing
+   - Why: Invoice printing was showing blank pages or "NextAuth with Roles" in headers
    - Changes:
+     - Opens invoice in a new print window (cleaner, more reliable)
      - Temporarily changes page title to "Invoice [number]" when printing
-     - Improved print CSS to hide unwanted elements
+     - Improved print CSS as fallback
      - Better page margins and formatting
+     - New window approach avoids modal/overlay printing issues
 
 2. **Fixed TypeScript Error in Invoices Page** (Previous)
    - File: `app/invoices/page.tsx`
@@ -60,7 +62,7 @@
 
 3. **Write Commit Message:**
    ```
-   Fix invoice print function and improve print styling
+   Fix invoice and estimate printing - open in new window for clean print
    ```
 
 4. **Click "Commit to main"**
@@ -97,8 +99,10 @@ git push
    - Go to Jobs page
    - Click "📄 Invoice" on any job
    - Click "🖨️ Print Invoice"
-   - **In the print dialog, uncheck "Headers and footers"** (important!)
-   - Print should now show clean invoice without page title/date
+   - A new window will open with just the invoice
+   - Print dialog will appear automatically
+   - **In the print dialog, uncheck "Headers and footers"** (optional, but recommended)
+   - Print should now show clean invoice without any page title/date
 
 3. **Run Database Migration** (if not done yet):
    - Go to Supabase Dashboard
@@ -116,17 +120,21 @@ git push
 
 ---
 
-## 💡 Important: Browser Print Settings
+## 💡 How It Works Now
 
-When printing invoices, **make sure to:**
+When printing invoices:
 
 1. Click "🖨️ Print Invoice" button
-2. In the print dialog that opens:
-   - **Uncheck "Headers and footers"** (or "More settings" → uncheck headers/footers)
-   - This prevents browser from adding page title and date
-3. Then print
+2. **A new window opens** with just the invoice content (no website UI)
+3. Print dialog appears automatically
+4. **Optional:** In print dialog, uncheck "Headers and footers" for cleanest result
+5. Print!
 
-**This is a browser setting** - the code now changes the page title, but you still need to disable headers/footers in the print dialog for the cleanest result.
+**The new window approach** ensures:
+- ✅ No website UI elements
+- ✅ No modal overlays
+- ✅ Clean invoice-only content
+- ✅ Better print formatting
 
 ---
 

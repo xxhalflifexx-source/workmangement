@@ -466,17 +466,91 @@ export default function JobsPage() {
   };
 
   const handlePrintInvoice = () => {
+    if (!selectedJobForInvoice || !invoiceRef.current) return;
+    
     // Temporarily change page title for printing
     const originalTitle = document.title;
     document.title = `Invoice ${invoiceNumber || selectedJobForInvoice?.title || ''}`;
     
-    // Trigger print
-    window.print();
+    // Get the invoice content
+    const invoiceContent = invoiceRef.current.querySelector('.print-area');
+    if (!invoiceContent) {
+      window.print();
+      setTimeout(() => { document.title = originalTitle; }, 1000);
+      return;
+    }
     
-    // Restore original title after a delay
+    // Create a new window for printing
+    const printWindow = window.open('', '_blank', 'width=800,height=600');
+    if (!printWindow) {
+      // Fallback to regular print if popup blocked
+      window.print();
+      setTimeout(() => { document.title = originalTitle; }, 1000);
+      return;
+    }
+    
+    // Write the invoice content to new window
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Invoice ${invoiceNumber || selectedJobForInvoice?.title || ''}</title>
+          <style>
+            @page {
+              margin: 0.5in;
+              size: letter;
+            }
+            body {
+              margin: 0;
+              padding: 0;
+              font-family: Arial, sans-serif;
+              background: white;
+            }
+            .print-area {
+              padding: 0.5in;
+            }
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              margin: 20px 0;
+            }
+            th, td {
+              border: 1px solid #000;
+              padding: 8px;
+              text-align: left;
+            }
+            th {
+              background-color: #f0f0f0;
+              font-weight: bold;
+            }
+            input, textarea {
+              border: none;
+              background: transparent;
+              width: 100%;
+            }
+            .print-no-border {
+              border: none !important;
+            }
+          </style>
+        </head>
+        <body>
+          ${invoiceContent.innerHTML}
+        </body>
+      </html>
+    `);
+    
+    printWindow.document.close();
+    
+    // Wait for content to load, then print
     setTimeout(() => {
-      document.title = originalTitle;
-    }, 1000);
+      printWindow.focus();
+      printWindow.print();
+      // Close window after printing (optional)
+      setTimeout(() => {
+        printWindow.close();
+        document.title = originalTitle;
+      }, 500);
+    }, 250);
   };
 
   // Estimate Functions
@@ -555,7 +629,91 @@ export default function JobsPage() {
   };
 
   const handlePrintEstimate = () => {
-    window.print();
+    if (!selectedJobForInvoice || !estimateRef.current) return;
+    
+    // Temporarily change page title for printing
+    const originalTitle = document.title;
+    document.title = `Estimate ${selectedJobForInvoice?.title || ''}`;
+    
+    // Get the estimate content
+    const estimateContent = estimateRef.current.querySelector('.print-area');
+    if (!estimateContent) {
+      window.print();
+      setTimeout(() => { document.title = originalTitle; }, 1000);
+      return;
+    }
+    
+    // Create a new window for printing
+    const printWindow = window.open('', '_blank', 'width=800,height=600');
+    if (!printWindow) {
+      // Fallback to regular print if popup blocked
+      window.print();
+      setTimeout(() => { document.title = originalTitle; }, 1000);
+      return;
+    }
+    
+    // Write the estimate content to new window
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Estimate ${selectedJobForInvoice?.title || ''}</title>
+          <style>
+            @page {
+              margin: 0.5in;
+              size: letter;
+            }
+            body {
+              margin: 0;
+              padding: 0;
+              font-family: Arial, sans-serif;
+              background: white;
+            }
+            .print-area {
+              padding: 0.5in;
+            }
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              margin: 20px 0;
+            }
+            th, td {
+              border: 1px solid #000;
+              padding: 8px;
+              text-align: left;
+            }
+            th {
+              background-color: #f0f0f0;
+              font-weight: bold;
+            }
+            input, textarea {
+              border: none;
+              background: transparent;
+              width: 100%;
+            }
+            .print-no-border {
+              border: none !important;
+            }
+          </style>
+        </head>
+        <body>
+          ${estimateContent.innerHTML}
+        </body>
+      </html>
+    `);
+    
+    printWindow.document.close();
+    
+    // Wait for content to load, then print
+    setTimeout(() => {
+      printWindow.focus();
+      printWindow.print();
+      // Close window after printing (optional)
+      setTimeout(() => {
+        printWindow.close();
+        document.title = originalTitle;
+      }, 500);
+    }, 250);
   };
 
   const getStatusColor = (status: string) => {
@@ -1496,7 +1654,7 @@ export default function JobsPage() {
 
       {/* Invoice Modal */}
       {showInvoiceModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 no-print">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 no-print print-area-container">
           <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[95vh] overflow-y-auto">
             {loadingInvoice ? (
               <div className="p-12 text-center">
@@ -1783,7 +1941,7 @@ export default function JobsPage() {
 
       {/* Estimate Modal */}
       {showEstimateModal && selectedJobForEstimate && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 no-print">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 no-print print-area-container">
           <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[95vh] overflow-y-auto">
             <div ref={estimateRef}>
               {/* Estimate Header */}
@@ -2074,29 +2232,35 @@ export default function JobsPage() {
             size: letter;
           }
           
-          /* Hide everything first */
-          body * {
-            visibility: hidden;
+          /* Hide everything except print area */
+          body > *:not(.print-area-container) {
+            display: none !important;
           }
           
-          /* Show only print area */
-          .print-area, .print-area * {
-            visibility: visible;
+          /* Show the modal container when printing */
+          .print-area-container {
+            display: block !important;
+            position: static !important;
+            background: white !important;
+            box-shadow: none !important;
+            max-width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
           }
           
+          /* Show print area */
           .print-area {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-            background: white;
-            page-break-after: auto;
+            display: block !important;
+            position: static !important;
+            width: 100% !important;
+            background: white !important;
+            padding: 0.5in !important;
+            margin: 0 !important;
           }
           
           /* Hide non-printable elements */
           .no-print {
             display: none !important;
-            visibility: hidden !important;
           }
           
           /* Remove borders from inputs when printing */
@@ -2105,29 +2269,43 @@ export default function JobsPage() {
             box-shadow: none !important;
             outline: none !important;
             background: transparent !important;
+            appearance: none !important;
+            -webkit-appearance: none !important;
           }
           
           /* Ensure clean print */
-          body {
-            margin: 0;
-            padding: 0;
-            background: white;
+          html, body {
+            margin: 0 !important;
+            padding: 0 !important;
+            background: white !important;
+            width: 100% !important;
+            height: auto !important;
+            overflow: visible !important;
           }
           
           /* Hide any remaining UI elements */
-          header, nav, footer, button, .no-print {
+          header, nav, footer, button, .no-print, 
+          .fixed, [class*="fixed"], 
+          [class*="modal"], [class*="overlay"] {
             display: none !important;
-            visibility: hidden !important;
           }
           
           /* Ensure table prints properly */
           table {
-            border-collapse: collapse;
-            width: 100%;
+            border-collapse: collapse !important;
+            width: 100% !important;
+            margin: 0 !important;
           }
           
           th, td {
             border: 1px solid #000 !important;
+            padding: 8px !important;
+          }
+          
+          /* Remove any transforms or filters */
+          * {
+            transform: none !important;
+            filter: none !important;
           }
         }
       `}</style>
