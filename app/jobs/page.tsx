@@ -1754,12 +1754,6 @@ export default function JobsPage() {
                         📥 Download PDF
                       </button>
                       <button
-                        onClick={handlePrintInvoice}
-                        className="px-4 py-2 bg-blue-900 text-white rounded-lg hover:bg-blue-800 transition-colors font-medium"
-                      >
-                        🖨️ Print Invoice
-                      </button>
-                      <button
                         onClick={() => {
                           setShowInvoiceModal(false);
                           setSelectedJobForInvoice(null);
