@@ -1,23 +1,32 @@
-# GitHub Push Summary - Fix Build Error for Invoice Redesign
+# GitHub Push Summary - Fix Invoice Styling Issues
 
 ## Files Changed
 - `app/jobs/page.tsx`
 
 ## Changes Made
 
-### Fixed TypeScript Build Error
-- **Error**: `Cannot find name 'settingsRes'. Did you mean 'settings'?`
-- **Fix**: Changed `settingsRes.settings` to `settings` (the variable is already named `settings`)
-- **Additional Fix**: Removed references to non-existent fields (`bankName`, `accountNumber`, `preparedByTitle`) from CompanySettings model
-- These fields are editable in the invoice UI, so initializing them as empty strings is fine
+### 1. **Fixed Shipping Fee Duplication**
+   - Removed duplicate "Shipping Fee" label
+   - Now shows single label with input field (hidden when printing)
+   - Input field properly hidden with `no-print` class
+
+### 2. **Fixed Logo Text Layout**
+   - Changed "METAL WORKS" from two lines to single line
+   - Updated logo to display: "TCB" on top, "METAL WORKS" on bottom (single line)
+
+### 3. **Improved Invoice Styling**
+   - Changed invoice background from gray to white for cleaner print
+   - Improved overall visual appearance
+   - Better contrast and readability
 
 ## Commit Message
 ```
-fix: Correct variable name and remove non-existent field references
+fix: Fix invoice styling - remove shipping fee duplication and improve layout
 
-- Fixed settingsRes to settings in invoice initialization
-- Removed references to bankName, accountNumber, preparedByTitle from CompanySettings
-- These fields are editable in UI, so empty defaults are acceptable
+- Fixed duplicate shipping fee label
+- Made logo text "METAL WORKS" single line
+- Changed invoice background to white for better print quality
+- Improved overall invoice appearance
 ```
 
 ## How to Push to GitHub
@@ -33,16 +42,15 @@ fix: Correct variable name and remove non-existent field references
 
 5. **Click "Push origin"** to push to GitHub
 
-6. **Verify on Vercel**: After pushing, Vercel will automatically deploy the changes. The build should now succeed.
+6. **Verify on Vercel**: After pushing, Vercel will automatically deploy the changes.
 
 ## Testing Checklist
-- [ ] Verify Vercel build succeeds
 - [ ] Open a job and generate an invoice
-- [ ] Verify all editable fields work correctly
-- [ ] Test that payment method fields can be edited
-- [ ] Verify "Prepared By" defaults to logged-in user
-- [ ] Test printing the invoice
+- [ ] Verify shipping fee appears only once (no duplication)
+- [ ] Verify logo shows "METAL WORKS" on one line
+- [ ] Test printing the invoice (should look clean and professional)
+- [ ] Verify all fields are editable and print correctly
 
 ---
 
-**Note**: This fix resolves the build error that was preventing deployment. The invoice functionality remains the same - all fields are still editable, they just start with empty/default values which users can fill in.
+**Note**: The invoice should now look much cleaner with no duplicate labels and improved styling. The logo text is now on a single line as requested.

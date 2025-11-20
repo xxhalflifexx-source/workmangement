@@ -1729,7 +1729,7 @@ export default function JobsPage() {
                 </div>
 
                 {/* Invoice Content - Printable */}
-                <div className="p-8 print-area bg-gray-50">
+                <div className="p-8 print-area bg-white">
                   {/* Header Section - Invoice Title, Number, Date, and Logo Area */}
                   <div className="flex justify-between items-start mb-8">
                     {/* Left: Invoice Title and Details */}
@@ -1763,10 +1763,9 @@ export default function JobsPage() {
                     </div>
                     {/* Right: Logo Placeholder (Navy blue square) */}
                     <div className="bg-blue-900 w-24 h-24 flex flex-col items-center justify-center text-white rounded-lg">
-                      <div className="text-2xl font-bold mb-1">TCB</div>
-                      <div className="text-xs font-bold leading-tight text-center">
-                        <div>METAL</div>
-                        <div>WORKS</div>
+                      <div className="text-xl font-bold mb-1">TCB</div>
+                      <div className="text-xs font-bold text-center leading-tight">
+                        METAL WORKS
                       </div>
                     </div>
                   </div>
@@ -1828,7 +1827,7 @@ export default function JobsPage() {
 
                   {/* Line Items Table */}
                   <div className="mb-8">
-                    <table className="w-full border-collapse bg-white">
+                    <table className="w-full border-collapse">
                       <thead>
                         <tr className="bg-gray-200">
                           <th className="border border-gray-400 px-4 py-3 text-left text-sm font-semibold text-gray-900">Item & Description</th>
@@ -1920,20 +1919,17 @@ export default function JobsPage() {
                           </tr>
                           <tr>
                             <td className="border border-gray-300 px-4 py-2 text-left">
-                              <div className="no-print">
-                                <div className="flex items-center gap-2">
-                                  <span>Shipping Fee</span>
-                                  <input
-                                    type="number"
-                                    value={shippingFee}
-                                    onChange={(e) => setShippingFee(parseFloat(e.target.value) || 0)}
-                                    className="w-24 border border-gray-300 rounded px-2 py-1 text-sm"
-                                    step="0.01"
-                                    placeholder="0.00"
-                                  />
-                                </div>
+                              <div className="flex items-center gap-2">
+                                <span>Shipping Fee</span>
+                                <input
+                                  type="number"
+                                  value={shippingFee}
+                                  onChange={(e) => setShippingFee(parseFloat(e.target.value) || 0)}
+                                  className="w-24 border border-gray-300 rounded px-2 py-1 text-sm no-print"
+                                  step="0.01"
+                                  placeholder="0.00"
+                                />
                               </div>
-                              <span className="print-only">Shipping Fee</span>
                             </td>
                             <td className="border border-gray-300 px-4 py-2 text-right">
                               ${(shippingFee || 0).toFixed(2)}
