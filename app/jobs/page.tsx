@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { getJobs, getAllUsers, createJob, updateJob, deleteJob, getJobActivities, addJobActivity, getAllCustomers, createCustomer } from "./actions";
 import { createMaterialRequest, getJobMaterialRequests } from "../material-requests/actions";
 import { getJobForInvoice, getCompanySettingsForInvoice } from "./invoice-actions";
+import { createInvoice } from "../invoices/actions";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { generateInvoicePDF, InvoicePDFData } from "@/lib/pdf-generator";
@@ -542,6 +543,51 @@ export default function JobsPage() {
 
     const pdf = generateInvoicePDF(pdfData);
     pdf.save(`Invoice-${invoiceNumber || "INV"}-${new Date().toISOString().split('T')[0]}.pdf`);
+  };
+
+  const handleSaveInvoice = async () => {
+    if (!selectedJobForInvoice) return;
+
+    setError(undefined);
+    setSuccess(undefined);
+
+    // Prepare line items including shipping fee as a line item if > 0
+    const lines = [...invoiceLineItems];
+    if (shippingFee > 0) {
+      lines.push({
+        description: "Shipping Fee",
+        quantity: 1,
+        rate: shippingFee,
+        amount: shippingFee,
+      });
+    }
+
+    const formData = new FormData();
+    if (selectedJobForInvoice.id) formData.append("jobId", selectedJobForInvoice.id);
+    if (selectedJobForInvoice.customer?.id) formData.append("customerId", selectedJobForInvoice.customer.id);
+    formData.append("issueDate", invoiceDate);
+    formData.append("notes", invoiceNotes || "");
+    formData.append("lines", JSON.stringify(lines));
+    formData.append("sentDate", new Date().toISOString().split('T')[0]);
+
+    try {
+      const res = await createInvoice(formData);
+      if (!res.ok) {
+        setError(res.error || "Failed to save invoice");
+        return;
+      }
+
+      setSuccess("Invoice saved successfully!");
+      setTimeout(() => {
+        setShowInvoiceModal(false);
+        setSelectedJobForInvoice(null);
+        setInvoiceLineItems([]);
+        setSuccess(undefined);
+      }, 1500);
+    } catch (err) {
+      setError("An error occurred while saving the invoice");
+      console.error("Error saving invoice:", err);
+    }
   };
 
   const handlePrintInvoice = () => {
@@ -1747,6 +1793,12 @@ export default function JobsPage() {
                   <div className="flex items-center justify-between">
                     <h2 className="text-2xl font-bold text-gray-900">Generate Invoice</h2>
                     <div className="flex gap-2">
+                      <button
+                        onClick={handleSaveInvoice}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                      >
+                        💾 Save Invoice
+                      </button>
                       <button
                         onClick={handleDownloadPDF}
                         className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
