@@ -1771,8 +1771,8 @@ export default function JobsPage() {
                 <div className="p-8 print-area bg-white">
                   {/* Header Section - Invoice Title, Number, Date, and Logo Area */}
                   <div className="flex justify-between items-start mb-8">
-                    {/* Left: Invoice Title and Details */}
-                    <div>
+                    {/* Left: Invoice Title, Details, and Logo */}
+                    <div className="flex-1">
                       <h1 className="text-5xl font-bold text-gray-900 mb-4">INVOICE</h1>
                       <div className="space-y-1 text-gray-700">
                         <div>
@@ -1799,14 +1799,14 @@ export default function JobsPage() {
                           </span>
                         </div>
                       </div>
-                    </div>
-                    {/* Right: Logo Text - TCB above METAL WORKS, centered */}
-                    <div className="text-center">
-                      <div className="text-4xl font-bold text-blue-900 mb-1">
-                        TCB
-                      </div>
-                      <div className="text-xl font-bold text-blue-900">
-                        METAL WORKS
+                      {/* Logo Text - TCB above METAL WORKS, centered within left section */}
+                      <div className="mt-4 text-center max-w-xs">
+                        <div className="text-4xl font-bold text-blue-900 mb-1">
+                          TCB
+                        </div>
+                        <div className="text-xl font-bold text-blue-900">
+                          METAL WORKS
+                        </div>
                       </div>
                     </div>
                   </div>

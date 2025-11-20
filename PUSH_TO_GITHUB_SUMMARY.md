@@ -1,26 +1,33 @@
-# GitHub Push Summary - Center TCB Logo Text
+# GitHub Push Summary - Move Logo to Left Side of Invoice
 
 ## Files Changed
-- `lib/pdf-generator.ts` - Centered logo text
-- `app/jobs/page.tsx` - Centered logo in modal
+- `lib/pdf-generator.ts` - Moved logo to left side
+- `app/jobs/page.tsx` - Moved logo to left side in modal
 
 ## Changes Made
 
-### Centered Logo Text
-- **PDF**: Changed alignment from "right" to "center"
-  - "TCB" centered horizontally
-  - "METAL WORKS" centered below TCB
-  - Positioned at page center horizontally
-- **Modal**: Changed from `text-right` to `text-center`
-  - Both "TCB" and "METAL WORKS" centered
+### Moved Logo to Left Side
+- **PDF**: Logo now positioned on left side, centered within left section
+  - Calculated left section width: `(pageWidth / 2) - margin`
+  - Logo centered within left section: `margin + (leftSectionWidth / 2)`
+  - "TCB" and "METAL WORKS" remain centered within left area
+- **Modal**: Logo moved to left column
+  - Logo now part of left flex container with invoice title and details
+  - Centered within left section using `text-center` and `max-w-xs`
+  - Positioned below invoice date
+
+### Layout Updates
+- **PDF**: Logo appears on left side below invoice date, centered within left half
+- **Modal**: Logo integrated into left column, below invoice details
+- Maintains centered alignment within left section
 
 ## Commit Message
 ```
-refactor: Center TCB logo text
+refactor: Move TCB logo to left side of invoice
 
-- Changed TCB and METAL WORKS alignment to center
+- Logo now positioned on left side, centered within left section
 - Updated both PDF generator and invoice modal
-- Logo now appears centered horizontally
+- Logo appears below invoice details in left column
 ```
 
 ## How to Push to GitHub
@@ -41,11 +48,12 @@ refactor: Center TCB logo text
 
 ## Testing Checklist
 - [ ] Generate a PDF invoice
-- [ ] Verify "TCB" is centered horizontally
-- [ ] Verify "METAL WORKS" is centered below TCB
-- [ ] Check invoice modal - verify logo is centered
-- [ ] Verify text alignment looks correct
+- [ ] Verify "TCB" logo appears on left side
+- [ ] Verify logo is centered within left section
+- [ ] Check invoice modal - verify logo is on left side
+- [ ] Verify logo appears below invoice details
+- [ ] Verify layout looks balanced
 
 ---
 
-**Note**: The logo text is now centered horizontally, creating a more balanced appearance.
+**Note**: The logo is now positioned on the left side of the invoice, centered within the left section, creating a more cohesive layout with the invoice title and details.
