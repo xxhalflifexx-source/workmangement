@@ -459,14 +459,15 @@ export default function JobsPage() {
       }
       
       // Initialize payment method from company settings or defaults
-      setPaymentBank(settingsRes.settings?.bankName || "");
-      setPaymentAccountName(settingsRes.settings?.companyName || "TCB Metal Works");
-      setPaymentAccountNumber(settingsRes.settings?.accountNumber || "");
+      // Note: bankName, accountNumber, and preparedByTitle may not exist in settings
+      setPaymentBank("");
+      setPaymentAccountName(settings?.companyName || "TCB Metal Works");
+      setPaymentAccountNumber("");
       
       // Initialize prepared by with logged-in user
       const currentUserName = session?.user?.name || "";
       setPreparedByName(currentUserName);
-      setPreparedByTitle(settingsRes.settings?.preparedByTitle || "");
+      setPreparedByTitle("");
     } else {
       setError(jobRes.error);
     }
