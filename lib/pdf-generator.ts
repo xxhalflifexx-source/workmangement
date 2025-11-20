@@ -65,20 +65,24 @@ export function generateInvoicePDF(data: InvoicePDFData): jsPDF {
   doc.text(`Invoice Date: ${invoiceDateFormatted}`, margin, yPos);
   yPos += 12;
 
-  // Logo text - Large "TCB" above "METAL WORKS" positioned on left side, centered within left area
-  const leftSectionWidth = (pageWidth / 2) - margin;
-  const logoX = margin + (leftSectionWidth / 2);
-  const logoY = margin + 6;
+  // Logo text - Large "TCB" above "METAL WORKS" in green circle, positioned top right
+  const logoSize = 30;
+  const logoX = pageWidth - margin - logoSize / 2;
+  const logoY = margin + logoSize / 2;
+  
+  // Draw subtle green circle background
+  doc.setFillColor(200, 255, 200); // Light green
+  doc.circle(logoX, logoY, logoSize / 2, "F");
+  
+  // TCB - Larger text on top, centered in circle
   doc.setTextColor(navyBlueR, navyBlueG, navyBlueB);
-  
-  // TCB - Larger text on top, centered within left section
-  doc.setFontSize(22);
+  doc.setFontSize(18);
   doc.setFont("helvetica", "bold");
-  doc.text("TCB", logoX, logoY, { align: "center" });
+  doc.text("TCB", logoX, logoY - 4, { align: "center" });
   
-  // METAL WORKS - Smaller text below, centered within left section
-  doc.setFontSize(12);
-  doc.text("METAL WORKS", logoX, logoY + 8, { align: "center" });
+  // METAL WORKS - Smaller text below, centered in circle
+  doc.setFontSize(9);
+  doc.text("METAL WORKS", logoX, logoY + 6, { align: "center" });
 
   // Reset text color
   doc.setTextColor(50, 50, 50);
