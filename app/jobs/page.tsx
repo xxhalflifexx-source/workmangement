@@ -466,7 +466,17 @@ export default function JobsPage() {
   };
 
   const handlePrintInvoice = () => {
+    // Temporarily change page title for printing
+    const originalTitle = document.title;
+    document.title = `Invoice ${invoiceNumber || selectedJobForInvoice?.title || ''}`;
+    
+    // Trigger print
     window.print();
+    
+    // Restore original title after a delay
+    setTimeout(() => {
+      document.title = originalTitle;
+    }, 1000);
   };
 
   // Estimate Functions
@@ -2059,23 +2069,65 @@ export default function JobsPage() {
 
       <style jsx global>{`
         @media print {
+          @page {
+            margin: 0.5in;
+            size: letter;
+          }
+          
+          /* Hide everything first */
           body * {
             visibility: hidden;
           }
+          
+          /* Show only print area */
           .print-area, .print-area * {
             visibility: visible;
           }
+          
           .print-area {
             position: absolute;
             left: 0;
             top: 0;
             width: 100%;
+            background: white;
+            page-break-after: auto;
           }
+          
+          /* Hide non-printable elements */
           .no-print {
             display: none !important;
+            visibility: hidden !important;
           }
+          
+          /* Remove borders from inputs when printing */
           .print-no-border {
             border: none !important;
+            box-shadow: none !important;
+            outline: none !important;
+            background: transparent !important;
+          }
+          
+          /* Ensure clean print */
+          body {
+            margin: 0;
+            padding: 0;
+            background: white;
+          }
+          
+          /* Hide any remaining UI elements */
+          header, nav, footer, button, .no-print {
+            display: none !important;
+            visibility: hidden !important;
+          }
+          
+          /* Ensure table prints properly */
+          table {
+            border-collapse: collapse;
+            width: 100%;
+          }
+          
+          th, td {
+            border: 1px solid #000 !important;
           }
         }
       `}</style>

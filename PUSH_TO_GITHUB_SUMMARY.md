@@ -11,17 +11,26 @@
 
 ### What Was Changed:
 
-1. **Fixed TypeScript Error in Invoices Page**
+1. **Fixed Invoice Print Function**
+   - File: `app/jobs/page.tsx`
+   - Fixed: Improved print CSS and page title handling
+   - Why: Invoice printing was showing "NextAuth with Roles" and date in headers
+   - Changes:
+     - Temporarily changes page title to "Invoice [number]" when printing
+     - Improved print CSS to hide unwanted elements
+     - Better page margins and formatting
+
+2. **Fixed TypeScript Error in Invoices Page** (Previous)
    - File: `app/invoices/page.tsx`
    - Fixed: Added type guard for `res.stats` to prevent undefined errors
    - Why: This was causing Vercel build to fail
 
-2. **Switched Database Schema Back to PostgreSQL**
+3. **Switched Database Schema Back to PostgreSQL** (Previous)
    - File: `prisma/schema.prisma`
    - Changed: From SQLite back to PostgreSQL (for Vercel deployment)
    - Why: Vercel can't use SQLite, needs PostgreSQL
 
-3. **Updated Migration Lock File**
+4. **Updated Migration Lock File** (Previous)
    - File: `prisma/migrations/migration_lock.toml`
    - Changed: Provider from SQLite back to PostgreSQL
    - Why: Matches the schema change
@@ -31,24 +40,10 @@
 ## 📁 Files Changed
 
 ### Modified Files:
+- ✅ `app/jobs/page.tsx` - **NEW:** Fixed invoice print function
 - ✅ `app/invoices/page.tsx` - TypeScript fix
 - ✅ `prisma/schema.prisma` - PostgreSQL configuration
 - ✅ `prisma/migrations/migration_lock.toml` - PostgreSQL provider
-
-### New Files (Documentation - Optional to Commit):
-- `ACTUAL_FIX.md` - Fix instructions
-- `FIX_VERCEL_DATABASE_ERROR.md` - Error troubleshooting
-- `SIMPLE_FIX_GUIDE.md` - Simple guide
-- `STEP_BY_STEP_MIGRATION.txt` - Migration steps
-- `WHAT_IS_HAPPENING.txt` - Explanation
-- `COMPLETE_STEP_BY_STEP.md` - Complete guide
-- `QUICK_CHECKLIST.txt` - Quick reference
-- `GITHUB_STEPS.md` - GitHub instructions
-- `QUICK_GITHUB_FIX.txt` - Quick GitHub guide
-- `WHY_CANT_I_SEE_UPDATES.md` - Troubleshooting
-- `INVOICES_PAGE_TROUBLESHOOTING.md` - Invoices troubleshooting
-- `LIVE_SITE_TROUBLESHOOTING.md` - Live site help
-- `PUSH_TO_GITHUB_SUMMARY.md` - This file
 
 ---
 
@@ -58,14 +53,14 @@
 
 1. **Open GitHub Desktop**
 2. **You should see these files in "Changes" tab:**
+   - `app/jobs/page.tsx` (Modified) ⬅️ **NEW**
    - `app/invoices/page.tsx` (Modified)
    - `prisma/schema.prisma` (Modified)
    - `prisma/migrations/migration_lock.toml` (Modified)
-   - Plus any documentation files (optional)
 
 3. **Write Commit Message:**
    ```
-   Fix TypeScript error and restore PostgreSQL schema for Vercel
+   Fix invoice print function and improve print styling
    ```
 
 4. **Click "Commit to main"**
@@ -83,7 +78,7 @@
 git add .
 
 # Commit with message
-git commit -m "Fix TypeScript error and restore PostgreSQL schema for Vercel"
+git commit -m "Fix invoice print function and improve print styling"
 
 # Push to GitHub
 git push
@@ -98,23 +93,40 @@ git push
    - Your project should show a new deployment starting
    - Wait for it to show "Ready" ✅
 
-2. **Run Database Migration:**
+2. **Test Invoice Printing:**
+   - Go to Jobs page
+   - Click "📄 Invoice" on any job
+   - Click "🖨️ Print Invoice"
+   - **In the print dialog, uncheck "Headers and footers"** (important!)
+   - Print should now show clean invoice without page title/date
+
+3. **Run Database Migration** (if not done yet):
    - Go to Supabase Dashboard
    - Run the SQL migration (see `COMPLETE_STEP_BY_STEP.md`)
    - This adds the new invoice fields to your database
-
-3. **Test the Live Site:**
-   - Go to your invoices page
-   - Hard refresh: `Ctrl + Shift + R`
-   - Should see all new features!
 
 ---
 
 ## 🎯 What These Changes Do
 
+- ✅ **Fixes invoice printing** - No more "NextAuth with Roles" in print
+- ✅ **Better print formatting** - Clean invoice layout
 - ✅ **Fixes the build error** - TypeScript error resolved
 - ✅ **Restores PostgreSQL** - Works with Vercel deployment
-- ✅ **Keeps invoice features** - All new features still work
+
+---
+
+## 💡 Important: Browser Print Settings
+
+When printing invoices, **make sure to:**
+
+1. Click "🖨️ Print Invoice" button
+2. In the print dialog that opens:
+   - **Uncheck "Headers and footers"** (or "More settings" → uncheck headers/footers)
+   - This prevents browser from adding page title and date
+3. Then print
+
+**This is a browser setting** - the code now changes the page title, but you still need to disable headers/footers in the print dialog for the cleanest result.
 
 ---
 
@@ -122,11 +134,10 @@ git push
 
 **You MUST:**
 1. ✅ Push these changes to GitHub (above)
-2. ✅ Run database migration in Supabase (see `COMPLETE_STEP_BY_STEP.md`)
-3. ✅ Wait for Vercel to rebuild
-4. ✅ Hard refresh your browser
+2. ✅ Wait for Vercel to rebuild
+3. ✅ Test invoice printing
+4. ✅ Disable headers/footers in browser print dialog when printing
 
 ---
 
 **Status:** Ready to push! 🚀
-
