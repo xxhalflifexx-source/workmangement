@@ -67,19 +67,32 @@ export function generateInvoicePDF(data: InvoicePDFData): jsPDF {
   });
   doc.text(`Invoice Date: ${invoiceDateFormatted}`, margin, yPos);
   
-  // Top Right: Logo text - Large "TCB" above "METAL WORKS", right-aligned
-  const logoX = pageWidth - margin;
-  const logoY = margin + 8;
+  // Top Right: Logo text - Large "TCB" above "METAL WORKS", centered as a unit, positioned on the right
+  // Calculate text widths to center them relative to each other
+  doc.setFontSize(20);
+  doc.setFont("helvetica", "bold");
+  const tcbWidth = doc.getTextWidth("TCB");
   
-  // TCB - Larger text on top, right-aligned
+  doc.setFontSize(11);
+  const metalWorksWidth = doc.getTextWidth("METAL WORKS");
+  
+  // Use the wider text width to center both texts relative to each other
+  const logoWidth = Math.max(tcbWidth, metalWorksWidth);
+  
+  // Position the logo block on the right - center point of the logo block
+  const logoY = margin + 8;
+  // Position the center of the logo block near the right margin (with some padding)
+  const logoBlockCenterX = pageWidth - margin - (logoWidth / 2) - 10; // 10px padding from right
+  
+  // TCB - Larger text on top, centered relative to METAL WORKS
   doc.setTextColor(navyBlueR, navyBlueG, navyBlueB);
   doc.setFontSize(20);
   doc.setFont("helvetica", "bold");
-  doc.text("TCB", logoX, logoY, { align: "right" });
+  doc.text("TCB", logoBlockCenterX, logoY, { align: "center" });
   
-  // METAL WORKS - Smaller text below, right-aligned
+  // METAL WORKS - Smaller text below, centered relative to TCB
   doc.setFontSize(11);
-  doc.text("METAL WORKS", logoX, logoY + 8, { align: "right" });
+  doc.text("METAL WORKS", logoBlockCenterX, logoY + 8, { align: "center" });
   
   // Update yPos to continue with company info
   yPos += 12;
