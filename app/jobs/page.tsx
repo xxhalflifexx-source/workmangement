@@ -1800,8 +1800,8 @@ export default function JobsPage() {
                         </div>
                       </div>
                     </div>
-                    {/* Top Right: Logo Text - TCB above METAL WORKS in top right corner (arrow area) */}
-                    <div className="text-right">
+                    {/* Top Right: Logo Text - TCB above METAL WORKS, centered in its section */}
+                    <div className="text-center">
                       <div className="text-3xl font-bold text-blue-900 mb-1">
                         TCB
                       </div>
