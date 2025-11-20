@@ -1,38 +1,39 @@
-# GitHub Push Summary - Move Logo to Right Side, Centered
+# GitHub Push Summary - Remove Green Circle Background from Logo
 
 ## Files Changed
-- `lib/pdf-generator.ts` - Moved logo to right side
-- `app/jobs/page.tsx` - Moved logo to right side in modal
+- `lib/pdf-generator.ts` - Removed green circle background
+- `app/jobs/page.tsx` - Removed green circle background from modal
 
 ## Changes Made
 
-### Moved Logo to Right Side
-- **PDF**: Logo moved to right side, beside invoice details
-  - Positioned in right section (right half of page)
-  - Centered within right section
-  - Aligned vertically with invoice details
-  - Green circle background maintained
-- **Modal**: Logo moved to right column
-  - Positioned beside invoice details using flex layout
-  - Centered within right section using `flex items-center justify-center`
-  - Green circle background maintained
+### Removed Green Circle Background
+- **PDF**: Removed green circle drawing code
+  - Logo now displays as navy blue text only
+  - No background circle
+  - Text remains centered in right section
+  - Slightly increased font sizes for better visibility
+- **Modal**: Removed green circle background
+  - Removed `bg-green-200` and `rounded-full` classes
+  - Removed fixed width/height container
+  - Logo now displays as navy blue text only
+  - Text remains centered in right section
 
-### Layout Updates
-- **PDF**: Two-column header layout
-  - Left: Invoice title and details
-  - Right: Logo centered within right section
-- **Modal**: Two-column flex layout
-  - Left: Invoice title and details
-  - Right: Logo centered within right section
+### Logo Styling
+- **PDF**: 
+  - "TCB": 18pt bold navy blue
+  - "METAL WORKS": 10pt bold navy blue
+- **Modal**: 
+  - "TCB": text-3xl bold navy blue
+  - "METAL WORKS": text-lg bold navy blue
 
 ## Commit Message
 ```
-refactor: Move logo to right side, centered beside invoice details
+refactor: Remove green circle background from logo
 
-- Logo positioned on right side, beside invoice details
-- Centered within right section
-- Green circle background maintained
+- Removed green circle background
+- Logo now displays as navy blue text only
 - Updated both PDF generator and invoice modal
+- Cleaner, simpler appearance
 ```
 
 ## How to Push to GitHub
@@ -53,13 +54,12 @@ refactor: Move logo to right side, centered beside invoice details
 
 ## Testing Checklist
 - [ ] Generate a PDF invoice
-- [ ] Verify logo appears on right side, beside invoice details
-- [ ] Verify logo is centered within right section
-- [ ] Verify green circle background is present
-- [ ] Check invoice modal - verify logo is on right side
-- [ ] Verify logo appears beside invoice details
-- [ ] Verify centered alignment within right section
+- [ ] Verify no green circle background appears
+- [ ] Verify logo displays as navy blue text only
+- [ ] Verify logo is centered in right section
+- [ ] Check invoice modal - verify no green circle
+- [ ] Verify text is properly styled and visible
 
 ---
 
-**Note**: The logo is now positioned on the right side, beside the invoice details, centered within that right section, with the green circular background.
+**Note**: The logo now displays as clean navy blue text without any background circle, creating a simpler and cleaner appearance.

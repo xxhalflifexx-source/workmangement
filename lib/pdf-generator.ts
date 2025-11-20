@@ -67,26 +67,21 @@ export function generateInvoicePDF(data: InvoicePDFData): jsPDF {
   });
   doc.text(`Invoice Date: ${invoiceDateFormatted}`, margin, yPos);
   
-  // Right: Logo text - Large "TCB" above "METAL WORKS" in green circle, centered in right section
+  // Right: Logo text - Large "TCB" above "METAL WORKS", centered in right section
   const rightSectionStart = pageWidth / 2 + 10;
   const rightSectionWidth = pageWidth - rightSectionStart - margin;
   const logoX = rightSectionStart + (rightSectionWidth / 2);
   const logoY = headerY + 15; // Position aligned with invoice details
-  const logoSize = 28;
   
-  // Draw subtle green circle background
-  doc.setFillColor(200, 255, 200); // Light green
-  doc.circle(logoX, logoY, logoSize / 2, "F");
-  
-  // TCB - Larger text on top, centered in circle
+  // TCB - Larger text on top, centered
   doc.setTextColor(navyBlueR, navyBlueG, navyBlueB);
-  doc.setFontSize(16);
+  doc.setFontSize(18);
   doc.setFont("helvetica", "bold");
-  doc.text("TCB", logoX, logoY - 3, { align: "center" });
+  doc.text("TCB", logoX, logoY, { align: "center" });
   
-  // METAL WORKS - Smaller text below, centered in circle
-  doc.setFontSize(8);
-  doc.text("METAL WORKS", logoX, logoY + 5, { align: "center" });
+  // METAL WORKS - Smaller text below, centered
+  doc.setFontSize(10);
+  doc.text("METAL WORKS", logoX, logoY + 7, { align: "center" });
   
   // Update yPos to continue with company info
   yPos += 12;
