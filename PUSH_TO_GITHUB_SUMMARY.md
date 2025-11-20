@@ -1,35 +1,25 @@
-# GitHub Push Summary - Fix PDF Route TypeScript Error
+# GitHub Push Summary - Fix PDF Generator TypeScript Error
 
 ## Files Changed
-- `app/api/invoices/[id]/pdf/route.ts` - Fixed TypeScript type errors
+- `lib/pdf-generator.ts` - Fixed spread operator TypeScript error
 
 ## Changes Made
 
 ### Fixed TypeScript Build Error
-- **Error**: `Type 'string | null' is not assignable to type 'string'` in PDF route
-- **Fix**: Updated route to use new `InvoicePDFData` interface
-- **Changes**:
-  - Imported `InvoicePDFData` interface from pdf-generator
-  - Updated route to fetch company settings
-  - Mapped invoice data to new PDF data format
-  - Ensured `customerName` is always a string (defaults to "Customer" if null)
-  - Calculated subtotal and shipping fee correctly
-  - Added all required fields for professional PDF generation
-
-### Route Updates
-- Now fetches company settings from database
-- Properly maps invoice data to PDF format
-- Handles null values with defaults
-- Calculates shipping fee from total - subtotal
+- **Error**: `A spread argument must either have a tuple type or be passed to a rest parameter`
+- **Issue**: TypeScript doesn't allow spreading array literals directly in `setFillColor()` and `setDrawColor()` methods
+- **Fix**: Changed from array spread to individual arguments
+  - Changed `const navyBlue = [30, 58, 138]` to individual variables
+  - Changed `doc.setFillColor(...navyBlue)` to `doc.setFillColor(navyBlueR, navyBlueG, navyBlueB)`
+  - Changed `doc.setDrawColor(...navyBlue)` to `doc.setDrawColor(navyBlueR, navyBlueG, navyBlueB)`
 
 ## Commit Message
 ```
-fix: Fix TypeScript error in PDF invoice route
+fix: Fix TypeScript spread operator error in PDF generator
 
-- Updated route to use new InvoicePDFData interface
-- Added company settings fetching
-- Fixed type errors by ensuring customerName is always string
-- Properly maps invoice data to PDF format
+- Changed navyBlue array to individual RGB variables
+- Fixed setFillColor and setDrawColor calls to use individual arguments
+- Resolves TypeScript compilation error
 ```
 
 ## How to Push to GitHub
@@ -37,7 +27,7 @@ fix: Fix TypeScript error in PDF invoice route
 1. **Open GitHub Desktop** (or your Git client)
 
 2. **Review the changes**:
-   - You should see `app/api/invoices/[id]/pdf/route.ts` in the changed files list
+   - You should see `lib/pdf-generator.ts` in the changed files list
 
 3. **Write the commit message** (copy from above)
 
@@ -49,10 +39,10 @@ fix: Fix TypeScript error in PDF invoice route
 
 ## Testing Checklist
 - [ ] Verify Vercel build succeeds
-- [ ] Test PDF download from invoices page (if applicable)
-- [ ] Verify PDF generation works correctly
-- [ ] Check that all invoice data is included in PDF
+- [ ] Test PDF download from invoice modal
+- [ ] Verify PDF generates correctly with navy blue colors
+- [ ] Check that logo and border display in navy blue
 
 ---
 
-**Note**: This fix resolves the TypeScript build error that was preventing deployment. The PDF route now properly uses the new PDF generator interface.
+**Note**: This fix resolves the TypeScript compilation error. The PDF generator now uses individual RGB arguments instead of array spreading, which is compatible with TypeScript's type checking.

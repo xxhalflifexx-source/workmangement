@@ -40,7 +40,9 @@ export function generateInvoicePDF(data: InvoicePDFData): jsPDF {
   let yPos = margin;
 
   // Set navy blue color (RGB: 30, 58, 138)
-  const navyBlue = [30, 58, 138];
+  const navyBlueR = 30;
+  const navyBlueG = 58;
+  const navyBlueB = 138;
 
   // Header Section - INVOICE title and details
   doc.setFontSize(36);
@@ -67,7 +69,7 @@ export function generateInvoicePDF(data: InvoicePDFData): jsPDF {
   const logoSize = 24;
   const logoX = pageWidth - margin - logoSize;
   const logoY = margin;
-  doc.setFillColor(...navyBlue);
+  doc.setFillColor(navyBlueR, navyBlueG, navyBlueB);
   doc.rect(logoX, logoY, logoSize, logoSize, "F");
   
   // Logo text
@@ -297,7 +299,7 @@ export function generateInvoicePDF(data: InvoicePDFData): jsPDF {
 
   // Navy blue border at bottom
   const borderY = pageHeight - 15;
-  doc.setDrawColor(...navyBlue);
+  doc.setDrawColor(navyBlueR, navyBlueG, navyBlueB);
   doc.setLineWidth(1);
   doc.line(margin, borderY, pageWidth - margin, borderY);
 
