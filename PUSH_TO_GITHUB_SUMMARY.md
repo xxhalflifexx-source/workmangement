@@ -1,66 +1,35 @@
-# GitHub Push Summary - Professional PDF Invoice Generator
+# GitHub Push Summary - Fix PDF Route TypeScript Error
 
 ## Files Changed
-- `lib/pdf-generator.ts` - Complete rewrite
-- `app/jobs/page.tsx` - Added PDF download functionality
+- `app/api/invoices/[id]/pdf/route.ts` - Fixed TypeScript type errors
 
 ## Changes Made
 
-### 1. **Complete PDF Generator Redesign**
-   - Created a professional PDF invoice generator matching the screenshot design
-   - Professional layout with proper spacing and typography
-   - Navy blue color theme (matching the invoice design)
-   - Clean, modern appearance that customers will appreciate
+### Fixed TypeScript Build Error
+- **Error**: `Type 'string | null' is not assignable to type 'string'` in PDF route
+- **Fix**: Updated route to use new `InvoicePDFData` interface
+- **Changes**:
+  - Imported `InvoicePDFData` interface from pdf-generator
+  - Updated route to fetch company settings
+  - Mapped invoice data to new PDF data format
+  - Ensured `customerName` is always a string (defaults to "Customer" if null)
+  - Calculated subtotal and shipping fee correctly
+  - Added all required fields for professional PDF generation
 
-### 2. **PDF Features**
-   - **Header Section:**
-     - Large "INVOICE" title
-     - Invoice number and date below title
-     - Navy blue logo placeholder (TCB METAL WORKS) in top right
-   
-   - **Company & Billing Info:**
-     - Company information on left
-     - "BILL TO" section on right
-     - Proper formatting and spacing
-   
-   - **Itemized Table:**
-     - Columns: "Item & Description", "Unit Price", "Qty", "Amount"
-     - Alternating row colors (white and light gray)
-     - Professional table borders
-   
-   - **Notes & Summary:**
-     - "NOTES / TERMS" section on left
-     - Summary table on right (Sub-Total, Shipping Fee, Total)
-     - Total row highlighted with darker background
-   
-   - **Footer:**
-     - "PAYMENT METHOD" section (left)
-     - "PREPARED BY" section (right)
-     - Navy blue border at bottom
-
-### 3. **PDF Download Button**
-   - Added "📥 Download PDF" button in invoice modal
-   - Generates professional PDF using all invoice data
-   - Includes all editable fields (customer info, payment method, prepared by)
-   - Automatically names file: `Invoice-[Number]-[Date].pdf`
-
-### 4. **Data Integration**
-   - Uses all invoice data from the form
-   - Includes company settings
-   - Includes editable customer details
-   - Includes payment method and prepared by information
-   - Calculates totals correctly
+### Route Updates
+- Now fetches company settings from database
+- Properly maps invoice data to PDF format
+- Handles null values with defaults
+- Calculates shipping fee from total - subtotal
 
 ## Commit Message
 ```
-feat: Add professional PDF invoice generator matching design
+fix: Fix TypeScript error in PDF invoice route
 
-- Complete rewrite of PDF generator with professional layout
-- Matches screenshot design with proper formatting
-- Navy blue color theme throughout
-- Includes all invoice sections: header, company info, table, notes, summary, footer
-- Added Download PDF button to invoice modal
-- Professional appearance that customers will appreciate
+- Updated route to use new InvoicePDFData interface
+- Added company settings fetching
+- Fixed type errors by ensuring customerName is always string
+- Properly maps invoice data to PDF format
 ```
 
 ## How to Push to GitHub
@@ -68,8 +37,7 @@ feat: Add professional PDF invoice generator matching design
 1. **Open GitHub Desktop** (or your Git client)
 
 2. **Review the changes**:
-   - You should see `lib/pdf-generator.ts` (Modified/New)
-   - You should see `app/jobs/page.tsx` (Modified)
+   - You should see `app/api/invoices/[id]/pdf/route.ts` in the changed files list
 
 3. **Write the commit message** (copy from above)
 
@@ -77,24 +45,14 @@ feat: Add professional PDF invoice generator matching design
 
 5. **Click "Push origin"** to push to GitHub
 
-6. **Verify on Vercel**: After pushing, Vercel will automatically deploy the changes.
+6. **Verify on Vercel**: After pushing, Vercel will automatically deploy the changes. The build should now succeed.
 
 ## Testing Checklist
-- [ ] Open a job and generate an invoice
-- [ ] Click "📥 Download PDF" button
-- [ ] Verify PDF downloads with correct filename
-- [ ] Open the PDF and verify:
-  - [ ] Professional layout matches the screenshot
-  - [ ] All company information is correct
-  - [ ] Customer details are correct
-  - [ ] Line items table is formatted properly
-  - [ ] Notes/Terms section is visible
-  - [ ] Summary table shows Sub-Total, Shipping Fee, Total
-  - [ ] Payment Method and Prepared By sections are visible
-  - [ ] Navy blue border at bottom
-  - [ ] Logo placeholder in top right
-- [ ] Verify PDF looks professional and customer-ready
+- [ ] Verify Vercel build succeeds
+- [ ] Test PDF download from invoices page (if applicable)
+- [ ] Verify PDF generation works correctly
+- [ ] Check that all invoice data is included in PDF
 
 ---
 
-**Note**: The PDF invoice generator now creates a professional, customer-ready invoice that matches the design from the screenshot. The PDF will look clean, organized, and professional - something customers will be happy to receive!
+**Note**: This fix resolves the TypeScript build error that was preventing deployment. The PDF route now properly uses the new PDF generator interface.

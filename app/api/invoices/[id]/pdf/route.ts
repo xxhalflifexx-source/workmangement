@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authOptions";
 import { prisma } from "@/lib/prisma";
-import { generateInvoicePDF } from "@/lib/pdf-generator";
+import { generateInvoicePDF, InvoicePDFData } from "@/lib/pdf-generator";
 
 export async function GET(
   request: NextRequest,
@@ -30,19 +30,60 @@ export async function GET(
     return NextResponse.json({ error: "Invoice not found" }, { status: 404 });
   }
 
-  const pdf = generateInvoicePDF({
-    invoiceNumber: invoice.invoiceNumber || invoice.id.slice(0, 8).toUpperCase(),
-    issueDate: invoice.issueDate,
-    dueDate: invoice.dueDate,
-    customerName: invoice.customerName || invoice.customer?.name || null,
-    customerEmail: invoice.customerEmail || invoice.customer?.email || null,
-    lines: invoice.lines,
-    total: invoice.total,
-    balance: invoice.balance,
-    notes: invoice.notes,
-    status: invoice.status,
-  });
+  // Get company settings
+  let companySettings = await prisma.companySettings.findFirst();
+  if (!companySettings) {
+    companySettings = {
+      id: "",
+      companyName: "TCB METAL WORKS",
+      address: null,
+      city: null,
+      state: null,
+      zipCode: null,
+      phone: null,
+      email: null,
+      website: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+  }
 
+  // Calculate subtotal and shipping fee
+  const subtotal = invoice.lines.reduce((sum, line) => sum + line.amount, 0);
+  const shippingFee = invoice.total - subtotal;
+
+  const pdfData: InvoicePDFData = {
+    invoiceNumber: invoice.invoiceNumber || invoice.id.slice(0, 8).toUpperCase(),
+    invoiceDate: invoice.issueDate.toISOString().split('T')[0],
+    companyName: companySettings.companyName,
+    companyAddress: companySettings.address || undefined,
+    companyCity: companySettings.city || undefined,
+    companyState: companySettings.state || undefined,
+    companyZipCode: companySettings.zipCode || undefined,
+    companyPhone: companySettings.phone || undefined,
+    companyEmail: companySettings.email || undefined,
+    customerName: invoice.customerName || invoice.customer?.name || "Customer",
+    customerAddress: invoice.customer?.company || undefined,
+    customerPhone: invoice.customer?.phone || undefined,
+    customerEmail: invoice.customerEmail || invoice.customer?.email || undefined,
+    lineItems: invoice.lines.map(line => ({
+      description: line.description,
+      quantity: line.quantity,
+      rate: line.rate,
+      amount: line.amount,
+    })),
+    subtotal: subtotal,
+    shippingFee: shippingFee > 0 ? shippingFee : 0,
+    total: invoice.total,
+    notes: invoice.notes || undefined,
+    paymentBank: undefined,
+    paymentAccountName: companySettings.companyName,
+    paymentAccountNumber: undefined,
+    preparedByName: undefined,
+    preparedByTitle: undefined,
+  };
+
+  const pdf = generateInvoicePDF(pdfData);
   const pdfBlob = pdf.output("blob");
   const buffer = await pdfBlob.arrayBuffer();
 
