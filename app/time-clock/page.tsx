@@ -160,22 +160,27 @@ export default function TimeClockPage() {
     setError(undefined);
     setSuccess(undefined);
 
-    const res = await clockIn(selectedJobId || undefined);
+    try {
+      const res = await clockIn(selectedJobId || undefined);
 
-    if (!res.ok) {
-      setError(res.error);
+      if (!res.ok) {
+        setError(res.error || "Failed to clock in");
+        return;
+      }
+
+      setSuccess(
+        selectedJobId
+          ? "Clocked in successfully to job!"
+          : "Clocked in successfully!"
+      );
+      setSelectedJobId("");
+      await loadData();
+    } catch (err: any) {
+      console.error("Clock in error:", err);
+      setError(err?.message || "Something went wrong while clocking in.");
+    } finally {
       setLoading(false);
-      return;
     }
-
-    setSuccess(
-      selectedJobId
-        ? "Clocked in successfully to job!"
-        : "Clocked in successfully!"
-    );
-    setSelectedJobId("");
-    setLoading(false);
-    loadData();
   };
 
   const handleClockOut = async () => {
@@ -183,43 +188,51 @@ export default function TimeClockPage() {
     setError(undefined);
     setSuccess(undefined);
 
-    let imagePaths: string[] = [];
+    try {
+      let imagePaths: string[] = [];
 
-    if (selectedFiles.length > 0) {
-      try {
-        const formData = new FormData();
-        selectedFiles.forEach((file) => formData.append("files", file));
+      if (selectedFiles.length > 0) {
+        try {
+          const formData = new FormData();
+          selectedFiles.forEach((file) => formData.append("files", file));
 
-        const uploadRes = await fetch("/api/upload", {
-          method: "POST",
-          body: formData,
-        });
+          const uploadRes = await fetch("/api/upload", {
+            method: "POST",
+            body: formData,
+          });
 
-        if (!uploadRes.ok) {
+          if (!uploadRes.ok) {
+            setError("Failed to upload images. Clocking out without photos.");
+          } else {
+            const data = await uploadRes.json();
+            imagePaths = data.paths || [];
+          }
+        } catch (err) {
+          console.error("Upload error:", err);
           setError("Failed to upload images. Clocking out without photos.");
-        } else {
-          const data = await uploadRes.json();
-          imagePaths = data.paths || [];
         }
-      } catch (err) {
-        console.error("Upload error:", err);
-        setError("Failed to upload images. Clocking out without photos.");
       }
-    }
 
-    const res = await clockOut(notes, imagePaths.length > 0 ? JSON.stringify(imagePaths) : undefined);
+      const res = await clockOut(
+        notes,
+        imagePaths.length > 0 ? JSON.stringify(imagePaths) : undefined
+      );
 
-    if (!res.ok) {
-      setError(res.error);
+      if (!res.ok) {
+        setError(res.error || "Failed to clock out");
+        return;
+      }
+
+      setSuccess("Clocked out successfully!");
+      setNotes("");
+      setSelectedFiles([]);
+      await loadData();
+    } catch (err: any) {
+      console.error("Clock out error:", err);
+      setError(err?.message || "Something went wrong while clocking out.");
+    } finally {
       setLoading(false);
-      return;
     }
-
-    setSuccess("Clocked out successfully!");
-    setNotes("");
-    setSelectedFiles([]);
-    setLoading(false);
-    loadData();
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
