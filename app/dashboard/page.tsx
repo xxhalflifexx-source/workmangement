@@ -158,8 +158,8 @@ export default async function Dashboard() {
             </Link>
           )}
 
-          {/* Admin Only Card */}
-          {role === "ADMIN" && (
+          {/* Admin / Manager Card */}
+          {(role === "ADMIN" || role === "MANAGER") && (
             <Link
               href="/admin"
               className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow p-6 border border-gray-200 hover:border-red-300"
@@ -169,7 +169,7 @@ export default async function Dashboard() {
                   ⚙️
                 </div>
                 <span className="text-xs text-red-600 bg-red-100 px-2 py-1 rounded font-medium">
-                  Admin
+                  Admin / Manager
                 </span>
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Administrative</h3>

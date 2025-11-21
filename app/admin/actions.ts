@@ -26,9 +26,9 @@ export async function getAllUsersForAdmin() {
 
   const userRole = (session.user as any).role;
 
-  // Only admins can access user management
-  if (userRole !== "ADMIN") {
-    return { ok: false, error: "Unauthorized: Only admins can manage users" };
+  // Admins and managers can access user management
+  if (userRole !== "ADMIN" && userRole !== "MANAGER") {
+    return { ok: false, error: "Unauthorized: Only admins and managers can manage users" };
   }
 
   try {
@@ -218,9 +218,9 @@ export async function updateUserProfileDetails(
 
   const userRole = (session.user as any).role;
 
-  // Only admins can update profile details
-  if (userRole !== "ADMIN") {
-    return { ok: false, error: "Unauthorized: Only admins can update user details" };
+  // Admins and managers can update profile details (status, gender, birth date)
+  if (userRole !== "ADMIN" && userRole !== "MANAGER") {
+    return { ok: false, error: "Unauthorized: Only admins and managers can update user details" };
   }
 
   const data: any = {};
