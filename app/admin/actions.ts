@@ -5,6 +5,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authOptions";
 import { z } from "zod";
 import { hash } from "bcryptjs";
+import { randomBytes } from "crypto";
 
 const companySettingsSchema = z.object({
   companyName: z.string().min(1, "Company name is required"),
@@ -127,6 +128,53 @@ export async function createUserByAdmin(formData: FormData) {
   } catch (error) {
     console.error("Create user by admin error:", error);
     return { ok: false, error: "Failed to create user" };
+  }
+}
+
+export async function resetUserPasswordByAdmin(userId: string) {
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user) {
+    return { ok: false, error: "Not authenticated" };
+  }
+
+  const userRole = (session.user as any).role;
+
+  if (userRole !== "ADMIN" && userRole !== "MANAGER") {
+    return { ok: false, error: "Unauthorized: Only admins and managers can reset passwords" };
+  }
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { email: true, name: true },
+    });
+
+    if (!user || !user.email) {
+      return { ok: false, error: "User not found or missing email" };
+    }
+
+    // Generate a 10-character temporary password (letters + numbers)
+    const tempPassword = randomBytes(6).toString("base64").replace(/[^a-zA-Z0-9]/g, "").slice(0, 10);
+    const passwordHash = await hash(tempPassword, 10);
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        passwordHash,
+        isVerified: true,
+      },
+    });
+
+    return {
+      ok: true,
+      message: "Temporary password generated successfully",
+      tempPassword,
+      email: user.email,
+    };
+  } catch (error) {
+    console.error("Reset user password by admin error:", error);
+    return { ok: false, error: "Failed to reset user password" };
   }
 }
 
