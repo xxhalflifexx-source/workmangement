@@ -40,6 +40,7 @@ export async function getAllUsersForAdmin() {
         role: true,
         gender: true,
         birthDate: true,
+        status: true,
         hourlyRate: true,
         isVerified: true,
         createdAt: true,
@@ -206,7 +207,8 @@ export async function updateUserHourlyRate(userId: string, hourlyRate: number) {
 export async function updateUserProfileDetails(
   userId: string,
   gender?: string | null,
-  birthDate?: string | null
+  birthDate?: string | null,
+  status?: string | null
 ) {
   const session = await getServerSession(authOptions);
 
@@ -227,6 +229,9 @@ export async function updateUserProfileDetails(
   }
   if (typeof birthDate !== "undefined") {
     data.birthDate = birthDate ? new Date(birthDate) : null;
+  }
+  if (typeof status !== "undefined") {
+    data.status = status || null;
   }
 
   if (Object.keys(data).length === 0) {

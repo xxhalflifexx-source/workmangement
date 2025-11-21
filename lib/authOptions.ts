@@ -42,6 +42,17 @@ export const authOptions: NextAuthOptions = {
           console.log("[auth] not verified");
           throw new Error("Please verify your email before logging in");
         }
+
+        // Check approval status (treat missing status as APPROVED to avoid locking old accounts)
+        if (user.status && user.status !== "APPROVED") {
+          console.log("[auth] user not approved, status:", user.status);
+          if (user.status === "PENDING") {
+            throw new Error("Your account is waiting for approval from a manager or admin.");
+          }
+          if (user.status === "REJECTED") {
+            throw new Error("Your account has been rejected. Please contact your manager.");
+          }
+        }
         
         const isValid = await compare(password, user.passwordHash);
         console.log("[auth] compare result:", isValid);

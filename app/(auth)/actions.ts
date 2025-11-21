@@ -67,7 +67,7 @@ export async function registerUser(formData: FormData) {
     const verificationCode = generateVerificationCode();
     const codeExpiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
     
-    // Create user (not verified yet)
+    // Create user (not verified yet, and pending admin approval)
     await prisma.user.create({
       data: {
         name,
@@ -77,6 +77,7 @@ export async function registerUser(formData: FormData) {
         isVerified: false,
         verificationCode,
         codeExpiresAt,
+        status: "PENDING",
       },
     });
     
@@ -93,6 +94,8 @@ export async function registerUser(formData: FormData) {
           isVerified: true,
           verificationCode: null,
           codeExpiresAt: null,
+          // Auto-verified users created in this mode are considered approved
+          status: "APPROVED",
         },
       });
       return { ok: true, email, autoVerified: true };
@@ -164,6 +167,8 @@ export async function verifyEmail(formData: FormData) {
       isVerified: true,
       verificationCode: null,
       codeExpiresAt: null,
+      // Keep them pending until admin/manager approves
+      status: "PENDING",
     },
   });
   

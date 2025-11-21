@@ -23,6 +23,7 @@ interface User {
   role: string;
   gender?: string | null;
   birthDate?: string | null;
+  status?: string | null;
   hourlyRate: number | null;
   isVerified: boolean;
   createdAt: string;
@@ -220,6 +221,20 @@ export default function AdminPage() {
       setSuccess(res.message);
       setUsers(
         users.map((u) => (u.id === userId ? { ...u, birthDate: birthDate || null } : u))
+      );
+    }
+  };
+
+  const handleStatusChange = async (userId: string, status: string) => {
+    setError(undefined);
+    setSuccess(undefined);
+    const res = await updateUserProfileDetails(userId, undefined, undefined, status || undefined);
+    if (!res.ok) {
+      setError(res.error);
+    } else {
+      setSuccess(res.message);
+      setUsers(
+        users.map((u) => (u.id === userId ? { ...u, status: status || null } : u))
       );
     }
   };
@@ -500,7 +515,10 @@ export default function AdminPage() {
                       Hourly Rate
                     </th>
                     <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
+                      Email&nbsp;Verified
+                    </th>
+                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Approval&nbsp;Status
                     </th>
                     <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Activity
@@ -626,6 +644,23 @@ export default function AdminPage() {
                               ⚠ Unverified
                             </span>
                           )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-center text-sm">
+                          <select
+                            value={user.status || "APPROVED"}
+                            onChange={(e) => handleStatusChange(user.id, e.target.value)}
+                            className={`px-2 py-1 rounded-full text-xs font-semibold border ${
+                              (user.status || "APPROVED") === "APPROVED"
+                                ? "bg-green-50 text-green-700 border-green-200"
+                                : (user.status || "APPROVED") === "PENDING"
+                                ? "bg-yellow-50 text-yellow-700 border-yellow-200"
+                                : "bg-red-50 text-red-700 border-red-200"
+                            }`}
+                          >
+                            <option value="APPROVED">APPROVED</option>
+                            <option value="PENDING">PENDING</option>
+                            <option value="REJECTED">REJECTED</option>
+                          </select>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-600">
                           <div className="flex flex-col items-center gap-1">
