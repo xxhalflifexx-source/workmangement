@@ -114,6 +114,10 @@ export default function JobsPage() {
   const [materialPriority, setMaterialPriority] = useState("MEDIUM");
   const [materialNotes, setMaterialNotes] = useState("");
   const [submittingMaterial, setSubmittingMaterial] = useState(false);
+
+  // Estimated duration for jobs (stored in hours, can be entered as hours/days/weeks/months)
+  const [estimatedDurationValue, setEstimatedDurationValue] = useState<string>("");
+  const [estimatedDurationUnit, setEstimatedDurationUnit] = useState<"HOURS" | "DAYS" | "WEEKS" | "MONTHS">("HOURS");
   
   // Invoice states
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
@@ -153,6 +157,36 @@ export default function JobsPage() {
     loadData();
   }, []);
 
+  // When editing a job, pre-fill estimated duration controls based on stored estimatedHours
+  useEffect(() => {
+    if (!editingJob || editingJob.estimatedHours == null) {
+      setEstimatedDurationValue("");
+      setEstimatedDurationUnit("HOURS");
+      return;
+    }
+
+    const hours = editingJob.estimatedHours;
+
+    // Prefer the largest whole unit that divides evenly, otherwise fall back to hours
+    const HOURS_PER_DAY = 8;
+    const HOURS_PER_WEEK = HOURS_PER_DAY * 5;
+    const HOURS_PER_MONTH = HOURS_PER_WEEK * 4;
+
+    if (hours % HOURS_PER_MONTH === 0) {
+      setEstimatedDurationValue(String(hours / HOURS_PER_MONTH));
+      setEstimatedDurationUnit("MONTHS");
+    } else if (hours % HOURS_PER_WEEK === 0) {
+      setEstimatedDurationValue(String(hours / HOURS_PER_WEEK));
+      setEstimatedDurationUnit("WEEKS");
+    } else if (hours % HOURS_PER_DAY === 0) {
+      setEstimatedDurationValue(String(hours / HOURS_PER_DAY));
+      setEstimatedDurationUnit("DAYS");
+    } else {
+      setEstimatedDurationValue(String(hours));
+      setEstimatedDurationUnit("HOURS");
+    }
+  }, [editingJob]);
+
   const loadData = async () => {
     setLoading(true);
     const [jobsRes, usersRes, customersRes] = await Promise.all([
@@ -182,6 +216,38 @@ export default function JobsPage() {
     setSuccess(undefined);
 
     const formData = new FormData(e.currentTarget);
+
+    // Convert estimated duration (value + unit) into hours for backend
+    const rawDuration = formData.get("estimatedDurationValue") as string;
+    const rawUnit = (formData.get("estimatedDurationUnit") as string) || "HOURS";
+
+    if (rawDuration) {
+      const value = parseFloat(rawDuration);
+      if (!Number.isNaN(value) && value > 0) {
+        const HOURS_PER_DAY = 8;
+        const HOURS_PER_WEEK = HOURS_PER_DAY * 5;
+        const HOURS_PER_MONTH = HOURS_PER_WEEK * 4;
+
+        let hours = value;
+        switch (rawUnit) {
+          case "DAYS":
+            hours = value * HOURS_PER_DAY;
+            break;
+          case "WEEKS":
+            hours = value * HOURS_PER_WEEK;
+            break;
+          case "MONTHS":
+            hours = value * HOURS_PER_MONTH;
+            break;
+          case "HOURS":
+          default:
+            hours = value;
+            break;
+        }
+
+        formData.set("estimatedHours", hours.toString());
+      }
+    }
 
     const res = editingJob
       ? await updateJob(editingJob.id, formData)
@@ -1303,10 +1369,10 @@ export default function JobsPage() {
 
                 {/* Pricing Section */}
                 {canManage && (
-                  <div className="border-t-2 border-gray-200 pt-4">
-                    <h3 className="text-md font-semibold text-gray-900 mb-3">💰 Pricing</h3>
+                  <div className="border-t-2 border-gray-200 pt-4 space-y-4">
+                    <h3 className="text-md font-semibold text-gray-900">💰 Pricing & Estimate</h3>
                     
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           Pricing Type *
@@ -1341,25 +1407,62 @@ export default function JobsPage() {
                       </div>
                     </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Final/Agreed Price
-                      </label>
-                      <div className="relative">
-                        <span className="absolute left-3 top-2.5 text-gray-500">$</span>
-                        <input
-                          name="finalPrice"
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          defaultValue={editingJob?.finalPrice || ""}
-                          placeholder="0.00"
-                          className="w-full border border-gray-300 rounded-lg pl-7 pr-3 py-2"
-                        />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Final/Agreed Price
+                        </label>
+                        <div className="relative">
+                          <span className="absolute left-3 top-2.5 text-gray-500">$</span>
+                          <input
+                            name="finalPrice"
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            defaultValue={editingJob?.finalPrice || ""}
+                            placeholder="0.00"
+                            className="w-full border border-gray-300 rounded-lg pl-7 pr-3 py-2"
+                          />
+                        </div>
+                        <p className="text-xs text-gray-500 mt-1">
+                          Leave empty until price is finalized with customer
+                        </p>
                       </div>
-                      <p className="text-xs text-gray-500 mt-1">
-                        Leave empty until price is finalized with customer
-                      </p>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Estimated Duration
+                        </label>
+                        <div className="grid grid-cols-3 gap-2">
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.1"
+                            name="estimatedDurationValue"
+                            value={estimatedDurationValue}
+                            onChange={(e) => setEstimatedDurationValue(e.target.value)}
+                            placeholder="0"
+                            className="col-span-2 border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                          />
+                          <select
+                            name="estimatedDurationUnit"
+                            value={estimatedDurationUnit}
+                            onChange={(e) =>
+                              setEstimatedDurationUnit(e.target.value as any)
+                            }
+                            className="border border-gray-300 rounded-lg px-2 py-2 text-sm"
+                          >
+                            <option value="HOURS">Hours</option>
+                            <option value="DAYS">Days</option>
+                            <option value="WEEKS">Weeks</option>
+                            <option value="MONTHS">Months</option>
+                          </select>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-1">
+                          Used for planning, QC, and efficiency metrics. Conversion assumes 8
+                          working hours per day, 5 days per week, 4 weeks per month.
+                        </p>
+                      </div>
                     </div>
                   </div>
                 )}
