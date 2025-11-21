@@ -18,6 +18,7 @@ interface Job {
   pricingType: string;
   estimatedPrice: number | null;
   finalPrice: number | null;
+  estimatedHours: number | null;
   dueDate: string | null;
   assignee: { name: string; email: string } | null;
   creator: { name: string };
