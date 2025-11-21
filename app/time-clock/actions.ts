@@ -26,6 +26,7 @@ export async function clockIn(jobId?: string) {
 
   if (activeEntry) {
     // Automatically clock out the previous entry before starting a new one.
+    // This ends their active shift but DOES NOT move the job to AWAITING_QC.
     const prevDurationHours =
       (now.getTime() - activeEntry.clockIn.getTime()) / (1000 * 60 * 60);
 
@@ -36,26 +37,6 @@ export async function clockIn(jobId?: string) {
         durationHours: prevDurationHours,
       },
     });
-
-    // If the previous entry was linked to a job and there are no other active
-    // time entries on that job, move it to AWAITING_QC.
-    if (activeEntry.jobId) {
-      const remainingActive = await prisma.timeEntry.count({
-        where: {
-          jobId: activeEntry.jobId,
-          clockOut: null,
-        },
-      });
-
-      if (remainingActive === 0) {
-        await prisma.job.update({
-          where: { id: activeEntry.jobId },
-          data: {
-            status: "AWAITING_QC",
-          },
-        });
-      }
-    }
   }
 
   // If clocking into a specific job, update its status based on lifecycle rules.
@@ -147,26 +128,6 @@ export async function clockOut(notes?: string, images?: string) {
     } catch (error) {
       console.error("Failed to create job activity:", error);
       // Don't fail the clock out if activity creation fails
-    }
-  }
-
-  // If this entry was linked to a job, and there are no other active
-  // time entries on that job, move the job to AWAITING_QC.
-  if (activeEntry.jobId) {
-    const remainingActive = await prisma.timeEntry.count({
-      where: {
-        jobId: activeEntry.jobId,
-        clockOut: null,
-      },
-    });
-
-    if (remainingActive === 0) {
-      await prisma.job.update({
-        where: { id: activeEntry.jobId },
-        data: {
-          status: "AWAITING_QC",
-        },
-      });
     }
   }
 
