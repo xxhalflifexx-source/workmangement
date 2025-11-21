@@ -181,4 +181,12 @@ export async function submitQCReview(formData: FormData) {
   return { ok: true, job: updatedJob };
 }
 
+/**
+ * Thin wrapper suitable for Next.js <form action={...}> usage.
+ * Ignores the return value from submitQCReview and just performs the mutation.
+ */
+export async function submitQCReviewAction(formData: FormData): Promise<void> {
+  await submitQCReview(formData);
+}
+
 

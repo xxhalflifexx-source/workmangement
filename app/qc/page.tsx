@@ -1,4 +1,4 @@
-import { getJobsAwaitingQC, submitQCReview } from "./actions";
+import { getJobsAwaitingQC, submitQCReviewAction } from "./actions";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authOptions";
 import Link from "next/link";
@@ -251,7 +251,7 @@ export default async function QCPage() {
                   <h3 className="text-sm font-semibold text-gray-900 mb-2">
                     Record QC Result
                   </h3>
-                  <form action={submitQCReview} className="space-y-3">
+                  <form action={submitQCReviewAction} className="space-y-3">
                     <input type="hidden" name="jobId" value={job.id} />
                     <div className="flex flex-wrap gap-4 text-sm">
                       <label className="inline-flex items-center gap-1">
