@@ -251,34 +251,50 @@ export default async function QCPage({
                   )}
                 </div>
 
-                {/* Previous QC + Rework */}
+                {/* Previous QC + Rework (brief summary when card is closed) */}
                 {(job.qcRecords.length > 0 || job.reworkEntries.length > 0) && (
-                  <div className="border-t border-gray-100 pt-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-                    {job.qcRecords.length > 0 && (
-                      <div>
-                        <h4 className="font-semibold text-gray-900 mb-1">QC History</h4>
-                        <ul className="space-y-1 text-gray-600">
-                          {job.qcRecords.map((qc: any) => (
-                            <li key={qc.id}>
-                              <span className="font-medium">{qc.qcStatus}</span> •{" "}
-                              {new Date(qc.createdAt).toLocaleString()}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                    {job.reworkEntries.length > 0 && (
-                      <div>
-                        <h4 className="font-semibold text-gray-900 mb-1">Rework History</h4>
-                        <ul className="space-y-1 text-gray-600">
-                          {job.reworkEntries.map((rw: any) => (
-                            <li key={rw.id}>
-                              {new Date(rw.createdAt).toLocaleString()} • {rw.reason}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
+                  <div className="border-t border-gray-100 pt-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-gray-600">
+                    {job.qcRecords.length > 0 && (() => {
+                      const lastQc = job.qcRecords[job.qcRecords.length - 1];
+                      const lastQcDate = new Date(lastQc.createdAt).toLocaleString();
+                      return (
+                        <div>
+                          <h4 className="font-semibold text-gray-900 mb-1">QC History (brief)</h4>
+                          <p>
+                            <span className="font-medium">{lastQc.qcStatus}</span> on {lastQcDate}
+                          </p>
+                          {job.qcRecords.length > 1 && (
+                            <p className="mt-0.5 text-xs text-gray-500">
+                              {job.qcRecords.length - 1} older QC record
+                              {job.qcRecords.length - 1 > 1 ? "s" : ""} kept in history.
+                            </p>
+                          )}
+                        </div>
+                      );
+                    })()}
+                    {job.reworkEntries.length > 0 && (() => {
+                      const lastRw = job.reworkEntries[job.reworkEntries.length - 1];
+                      const lastRwDate = new Date(lastRw.createdAt).toLocaleString();
+                      const reason =
+                        (lastRw.reason || "").length > 60
+                          ? `${lastRw.reason.slice(0, 57)}...`
+                          : lastRw.reason || "";
+                      return (
+                        <div>
+                          <h4 className="font-semibold text-gray-900 mb-1">Rework History (brief)</h4>
+                          <p>
+                            Last rework on {lastRwDate}
+                            {reason ? ` • ${reason}` : ""}
+                          </p>
+                          {job.reworkEntries.length > 1 && (
+                            <p className="mt-0.5 text-xs text-gray-500">
+                              {job.reworkEntries.length - 1} older rework record
+                              {job.reworkEntries.length - 1 > 1 ? "s" : ""} kept in history.
+                            </p>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </div>
                 )}
 
