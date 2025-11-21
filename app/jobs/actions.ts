@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authOptions";
 import { z } from "zod";
+import { sendJobStatusEmail } from "@/lib/email";
+import { revalidatePath } from "next/cache";
 
 const jobSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -214,6 +216,43 @@ export async function getJobs() {
   return { ok: true, jobs };
 }
 
+/**
+ * Lightweight "alerts" feed for the dashboard.
+ * For employees: returns their jobs that have important status changes.
+ */
+export async function getJobAlertsForCurrentUser() {
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user) {
+    return { ok: false, error: "Not authenticated", jobs: [] as any[] };
+  }
+
+  const userId = (session.user as any).id;
+
+  // Jobs where this user is assigned, and status is noteworthy
+  const jobs = await prisma.job.findMany({
+    where: {
+      assignedTo: userId,
+      status: {
+        in: ["AWAITING_QC", "REWORK", "COMPLETED"],
+      },
+    },
+    select: {
+      id: true,
+      title: true,
+      status: true,
+      updatedAt: true,
+      customer: { select: { name: true } },
+    },
+    orderBy: {
+      updatedAt: "desc",
+    },
+    take: 5,
+  });
+
+  return { ok: true, jobs };
+}
+
 export async function getAllUsers() {
   const session = await getServerSession(authOptions);
   
@@ -239,6 +278,63 @@ export async function getAllUsers() {
   });
 
   return { ok: true, users };
+}
+
+/**
+ * Mark a job as "Awaiting QC".
+ * Only managers/admins can do this. This is an explicit step (no longer tied to clock-out).
+ */
+export async function markJobAwaitingQC(jobId: string) {
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user) {
+    return { ok: false, error: "Not authenticated" };
+  }
+
+  const userRole = (session.user as any).role;
+
+  if (userRole !== "MANAGER" && userRole !== "ADMIN") {
+    return { ok: false, error: "Unauthorized: Only managers and admins can send jobs to QC" };
+  }
+
+  const job = await prisma.job.findUnique({
+    where: { id: jobId },
+    include: {
+      assignee: { select: { email: true, name: true } },
+      creator: { select: { email: true, name: true } },
+    },
+  });
+
+  if (!job) {
+    return { ok: false, error: "Job not found" };
+  }
+
+  const updated = await prisma.job.update({
+    where: { id: jobId },
+    data: {
+      status: "AWAITING_QC",
+    },
+  });
+
+  // Notify assignee and creator (if emails exist)
+  const recipients = [
+    job.assignee?.email,
+    job.creator?.email,
+  ].filter((e): e is string => !!e);
+
+  const message = `This job has been marked as Ready for Quality Check.\n\nStatus: AWAITING_QC\nTitle: ${job.title}`;
+
+  await Promise.all(
+    recipients.map((email) =>
+      sendJobStatusEmail(email, job.title, "AWAITING_QC", message)
+    )
+  );
+
+  // Refresh job pages
+  revalidatePath("/jobs");
+  revalidatePath("/dashboard");
+
+  return { ok: true, job: updated };
 }
 
 // Job Expenses Actions

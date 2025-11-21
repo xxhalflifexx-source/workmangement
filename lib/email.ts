@@ -2,8 +2,9 @@ import { Resend } from "resend";
 
 const resendApiKey = process.env.RESEND_API_KEY || "";
 // Check if email is disabled - be more strict about what counts as "disabled"
-const isEmailDisabled = !resendApiKey || 
-  resendApiKey.trim() === "" || 
+const isEmailDisabled =
+  !resendApiKey ||
+  resendApiKey.trim() === "" ||
   resendApiKey.toLowerCase().includes("placeholder") ||
   resendApiKey.toLowerCase().includes("replace") ||
   !resendApiKey.startsWith("re_"); // Resend keys always start with "re_"
@@ -197,6 +198,110 @@ export async function sendPasswordResetEmail(
     return { success: true, data };
   } catch (error) {
     console.error("Password reset email send exception:", error);
+    return { success: false, error };
+  }
+}
+
+/**
+ * Generic notification email helper for job/QC updates.
+ * Used so workers and managers get notified when job status changes (e.g. REWORK).
+ */
+export async function sendJobStatusEmail(
+  to: string | null | undefined,
+  jobTitle: string,
+  newStatus: string,
+  message?: string
+) {
+  if (!to) {
+    return { success: false, error: "Missing recipient email" } as const;
+  }
+
+  if (isEmailDisabled || !resend) {
+    console.error(
+      "❌ EMAIL SENDING DISABLED - cannot send job status email for",
+      jobTitle,
+      "to",
+      to
+    );
+    return {
+      success: false,
+      error: "Email service not configured",
+    } as const;
+  }
+
+  const safeStatus = newStatus.toUpperCase();
+  const subject = `Job "${jobTitle}" updated: ${safeStatus}`;
+
+  const extraMessage =
+    message && message.trim().length > 0
+      ? message.trim()
+      : "There has been an update to this job. Please log in to review the details.";
+
+  const productionUrl =
+    process.env.PRODUCTION_URL || "https://nextjs-auth-roles.vercel.app";
+
+  const jobLink = `${productionUrl}/jobs`;
+
+  try {
+    const { data, error } = await resend.emails.send({
+      from: "TCB Metal Works <noreply@send.tcbmetalworks.com>",
+      to: [to],
+      subject,
+      html: `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <style>
+              body { font-family: Arial, sans-serif; line-height: 1.6; color: #111827; background-color: #f3f4f6; }
+              .container { max-width: 640px; margin: 0 auto; padding: 24px; }
+              .card { background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 25px rgba(15,23,42,0.08); }
+              .header { background-color: #1e3a8a; padding: 20px 24px; color: #eff6ff; }
+              .title { font-size: 20px; font-weight: 700; margin: 0 0 4px; }
+              .subtitle { font-size: 13px; color: #bfdbfe; margin: 0; }
+              .content { padding: 24px; background-color: #f9fafb; }
+              .badge { display: inline-block; padding: 4px 10px; border-radius: 999px; font-size: 11px; font-weight: 600; letter-spacing: .03em; }
+              .badge-status { background-color: #e0f2fe; color: #075985; }
+              .job-title { font-size: 16px; font-weight: 600; margin: 12px 0 4px; color: #111827; }
+              .message { font-size: 14px; color: #374151; margin: 12px 0 16px; white-space: pre-line; }
+              .button { display: inline-block; background-color: #1d4ed8; color: #ffffff; text-decoration: none; padding: 10px 18px; border-radius: 999px; font-size: 13px; font-weight: 600; }
+              .meta { font-size: 12px; color: #6b7280; margin-top: 18px; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="card">
+                <div class="header">
+                  <p class="title">Job Update</p>
+                  <p class="subtitle">There has been a change in job status at TCB Metal Works.</p>
+                </div>
+                <div class="content">
+                  <span class="badge badge-status">STATUS: ${safeStatus}</span>
+                  <p class="job-title">${jobTitle}</p>
+                  <p class="message">${extraMessage}</p>
+                  <a href="${jobLink}" class="button">Open Job Management</a>
+                  <p class="meta">
+                    You are receiving this email because you are assigned to this job or created it.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </body>
+        </html>
+      `,
+    });
+
+    if (error) {
+      console.error(
+        "❌ Job status email send error:",
+        JSON.stringify(error, null, 2)
+      );
+      return { success: false, error };
+    }
+
+    console.log(`✅ Job status email sent successfully! ID: ${data?.id}`);
+    return { success: true, data };
+  } catch (error) {
+    console.error("Job status email exception:", error);
     return { success: false, error };
   }
 }
