@@ -60,6 +60,7 @@ export default function AdminPage() {
   const [finLoading, setFinLoading] = useState(false);
   const [finSummary, setFinSummary] = useState<any>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
+  const [userSearch, setUserSearch] = useState("");
 
   useEffect(() => {
     loadData();
@@ -256,6 +257,16 @@ export default function AdminPage() {
     }
   };
 
+  const filteredUsers = users.filter((u) => {
+    const q = userSearch.trim().toLowerCase();
+    if (!q) return true;
+    return (
+      (u.name || "").toLowerCase().includes(q) ||
+      (u.email || "").toLowerCase().includes(q) ||
+      u.role.toLowerCase().includes(q)
+    );
+  });
+
   if (loading) {
     return (
       <main className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -352,11 +363,29 @@ export default function AdminPage() {
         {/* User Management Tab */}
         {activeTab === "users" && (
           <div className="bg-white rounded-xl shadow border border-gray-200">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h2 className="text-xl font-semibold text-gray-900">User Accounts</h2>
-              <p className="text-sm text-gray-500 mt-1">
-                Manage user accounts, login access, roles, and approvals
-              </p>
+            <div className="px-6 py-4 border-b border-gray-200 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900">User Accounts</h2>
+                <p className="text-sm text-gray-500 mt-1">
+                  Manage user accounts, login access, roles, and approvals
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={userSearch}
+                  onChange={(e) => setUserSearch(e.target.value)}
+                  placeholder="Search by name, email, or role..."
+                  className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm w-56"
+                />
+                <button
+                  type="button"
+                  onClick={() => setUserSearch(userSearch.trim())}
+                  className="px-3 py-1.5 rounded-lg bg-gray-100 text-xs font-medium text-gray-700 border border-gray-300 hover:bg-gray-200"
+                >
+                  Search
+                </button>
+              </div>
             </div>
 
             <div className="overflow-x-auto">
@@ -396,14 +425,14 @@ export default function AdminPage() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {users.length === 0 ? (
+                  {filteredUsers.length === 0 ? (
                     <tr>
                       <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
                         No users found
                       </td>
                     </tr>
                   ) : (
-                    users.map((user) => (
+                  filteredUsers.map((user) => (
                       <tr key={user.id} className="hover:bg-gray-50">
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
