@@ -203,6 +203,49 @@ export async function updateUserHourlyRate(userId: string, hourlyRate: number) {
   }
 }
 
+export async function updateUserProfileDetails(
+  userId: string,
+  gender?: string | null,
+  birthDate?: string | null
+) {
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user) {
+    return { ok: false, error: "Not authenticated" };
+  }
+
+  const userRole = (session.user as any).role;
+
+  // Only admins can update profile details
+  if (userRole !== "ADMIN") {
+    return { ok: false, error: "Unauthorized: Only admins can update user details" };
+  }
+
+  const data: any = {};
+  if (typeof gender !== "undefined") {
+    data.gender = gender && gender.trim().length > 0 ? gender : null;
+  }
+  if (typeof birthDate !== "undefined") {
+    data.birthDate = birthDate ? new Date(birthDate) : null;
+  }
+
+  if (Object.keys(data).length === 0) {
+    return { ok: false, error: "No changes to apply" };
+  }
+
+  try {
+    await prisma.user.update({
+      where: { id: userId },
+      data,
+    });
+
+    return { ok: true, message: "User details updated successfully" };
+  } catch (error) {
+    console.error("Update user profile details error:", error);
+    return { ok: false, error: "Failed to update user details" };
+  }
+}
+
 export async function updateUserRole(userId: string, newRole: string) {
   const session = await getServerSession(authOptions);
   

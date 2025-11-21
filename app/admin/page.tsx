@@ -1,7 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getAllUsersForAdmin, deleteUser, updateUserRole, updateUserHourlyRate, getCompanySettings, updateCompanySettings, getFinancialSummary, listActiveInvoices, listOpenEstimates, createUserByAdmin } from "./actions";
+import {
+  getAllUsersForAdmin,
+  deleteUser,
+  updateUserRole,
+  updateUserHourlyRate,
+  getCompanySettings,
+  updateCompanySettings,
+  getFinancialSummary,
+  listActiveInvoices,
+  listOpenEstimates,
+  createUserByAdmin,
+  updateUserProfileDetails,
+} from "./actions";
 import Link from "next/link";
 
 interface User {
@@ -182,6 +194,34 @@ export default function AdminPage() {
       day: "numeric",
       year: "numeric",
     });
+  };
+
+  const handleGenderChange = async (userId: string, gender: string) => {
+    setError(undefined);
+    setSuccess(undefined);
+    const res = await updateUserProfileDetails(userId, gender, undefined);
+    if (!res.ok) {
+      setError(res.error);
+    } else {
+      setSuccess(res.message);
+      setUsers(
+        users.map((u) => (u.id === userId ? { ...u, gender: gender || null } : u))
+      );
+    }
+  };
+
+  const handleBirthDateChange = async (userId: string, birthDate: string) => {
+    setError(undefined);
+    setSuccess(undefined);
+    const res = await updateUserProfileDetails(userId, undefined, birthDate || undefined);
+    if (!res.ok) {
+      setError(res.error);
+    } else {
+      setSuccess(res.message);
+      setUsers(
+        users.map((u) => (u.id === userId ? { ...u, birthDate: birthDate || null } : u))
+      );
+    }
   };
 
   if (loading) {
@@ -512,22 +552,49 @@ export default function AdminPage() {
                           </select>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                          {user.gender || "—"}
+                          <select
+                            value={user.gender || ""}
+                            onChange={(e) => handleGenderChange(user.id, e.target.value)}
+                            className="border border-gray-300 rounded-full px-2 py-1 text-xs bg-gray-50"
+                          >
+                            <option value="">Not specified</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
+                          </select>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-700">
-                          {user.birthDate
-                            ? (() => {
-                                const dob = new Date(user.birthDate as string);
-                                const now = new Date();
-                                let age = now.getFullYear() - dob.getFullYear();
-                                const m = now.getMonth() - dob.getMonth();
-                                if (m < 0 || (m === 0 && now.getDate() < dob.getDate())) {
-                                  age--;
-                                }
-                                const month = dob.toLocaleString("en-US", { month: "short" });
-                                return `${age} yrs / ${month}`;
-                              })()
-                            : "—"}
+                          <div className="flex flex-col items-center gap-1">
+                            <input
+                              type="date"
+                              value={
+                                user.birthDate
+                                  ? new Date(user.birthDate as string)
+                                      .toISOString()
+                                      .split("T")[0]
+                                  : ""
+                              }
+                              onChange={(e) => handleBirthDateChange(user.id, e.target.value)}
+                              className="border border-gray-300 rounded-lg px-2 py-1 text-xs"
+                            />
+                            <span className="text-[11px] text-gray-500">
+                              {user.birthDate
+                                ? (() => {
+                                    const dob = new Date(user.birthDate as string);
+                                    const now = new Date();
+                                    let age = now.getFullYear() - dob.getFullYear();
+                                    const m = now.getMonth() - dob.getMonth();
+                                    if (m < 0 || (m === 0 && now.getDate() < dob.getDate())) {
+                                      age--;
+                                    }
+                                    const month = dob.toLocaleString("en-US", {
+                                      month: "short",
+                                    });
+                                    return `${age} yrs / ${month}`;
+                                  })()
+                                : "Age / Month"}
+                            </span>
+                          </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-center">
                           <div className="flex items-center justify-center gap-1">
