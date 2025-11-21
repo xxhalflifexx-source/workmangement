@@ -32,6 +32,12 @@ model User {
   inventoryAdjustments  InventoryAdjustment[]
   materialRequests      MaterialRequest[]
   jobExpenses           JobExpense[]
+  /// QC inspections performed by this manager/admin
+  qcRecords             QCRecord[]
+  /// Rework entries where this user was identified as responsible
+  reworkResponsibleFor  ReworkEntry[]          @relation("ReworkResponsible")
+  /// Rework entries created/logged by this user (QC/admin)
+  reworkCreated         ReworkEntry[]          @relation("ReworkCreatedBy")
 }
 
 model Account {
