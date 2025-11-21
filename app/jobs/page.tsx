@@ -843,10 +843,15 @@ export default function JobsPage() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
+      case "NOT_STARTED":
       case "PENDING":
-        return "bg-yellow-100 text-yellow-800";
+        return "bg-yellow-100 text-yellow-800"; // Treat legacy PENDING as NOT_STARTED
       case "IN_PROGRESS":
         return "bg-blue-100 text-blue-800";
+      case "AWAITING_QC":
+        return "bg-purple-100 text-purple-800";
+      case "REWORK":
+        return "bg-orange-100 text-orange-800";
       case "COMPLETED":
         return "bg-green-100 text-green-800";
       case "CANCELLED":
@@ -926,8 +931,10 @@ export default function JobsPage() {
               className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
             >
               <option value="ALL">All Status</option>
-              <option value="PENDING">Pending</option>
+              <option value="NOT_STARTED">Not Started</option>
               <option value="IN_PROGRESS">In Progress</option>
+              <option value="AWAITING_QC">Awaiting QC</option>
+              <option value="REWORK">Rework</option>
               <option value="COMPLETED">Completed</option>
               <option value="CANCELLED">Cancelled</option>
             </select>
@@ -1171,14 +1178,16 @@ export default function JobsPage() {
                     </label>
                     <select
                       name="status"
-                      defaultValue={editingJob?.status || "PENDING"}
+                  defaultValue={editingJob?.status || "NOT_STARTED"}
                       required
                       className="w-full border border-gray-300 rounded-lg px-3 py-2"
                     >
-                      <option value="PENDING">Pending</option>
-                      <option value="IN_PROGRESS">In Progress</option>
-                      <option value="COMPLETED">Completed</option>
-                      <option value="CANCELLED">Cancelled</option>
+                  <option value="NOT_STARTED">Not Started</option>
+                  <option value="IN_PROGRESS">In Progress</option>
+                  <option value="AWAITING_QC">Awaiting QC</option>
+                  <option value="REWORK">Rework</option>
+                  <option value="COMPLETED">Completed</option>
+                  <option value="CANCELLED">Cancelled</option>
                     </select>
                   </div>
 

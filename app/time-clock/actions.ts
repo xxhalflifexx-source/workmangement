@@ -13,7 +13,10 @@ export async function clockIn(jobId?: string) {
 
   const userId = (session.user as any).id;
 
-  // Check if already clocked in
+  const now = new Date();
+
+  // Check if already clocked in on another job.
+  // Business rule: at most ONE active TimeEntry per user.
   const activeEntry = await prisma.timeEntry.findFirst({
     where: {
       userId,
@@ -22,7 +25,58 @@ export async function clockIn(jobId?: string) {
   });
 
   if (activeEntry) {
-    return { ok: false, error: "Already clocked in" };
+    // Automatically clock out the previous entry before starting a new one.
+    const prevDurationHours =
+      (now.getTime() - activeEntry.clockIn.getTime()) / (1000 * 60 * 60);
+
+    await prisma.timeEntry.update({
+      where: { id: activeEntry.id },
+      data: {
+        clockOut: now,
+        durationHours: prevDurationHours,
+      },
+    });
+
+    // If the previous entry was linked to a job and there are no other active
+    // time entries on that job, move it to AWAITING_QC.
+    if (activeEntry.jobId) {
+      const remainingActive = await prisma.timeEntry.count({
+        where: {
+          jobId: activeEntry.jobId,
+          clockOut: null,
+        },
+      });
+
+      if (remainingActive === 0) {
+        await prisma.job.update({
+          where: { id: activeEntry.jobId },
+          data: {
+            status: "AWAITING_QC",
+          },
+        });
+      }
+    }
+  }
+
+  // If clocking into a specific job, update its status based on lifecycle rules.
+  let isRework = false;
+  if (jobId) {
+    const job = await prisma.job.findUnique({
+      where: { id: jobId },
+      select: { status: true },
+    });
+
+    if (job) {
+      // Any work performed while a job is in REWORK is counted as rework time.
+      isRework = job.status === "REWORK";
+
+      if (job.status === "NOT_STARTED" || job.status === "PENDING") {
+        await prisma.job.update({
+          where: { id: jobId },
+          data: { status: "IN_PROGRESS" },
+        });
+      }
+    }
   }
 
   // Create new time entry
@@ -30,7 +84,8 @@ export async function clockIn(jobId?: string) {
     data: {
       userId,
       jobId: jobId || null,
-      clockIn: new Date(),
+      clockIn: now,
+      isRework,
     },
     include: {
       job: { select: { title: true, id: true } },
@@ -61,11 +116,16 @@ export async function clockOut(notes?: string, images?: string) {
     return { ok: false, error: "Not clocked in" };
   }
 
-  // Update with clock out time
+  const now = new Date();
+  const durationHours =
+    (now.getTime() - activeEntry.clockIn.getTime()) / (1000 * 60 * 60);
+
+  // Update with clock out time and computed duration
   const entry = await prisma.timeEntry.update({
     where: { id: activeEntry.id },
     data: {
-      clockOut: new Date(),
+      clockOut: now,
+      durationHours,
       notes: notes || null,
       images: images || null,
     },
@@ -87,6 +147,26 @@ export async function clockOut(notes?: string, images?: string) {
     } catch (error) {
       console.error("Failed to create job activity:", error);
       // Don't fail the clock out if activity creation fails
+    }
+  }
+
+  // If this entry was linked to a job, and there are no other active
+  // time entries on that job, move the job to AWAITING_QC.
+  if (activeEntry.jobId) {
+    const remainingActive = await prisma.timeEntry.count({
+      where: {
+        jobId: activeEntry.jobId,
+        clockOut: null,
+      },
+    });
+
+    if (remainingActive === 0) {
+      await prisma.job.update({
+        where: { id: activeEntry.jobId },
+        data: {
+          status: "AWAITING_QC",
+        },
+      });
     }
   }
 
@@ -180,12 +260,15 @@ export async function getAvailableJobs() {
   const userId = (session.user as any).id;
   const userRole = (session.user as any).role;
 
-  // Get jobs assigned to user or all jobs if manager/admin
+  // Get jobs assigned to user or all jobs if manager/admin.
+  // Employees can clock into jobs that are NOT_STARTED, IN_PROGRESS, or REWORK.
+  const allowedStatuses = ["NOT_STARTED", "PENDING", "IN_PROGRESS", "REWORK"];
+
   const jobs = await prisma.job.findMany({
     where:
       userRole === "ADMIN" || userRole === "MANAGER"
-        ? { status: { in: ["PENDING", "IN_PROGRESS"] } }
-        : { assignedTo: userId, status: { in: ["PENDING", "IN_PROGRESS"] } },
+        ? { status: { in: allowedStatuses } }
+        : { assignedTo: userId, status: { in: allowedStatuses } },
     select: {
       id: true,
       title: true,
@@ -213,7 +296,7 @@ export async function getAssignedJobs() {
   const jobs = await prisma.job.findMany({
     where: {
       assignedTo: userId,
-      status: { in: ["PENDING", "IN_PROGRESS"] },
+      status: { in: ["NOT_STARTED", "PENDING", "IN_PROGRESS", "REWORK"] },
     },
     select: {
       id: true,

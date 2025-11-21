@@ -8,13 +8,24 @@ import { z } from "zod";
 const jobSchema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().optional(),
-  status: z.enum(["PENDING", "IN_PROGRESS", "COMPLETED", "CANCELLED"]),
+  status: z.enum([
+    // New lifecycle statuses
+    "NOT_STARTED",
+    "IN_PROGRESS",
+    "AWAITING_QC",
+    "REWORK",
+    "COMPLETED",
+    "CANCELLED",
+    // Backwards-compatible legacy value for older jobs
+    "PENDING",
+  ]),
   priority: z.enum(["LOW", "MEDIUM", "HIGH", "URGENT"]),
   assignedTo: z.string().optional(),
   customerId: z.string().optional(),
   pricingType: z.enum(["FIXED", "T&M"]).optional(),
   estimatedPrice: z.string().optional(),
   finalPrice: z.string().optional(),
+  estimatedHours: z.string().optional(),
   dueDate: z.string().optional(),
 });
 
@@ -36,13 +47,14 @@ export async function createJob(formData: FormData) {
   const data = {
     title: formData.get("title"),
     description: formData.get("description") || "",
-    status: formData.get("status") || "PENDING",
+    status: formData.get("status") || "NOT_STARTED",
     priority: formData.get("priority") || "MEDIUM",
     assignedTo: formData.get("assignedTo") || undefined,
     customerId: formData.get("customerId") || undefined,
     pricingType: formData.get("pricingType") || "FIXED",
     estimatedPrice: formData.get("estimatedPrice") || undefined,
     finalPrice: formData.get("finalPrice") || undefined,
+    estimatedHours: formData.get("estimatedHours") || undefined,
     dueDate: formData.get("dueDate") || undefined,
   };
 
@@ -64,6 +76,7 @@ export async function createJob(formData: FormData) {
       pricingType: parsed.data.pricingType || "FIXED",
       estimatedPrice: parsed.data.estimatedPrice ? parseFloat(parsed.data.estimatedPrice) : null,
       finalPrice: parsed.data.finalPrice ? parseFloat(parsed.data.finalPrice) : null,
+      estimatedHours: parsed.data.estimatedHours ? parseFloat(parsed.data.estimatedHours) : null,
       dueDate: parsed.data.dueDate ? new Date(parsed.data.dueDate) : null,
     },
     include: {
@@ -112,6 +125,7 @@ export async function updateJob(jobId: string, formData: FormData) {
     pricingType: formData.get("pricingType") || "FIXED",
     estimatedPrice: formData.get("estimatedPrice") || undefined,
     finalPrice: formData.get("finalPrice") || undefined,
+    estimatedHours: formData.get("estimatedHours") || undefined,
     dueDate: formData.get("dueDate") || undefined,
   };
 
@@ -133,6 +147,7 @@ export async function updateJob(jobId: string, formData: FormData) {
       pricingType: parsed.data.pricingType || "FIXED",
       estimatedPrice: parsed.data.estimatedPrice ? parseFloat(parsed.data.estimatedPrice) : null,
       finalPrice: parsed.data.finalPrice ? parseFloat(parsed.data.finalPrice) : null,
+      estimatedHours: parsed.data.estimatedHours ? parseFloat(parsed.data.estimatedHours) : null,
       dueDate: parsed.data.dueDate ? new Date(parsed.data.dueDate) : null,
     },
     include: {

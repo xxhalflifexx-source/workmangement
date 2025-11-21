@@ -61,17 +61,19 @@ model Session {
 }
 
 model TimeEntry {
-  id        String    @id @default(cuid())
-  userId    String
-  jobId     String?
-  clockIn   DateTime
-  clockOut  DateTime?
-  notes     String?
-  images    String?   // JSON array of image paths
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  job       Job?      @relation(fields: [jobId], references: [id], onDelete: SetNull)
+  id            String    @id @default(cuid())
+  userId        String
+  jobId         String?
+  clockIn       DateTime
+  clockOut      DateTime?
+  durationHours Float?    // Computed on clock out for efficiency metrics
+  isRework      Boolean   @default(false)
+  notes         String?
+  images        String?   // JSON array of image paths
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  job           Job?      @relation(fields: [jobId], references: [id], onDelete: SetNull)
 }
 
 model Customer {
@@ -90,7 +92,14 @@ model Job {
   id               String            @id @default(cuid())
   title            String
   description      String?
-  status           String            @default("PENDING")
+  /// Status lifecycle:
+  /// - NOT_STARTED: job created but no one has worked on it yet
+  /// - IN_PROGRESS: at least one active or recent TimeEntry
+  /// - AWAITING_QC: work appears done and waiting for manager/admin QC
+  /// - REWORK: job failed QC and is back with the shop floor
+  /// - COMPLETED: passed QC (or minor issues) and is considered done
+  /// - CANCELLED: job cancelled
+  status           String            @default("NOT_STARTED")
   priority         String            @default("MEDIUM")
   assignedTo       String?
   createdBy        String
@@ -98,6 +107,7 @@ model Job {
   pricingType      String            @default("FIXED") // FIXED or T&M (Time & Materials)
   estimatedPrice   Float?            // Quoted/estimated price
   finalPrice       Float?            // Final agreed price
+  estimatedHours   Float?            // Planned hours for efficiency calculations
   dueDate          DateTime?
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
@@ -109,6 +119,8 @@ model Job {
   materialRequests MaterialRequest[]
   expenses         JobExpense[]
   invoices         Invoice[]
+  qcRecords        QCRecord[]
+  reworkEntries    ReworkEntry[]
 }
 
 model JobActivity {
@@ -200,6 +212,41 @@ model JobExpense {
   job         Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
+
+/// Quality Control record for a job.
+/// QC is always performed by a manager or admin.
+model QCRecord {
+  id         String   @id @default(cuid())
+  jobId      String
+  qcUserId   String
+  /// PASS | FAIL | MINOR_ISSUES
+  qcStatus   String
+  /// 1.0 for PASS, 0.5 for MINOR_ISSUES, 0.0 for FAIL
+  qcScore    Float
+  notes      String?
+  /// JSON array of photo URLs, consistent with other image fields
+  photos     String?
+  createdAt  DateTime @default(now())
+
+  job        Job     @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  qcUser     User    @relation(fields: [qcUserId], references: [id], onDelete: Cascade)
+}
+
+/// Rework entry created when a job fails QC.
+/// Tracks who was responsible and how often rework happens.
+model ReworkEntry {
+  id                String   @id @default(cuid())
+  jobId             String
+  responsibleUserId String?
+  createdByUserId   String
+  reason            String
+  createdAt         DateTime @default(now())
+
+  job               Job     @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  responsibleUser   User?   @relation("ReworkResponsible", fields: [responsibleUserId], references: [id], onDelete: SetNull)
+  createdBy         User    @relation("ReworkCreatedBy", fields: [createdByUserId], references: [id], onDelete: Cascade)
+}
+
 
 model Invoice {
   id             String       @id @default(cuid())
