@@ -6,12 +6,13 @@ import Link from "next/link";
 export default async function QCPage({
   searchParams,
 }: {
-  searchParams?: { qc?: string };
+  searchParams?: { qc?: string; q?: string };
 }) {
   const session = await getServerSession(authOptions);
   const user = session?.user as any | undefined;
   const role = user?.role || "EMPLOYEE";
   const showSuccess = searchParams?.qc === "ok";
+  const search = searchParams?.q || "";
 
   if (!session?.user || (role !== "ADMIN" && role !== "MANAGER")) {
     return (
@@ -32,7 +33,7 @@ export default async function QCPage({
     );
   }
 
-  const { ok, jobs, error } = await getJobsAwaitingQC();
+  const { ok, jobs, error } = await getJobsAwaitingQC(search);
 
   return (
     <main className="min-h-screen bg-gray-50">
@@ -54,11 +55,36 @@ export default async function QCPage({
       </header>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-        {showSuccess && (
-          <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg">
-            QC result saved successfully. Job list below has been refreshed.
+        <form
+          className="flex flex-col md:flex-row md:items-center md:justify-between gap-3"
+          action="/qc"
+          method="GET"
+        >
+          <div className="flex-1">
+            {showSuccess && (
+              <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg mb-4">
+                QC result saved successfully. Job list below has been refreshed.
+              </div>
+            )}
           </div>
-        )}
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              name="q"
+              defaultValue={search}
+              placeholder="Search by job or customer..."
+              className="border border-gray-300 rounded-lg px-3 py-2 text-sm w-64"
+            />
+            <button
+              type="submit"
+              className="px-3 py-2 rounded-lg bg-gray-100 text-xs font-medium text-gray-700 border border-gray-300 hover:bg-gray-200"
+            >
+              Search
+            </button>
+          </div>
+          {/* preserve qc success flag when searching again */}
+          {showSuccess && <input type="hidden" name="qc" value="ok" />}
+        </form>
         {!ok && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
             {error || "Failed to load QC jobs"}

@@ -21,7 +21,7 @@ function getQcScore(status: QCStatus): number {
   }
 }
 
-export async function getJobsAwaitingQC() {
+export async function getJobsAwaitingQC(search?: string) {
   const session = await getServerSession(authOptions);
 
   if (!session?.user) {
@@ -33,11 +33,25 @@ export async function getJobsAwaitingQC() {
     return { ok: false, error: "Unauthorized", jobs: [] as any[] };
   }
 
+  const q = search?.trim() || "";
+
   const jobs = await prisma.job.findMany({
     where: {
       status: {
-        in: ["AWAITING_QC", "REWORK"],
+        in: ["AWAITING_QC", "REWORK", "COMPLETED"],
       },
+      ...(q
+        ? {
+            OR: [
+              { title: { contains: q, mode: "insensitive" } },
+              {
+                customer: {
+                  name: { contains: q, mode: "insensitive" },
+                },
+              },
+            ],
+          }
+        : {}),
     },
     include: {
       assignee: { select: { id: true, name: true, email: true } },
