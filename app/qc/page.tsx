@@ -6,13 +6,14 @@ import Link from "next/link";
 export default async function QCPage({
   searchParams,
 }: {
-  searchParams?: { qc?: string; q?: string };
+  searchParams?: { qc?: string; q?: string; view?: string };
 }) {
   const session = await getServerSession(authOptions);
   const user = session?.user as any | undefined;
   const role = user?.role || "EMPLOYEE";
   const showSuccess = searchParams?.qc === "ok";
   const search = searchParams?.q || "";
+  const view = searchParams?.view === "history" ? "history" : "queue";
 
   if (!session?.user || (role !== "ADMIN" && role !== "MANAGER")) {
     return (
@@ -34,6 +35,20 @@ export default async function QCPage({
   }
 
   const { ok, jobs, error } = await getJobsAwaitingQC(search);
+
+  const activeJobs = ok
+    ? jobs.filter(
+        (job: any) => job.status === "AWAITING_QC" || job.status === "REWORK"
+      )
+    : [];
+  const historyJobs = ok
+    ? jobs.filter(
+        (job: any) => job.status === "COMPLETED" || job.status === "REWORK"
+      )
+    : [];
+
+  const listLabel = view === "history" ? "History List" : "Job List";
+  const listJobs = view === "history" ? historyJobs : activeJobs;
 
   return (
     <main className="min-h-screen bg-gray-50">
@@ -93,10 +108,11 @@ export default async function QCPage({
 
         {ok && jobs.length === 0 && (
           <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-8 text-center text-gray-600">
-            <p className="text-lg font-medium mb-2">No jobs awaiting QC right now</p>
+            <p className="text-lg font-medium mb-2">No QC jobs found</p>
             <p className="text-sm">
-              When a job is marked as <span className="font-semibold">AWAITING_QC</span> or{" "}
-              <span className="font-semibold">REWORK</span>, it will appear here for review.
+              When a job is marked as <span className="font-semibold">Submit to QC</span>,{" "}
+              <span className="font-semibold">REWORK</span>, or is recently{" "}
+              <span className="font-semibold">COMPLETED</span>, it will appear here.
             </p>
           </div>
         )}

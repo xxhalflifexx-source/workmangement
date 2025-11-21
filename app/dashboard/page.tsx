@@ -237,7 +237,7 @@ export default async function Dashboard() {
                           : "bg-green-100 text-green-800"
                       }`}
                     >
-                      {job.status}
+                      {job.status === "AWAITING_QC" ? "Submit to QC" : job.status}
                     </span>
                   </li>
                 ))}

@@ -1000,7 +1000,7 @@ export default function JobsPage() {
               <option value="ALL">All Status</option>
               <option value="NOT_STARTED">Not Started</option>
               <option value="IN_PROGRESS">In Progress</option>
-              <option value="AWAITING_QC">Awaiting QC</option>
+              <option value="AWAITING_QC">Submit to QC</option>
               <option value="REWORK">Rework</option>
               <option value="COMPLETED">Completed</option>
               <option value="CANCELLED">Cancelled</option>
@@ -1251,7 +1251,7 @@ export default function JobsPage() {
                     >
                   <option value="NOT_STARTED">Not Started</option>
                   <option value="IN_PROGRESS">In Progress</option>
-                  <option value="AWAITING_QC">Awaiting QC</option>
+                  <option value="AWAITING_QC">Submit to QC</option>
                   <option value="REWORK">Rework</option>
                   <option value="COMPLETED">Completed</option>
                   <option value="CANCELLED">Cancelled</option>
