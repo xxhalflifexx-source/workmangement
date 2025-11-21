@@ -137,6 +137,27 @@ export default async function Dashboard() {
             </Link>
           )}
 
+          {/* QC Dashboard Card - Manager/Admin only */}
+          {(role === "MANAGER" || role === "ADMIN") && (
+            <Link
+              href="/qc"
+              className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow p-6 border border-gray-200 hover:border-indigo-300"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center text-2xl">
+                  ✅
+                </div>
+                <span className="text-xs text-indigo-600 bg-indigo-100 px-2 py-1 rounded font-medium">
+                  QC
+                </span>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Quality Control</h3>
+              <p className="text-gray-600 text-sm">
+                Review completed jobs, pass or fail work, and send items back for rework.
+              </p>
+            </Link>
+          )}
+
           {/* Admin Only Card */}
           {role === "ADMIN" && (
             <Link
