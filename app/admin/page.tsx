@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getAllUsersForAdmin, deleteUser, updateUserRole, updateUserHourlyRate, getCompanySettings, updateCompanySettings, getFinancialSummary, listActiveInvoices, listOpenEstimates } from "./actions";
+import { getAllUsersForAdmin, deleteUser, updateUserRole, updateUserHourlyRate, getCompanySettings, updateCompanySettings, getFinancialSummary, listActiveInvoices, listOpenEstimates, createUserByAdmin } from "./actions";
 import Link from "next/link";
 
 interface User {
@@ -9,6 +9,8 @@ interface User {
   name: string | null;
   email: string | null;
   role: string;
+  gender?: string | null;
+  birthDate?: string | null;
   hourlyRate: number | null;
   isVerified: boolean;
   createdAt: string;
@@ -45,6 +47,7 @@ export default function AdminPage() {
   const [finLoading, setFinLoading] = useState(false);
   const [finSummary, setFinSummary] = useState<any>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
+  const [showCreateUser, setShowCreateUser] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -188,6 +191,150 @@ export default function AdminPage() {
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading admin panel...</p>
         </div>
+
+      {/* Create User Modal */}
+      {showCreateUser && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900">Create Employee Account</h2>
+                <p className="text-sm text-gray-500">
+                  Create a login account for an employee, manager, or admin.
+                </p>
+              </div>
+              <button
+                onClick={() => setShowCreateUser(false)}
+                className="text-gray-400 hover:text-gray-600 text-xl font-bold"
+              >
+                ×
+              </button>
+            </div>
+            <form
+              className="p-6 space-y-4"
+              onSubmit={async (e) => {
+                e.preventDefault();
+                setError(undefined);
+                setSuccess(undefined);
+                const formData = new FormData(e.currentTarget);
+                const res = await createUserByAdmin(formData);
+                if (!res.ok) {
+                  setError(res.error);
+                } else {
+                  setSuccess(res.message);
+                  setShowCreateUser(false);
+                  // Refresh user list
+                  loadData();
+                }
+              }}
+            >
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Full Name *
+                  </label>
+                  <input
+                    name="name"
+                    type="text"
+                    required
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                    placeholder="Employee name"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Role *
+                  </label>
+                  <select
+                    name="role"
+                    defaultValue="EMPLOYEE"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                  >
+                    <option value="EMPLOYEE">EMPLOYEE</option>
+                    <option value="MANAGER">MANAGER</option>
+                    <option value="ADMIN">ADMIN</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Email (login username) *
+                </label>
+                <input
+                  name="email"
+                  type="email"
+                  required
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                  placeholder="employee@example.com"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Temporary Password *
+                </label>
+                <input
+                  name="password"
+                  type="password"
+                  required
+                  minLength={6}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                  placeholder="At least 6 characters"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Share this password privately with the employee. They can change it later via the
+                  reset-password flow.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Gender
+                  </label>
+                  <select
+                    name="gender"
+                    defaultValue=""
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                  >
+                    <option value="">Not specified</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Birth Date
+                  </label>
+                  <input
+                    name="birthDate"
+                    type="date"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-2 border-t border-gray-200 mt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowCreateUser(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700"
+                >
+                  Create Account
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
       </main>
     );
   }
@@ -277,10 +424,20 @@ export default function AdminPage() {
         {activeTab === "users" && (
           <div className="bg-white rounded-xl shadow border border-gray-200">
             <div className="px-6 py-4 border-b border-gray-200">
-              <h2 className="text-xl font-semibold text-gray-900">User Accounts</h2>
-              <p className="text-sm text-gray-500 mt-1">
-                Manage user accounts, roles, and permissions
-              </p>
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                <div>
+                  <h2 className="text-xl font-semibold text-gray-900">User Accounts</h2>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Manage user accounts, login access, and roles
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowCreateUser(true)}
+                  className="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition-colors"
+                >
+                  + Create Employee Account
+                </button>
+              </div>
             </div>
 
             <div className="overflow-x-auto">
@@ -292,6 +449,12 @@ export default function AdminPage() {
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Role
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Gender
+                    </th>
+                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Age / Birth&nbsp;Month
                     </th>
                     <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Hourly Rate
@@ -347,6 +510,24 @@ export default function AdminPage() {
                             <option value="MANAGER">MANAGER</option>
                             <option value="ADMIN">ADMIN</option>
                           </select>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                          {user.gender || "—"}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-700">
+                          {user.birthDate
+                            ? (() => {
+                                const dob = new Date(user.birthDate as string);
+                                const now = new Date();
+                                let age = now.getFullYear() - dob.getFullYear();
+                                const m = now.getMonth() - dob.getMonth();
+                                if (m < 0 || (m === 0 && now.getDate() < dob.getDate())) {
+                                  age--;
+                                }
+                                const month = dob.toLocaleString("en-US", { month: "short" });
+                                return `${age} yrs / ${month}`;
+                              })()
+                            : "—"}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-center">
                           <div className="flex items-center justify-center gap-1">

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authOptions";
 import { z } from "zod";
+import { hash } from "bcryptjs";
 
 const companySettingsSchema = z.object({
   companyName: z.string().min(1, "Company name is required"),
@@ -37,6 +38,8 @@ export async function getAllUsersForAdmin() {
         name: true,
         email: true,
         role: true,
+        gender: true,
+        birthDate: true,
         hourlyRate: true,
         isVerified: true,
         createdAt: true,
@@ -56,6 +59,73 @@ export async function getAllUsersForAdmin() {
   } catch (error) {
     console.error("Get users error:", error);
     return { ok: false, error: "Failed to fetch users" };
+  }
+}
+
+const createUserSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  email: z.string().email("Valid email is required"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+  role: z.enum(["EMPLOYEE", "MANAGER", "ADMIN"]).default("EMPLOYEE"),
+  gender: z.string().optional(),
+  birthDate: z.string().optional(), // ISO date string
+});
+
+export async function createUserByAdmin(formData: FormData) {
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user) {
+    return { ok: false, error: "Not authenticated" };
+  }
+
+  const userRole = (session.user as any).role;
+
+  if (userRole !== "ADMIN") {
+    return { ok: false, error: "Unauthorized: Only admins can create users" };
+  }
+
+  const data = {
+    name: (formData.get("name") as string) || "",
+    email: (formData.get("email") as string) || "",
+    password: (formData.get("password") as string) || "",
+    role: (formData.get("role") as string) || "EMPLOYEE",
+    gender: (formData.get("gender") as string) || undefined,
+    birthDate: (formData.get("birthDate") as string) || undefined,
+  };
+
+  const parsed = createUserSchema.safeParse(data);
+
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.errors[0].message };
+  }
+
+  try {
+    const existing = await prisma.user.findUnique({
+      where: { email: parsed.data.email },
+    });
+
+    if (existing) {
+      return { ok: false, error: "A user with this email already exists" };
+    }
+
+    const passwordHash = await hash(parsed.data.password, 10);
+
+    await prisma.user.create({
+      data: {
+        name: parsed.data.name,
+        email: parsed.data.email,
+        passwordHash,
+        role: parsed.data.role,
+        gender: parsed.data.gender || null,
+        birthDate: parsed.data.birthDate ? new Date(parsed.data.birthDate) : null,
+        isVerified: true,
+      },
+    });
+
+    return { ok: true, message: "User account created successfully" };
+  } catch (error) {
+    console.error("Create user by admin error:", error);
+    return { ok: false, error: "Failed to create user" };
   }
 }
 
