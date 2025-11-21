@@ -5,6 +5,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authOptions";
 import { sendJobStatusEmail } from "@/lib/email";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 
 type QCStatus = "PASS" | "FAIL" | "MINOR_ISSUES";
 
@@ -84,7 +85,9 @@ export async function submitQCReview(formData: FormData) {
   const jobId = formData.get("jobId") as string;
   const qcStatusRaw = (formData.get("qcStatus") as string)?.toUpperCase() as QCStatus;
   const notes = (formData.get("notes") as string) || "";
-  const responsibleUserId = (formData.get("responsibleUserId") as string) || null;
+  const responsibleUserIds = (formData.getAll("responsibleUserIds") as string[]).filter(
+    (id) => !!id
+  );
 
   if (!jobId) {
     return { ok: false, error: "Job ID is required" };
@@ -135,26 +138,46 @@ export async function submitQCReview(formData: FormData) {
     },
   });
 
-  // If QC failed, create a ReworkEntry
+  // If QC failed, create one ReworkEntry per responsible worker
   if (qcStatusRaw === "FAIL") {
-    const responsibleId =
-      responsibleUserId || job.assignedTo || null;
+    const targetIds =
+      responsibleUserIds.length > 0
+        ? responsibleUserIds
+        : job.assignedTo
+        ? [job.assignedTo]
+        : [];
 
-    await prisma.reworkEntry.create({
-      data: {
-        jobId,
-        responsibleUserId: responsibleId,
-        createdByUserId: qcUserId,
-        reason: notes || "Job failed QC",
-      },
-    });
+    if (targetIds.length === 0) {
+      // Still record at least one entry with no specific responsible worker
+      await prisma.reworkEntry.create({
+        data: {
+          jobId,
+          responsibleUserId: null,
+          createdByUserId: qcUserId,
+          reason: notes || "Job failed QC",
+        },
+      });
+    } else {
+      await Promise.all(
+        targetIds.map((responsibleId) =>
+          prisma.reworkEntry.create({
+            data: {
+              jobId,
+              responsibleUserId: responsibleId,
+              createdByUserId: qcUserId,
+              reason: notes || "Job failed QC",
+            },
+          })
+        )
+      );
+    }
   }
 
-  // Email notifications
-  const recipients = [
-    job.assignee?.email,
-    job.creator?.email,
-  ].filter((e): e is string => !!e);
+  // Email notifications (deduplicated so users don't get duplicates)
+  const rawRecipients = [job.assignee?.email, job.creator?.email];
+  const recipients = Array.from(
+    new Set(rawRecipients.filter((e): e is string => !!e))
+  );
 
   const messageLines = [
     `QC Result: ${qcStatusRaw}`,
@@ -187,6 +210,8 @@ export async function submitQCReview(formData: FormData) {
  */
 export async function submitQCReviewAction(formData: FormData): Promise<void> {
   await submitQCReview(formData);
+  // Redirect back with a small flag so the QC page can show a success message
+  redirect("/qc?qc=ok");
 }
 
 

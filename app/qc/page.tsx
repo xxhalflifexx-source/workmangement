@@ -3,10 +3,15 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authOptions";
 import Link from "next/link";
 
-export default async function QCPage() {
+export default async function QCPage({
+  searchParams,
+}: {
+  searchParams?: { qc?: string };
+}) {
   const session = await getServerSession(authOptions);
   const user = session?.user as any | undefined;
   const role = user?.role || "EMPLOYEE";
+  const showSuccess = searchParams?.qc === "ok";
 
   if (!session?.user || (role !== "ADMIN" && role !== "MANAGER")) {
     return (
@@ -49,6 +54,11 @@ export default async function QCPage() {
       </header>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+        {showSuccess && (
+          <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg">
+            QC result saved successfully. Job list below has been refreshed.
+          </div>
+        )}
         {!ok && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
             {error || "Failed to load QC jobs"}
@@ -288,22 +298,32 @@ export default async function QCPage() {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                         <div>
                           <label className="block text-gray-700 mb-1">
-                            Responsible worker for rework (if failed)
+                            Responsible workers for rework (if failed)
                           </label>
-                          <select
-                            name="responsibleUserId"
-                            defaultValue={uniqueWorkers[uniqueWorkers.length - 1].id}
-                            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-                          >
-                            {uniqueWorkers.map((w) => (
-                              <option key={w.id} value={w.id}>
-                                {w.name}
-                              </option>
+                          <div className="space-y-1 border border-gray-200 rounded-lg px-3 py-2 max-h-40 overflow-y-auto">
+                            {uniqueWorkers.map((w, index) => (
+                              <label
+                                key={w.id}
+                                className="flex items-center gap-2 text-sm text-gray-700"
+                              >
+                                <input
+                                  type="checkbox"
+                                  name="responsibleUserIds"
+                                  value={w.id}
+                                  defaultChecked={
+                                    // Pre-check the last worker as a sensible default
+                                    index === uniqueWorkers.length - 1
+                                  }
+                                  className="text-indigo-600 rounded"
+                                />
+                                <span>{w.name}</span>
+                              </label>
                             ))}
-                          </select>
+                          </div>
                           <p className="text-xs text-gray-500 mt-1">
-                            The selected worker will be marked as responsible if this job is
-                            returned as rework.
+                            Select one or more workers who should be responsible for the rework if
+                            this job fails QC. If none are selected, the currently assigned worker
+                            will be used when possible.
                           </p>
                         </div>
                       </div>

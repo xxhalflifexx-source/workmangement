@@ -316,11 +316,11 @@ export async function markJobAwaitingQC(jobId: string) {
     },
   });
 
-  // Notify assignee and creator (if emails exist)
-  const recipients = [
-    job.assignee?.email,
-    job.creator?.email,
-  ].filter((e): e is string => !!e);
+  // Notify assignee and creator (if emails exist) – deduplicated by email
+  const rawRecipients = [job.assignee?.email, job.creator?.email];
+  const recipients = Array.from(
+    new Set(rawRecipients.filter((e): e is string => !!e))
+  );
 
   const message = `This job has been marked as Ready for Quality Check.\n\nStatus: AWAITING_QC\nTitle: ${job.title}`;
 
