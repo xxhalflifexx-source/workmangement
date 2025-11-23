@@ -1,19 +1,31 @@
-import { getJobsAwaitingQC } from "./actions";
+import { getJobsAwaitingQC, getQCWorkers } from "./actions";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authOptions";
 import Link from "next/link";
 import QCJobRow from "./QCJobRow";
+import QCFilters from "./QCFilters";
 
 export default async function QCPage({
   searchParams,
 }: {
-  searchParams?: { qc?: string; q?: string };
+  searchParams?: {
+    qc?: string;
+    q?: string;
+    status?: string;
+    worker?: string;
+    dateFrom?: string;
+    dateTo?: string;
+  };
 }) {
   const session = await getServerSession(authOptions);
   const user = session?.user as any | undefined;
   const role = user?.role || "EMPLOYEE";
   const showSuccess = searchParams?.qc === "ok";
   const search = searchParams?.q || "";
+  const statusFilter = searchParams?.status || "ALL";
+  const workerFilter = searchParams?.worker || "";
+  const dateFrom = searchParams?.dateFrom || "";
+  const dateTo = searchParams?.dateTo || "";
 
   if (!session?.user || (role !== "ADMIN" && role !== "MANAGER")) {
     return (
@@ -34,7 +46,13 @@ export default async function QCPage({
     );
   }
 
-  const { ok, jobs, error } = await getJobsAwaitingQC(search);
+  const [jobsResult, workersResult] = await Promise.all([
+    getJobsAwaitingQC(search, statusFilter, workerFilter, dateFrom, dateTo),
+    getQCWorkers(),
+  ]);
+
+  const { ok, jobs, error } = jobsResult;
+  const workers = workersResult.ok ? workersResult.workers : [];
 
   return (
     <main className="min-h-screen bg-gray-50">
@@ -56,18 +74,17 @@ export default async function QCPage({
       </header>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+        {showSuccess && (
+          <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg">
+            QC result saved successfully. Job list below has been refreshed.
+          </div>
+        )}
+
         <form
-          className="flex flex-col md:flex-row md:items-center md:justify-between gap-3"
+          className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-6"
           action="/qc"
           method="GET"
         >
-          <div className="flex-1">
-            {showSuccess && (
-              <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg mb-4">
-                QC result saved successfully. Job list below has been refreshed.
-              </div>
-            )}
-          </div>
           <div className="flex items-center gap-2">
             <input
               type="text"
@@ -83,9 +100,17 @@ export default async function QCPage({
               Search
             </button>
           </div>
-          {/* preserve qc success flag when searching again */}
+          {/* preserve filters and qc success flag when searching */}
+          {statusFilter && statusFilter !== "ALL" && (
+            <input type="hidden" name="status" value={statusFilter} />
+          )}
+          {workerFilter && <input type="hidden" name="worker" value={workerFilter} />}
+          {dateFrom && <input type="hidden" name="dateFrom" value={dateFrom} />}
+          {dateTo && <input type="hidden" name="dateTo" value={dateTo} />}
           {showSuccess && <input type="hidden" name="qc" value="ok" />}
         </form>
+
+        <QCFilters workers={workers} />
         {!ok && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
             {error || "Failed to load QC jobs"}

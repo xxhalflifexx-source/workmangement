@@ -21,7 +21,13 @@ function getQcScore(status: QCStatus): number {
   }
 }
 
-export async function getJobsAwaitingQC(search?: string) {
+export async function getJobsAwaitingQC(
+  search?: string,
+  statusFilter?: string,
+  workerId?: string,
+  dateFrom?: string,
+  dateTo?: string
+) {
   const session = await getServerSession(authOptions);
 
   if (!session?.user) {
@@ -35,10 +41,33 @@ export async function getJobsAwaitingQC(search?: string) {
 
   const q = search?.trim() || "";
 
+  // Build status filter
+  let statusIn = ["AWAITING_QC", "REWORK", "COMPLETED"];
+  if (statusFilter && statusFilter !== "ALL") {
+    if (statusFilter === "PENDING") {
+      statusIn = ["AWAITING_QC"];
+    } else if (statusFilter === "IN_PROGRESS") {
+      statusIn = ["REWORK"];
+    } else if (statusFilter === "COMPLETED") {
+      statusIn = ["COMPLETED"];
+    }
+  }
+
+  // Build date range filter
+  const dateFilter: any = {};
+  if (dateFrom) {
+    dateFilter.gte = new Date(dateFrom);
+  }
+  if (dateTo) {
+    const toDate = new Date(dateTo);
+    toDate.setHours(23, 59, 59, 999); // Include entire end date
+    dateFilter.lte = toDate;
+  }
+
   const jobs = await prisma.job.findMany({
     where: {
       status: {
-        in: ["AWAITING_QC", "REWORK", "COMPLETED"],
+        in: statusIn,
       },
       ...(q
         ? {
@@ -50,6 +79,25 @@ export async function getJobsAwaitingQC(search?: string) {
                 },
               },
             ],
+          }
+        : {}),
+      ...(workerId
+        ? {
+            OR: [
+              { assignedTo: workerId },
+              {
+                timeEntries: {
+                  some: {
+                    userId: workerId,
+                  },
+                },
+              },
+            ],
+          }
+        : {}),
+      ...(Object.keys(dateFilter).length > 0
+        ? {
+            createdAt: dateFilter,
           }
         : {}),
     },
@@ -82,6 +130,41 @@ export async function getJobsAwaitingQC(search?: string) {
   });
 
   return { ok: true, jobs };
+}
+
+/**
+ * Get all workers (users) for filter dropdown
+ */
+export async function getQCWorkers() {
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user) {
+    return { ok: false, error: "Not authenticated", workers: [] as any[] };
+  }
+
+  const role = (session.user as any).role;
+  if (role !== "ADMIN" && role !== "MANAGER") {
+    return { ok: false, error: "Unauthorized", workers: [] as any[] };
+  }
+
+  const workers = await prisma.user.findMany({
+    where: {
+      role: {
+        in: ["EMPLOYEE", "MANAGER"],
+      },
+      status: "APPROVED",
+    },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+    },
+    orderBy: {
+      name: "asc",
+    },
+  });
+
+  return { ok: true, workers };
 }
 
 /**

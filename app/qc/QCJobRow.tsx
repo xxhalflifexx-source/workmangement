@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { submitQCReviewAction } from "./actions";
+import PhotoViewerModal from "./PhotoViewerModal";
 
 interface QCJobRowProps {
   job: any;
@@ -9,6 +10,8 @@ interface QCJobRowProps {
 
 export default function QCJobRow({ job }: QCJobRowProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [showPhotoViewer, setShowPhotoViewer] = useState(false);
+  const [photoViewerIndex, setPhotoViewerIndex] = useState(0);
 
   const totalHours = job.timeEntries.reduce((sum: number, te: any) => {
     if (!te.clockOut) return sum;
@@ -70,8 +73,8 @@ export default function QCJobRow({ job }: QCJobRowProps) {
     }
   });
 
-  // Get first photo for thumbnail
-  const thumbnailPhoto = allPhotos.length > 0 ? allPhotos[0] : null;
+  // Get up to 5 photos for thumbnails
+  const thumbnailPhotos = allPhotos.slice(0, 5);
 
   // Format job number (use first 8 chars of ID)
   const jobNumber = job.id.substring(0, 8).toUpperCase();
@@ -121,19 +124,29 @@ export default function QCJobRow({ job }: QCJobRowProps) {
           {dateCreated}
         </td>
         <td className="px-6 py-4 whitespace-nowrap">
-          {thumbnailPhoto ? (
-            <img
-              src={thumbnailPhoto}
-              alt="QC Photo"
-              className="h-10 w-10 object-cover rounded border border-gray-200"
-              onClick={(e) => {
-                e.stopPropagation();
-                // Open full-size image in new tab
-                window.open(thumbnailPhoto, "_blank");
-              }}
-            />
+          {thumbnailPhotos.length > 0 ? (
+            <div className="flex gap-1 items-center">
+              {thumbnailPhotos.map((photo, idx) => (
+                <img
+                  key={idx}
+                  src={photo}
+                  alt={`Photo ${idx + 1}`}
+                  className="h-10 w-10 object-cover rounded border border-gray-200 cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setPhotoViewerIndex(idx);
+                    setShowPhotoViewer(true);
+                  }}
+                />
+              ))}
+              {allPhotos.length > 5 && (
+                <span className="text-xs text-gray-500 ml-1">
+                  +{allPhotos.length - 5}
+                </span>
+              )}
+            </div>
           ) : (
-            <span className="text-xs text-gray-400">—</span>
+            <span className="text-xs text-gray-400">No photos</span>
           )}
         </td>
         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
@@ -216,7 +229,10 @@ export default function QCJobRow({ job }: QCJobRowProps) {
                           src={photo}
                           alt={`QC Photo ${idx + 1}`}
                           className="w-full h-32 object-cover rounded-lg border border-gray-200 cursor-pointer hover:opacity-80 transition-opacity"
-                          onClick={() => window.open(photo, "_blank")}
+                          onClick={() => {
+                            setPhotoViewerIndex(idx);
+                            setShowPhotoViewer(true);
+                          }}
                         />
                       </div>
                     ))}
@@ -425,6 +441,15 @@ export default function QCJobRow({ job }: QCJobRowProps) {
             </div>
           </td>
         </tr>
+      )}
+
+      {/* Photo Viewer Modal */}
+      {showPhotoViewer && (
+        <PhotoViewerModal
+          photos={allPhotos}
+          initialIndex={photoViewerIndex}
+          onClose={() => setShowPhotoViewer(false)}
+        />
       )}
     </>
   );
