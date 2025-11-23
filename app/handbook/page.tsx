@@ -6,7 +6,7 @@ export default function HandbookPage() {
   return (
     <main className="min-h-screen bg-gray-50">
       <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+        <div className="max-w-full mx-auto px-3 sm:px-4 lg:px-5 py-4 flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Employee Handbook</h1>
             <p className="text-sm text-gray-500">Company policies and procedures</p>
@@ -20,7 +20,7 @@ export default function HandbookPage() {
         </div>
       </header>
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-4xl mx-auto px-3 sm:px-4 lg:px-5 py-8">
         {/* Welcome Section */}
         <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl shadow-lg p-8 mb-8 text-white">
           <h2 className="text-3xl font-bold mb-4">Welcome to Our Team! 👋</h2>
