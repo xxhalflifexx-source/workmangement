@@ -321,11 +321,21 @@ export default function JobsPage() {
   };
 
   const openCreateModal = () => {
+    // Only ADMIN and MANAGER can create jobs
+    if (!canManage) {
+      setError("You do not have permission to create jobs. Only administrators and managers can create new jobs.");
+      return;
+    }
     setEditingJob(null);
     setShowModal(true);
   };
 
   const openEditModal = (job: Job) => {
+    // Only ADMIN and MANAGER can edit jobs
+    if (!canManage) {
+      setError("You do not have permission to edit jobs. Only administrators and managers can edit job details.");
+      return;
+    }
     // Prevent editing jobs that are submitted to QC or completed
     if (job.status === "AWAITING_QC" || job.status === "COMPLETED") {
       setError("This job has been submitted to QC and cannot be edited until returned for rework.");
@@ -1521,14 +1531,16 @@ export default function JobsPage() {
                             </button>
                           </>
                         )}
-                        <button
-                          onClick={() => openEditModal(job)}
-                          disabled={job.status === "AWAITING_QC" || job.status === "COMPLETED"}
-                          className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
-                          title={job.status === "AWAITING_QC" || job.status === "COMPLETED" ? "Job is locked - submitted to QC" : "Edit job"}
-                        >
-                          Edit
-                        </button>
+                        {canManage && (
+                          <button
+                            onClick={() => openEditModal(job)}
+                            disabled={job.status === "AWAITING_QC" || job.status === "COMPLETED"}
+                            className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
+                            title={job.status === "AWAITING_QC" || job.status === "COMPLETED" ? "Job is locked - submitted to QC" : "Edit job"}
+                          >
+                            Edit
+                          </button>
+                        )}
                          {canManage && (
                            <button
                              onClick={() => handleDelete(job.id)}
@@ -1568,14 +1580,14 @@ export default function JobsPage() {
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Title *
                       </label>
-                      <input
-                        name="title"
-                        type="text"
-                        defaultValue={editingJob?.title}
-                        required
-                        disabled={isLocked}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                      />
+                    <input
+                      name="title"
+                      type="text"
+                      defaultValue={editingJob?.title}
+                      required
+                      disabled={isLocked || isEmployee}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                    />
                     </div>
 
                 <div>
@@ -1586,7 +1598,7 @@ export default function JobsPage() {
                       name="description"
                       defaultValue={editingJob?.description || ""}
                       rows={4}
-                      disabled={isLocked}
+                      disabled={isLocked || isEmployee}
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 disabled:bg-gray-100 disabled:cursor-not-allowed"
                     />
                 </div>
@@ -1600,7 +1612,7 @@ export default function JobsPage() {
                       name="status"
                   defaultValue={editingJob?.status || "NOT_STARTED"}
                       required
-                      disabled={isLocked}
+                      disabled={isLocked || isEmployee}
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 disabled:bg-gray-100 disabled:cursor-not-allowed"
                     >
                   <option value="NOT_STARTED">Not Started</option>
@@ -1620,7 +1632,7 @@ export default function JobsPage() {
                       name="priority"
                       defaultValue={editingJob?.priority || "MEDIUM"}
                       required
-                      disabled={isLocked}
+                      disabled={isLocked || isEmployee}
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 disabled:bg-gray-100 disabled:cursor-not-allowed"
                     >
                       <option value="LOW">Low</option>
@@ -1640,7 +1652,7 @@ export default function JobsPage() {
                       <select
                         name="assignedTo"
                         defaultValue={editingJob?.assignee ? (editingJob as any).assignedTo : ""}
-                        disabled={isLocked}
+                        disabled={isLocked || isEmployee}
                         className="w-full border border-gray-300 rounded-lg px-3 py-2 disabled:bg-gray-100 disabled:cursor-not-allowed"
                       >
                         <option value="">Unassigned</option>
@@ -1710,7 +1722,7 @@ export default function JobsPage() {
                         <select
                           name="customerId"
                           defaultValue={editingJob?.customer?.id || ""}
-                          disabled={isLocked}
+                          disabled={isLocked || isEmployee}
                           className="w-full border border-gray-300 rounded-lg px-3 py-2 disabled:bg-gray-100 disabled:cursor-not-allowed"
                         >
                           <option value="">No Customer</option>
@@ -1739,7 +1751,7 @@ export default function JobsPage() {
                           name="pricingType"
                           defaultValue={editingJob?.pricingType || "FIXED"}
                           required
-                          disabled={isLocked}
+                          disabled={isLocked || isEmployee}
                           className="w-full border border-gray-300 rounded-lg px-3 py-2 disabled:bg-gray-100 disabled:cursor-not-allowed"
                         >
                           <option value="FIXED">Fixed Price</option>
@@ -1760,7 +1772,7 @@ export default function JobsPage() {
                             min="0"
                             defaultValue={editingJob?.estimatedPrice || ""}
                             placeholder="0.00"
-                            disabled={isLocked}
+                            disabled={isLocked || isEmployee}
                             className="w-full border border-gray-300 rounded-lg pl-7 pr-3 py-2 disabled:bg-gray-100 disabled:cursor-not-allowed"
                           />
                         </div>
@@ -1781,7 +1793,7 @@ export default function JobsPage() {
                             min="0"
                             defaultValue={editingJob?.finalPrice || ""}
                             placeholder="0.00"
-                            disabled={isLocked}
+                            disabled={isLocked || isEmployee}
                             className="w-full border border-gray-300 rounded-lg pl-7 pr-3 py-2 disabled:bg-gray-100 disabled:cursor-not-allowed"
                           />
                         </div>
@@ -1803,7 +1815,7 @@ export default function JobsPage() {
                             value={estimatedDurationValue}
                             onChange={(e) => setEstimatedDurationValue(e.target.value)}
                             placeholder="0"
-                            disabled={isLocked}
+                            disabled={isLocked || isEmployee}
                             className="col-span-2 border border-gray-300 rounded-lg px-3 py-2 text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
                           />
                           <select
@@ -1812,7 +1824,7 @@ export default function JobsPage() {
                             onChange={(e) =>
                               setEstimatedDurationUnit(e.target.value as any)
                             }
-                            disabled={isLocked}
+                            disabled={isLocked || isEmployee}
                             className="border border-gray-300 rounded-lg px-2 py-2 text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
                           >
                             <option value="HOURS">Hours</option>
@@ -1838,7 +1850,7 @@ export default function JobsPage() {
                     name="dueDate"
                     type="date"
                     defaultValue={editingJob?.dueDate ? new Date(editingJob.dueDate).toISOString().split("T")[0] : ""}
-                    disabled={isLocked}
+                    disabled={isLocked || isEmployee}
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 disabled:bg-gray-100 disabled:cursor-not-allowed"
                   />
                 </div>
@@ -1856,7 +1868,7 @@ export default function JobsPage() {
                   </button>
                   <button
                     type="submit"
-                    disabled={isLocked}
+                    disabled={isLocked || isEmployee}
                     className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:bg-gray-300 disabled:cursor-not-allowed"
                   >
                     {editingJob ? "Update Job" : "Create Job"}
