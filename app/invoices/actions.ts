@@ -279,5 +279,27 @@ export async function filterInvoices(filters: {
 	return { ok: true, invoices };
 }
 
+// Update invoice PDF files
+export async function updateInvoicePDFs(invoiceId: string, pdfFiles: string[]) {
+	const session = await getServerSession(authOptions);
+	if (!session?.user) return { ok: false, error: "Not authenticated" };
+	const role = (session.user as any).role;
+	if (role !== "ADMIN" && role !== "MANAGER") return { ok: false, error: "Unauthorized" };
+
+	try {
+		const invoice = await prisma.invoice.update({
+			where: { id: invoiceId },
+			data: {
+				pdfFiles: JSON.stringify(pdfFiles),
+			},
+		});
+
+		return { ok: true, invoice };
+	} catch (error: any) {
+		console.error("Update invoice PDFs error:", error);
+		return { ok: false, error: error?.message || "Failed to update invoice PDFs" };
+	}
+}
+
 
 

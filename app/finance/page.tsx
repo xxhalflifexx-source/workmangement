@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
-import { listInvoices } from "../invoices/actions";
+import { listInvoices, updateInvoicePDFs } from "../invoices/actions";
 
 interface Invoice {
   id: string;
@@ -17,6 +17,7 @@ interface Invoice {
   job: { title: string | null; id?: string } | null;
   createdAt: string | Date;
   notes: string | null;
+  pdfFiles: string | null; // JSON array of PDF URLs
   lines: Array<{ description: string; quantity: number; rate: number; amount: number }>;
   payments: Array<{ paymentDate: string | Date; amount: number; method: string | null }>;
 }
@@ -267,6 +268,65 @@ export default function FinancePage() {
     return invoice.job.id.slice(0, 8).toUpperCase();
   };
 
+  const handleUploadPDFs = async (invoiceId: string) => {
+    const files = selectedPDFFiles[invoiceId];
+    if (!files || files.length === 0) return;
+
+    setUploadingPDFs((prev) => ({ ...prev, [invoiceId]: true }));
+    setError(undefined);
+
+    try {
+      // Upload PDFs
+      const formData = new FormData();
+      files.forEach((file) => formData.append("files", file));
+
+      const uploadRes = await fetch("/api/upload-pdf", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!uploadRes.ok) {
+        const errorData = await uploadRes.json();
+        throw new Error(errorData.error || "Failed to upload PDFs");
+      }
+
+      const uploadData = await uploadRes.json();
+      const newPdfUrls = uploadData.paths || [];
+
+      // Get existing PDFs
+      const invoice = invoices.find((inv) => inv.id === invoiceId);
+      let existingPdfs: string[] = [];
+      if (invoice?.pdfFiles) {
+        try {
+          existingPdfs = JSON.parse(invoice.pdfFiles);
+        } catch {
+          existingPdfs = [];
+        }
+      }
+
+      // Combine existing and new PDFs
+      const allPdfs = [...existingPdfs, ...newPdfUrls];
+
+      // Update invoice with new PDFs
+      const res = await updateInvoicePDFs(invoiceId, allPdfs);
+      if (!res.ok) {
+        throw new Error(res.error || "Failed to save PDFs");
+      }
+
+      // Clear selected files and reload invoices
+      setSelectedPDFFiles((prev) => {
+        const updated = { ...prev };
+        delete updated[invoiceId];
+        return updated;
+      });
+      await loadInvoices();
+    } catch (err: any) {
+      setError(err?.message || "Failed to upload PDFs");
+    } finally {
+      setUploadingPDFs((prev) => ({ ...prev, [invoiceId]: false }));
+    }
+  };
+
   // Access control
   if (!hasAccess) {
     return (
@@ -473,6 +533,9 @@ export default function FinancePage() {
                       </div>
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      PDF Files
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Details
                     </th>
                   </tr>
@@ -504,6 +567,97 @@ export default function FinancePage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {formatDate(invoice.createdAt)}
+                      </td>
+                      <td className="px-6 py-4 text-sm" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex flex-col gap-2">
+                          {/* Display existing PDFs */}
+                          {(() => {
+                            try {
+                              const pdfs = invoice.pdfFiles ? JSON.parse(invoice.pdfFiles) : [];
+                              return pdfs.length > 0 ? (
+                                <div className="flex flex-wrap gap-1">
+                                  {pdfs.map((pdfUrl: string, idx: number) => (
+                                    <a
+                                      key={idx}
+                                      href={pdfUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      onClick={(e) => e.stopPropagation()}
+                                      className="px-2 py-1 bg-red-100 text-red-700 rounded text-xs hover:bg-red-200"
+                                    >
+                                      PDF {idx + 1}
+                                    </a>
+                                  ))}
+                                </div>
+                              ) : (
+                                <span className="text-gray-400 text-xs">No PDFs</span>
+                              );
+                            } catch {
+                              return <span className="text-gray-400 text-xs">No PDFs</span>;
+                            }
+                          })()}
+                          
+                          {/* Upload PDF button */}
+                          <div className="relative">
+                            <input
+                              type="file"
+                              accept=".pdf,application/pdf"
+                              multiple
+                              onChange={(e) => {
+                                e.stopPropagation();
+                                const files = Array.from(e.target.files || []);
+                                if (files.length > 0) {
+                                  setSelectedPDFFiles((prev) => ({
+                                    ...prev,
+                                    [invoice.id]: [...(prev[invoice.id] || []), ...files],
+                                  }));
+                                }
+                              }}
+                              className="hidden"
+                              id={`pdf-upload-${invoice.id}`}
+                            />
+                            <label
+                              htmlFor={`pdf-upload-${invoice.id}`}
+                              onClick={(e) => e.stopPropagation()}
+                              className="cursor-pointer inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs hover:bg-blue-200"
+                            >
+                              + Add PDF
+                            </label>
+                          </div>
+                          
+                          {/* Show selected files and upload button */}
+                          {selectedPDFFiles[invoice.id] && selectedPDFFiles[invoice.id].length > 0 && (
+                            <div className="flex flex-col gap-1">
+                              {selectedPDFFiles[invoice.id].map((file, idx) => (
+                                <div key={idx} className="flex items-center gap-1 text-xs text-gray-600">
+                                  <span className="truncate max-w-[100px]">{file.name}</span>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSelectedPDFFiles((prev) => ({
+                                        ...prev,
+                                        [invoice.id]: prev[invoice.id].filter((_, i) => i !== idx),
+                                      }));
+                                    }}
+                                    className="text-red-600 hover:text-red-700"
+                                  >
+                                    ×
+                                  </button>
+                                </div>
+                              ))}
+                              <button
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  await handleUploadPDFs(invoice.id);
+                                }}
+                                disabled={uploadingPDFs[invoice.id]}
+                                className="px-2 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                              >
+                                {uploadingPDFs[invoice.id] ? "Uploading..." : "Upload"}
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-600 hover:text-blue-700">
                         View →
@@ -699,6 +853,35 @@ export default function FinancePage() {
                     </div>
                   </div>
                 )}
+
+                {/* PDF Files */}
+                {(() => {
+                  try {
+                    const pdfs = selectedInvoice.pdfFiles ? JSON.parse(selectedInvoice.pdfFiles) : [];
+                    return pdfs.length > 0 ? (
+                      <div className="mb-6">
+                        <h3 className="text-sm font-semibold text-gray-700 uppercase mb-2">PDF Files</h3>
+                        <div className="space-y-2">
+                          {pdfs.map((pdfUrl: string, idx: number) => (
+                            <div key={idx} className="flex items-center justify-between bg-gray-50 rounded-lg p-3">
+                              <span className="text-sm text-gray-700">PDF {idx + 1}</span>
+                              <a
+                                href={pdfUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+                              >
+                                View PDF
+                              </a>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : null;
+                  } catch {
+                    return null;
+                  }
+                })()}
 
                 {/* Notes */}
                 {selectedInvoice.notes && (
