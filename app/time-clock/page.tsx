@@ -8,6 +8,7 @@ interface TimeEntry {
   id: string;
   clockIn: string;
   clockOut: string | null;
+  clockInNotes: string | null;
   notes: string | null;
   images: string | null;
   job: { title: string; id: string } | null;
@@ -522,8 +523,15 @@ export default function TimeClockPage() {
                                 {entry.job.title}
                               </p>
                             )}
+                            {entry.clockInNotes && (
+                              <p className="text-xs text-gray-600 mt-1">
+                                <span className="font-medium text-blue-700">Clock In:</span> {entry.clockInNotes}
+                              </p>
+                            )}
                             {entry.notes && (
-                              <p className="text-xs text-gray-600 mt-1">{entry.notes}</p>
+                              <p className="text-xs text-gray-600 mt-1">
+                                <span className="font-medium text-green-700">Clock Out:</span> {entry.notes}
+                              </p>
                             )}
                             {images.length > 0 && (
                               <div className="mt-2">

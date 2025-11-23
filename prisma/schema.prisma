@@ -77,7 +77,8 @@ model TimeEntry {
   clockOut      DateTime?
   durationHours Float?    // Computed on clock out for efficiency metrics
   isRework      Boolean   @default(false)
-  notes         String?
+  clockInNotes  String?   // Description entered at Clock In
+  notes         String?   // Description entered at Clock Out
   images        String?   // JSON array of image paths
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt

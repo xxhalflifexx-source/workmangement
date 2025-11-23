@@ -67,7 +67,7 @@ export async function clockIn(jobId?: string, notes?: string) {
       jobId: jobId || null,
       clockIn: now,
       isRework,
-      notes: notes || null,
+      clockInNotes: notes || null, // Store Clock In description separately
     },
     include: {
       job: { select: { title: true, id: true } },

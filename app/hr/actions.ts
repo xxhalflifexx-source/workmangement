@@ -45,6 +45,7 @@ export async function getAllUsersStats(dateFrom?: string, dateTo?: string) {
             id: true,
             clockIn: true,
             clockOut: true,
+            clockInNotes: true,
             notes: true,
             job: {
               select: {
@@ -150,7 +151,12 @@ export async function getUserTimeEntries(userId: string) {
   try {
     const entries = await prisma.timeEntry.findMany({
       where: { userId },
-      include: {
+      select: {
+        id: true,
+        clockIn: true,
+        clockOut: true,
+        clockInNotes: true,
+        notes: true,
         job: {
           select: {
             id: true,

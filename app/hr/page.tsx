@@ -8,6 +8,7 @@ interface TimeEntry {
   id: string;
   clockIn: string;
   clockOut: string | null;
+  clockInNotes: string | null;
   notes: string | null;
   job: { id: string; title: string } | null;
 }
@@ -368,9 +369,16 @@ export default function HRPage() {
                           </span>
                         </div>
                       )}
+                      {entry.clockInNotes && (
+                        <div className="mt-2 text-sm text-gray-600 bg-white rounded p-2 border border-gray-200">
+                          <span className="font-medium text-blue-700">Clock In Description:</span>
+                          <p className="mt-1 text-gray-700">{entry.clockInNotes}</p>
+                        </div>
+                      )}
                       {entry.notes && (
                         <div className="mt-2 text-sm text-gray-600 bg-white rounded p-2 border border-gray-200">
-                          <span className="font-medium">Notes:</span> {entry.notes}
+                          <span className="font-medium text-green-700">Clock Out Description:</span>
+                          <p className="mt-1 text-gray-700">{entry.notes}</p>
                         </div>
                       )}
                     </div>
