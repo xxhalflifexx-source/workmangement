@@ -211,6 +211,17 @@ export async function getJobs() {
       assignee: { select: { name: true, email: true } },
       creator: { select: { name: true } },
       customer: { select: { id: true, name: true, phone: true, email: true, company: true } },
+      activities: {
+        where: {
+          images: { not: null },
+        },
+        select: {
+          id: true,
+          images: true,
+          createdAt: true,
+        },
+        orderBy: { createdAt: "desc" },
+      },
     },
     orderBy: { createdAt: "desc" },
   });
@@ -641,6 +652,136 @@ export async function getJobActivities(jobId: string) {
 }
 
 /**
+ * Get all photos for a job (from all activities)
+ */
+export async function getJobPhotos(jobId: string) {
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user) {
+    return { ok: false, error: "Not authenticated", photos: [] };
+  }
+
+  const activities = await prisma.jobActivity.findMany({
+    where: {
+      jobId,
+      images: { not: null },
+    },
+    select: {
+      id: true,
+      images: true,
+      createdAt: true,
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  const allPhotos: Array<{ id: string; url: string; activityId: string }> = [];
+
+  activities.forEach((activity) => {
+    if (activity.images) {
+      try {
+        const parsed = JSON.parse(activity.images);
+        if (Array.isArray(parsed)) {
+          parsed.forEach((url: string) => {
+            allPhotos.push({
+              id: `${activity.id}-${url}`,
+              url,
+              activityId: activity.id,
+            });
+          });
+        }
+      } catch {
+        if (typeof activity.images === "string") {
+          allPhotos.push({
+            id: `${activity.id}-${activity.images}`,
+            url: activity.images,
+            activityId: activity.id,
+          });
+        }
+      }
+    }
+  });
+
+  return { ok: true, photos: allPhotos };
+}
+
+/**
+ * Remove a photo from a job (delete the activity containing that photo)
+ */
+export async function removeJobPhoto(formData: FormData) {
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user) {
+    return { ok: false, error: "Not authenticated" };
+  }
+
+  const userId = (session.user as any).id;
+  const activityId = formData.get("activityId") as string;
+  const photoUrl = formData.get("photoUrl") as string;
+
+  if (!activityId || !photoUrl) {
+    return { ok: false, error: "Activity ID and photo URL are required" };
+  }
+
+  // Get the activity to verify access
+  const activity = await prisma.jobActivity.findUnique({
+    where: { id: activityId },
+    include: {
+      job: {
+        select: { assignedTo: true, status: true },
+      },
+    },
+  });
+
+  if (!activity) {
+    return { ok: false, error: "Activity not found" };
+  }
+
+  // Check if job is locked (AWAITING_QC or COMPLETED)
+  if (activity.job.status === "AWAITING_QC" || activity.job.status === "COMPLETED") {
+    return { ok: false, error: "Cannot remove photos from a job that has been submitted to QC" };
+  }
+
+  // Check authorization
+  const userRole = (session.user as any).role;
+  if (
+    userRole !== "ADMIN" &&
+    userRole !== "MANAGER" &&
+    activity.userId !== userId &&
+    activity.job.assignedTo !== userId
+  ) {
+    return { ok: false, error: "Unauthorized" };
+  }
+
+  // Parse images and remove the specific photo
+  if (activity.images) {
+    try {
+      const parsed = JSON.parse(activity.images);
+      if (Array.isArray(parsed)) {
+        const filtered = parsed.filter((url: string) => url !== photoUrl);
+        if (filtered.length === 0) {
+          // If no photos left, delete the activity
+          await prisma.jobActivity.delete({ where: { id: activityId } });
+        } else {
+          // Update activity with remaining photos
+          await prisma.jobActivity.update({
+            where: { id: activityId },
+            data: { images: JSON.stringify(filtered) },
+          });
+        }
+      }
+    } catch {
+      // If single URL, delete the activity
+      await prisma.jobActivity.delete({ where: { id: activityId } });
+    }
+  }
+
+  revalidatePath("/jobs");
+  revalidatePath("/qc");
+
+  return { ok: true };
+}
+
+/**
  * Save photos to a job without changing status (job stays in progress)
  */
 export async function saveJobPhotos(formData: FormData) {
@@ -665,11 +806,16 @@ export async function saveJobPhotos(formData: FormData) {
   // Verify job exists and user has access
   const job = await prisma.job.findUnique({
     where: { id: jobId },
-    select: { assignedTo: true },
+    select: { assignedTo: true, status: true },
   });
 
   if (!job) {
     return { ok: false, error: "Job not found" };
+  }
+
+  // Check if job is locked (AWAITING_QC or COMPLETED)
+  if (job.status === "AWAITING_QC" || job.status === "COMPLETED") {
+    return { ok: false, error: "Cannot add photos to a job that has been submitted to QC" };
   }
 
   // Employees can only save photos to their assigned jobs
@@ -730,6 +876,11 @@ export async function submitJobPhotosToQC(formData: FormData) {
   const userRole = (session.user as any).role;
   if (userRole !== "ADMIN" && userRole !== "MANAGER" && job.assignedTo !== userId) {
     return { ok: false, error: "Unauthorized: You can only submit jobs assigned to you" };
+  }
+
+  // Check if job is already submitted to QC
+  if (job.status === "AWAITING_QC" || job.status === "COMPLETED") {
+    return { ok: false, error: "Job has already been submitted to QC" };
   }
 
   // Create JobActivity entry to track QC submission

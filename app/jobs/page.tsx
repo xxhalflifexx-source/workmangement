@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { getJobs, getAllUsers, createJob, updateJob, deleteJob, getJobActivities, addJobActivity, getAllCustomers, createCustomer, saveJobPhotos, submitJobPhotosToQC } from "./actions";
+import { getJobs, getAllUsers, createJob, updateJob, deleteJob, getJobActivities, addJobActivity, getAllCustomers, createCustomer, saveJobPhotos, submitJobPhotosToQC, getJobPhotos, removeJobPhoto } from "./actions";
 import { createMaterialRequest, getJobMaterialRequests } from "../material-requests/actions";
 import { getJobForInvoice, getCompanySettingsForInvoice } from "./invoice-actions";
 import { createInvoice } from "../invoices/actions";
@@ -106,6 +106,8 @@ export default function JobsPage() {
   // Photo upload states per job
   const [jobPhotoFiles, setJobPhotoFiles] = useState<Record<string, File[]>>({});
   const [savingPhotos, setSavingPhotos] = useState<Record<string, boolean>>({});
+  const [jobExistingPhotos, setJobExistingPhotos] = useState<Record<string, Array<{ id: string; url: string; activityId: string }>>>({});
+  const [removingPhotos, setRemovingPhotos] = useState<Record<string, boolean>>({});
   
   const [showMaterialModal, setShowMaterialModal] = useState(false);
   const [selectedJobForMaterial, setSelectedJobForMaterial] = useState<Job | null>(null);
@@ -201,7 +203,42 @@ export default function JobsPage() {
     ]);
 
     if (jobsRes.ok) {
-      setJobs(jobsRes.jobs as any);
+      const jobsData = jobsRes.jobs as any;
+      setJobs(jobsData);
+
+      // Extract photos from activities for each job
+      const photosMap: Record<string, Array<{ id: string; url: string; activityId: string }>> = {};
+      jobsData.forEach((job: any) => {
+        if (job.activities) {
+          const jobPhotos: Array<{ id: string; url: string; activityId: string }> = [];
+          job.activities.forEach((activity: any) => {
+            if (activity.images) {
+              try {
+                const parsed = JSON.parse(activity.images);
+                if (Array.isArray(parsed)) {
+                  parsed.forEach((url: string) => {
+                    jobPhotos.push({
+                      id: `${activity.id}-${url}`,
+                      url,
+                      activityId: activity.id,
+                    });
+                  });
+                }
+              } catch {
+                if (typeof activity.images === "string") {
+                  jobPhotos.push({
+                    id: `${activity.id}-${activity.images}`,
+                    url: activity.images,
+                    activityId: activity.id,
+                  });
+                }
+              }
+            }
+          });
+          photosMap[job.id] = jobPhotos;
+        }
+      });
+      setJobExistingPhotos(photosMap);
     }
 
     if (usersRes.ok) {
@@ -289,6 +326,11 @@ export default function JobsPage() {
   };
 
   const openEditModal = (job: Job) => {
+    // Prevent editing jobs that are submitted to QC or completed
+    if (job.status === "AWAITING_QC" || job.status === "COMPLETED") {
+      setError("This job has been submitted to QC and cannot be edited until returned for rework.");
+      return;
+    }
     setEditingJob(job);
     setShowModal(true);
   };
@@ -420,7 +462,7 @@ export default function JobsPage() {
       if (res.ok) {
         setSuccess("Photos saved successfully!");
         setJobPhotoFiles((prev) => ({ ...prev, [jobId]: [] }));
-        await loadData(); // Refresh jobs
+        await loadData(); // Refresh jobs to show new photos
       } else {
         setError(res.error || "Failed to save photos");
       }
@@ -471,7 +513,7 @@ export default function JobsPage() {
 
       const res = await submitJobPhotosToQC(submitFormData);
       if (res.ok) {
-        setSuccess("Job submitted to QC successfully!");
+        setSuccess("Job submitted to QC successfully! The job is now locked for editing.");
         setJobPhotoFiles((prev) => ({ ...prev, [jobId]: [] }));
         await loadData(); // Refresh jobs
       } else {
@@ -482,6 +524,34 @@ export default function JobsPage() {
       setError(err?.message || "Failed to submit to QC");
     } finally {
       setSavingPhotos((prev) => ({ ...prev, [jobId]: false }));
+    }
+  };
+
+  const handleRemovePhoto = async (jobId: string, photoId: string, photoUrl: string, activityId: string) => {
+    setRemovingPhotos((prev) => ({ ...prev, [photoId]: true }));
+    setError(undefined);
+
+    try {
+      const formData = new FormData();
+      formData.append("activityId", activityId);
+      formData.append("photoUrl", photoUrl);
+
+      const res = await removeJobPhoto(formData);
+      if (res.ok) {
+        setSuccess("Photo removed successfully!");
+        await loadData(); // Refresh to update photo list
+      } else {
+        setError(res.error || "Failed to remove photo");
+      }
+    } catch (err: any) {
+      console.error("Remove photo error:", err);
+      setError(err?.message || "Failed to remove photo");
+    } finally {
+      setRemovingPhotos((prev => {
+        const updated = { ...prev };
+        delete updated[photoId];
+        return updated;
+      }));
     }
   };
 
@@ -1274,77 +1344,127 @@ export default function JobsPage() {
                 {/* Photo Upload Section */}
                 {job.status !== "COMPLETED" && job.status !== "CANCELLED" && (
                   <div className="mt-4 pt-4 border-t border-gray-200">
-                    <h4 className="text-sm font-semibold text-gray-900 mb-3">📷 Upload Photos</h4>
-                    <div className="space-y-3">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        multiple
-                        onChange={(e) => handleJobPhotoSelect(job.id, e)}
-                        className="hidden"
-                        id={`photo-upload-${job.id}`}
-                      />
-                      <label
-                        htmlFor={`photo-upload-${job.id}`}
-                        className="cursor-pointer inline-flex items-center gap-2 px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-                      >
-                        <span>📷</span>
-                        Choose Photos
-                      </label>
-
-                      {(jobPhotoFiles[job.id] || []).length > 0 && (
-                        <div className="mt-3 space-y-2">
-                          <p className="text-xs text-gray-600">
-                            Selected: {(jobPhotoFiles[job.id] || []).length} photo(s)
-                          </p>
-                          <div className="grid grid-cols-2 gap-2">
-                            {(jobPhotoFiles[job.id] || []).map((file, index) => (
-                              <div
-                                key={index}
-                                className="relative bg-gray-100 border border-gray-200 rounded p-2 flex items-center gap-2"
-                              >
-                                <div className="w-10 h-10 bg-gray-200 rounded overflow-hidden">
-                                  <img
-                                    src={URL.createObjectURL(file)}
-                                    alt={`Preview ${index + 1}`}
-                                    className="w-full h-full object-cover"
-                                  />
-                                </div>
-                                <p className="text-xs flex-1 truncate">{file.name}</p>
-                                <button
-                                  onClick={() => removeJobPhoto(job.id, index)}
-                                  type="button"
-                                  className="text-red-500 hover:text-red-700 text-xs"
-                                >
-                                  ✕
-                                </button>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      <div className="flex gap-2 mt-3">
-                        {(jobPhotoFiles[job.id] || []).length > 0 && (
-                          <button
-                            onClick={() => handleSavePhotos(job.id)}
-                            disabled={savingPhotos[job.id]}
-                            className="flex-1 px-3 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:bg-gray-300 disabled:cursor-not-allowed"
-                          >
-                            {savingPhotos[job.id] ? "Saving..." : "Save"}
-                          </button>
-                        )}
-                        <button
-                          onClick={() => handleSubmitToQC(job.id)}
-                          disabled={savingPhotos[job.id]}
-                          className={`px-3 py-2 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium disabled:bg-gray-300 disabled:cursor-not-allowed ${
-                            (jobPhotoFiles[job.id] || []).length > 0 ? "flex-1" : "w-full"
-                          }`}
-                        >
-                          {savingPhotos[job.id] ? "Submitting..." : "Submit to QC"}
-                        </button>
+                    <h4 className="text-sm font-semibold text-gray-900 mb-3">📷 Job Photos</h4>
+                    
+                    {/* Locked message when submitted to QC */}
+                    {job.status === "AWAITING_QC" && (
+                      <div className="mb-3 p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                        <p className="text-xs text-purple-800 font-medium">
+                          🔒 This job has been submitted to QC. Editing is locked until returned for rework.
+                        </p>
                       </div>
-                    </div>
+                    )}
+
+                    {/* Existing Photos */}
+                    {(jobExistingPhotos[job.id] || []).length > 0 && (
+                      <div className="mb-3">
+                        <p className="text-xs text-gray-600 mb-2">
+                          Saved Photos: {(jobExistingPhotos[job.id] || []).length}
+                        </p>
+                        <div className="grid grid-cols-2 gap-2">
+                          {(jobExistingPhotos[job.id] || []).map((photo) => (
+                            <div
+                              key={photo.id}
+                              className="relative bg-gray-100 border border-gray-200 rounded p-2 flex items-center gap-2"
+                            >
+                              <div className="w-10 h-10 bg-gray-200 rounded overflow-hidden">
+                                <img
+                                  src={photo.url}
+                                  alt="Saved photo"
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                              <p className="text-xs flex-1 truncate">Saved</p>
+                              {job.status !== "AWAITING_QC" && job.status !== "COMPLETED" && (
+                                <button
+                                  onClick={() => handleRemovePhoto(job.id, photo.id, photo.url, photo.activityId)}
+                                  disabled={removingPhotos[photo.id]}
+                                  type="button"
+                                  className="text-red-500 hover:text-red-700 text-xs disabled:opacity-50"
+                                >
+                                  {removingPhotos[photo.id] ? "..." : "✕"}
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Photo Upload (only if not locked) */}
+                    {job.status !== "AWAITING_QC" && job.status !== "COMPLETED" && (
+                      <div className="space-y-3">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          onChange={(e) => handleJobPhotoSelect(job.id, e)}
+                          className="hidden"
+                          id={`photo-upload-${job.id}`}
+                          disabled={job.status === "AWAITING_QC" || job.status === "COMPLETED"}
+                        />
+                        <label
+                          htmlFor={`photo-upload-${job.id}`}
+                          className="cursor-pointer inline-flex items-center gap-2 px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                        >
+                          <span>📷</span>
+                          Choose Photos
+                        </label>
+
+                        {(jobPhotoFiles[job.id] || []).length > 0 && (
+                          <div className="mt-3 space-y-2">
+                            <p className="text-xs text-gray-600">
+                              New Photos Selected: {(jobPhotoFiles[job.id] || []).length} photo(s)
+                            </p>
+                            <div className="grid grid-cols-2 gap-2">
+                              {(jobPhotoFiles[job.id] || []).map((file, index) => (
+                                <div
+                                  key={index}
+                                  className="relative bg-gray-100 border border-gray-200 rounded p-2 flex items-center gap-2"
+                                >
+                                  <div className="w-10 h-10 bg-gray-200 rounded overflow-hidden">
+                                    <img
+                                      src={URL.createObjectURL(file)}
+                                      alt={`Preview ${index + 1}`}
+                                      className="w-full h-full object-cover"
+                                    />
+                                  </div>
+                                  <p className="text-xs flex-1 truncate">{file.name}</p>
+                                  <button
+                                    onClick={() => removeJobPhoto(job.id, index)}
+                                    type="button"
+                                    className="text-red-500 hover:text-red-700 text-xs"
+                                  >
+                                    ✕
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="flex gap-2 mt-3">
+                          {(jobPhotoFiles[job.id] || []).length > 0 && (
+                            <button
+                              onClick={() => handleSavePhotos(job.id)}
+                              disabled={savingPhotos[job.id]}
+                              className="flex-1 px-3 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:bg-gray-300 disabled:cursor-not-allowed"
+                            >
+                              {savingPhotos[job.id] ? "Saving..." : "Save"}
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handleSubmitToQC(job.id)}
+                            disabled={savingPhotos[job.id]}
+                            className={`px-3 py-2 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium disabled:bg-gray-300 disabled:cursor-not-allowed ${
+                              (jobPhotoFiles[job.id] || []).length > 0 ? "flex-1" : "w-full"
+                            }`}
+                          >
+                            {savingPhotos[job.id] ? "Submitting..." : "Submit to QC"}
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -1384,7 +1504,9 @@ export default function JobsPage() {
                         )}
                         <button
                           onClick={() => openEditModal(job)}
-                          className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                          disabled={job.status === "AWAITING_QC" || job.status === "COMPLETED"}
+                          className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
+                          title={job.status === "AWAITING_QC" || job.status === "COMPLETED" ? "Job is locked - submitted to QC" : "Edit job"}
                         >
                           Edit
                         </button>
@@ -1411,31 +1533,43 @@ export default function JobsPage() {
               <h2 className="text-2xl font-bold text-gray-900 mb-6">
                 {editingJob ? "Edit Job" : "Create New Job"}
               </h2>
-
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Title *
-                  </label>
-                  <input
-                    name="title"
-                    type="text"
-                    defaultValue={editingJob?.title}
-                    required
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                  />
+              {editingJob && (editingJob.status === "AWAITING_QC" || editingJob.status === "COMPLETED") && (
+                <div className="mb-4 p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                  <p className="text-sm text-purple-800 font-medium">
+                    🔒 This job has been submitted to QC and is locked for editing. It will be unlocked if returned for rework.
+                  </p>
                 </div>
+              )}
+
+              {(() => {
+                const isLocked = editingJob && (editingJob.status === "AWAITING_QC" || editingJob.status === "COMPLETED");
+                return (
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Title *
+                      </label>
+                      <input
+                        name="title"
+                        type="text"
+                        defaultValue={editingJob?.title}
+                        required
+                        disabled={isLocked}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                      />
+                    </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Description
                   </label>
-                  <textarea
-                    name="description"
-                    defaultValue={editingJob?.description || ""}
-                    rows={4}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                  />
+                    <textarea
+                      name="description"
+                      defaultValue={editingJob?.description || ""}
+                      rows={4}
+                      disabled={isLocked}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                    />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -1447,7 +1581,8 @@ export default function JobsPage() {
                       name="status"
                   defaultValue={editingJob?.status || "NOT_STARTED"}
                       required
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                      disabled={isLocked}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 disabled:bg-gray-100 disabled:cursor-not-allowed"
                     >
                   <option value="NOT_STARTED">Not Started</option>
                   <option value="IN_PROGRESS">In Progress</option>
@@ -1466,7 +1601,8 @@ export default function JobsPage() {
                       name="priority"
                       defaultValue={editingJob?.priority || "MEDIUM"}
                       required
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                      disabled={isLocked}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 disabled:bg-gray-100 disabled:cursor-not-allowed"
                     >
                       <option value="LOW">Low</option>
                       <option value="MEDIUM">Medium</option>
@@ -1485,7 +1621,8 @@ export default function JobsPage() {
                       <select
                         name="assignedTo"
                         defaultValue={editingJob?.assignee ? (editingJob as any).assignedTo : ""}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                        disabled={isLocked}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 disabled:bg-gray-100 disabled:cursor-not-allowed"
                       >
                         <option value="">Unassigned</option>
                         {users.map((user) => (
@@ -1554,7 +1691,8 @@ export default function JobsPage() {
                         <select
                           name="customerId"
                           defaultValue={editingJob?.customer?.id || ""}
-                          className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                          disabled={isLocked}
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2 disabled:bg-gray-100 disabled:cursor-not-allowed"
                         >
                           <option value="">No Customer</option>
                           {customers.map((customer) => (
@@ -1582,7 +1720,8 @@ export default function JobsPage() {
                           name="pricingType"
                           defaultValue={editingJob?.pricingType || "FIXED"}
                           required
-                          className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                          disabled={isLocked}
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2 disabled:bg-gray-100 disabled:cursor-not-allowed"
                         >
                           <option value="FIXED">Fixed Price</option>
                           <option value="T&M">Time & Materials (T&M)</option>
@@ -1602,7 +1741,8 @@ export default function JobsPage() {
                             min="0"
                             defaultValue={editingJob?.estimatedPrice || ""}
                             placeholder="0.00"
-                            className="w-full border border-gray-300 rounded-lg pl-7 pr-3 py-2"
+                            disabled={isLocked}
+                            className="w-full border border-gray-300 rounded-lg pl-7 pr-3 py-2 disabled:bg-gray-100 disabled:cursor-not-allowed"
                           />
                         </div>
                       </div>
@@ -1622,7 +1762,8 @@ export default function JobsPage() {
                             min="0"
                             defaultValue={editingJob?.finalPrice || ""}
                             placeholder="0.00"
-                            className="w-full border border-gray-300 rounded-lg pl-7 pr-3 py-2"
+                            disabled={isLocked}
+                            className="w-full border border-gray-300 rounded-lg pl-7 pr-3 py-2 disabled:bg-gray-100 disabled:cursor-not-allowed"
                           />
                         </div>
                         <p className="text-xs text-gray-500 mt-1">
@@ -1643,7 +1784,8 @@ export default function JobsPage() {
                             value={estimatedDurationValue}
                             onChange={(e) => setEstimatedDurationValue(e.target.value)}
                             placeholder="0"
-                            className="col-span-2 border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                            disabled={isLocked}
+                            className="col-span-2 border border-gray-300 rounded-lg px-3 py-2 text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
                           />
                           <select
                             name="estimatedDurationUnit"
@@ -1651,7 +1793,8 @@ export default function JobsPage() {
                             onChange={(e) =>
                               setEstimatedDurationUnit(e.target.value as any)
                             }
-                            className="border border-gray-300 rounded-lg px-2 py-2 text-sm"
+                            disabled={isLocked}
+                            className="border border-gray-300 rounded-lg px-2 py-2 text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
                           >
                             <option value="HOURS">Hours</option>
                             <option value="DAYS">Days</option>
@@ -1676,7 +1819,8 @@ export default function JobsPage() {
                     name="dueDate"
                     type="date"
                     defaultValue={editingJob?.dueDate ? new Date(editingJob.dueDate).toISOString().split("T")[0] : ""}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                    disabled={isLocked}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 disabled:bg-gray-100 disabled:cursor-not-allowed"
                   />
                 </div>
 
@@ -1693,12 +1837,15 @@ export default function JobsPage() {
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                    disabled={isLocked}
+                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:bg-gray-300 disabled:cursor-not-allowed"
                   >
                     {editingJob ? "Update Job" : "Create Job"}
                   </button>
                 </div>
               </form>
+                );
+              })()}
             </div>
           </div>
         </div>
