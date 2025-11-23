@@ -33,36 +33,83 @@ export async function getAllUsersStats(dateFrom?: string, dateTo?: string) {
       dateToDate.setHours(23, 59, 59, 999);
     }
 
-    const users = await prisma.user.findMany({
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        createdAt: true,
-        timeEntries: {
+    // Try to fetch with clockInNotes, fallback if column doesn't exist
+    let users;
+    try {
+      users = await prisma.user.findMany({
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          createdAt: true,
+          timeEntries: {
+            select: {
+              id: true,
+              clockIn: true,
+              clockOut: true,
+              clockInNotes: true,
+              notes: true,
+              job: {
+                select: {
+                  id: true,
+                  title: true,
+                },
+              },
+            },
+            orderBy: {
+              clockIn: "desc",
+            },
+          },
+        },
+        orderBy: {
+          name: "asc",
+        },
+      });
+    } catch (error: any) {
+      // If clockInNotes column doesn't exist, fetch without it
+      if (error?.code === 'P2022' || error?.message?.includes('clockInNotes')) {
+        users = await prisma.user.findMany({
           select: {
             id: true,
-            clockIn: true,
-            clockOut: true,
-            clockInNotes: true,
-            notes: true,
-            job: {
+            name: true,
+            email: true,
+            role: true,
+            createdAt: true,
+            timeEntries: {
               select: {
                 id: true,
-                title: true,
+                clockIn: true,
+                clockOut: true,
+                notes: true,
+                job: {
+                  select: {
+                    id: true,
+                    title: true,
+                  },
+                },
+              },
+              orderBy: {
+                clockIn: "desc",
               },
             },
           },
           orderBy: {
-            clockIn: "desc",
+            name: "asc",
           },
-        },
-      },
-      orderBy: {
-        name: "asc",
-      },
-    });
+        });
+        // Add null clockInNotes to all entries
+        users = users.map((user: any) => ({
+          ...user,
+          timeEntries: user.timeEntries.map((entry: any) => ({
+            ...entry,
+            clockInNotes: null,
+          })),
+        }));
+      } else {
+        throw error;
+      }
+    }
 
     // Calculate stats for each user
     const usersWithStats = users.map((user) => {
@@ -149,26 +196,60 @@ export async function getUserTimeEntries(userId: string) {
   }
 
   try {
-    const entries = await prisma.timeEntry.findMany({
-      where: { userId },
-      select: {
-        id: true,
-        clockIn: true,
-        clockOut: true,
-        clockInNotes: true,
-        notes: true,
-        job: {
-          select: {
-            id: true,
-            title: true,
+    // Try to fetch with clockInNotes, fallback if column doesn't exist
+    let entries;
+    try {
+      entries = await prisma.timeEntry.findMany({
+        where: { userId },
+        select: {
+          id: true,
+          clockIn: true,
+          clockOut: true,
+          clockInNotes: true,
+          notes: true,
+          job: {
+            select: {
+              id: true,
+              title: true,
+            },
           },
         },
-      },
-      orderBy: {
-        clockIn: "desc",
-      },
-      take: 50,
-    });
+        orderBy: {
+          clockIn: "desc",
+        },
+        take: 50,
+      });
+    } catch (error: any) {
+      // If clockInNotes column doesn't exist, fetch without it
+      if (error?.code === 'P2022' || error?.message?.includes('clockInNotes')) {
+        entries = await prisma.timeEntry.findMany({
+          where: { userId },
+          select: {
+            id: true,
+            clockIn: true,
+            clockOut: true,
+            notes: true,
+            job: {
+              select: {
+                id: true,
+                title: true,
+              },
+            },
+          },
+          orderBy: {
+            clockIn: "desc",
+          },
+          take: 50,
+        });
+        // Add null clockInNotes to all entries
+        entries = entries.map((entry: any) => ({
+          ...entry,
+          clockInNotes: null,
+        }));
+      } else {
+        throw error;
+      }
+    }
 
     return { ok: true, entries };
   } catch (error) {

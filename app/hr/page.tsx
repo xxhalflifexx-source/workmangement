@@ -35,18 +35,44 @@ export default function HRPage() {
   const [loadingEntries, setLoadingEntries] = useState(false);
   const [showEntriesModal, setShowEntriesModal] = useState(false);
   
-  // Date range state - default to this week
+  // Helper function to get Saturday of current week
+  // Week runs Saturday (day 6) to Friday (day 5)
+  const getSaturdayOfWeek = (date: Date): Date => {
+    const saturday = new Date(date);
+    const day = saturday.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+    // Calculate days to subtract to get to Saturday
+    // If today is Sunday (0), subtract 1 to get Saturday
+    // If today is Monday (1), subtract 2 to get Saturday
+    // If today is Tuesday (2), subtract 3 to get Saturday
+    // If today is Wednesday (3), subtract 4 to get Saturday
+    // If today is Thursday (4), subtract 5 to get Saturday
+    // If today is Friday (5), subtract 6 to get Saturday
+    // If today is Saturday (6), subtract 0 (already Saturday)
+    const daysToSubtract = day === 0 ? 1 : day === 6 ? 0 : day + 1;
+    saturday.setDate(saturday.getDate() - daysToSubtract);
+    saturday.setHours(0, 0, 0, 0);
+    return saturday;
+  };
+
+  // Helper function to get Friday of the week (6 days after Saturday)
+  const getFridayOfWeek = (saturday: Date): Date => {
+    const friday = new Date(saturday);
+    friday.setDate(friday.getDate() + 6); // Saturday + 6 days = Friday
+    friday.setHours(23, 59, 59, 999);
+    return friday;
+  };
+
+  // Date range state - default to this week (Saturday to Friday)
   const [dateFrom, setDateFrom] = useState<string>(() => {
     const now = new Date();
-    const startOfWeek = new Date(now);
-    startOfWeek.setDate(now.getDate() - now.getDay());
-    startOfWeek.setHours(0, 0, 0, 0);
-    return startOfWeek.toISOString().split('T')[0];
+    const saturday = getSaturdayOfWeek(now);
+    return saturday.toISOString().split('T')[0];
   });
   const [dateTo, setDateTo] = useState<string>(() => {
     const now = new Date();
-    now.setHours(23, 59, 59, 999);
-    return now.toISOString().split('T')[0];
+    const saturday = getSaturdayOfWeek(now);
+    const friday = getFridayOfWeek(saturday);
+    return friday.toISOString().split('T')[0];
   });
 
   useEffect(() => {
@@ -175,20 +201,42 @@ export default function HRPage() {
             </div>
             <div className="flex flex-col sm:flex-row gap-4">
               <div className="flex-1">
-                <label className="block text-sm font-medium text-gray-700 mb-1">From Date</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">From Date (Start of Week)</label>
                 <input
                   type="date"
                   value={dateFrom}
-                  onChange={(e) => setDateFrom(e.target.value)}
+                  onChange={(e) => {
+                    const newDateFrom = e.target.value;
+                    setDateFrom(newDateFrom);
+                    // Automatically adjust end date to maintain 7-day week
+                    if (newDateFrom) {
+                      const fromDate = new Date(newDateFrom);
+                      const toDate = new Date(fromDate);
+                      toDate.setDate(toDate.getDate() + 6); // Add 6 days to get end of week
+                      toDate.setHours(23, 59, 59, 999);
+                      setDateTo(toDate.toISOString().split('T')[0]);
+                    }
+                  }}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
                 />
               </div>
               <div className="flex-1">
-                <label className="block text-sm font-medium text-gray-700 mb-1">To Date</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">To Date (End of Week)</label>
                 <input
                   type="date"
                   value={dateTo}
-                  onChange={(e) => setDateTo(e.target.value)}
+                  onChange={(e) => {
+                    const newDateTo = e.target.value;
+                    setDateTo(newDateTo);
+                    // Automatically adjust start date to maintain 7-day week
+                    if (newDateTo) {
+                      const toDate = new Date(newDateTo);
+                      const fromDate = new Date(toDate);
+                      fromDate.setDate(fromDate.getDate() - 6); // Subtract 6 days to get start of week
+                      fromDate.setHours(0, 0, 0, 0);
+                      setDateFrom(fromDate.toISOString().split('T')[0]);
+                    }
+                  }}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
                 />
               </div>
@@ -196,17 +244,14 @@ export default function HRPage() {
                 <button
                   onClick={() => {
                     const now = new Date();
-                    const startOfWeek = new Date(now);
-                    startOfWeek.setDate(now.getDate() - now.getDay());
-                    startOfWeek.setHours(0, 0, 0, 0);
-                    setDateFrom(startOfWeek.toISOString().split('T')[0]);
-                    const endOfWeek = new Date(now);
-                    endOfWeek.setHours(23, 59, 59, 999);
-                    setDateTo(endOfWeek.toISOString().split('T')[0]);
+                    const saturday = getSaturdayOfWeek(now);
+                    const friday = getFridayOfWeek(saturday);
+                    setDateFrom(saturday.toISOString().split('T')[0]);
+                    setDateTo(friday.toISOString().split('T')[0]);
                   }}
                   className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium whitespace-nowrap"
                 >
-                  This Week
+                  This Week (Sat-Fri)
                 </button>
               </div>
             </div>
@@ -220,7 +265,7 @@ export default function HRPage() {
             <div className="text-3xl font-bold text-gray-900">{users.length}</div>
           </div>
           <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
-            <div className="text-sm font-medium text-gray-500 mb-1">Total Hours (Selected Range)</div>
+            <div className="text-sm font-medium text-gray-500 mb-1">Hours (Selected Range)</div>
             <div className="text-3xl font-bold text-blue-600">
               {users.reduce((sum, user) => sum + user.dateRangeHours, 0).toFixed(1)}h
             </div>
