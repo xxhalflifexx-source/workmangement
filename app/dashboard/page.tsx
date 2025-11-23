@@ -158,6 +158,27 @@ export default async function Dashboard() {
             </Link>
           )}
 
+          {/* Finance Card - Manager/Admin only */}
+          {(role === "MANAGER" || role === "ADMIN") && (
+            <Link
+              href="/finance"
+              className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow p-6 border border-gray-200 hover:border-green-300"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center text-2xl">
+                  💰
+                </div>
+                <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded font-medium">
+                  Finance
+                </span>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Finance</h3>
+              <p className="text-gray-600 text-sm">
+                Track invoices, payments, and financial records.
+              </p>
+            </Link>
+          )}
+
           {/* Admin / Manager Card */}
           {(role === "ADMIN" || role === "MANAGER") && (
             <Link

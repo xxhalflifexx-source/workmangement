@@ -9,8 +9,6 @@ import {
   getCompanySettings,
   updateCompanySettings,
   getFinancialSummary,
-  listActiveInvoices,
-  listOpenEstimates,
   updateUserProfileDetails,
   resetUserPasswordByAdmin,
 } from "./actions";
@@ -50,10 +48,7 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | undefined>();
   const [success, setSuccess] = useState<string | undefined>();
-  const [activeTab, setActiveTab] = useState<"users" | "settings" | "financials" | "billing">("users");
-  const [billingLoading, setBillingLoading] = useState(false);
-  const [billingInvoices, setBillingInvoices] = useState<any[]>([]);
-  const [billingEstimates, setBillingEstimates] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState<"users" | "settings" | "financials">("users");
 
   const [finStart, setFinStart] = useState<string>(new Date(new Date().getFullYear(), 0, 1).toISOString().split("T")[0]);
   const [finEnd, setFinEnd] = useState<string>(new Date().toISOString().split("T")[0]);
@@ -88,19 +83,6 @@ export default function AdminPage() {
     setLoading(false);
   };
 
-  const loadBilling = async () => {
-    setBillingLoading(true);
-    setError(undefined);
-    const [invRes, estRes] = await Promise.all([
-      listActiveInvoices(),
-      listOpenEstimates(),
-    ]);
-    if (invRes.ok) setBillingInvoices(invRes.invoices as any);
-    if (estRes.ok) setBillingEstimates(estRes.estimates as any);
-    if (!invRes.ok) setError(invRes.error);
-    if (!estRes.ok) setError(estRes.error);
-    setBillingLoading(false);
-  };
 
   const handleDeleteUser = async (userId: string) => {
     setError(undefined);
@@ -342,19 +324,6 @@ export default function AdminPage() {
                 }`}
               >
                 💹 Financials
-              </button>
-              <button
-                onClick={() => {
-                  setActiveTab("billing");
-                  loadBilling();
-                }}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === "billing"
-                    ? "border-purple-500 text-purple-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                }`}
-              >
-                🧾 Billing
               </button>
             </nav>
           </div>
@@ -775,90 +744,6 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* Billing Tab */}
-        {activeTab === "billing" && (
-          <div className="bg-white rounded-xl shadow border border-gray-200">
-            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-              <div>
-                <h2 className="text-xl font-semibold text-gray-900">Billing</h2>
-                <p className="text-sm text-gray-500">Active invoices and open estimates</p>
-              </div>
-              <button onClick={loadBilling} className="px-3 py-2 border rounded-lg text-sm hover:bg-gray-50">Refresh</button>
-            </div>
-
-            {billingLoading ? (
-              <div className="p-8 text-center text-gray-600">Loading…</div>
-            ) : (
-              <div className="p-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Active Invoices */}
-                <div className="border rounded-lg">
-                  <div className="px-4 py-3 border-b font-semibold">Active Invoices</div>
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full text-sm">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th className="px-4 py-2 text-left border">Invoice</th>
-                          <th className="px-4 py-2 text-left border">Customer</th>
-                          <th className="px-4 py-2 text-right border">Total</th>
-                          <th className="px-4 py-2 text-right border">Balance</th>
-                          <th className="px-4 py-2 text-left border">Status</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {billingInvoices.length === 0 ? (
-                          <tr><td colSpan={5} className="px-4 py-6 text-center text-gray-500">No active invoices</td></tr>
-                        ) : (
-                          billingInvoices.map((inv) => (
-                            <tr key={inv.id} className="hover:bg-gray-50">
-                              <td className="px-4 py-2 border">{inv.id.slice(0,8).toUpperCase()}</td>
-                              <td className="px-4 py-2 border">{inv.customer?.name || "—"}</td>
-                              <td className="px-4 py-2 border text-right">${inv.total.toFixed(2)}</td>
-                              <td className="px-4 py-2 border text-right">${inv.balance.toFixed(2)}</td>
-                              <td className="px-4 py-2 border">
-                                <span className={`px-2 py-1 rounded text-xs font-semibold ${inv.status === "PAID" ? "bg-green-100 text-green-700" : inv.status === "OVERDUE" ? "bg-red-100 text-red-700" : "bg-purple-100 text-purple-700"}`}>{inv.status}</span>
-                              </td>
-                            </tr>
-                          ))
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-
-                {/* Open Estimates */}
-                <div className="border rounded-lg">
-                  <div className="px-4 py-3 border-b font-semibold">Open Estimates</div>
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full text-sm">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th className="px-4 py-2 text-left border">Job</th>
-                          <th className="px-4 py-2 text-left border">Customer</th>
-                          <th className="px-4 py-2 text-left border">Pricing</th>
-                          <th className="px-4 py-2 text-right border">Estimate</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {billingEstimates.length === 0 ? (
-                          <tr><td colSpan={4} className="px-4 py-6 text-center text-gray-500">No open estimates</td></tr>
-                        ) : (
-                          billingEstimates.map((job) => (
-                            <tr key={job.id} className="hover:bg-gray-50">
-                              <td className="px-4 py-2 border">{job.title}</td>
-                              <td className="px-4 py-2 border">{job.customer?.name || "—"}</td>
-                              <td className="px-4 py-2 border">{job.pricingType === "T&M" ? "Time & Materials" : "Fixed"}</td>
-                              <td className="px-4 py-2 border text-right">{job.estimatedPrice ? `$${job.estimatedPrice.toFixed(2)}` : "—"}</td>
-                            </tr>
-                          ))
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
       </div>
 
       {/* Delete Confirmation Modal */}
