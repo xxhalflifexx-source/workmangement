@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { getJobs, getAllUsers, createJob, updateJob, deleteJob, getJobActivities, addJobActivity, getAllCustomers, createCustomer } from "./actions";
+import { getJobs, getAllUsers, createJob, updateJob, deleteJob, getJobActivities, addJobActivity, getAllCustomers, createCustomer, saveJobPhotos, submitJobPhotosToQC } from "./actions";
 import { createMaterialRequest, getJobMaterialRequests } from "../material-requests/actions";
 import { getJobForInvoice, getCompanySettingsForInvoice } from "./invoice-actions";
 import { createInvoice } from "../invoices/actions";
@@ -102,6 +102,10 @@ export default function JobsPage() {
   const [newActivityNotes, setNewActivityNotes] = useState("");
   const [newActivityFiles, setNewActivityFiles] = useState<File[]>([]);
   const [addingActivity, setAddingActivity] = useState(false);
+  
+  // Photo upload states per job
+  const [jobPhotoFiles, setJobPhotoFiles] = useState<Record<string, File[]>>({});
+  const [savingPhotos, setSavingPhotos] = useState<Record<string, boolean>>({});
   
   const [showMaterialModal, setShowMaterialModal] = useState(false);
   const [selectedJobForMaterial, setSelectedJobForMaterial] = useState<Job | null>(null);
@@ -360,6 +364,121 @@ export default function JobsPage() {
 
   const removeActivityFile = (index: number) => {
     setNewActivityFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleJobPhotoSelect = (jobId: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    setJobPhotoFiles((prev) => ({
+      ...prev,
+      [jobId]: [...(prev[jobId] || []), ...files],
+    }));
+  };
+
+  const removeJobPhoto = (jobId: string, index: number) => {
+    setJobPhotoFiles((prev) => ({
+      ...prev,
+      [jobId]: (prev[jobId] || []).filter((_, i) => i !== index),
+    }));
+  };
+
+  const handleSavePhotos = async (jobId: string) => {
+    const files = jobPhotoFiles[jobId] || [];
+    if (files.length === 0) {
+      setError("Please select at least one photo");
+      return;
+    }
+
+    setSavingPhotos((prev) => ({ ...prev, [jobId]: true }));
+    setError(undefined);
+
+    try {
+      // Upload images
+      const formData = new FormData();
+      files.forEach((file) => formData.append("files", file));
+
+      const uploadRes = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!uploadRes.ok) {
+        setError("Failed to upload photos");
+        return;
+      }
+
+      const uploadData = await uploadRes.json();
+      const imagePaths = uploadData.paths || [];
+
+      // Save photos to job
+      const saveFormData = new FormData();
+      saveFormData.append("jobId", jobId);
+      saveFormData.append("images", JSON.stringify(imagePaths));
+
+      const res = await saveJobPhotos(saveFormData);
+      if (res.ok) {
+        setSuccess("Photos saved successfully!");
+        setJobPhotoFiles((prev) => ({ ...prev, [jobId]: [] }));
+        await loadData(); // Refresh jobs
+      } else {
+        setError(res.error || "Failed to save photos");
+      }
+    } catch (err: any) {
+      console.error("Save photos error:", err);
+      setError(err?.message || "Failed to save photos");
+    } finally {
+      setSavingPhotos((prev) => ({ ...prev, [jobId]: false }));
+    }
+  };
+
+  const handleSubmitToQC = async (jobId: string) => {
+    const files = jobPhotoFiles[jobId] || [];
+
+    setSavingPhotos((prev) => ({ ...prev, [jobId]: true }));
+    setError(undefined);
+
+    try {
+      let imagePaths: string[] = [];
+
+      // Upload images if any selected
+      if (files.length > 0) {
+        const formData = new FormData();
+        files.forEach((file) => formData.append("files", file));
+
+        const uploadRes = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (!uploadRes.ok) {
+          setError("Failed to upload photos");
+          return;
+        }
+
+        const uploadData = await uploadRes.json();
+        imagePaths = uploadData.paths || [];
+      }
+
+      // Submit photos and job to QC
+      const submitFormData = new FormData();
+      submitFormData.append("jobId", jobId);
+      if (imagePaths.length > 0) {
+        submitFormData.append("images", JSON.stringify(imagePaths));
+      }
+
+      const res = await submitJobPhotosToQC(submitFormData);
+      if (res.ok) {
+        setSuccess("Job submitted to QC successfully!");
+        setJobPhotoFiles((prev) => ({ ...prev, [jobId]: [] }));
+        await loadData(); // Refresh jobs
+      } else {
+        setError(res.error || "Failed to submit to QC");
+      }
+    } catch (err: any) {
+      console.error("Submit to QC error:", err);
+      setError(err?.message || "Failed to submit to QC");
+    } finally {
+      setSavingPhotos((prev) => ({ ...prev, [jobId]: false }));
+    }
   };
 
   const openMaterialModal = async (job: Job) => {
@@ -1147,6 +1266,81 @@ export default function JobsPage() {
                     <span className="font-medium text-gray-900">{job.creator.name}</span>
                   </div>
                 </div>
+
+                {/* Photo Upload Section */}
+                {job.status !== "COMPLETED" && job.status !== "CANCELLED" && (
+                  <div className="mt-4 pt-4 border-t border-gray-200">
+                    <h4 className="text-sm font-semibold text-gray-900 mb-3">📷 Upload Photos</h4>
+                    <div className="space-y-3">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={(e) => handleJobPhotoSelect(job.id, e)}
+                        className="hidden"
+                        id={`photo-upload-${job.id}`}
+                      />
+                      <label
+                        htmlFor={`photo-upload-${job.id}`}
+                        className="cursor-pointer inline-flex items-center gap-2 px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                      >
+                        <span>📷</span>
+                        Choose Photos
+                      </label>
+
+                      {(jobPhotoFiles[job.id] || []).length > 0 && (
+                        <div className="mt-3 space-y-2">
+                          <p className="text-xs text-gray-600">
+                            Selected: {(jobPhotoFiles[job.id] || []).length} photo(s)
+                          </p>
+                          <div className="grid grid-cols-2 gap-2">
+                            {(jobPhotoFiles[job.id] || []).map((file, index) => (
+                              <div
+                                key={index}
+                                className="relative bg-gray-100 border border-gray-200 rounded p-2 flex items-center gap-2"
+                              >
+                                <div className="w-10 h-10 bg-gray-200 rounded overflow-hidden">
+                                  <img
+                                    src={URL.createObjectURL(file)}
+                                    alt={`Preview ${index + 1}`}
+                                    className="w-full h-full object-cover"
+                                  />
+                                </div>
+                                <p className="text-xs flex-1 truncate">{file.name}</p>
+                                <button
+                                  onClick={() => removeJobPhoto(job.id, index)}
+                                  type="button"
+                                  className="text-red-500 hover:text-red-700 text-xs"
+                                >
+                                  ✕
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {(jobPhotoFiles[job.id] || []).length > 0 && (
+                        <div className="flex gap-2 mt-3">
+                          <button
+                            onClick={() => handleSavePhotos(job.id)}
+                            disabled={savingPhotos[job.id]}
+                            className="flex-1 px-3 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:bg-gray-300 disabled:cursor-not-allowed"
+                          >
+                            {savingPhotos[job.id] ? "Saving..." : "Save"}
+                          </button>
+                          <button
+                            onClick={() => handleSubmitToQC(job.id)}
+                            disabled={savingPhotos[job.id]}
+                            className="flex-1 px-3 py-2 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium disabled:bg-gray-300 disabled:cursor-not-allowed"
+                          >
+                            {savingPhotos[job.id] ? "Submitting..." : "Submit to QC"}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                        {/* Actions */}
                        <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t">

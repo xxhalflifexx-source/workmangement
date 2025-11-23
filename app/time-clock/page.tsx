@@ -43,7 +43,6 @@ export default function TimeClockPage() {
   const [success, setSuccess] = useState<string | undefined>();
   const [elapsedTime, setElapsedTime] = useState("");
   const [notes, setNotes] = useState("");
-  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [currentTime, setCurrentTime] = useState("");
   const [currentDate, setCurrentDate] = useState("");
   
@@ -189,34 +188,7 @@ export default function TimeClockPage() {
     setSuccess(undefined);
 
     try {
-      let imagePaths: string[] = [];
-
-      if (selectedFiles.length > 0) {
-        try {
-          const formData = new FormData();
-          selectedFiles.forEach((file) => formData.append("files", file));
-
-          const uploadRes = await fetch("/api/upload", {
-            method: "POST",
-            body: formData,
-          });
-
-          if (!uploadRes.ok) {
-            setError("Failed to upload images. Clocking out without photos.");
-          } else {
-            const data = await uploadRes.json();
-            imagePaths = data.paths || [];
-          }
-        } catch (err) {
-          console.error("Upload error:", err);
-          setError("Failed to upload images. Clocking out without photos.");
-        }
-      }
-
-      const res = await clockOut(
-        notes,
-        imagePaths.length > 0 ? JSON.stringify(imagePaths) : undefined
-      );
+      const res = await clockOut(notes);
 
       if (!res.ok) {
         setError(res.error || "Failed to clock out");
@@ -225,7 +197,6 @@ export default function TimeClockPage() {
 
       setSuccess("Clocked out successfully!");
       setNotes("");
-      setSelectedFiles([]);
       await loadData();
     } catch (err: any) {
       console.error("Clock out error:", err);
@@ -235,14 +206,6 @@ export default function TimeClockPage() {
     }
   };
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    setSelectedFiles((prev) => [...prev, ...files]);
-  };
-
-  const removeFile = (index: number) => {
-    setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
-  };
 
   const handleMaterialRequest = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -507,65 +470,6 @@ export default function TimeClockPage() {
                     className="w-full border border-gray-300 rounded-lg p-3 text-sm resize-none"
                     rows={3}
                   />
-
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 bg-gray-50">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Add Photos (optional)
-                    </label>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      onChange={handleFileSelect}
-                      className="hidden"
-                      id="photo-upload"
-                    />
-                    <label
-                      htmlFor="photo-upload"
-                      className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-                    >
-                      Choose Photos
-                    </label>
-
-                    {selectedFiles.length > 0 && (
-                      <div className="mt-4 space-y-2">
-                        <p className="text-sm font-medium text-gray-700">
-                          Selected: {selectedFiles.length} photo(s)
-                        </p>
-                        <div className="grid grid-cols-2 gap-2">
-                          {selectedFiles.map((file, index) => (
-                            <div
-                              key={index}
-                              className="relative bg-white border border-gray-200 rounded-lg p-2 flex items-center gap-2"
-                            >
-                              <div className="w-12 h-12 bg-gray-100 rounded flex items-center justify-center overflow-hidden">
-                                <img
-                                  src={URL.createObjectURL(file)}
-                                  alt={`Preview ${index + 1}`}
-                                  className="w-full h-full object-cover"
-                                />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-xs font-medium text-gray-700 truncate">
-                                  {file.name}
-                                </p>
-                                <p className="text-xs text-gray-500">
-                                  {(file.size / 1024).toFixed(1)} KB
-                                </p>
-                              </div>
-                              <button
-                                onClick={() => removeFile(index)}
-                                className="text-red-500 hover:text-red-700 text-sm font-bold"
-                                type="button"
-                              >
-                                ×
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
 
                   {currentEntry?.job?.id && (
                     <button

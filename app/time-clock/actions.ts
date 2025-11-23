@@ -76,7 +76,7 @@ export async function clockIn(jobId?: string) {
   return { ok: true, entry };
 }
 
-export async function clockOut(notes?: string, images?: string) {
+export async function clockOut(notes?: string) {
   const session = await getServerSession(authOptions);
   
   if (!session?.user) {
@@ -108,12 +108,11 @@ export async function clockOut(notes?: string, images?: string) {
       clockOut: now,
       durationHours,
       notes: notes || null,
-      images: images || null,
     },
   });
 
-  // Create JobActivity if this was linked to a job and has notes/images
-  if (activeEntry.jobId && (notes || images)) {
+  // Create JobActivity if this was linked to a job and has notes
+  if (activeEntry.jobId && notes) {
     try {
       await prisma.jobActivity.create({
         data: {
@@ -122,7 +121,6 @@ export async function clockOut(notes?: string, images?: string) {
           type: "TIME_ENTRY",
           timeEntryId: entry.id,
           notes: notes || null,
-          images: images || null,
         },
       });
     } catch (error) {

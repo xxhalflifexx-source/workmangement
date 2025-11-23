@@ -640,6 +640,140 @@ export async function getJobActivities(jobId: string) {
   }
 }
 
+/**
+ * Save photos to a job without changing status (job stays in progress)
+ */
+export async function saveJobPhotos(formData: FormData) {
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user) {
+    return { ok: false, error: "Not authenticated" };
+  }
+
+  const userId = (session.user as any).id;
+  const jobId = formData.get("jobId") as string;
+  const images = formData.get("images") as string;
+
+  if (!jobId) {
+    return { ok: false, error: "Job ID is required" };
+  }
+
+  if (!images) {
+    return { ok: false, error: "No photos provided" };
+  }
+
+  // Verify job exists and user has access
+  const job = await prisma.job.findUnique({
+    where: { id: jobId },
+    select: { assignedTo: true },
+  });
+
+  if (!job) {
+    return { ok: false, error: "Job not found" };
+  }
+
+  // Employees can only save photos to their assigned jobs
+  const userRole = (session.user as any).role;
+  if (userRole !== "ADMIN" && userRole !== "MANAGER" && job.assignedTo !== userId) {
+    return { ok: false, error: "Unauthorized: You can only add photos to jobs assigned to you" };
+  }
+
+  // Create JobActivity with photos
+  await prisma.jobActivity.create({
+    data: {
+      jobId,
+      userId,
+      type: "UPDATE",
+      notes: "Photos uploaded",
+      images: images,
+    },
+  });
+
+  revalidatePath("/jobs");
+  revalidatePath("/qc");
+
+  return { ok: true };
+}
+
+/**
+ * Save photos and submit job to QC (updates job status to AWAITING_QC)
+ */
+export async function submitJobPhotosToQC(formData: FormData) {
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user) {
+    return { ok: false, error: "Not authenticated" };
+  }
+
+  const userId = (session.user as any).id;
+  const jobId = formData.get("jobId") as string;
+  const images = formData.get("images") as string;
+
+  if (!jobId) {
+    return { ok: false, error: "Job ID is required" };
+  }
+
+  // Verify job exists and user has access
+  const job = await prisma.job.findUnique({
+    where: { id: jobId },
+    include: {
+      assignee: { select: { email: true, name: true } },
+      creator: { select: { email: true, name: true } },
+    },
+  });
+
+  if (!job) {
+    return { ok: false, error: "Job not found" };
+  }
+
+  // Employees can only submit their assigned jobs to QC
+  const userRole = (session.user as any).role;
+  if (userRole !== "ADMIN" && userRole !== "MANAGER" && job.assignedTo !== userId) {
+    return { ok: false, error: "Unauthorized: You can only submit jobs assigned to you" };
+  }
+
+  // Create JobActivity with photos if provided
+  if (images) {
+    await prisma.jobActivity.create({
+      data: {
+        jobId,
+        userId,
+        type: "UPDATE",
+        notes: "Photos uploaded and job submitted to QC",
+        images: images,
+      },
+    });
+  }
+
+  // Update job status to AWAITING_QC
+  await prisma.job.update({
+    where: { id: jobId },
+    data: {
+      status: "AWAITING_QC",
+    },
+  });
+
+  // Send email notifications
+  const rawRecipients = [job.assignee?.email, job.creator?.email];
+  const recipients = Array.from(
+    new Set(rawRecipients.filter((e): e is string => !!e))
+  );
+
+  const message = `This job has been submitted for Quality Control review.\n\nStatus: AWAITING_QC\nTitle: ${job.title}`;
+
+  await Promise.all(
+    recipients.map((email) =>
+      sendJobStatusEmail(email, job.title, "AWAITING_QC", message)
+    )
+  );
+
+  revalidatePath("/jobs");
+  revalidatePath("/qc");
+  revalidatePath("/dashboard");
+
+  return { ok: true };
+}
+
 export async function addJobActivity(formData: FormData) {
   const session = await getServerSession(authOptions);
   
