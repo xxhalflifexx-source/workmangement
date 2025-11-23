@@ -10,11 +10,63 @@ export async function listInvoices() {
 	const role = (session.user as any).role;
 	if (role !== "ADMIN" && role !== "MANAGER") return { ok: false, error: "Unauthorized" };
 
-	const invoices = await prisma.invoice.findMany({
-		include: { payments: true, lines: true, customer: true, job: { select: { title: true, id: true } } },
-		orderBy: { createdAt: "desc" },
-	});
-	return { ok: true, invoices };
+	try {
+		const invoices = await prisma.invoice.findMany({
+			include: { payments: true, lines: true, customer: true, job: { select: { title: true, id: true } } },
+			orderBy: { createdAt: "desc" },
+		});
+		
+		// Ensure pdfFiles is safely handled (may be null if column doesn't exist)
+		const safeInvoices = invoices.map((inv: any) => ({
+			...inv,
+			pdfFiles: inv.pdfFiles || null,
+		}));
+		
+		return { ok: true, invoices: safeInvoices };
+	} catch (error: any) {
+		console.error("List invoices error:", error);
+		// If pdfFiles column doesn't exist, still return invoices without it
+		if (error?.code === 'P2022' || error?.message?.includes('pdfFiles')) {
+			// Try to fetch without pdfFiles by using select
+			try {
+				const invoices = await prisma.invoice.findMany({
+					select: {
+						id: true,
+						invoiceNumber: true,
+						jobId: true,
+						customerId: true,
+						customerName: true,
+						customerEmail: true,
+						status: true,
+						issueDate: true,
+						dueDate: true,
+						sentDate: true,
+						releaseDate: true,
+						collectionDate: true,
+						creditDate: true,
+						total: true,
+						balance: true,
+						notes: true,
+						createdAt: true,
+						updatedAt: true,
+						payments: true,
+						lines: true,
+						customer: true,
+						job: { select: { title: true, id: true } },
+					},
+					orderBy: { createdAt: "desc" },
+				});
+				const safeInvoices = invoices.map((inv: any) => ({
+					...inv,
+					pdfFiles: null, // Column doesn't exist yet
+				}));
+				return { ok: true, invoices: safeInvoices };
+			} catch (retryError: any) {
+				return { ok: false, error: retryError?.message || "Failed to load invoices" };
+			}
+		}
+		return { ok: false, error: error?.message || "Failed to load invoices" };
+	}
 }
 
 export async function getInvoice(id: string) {
@@ -287,6 +339,15 @@ export async function updateInvoicePDFs(invoiceId: string, pdfFiles: string[]) {
 	if (role !== "ADMIN" && role !== "MANAGER") return { ok: false, error: "Unauthorized" };
 
 	try {
+		// Check if invoice exists first
+		const existingInvoice = await prisma.invoice.findUnique({
+			where: { id: invoiceId },
+		});
+
+		if (!existingInvoice) {
+			return { ok: false, error: "Invoice not found" };
+		}
+
 		const invoice = await prisma.invoice.update({
 			where: { id: invoiceId },
 			data: {
@@ -297,6 +358,10 @@ export async function updateInvoicePDFs(invoiceId: string, pdfFiles: string[]) {
 		return { ok: true, invoice };
 	} catch (error: any) {
 		console.error("Update invoice PDFs error:", error);
+		// Handle case where pdfFiles column might not exist yet
+		if (error?.code === 'P2022' || error?.message?.includes('pdfFiles')) {
+			return { ok: false, error: "PDF files feature is not available. Please add the pdfFiles column to the Invoice table in your database." };
+		}
 		return { ok: false, error: error?.message || "Failed to update invoice PDFs" };
 	}
 }

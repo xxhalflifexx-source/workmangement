@@ -68,15 +68,25 @@ export default function FinancePage() {
     try {
       const res = await listInvoices();
       if (!res.ok) {
-        setError(res.error);
+        setError(res.error || "Failed to load invoices");
+        setInvoices([]);
+        setFilteredInvoices([]);
         return;
       }
-      if (res.ok) {
-        setInvoices(res.invoices as Invoice[]);
-        setFilteredInvoices(res.invoices as Invoice[]);
+      if (res.ok && res.invoices) {
+        // Ensure pdfFiles is handled safely
+        const safeInvoices = (res.invoices as Invoice[]).map((inv: any) => ({
+          ...inv,
+          pdfFiles: inv.pdfFiles || null,
+        }));
+        setInvoices(safeInvoices);
+        setFilteredInvoices(safeInvoices);
       }
     } catch (err: any) {
+      console.error("Load invoices error:", err);
       setError(err?.message || "Failed to load invoices");
+      setInvoices([]);
+      setFilteredInvoices([]);
     } finally {
       setLoading(false);
     }
@@ -300,7 +310,10 @@ export default function FinancePage() {
       let existingPdfs: string[] = [];
       if (invoice?.pdfFiles) {
         try {
-          existingPdfs = JSON.parse(invoice.pdfFiles);
+          const parsed = typeof invoice.pdfFiles === 'string' 
+            ? JSON.parse(invoice.pdfFiles) 
+            : invoice.pdfFiles;
+          existingPdfs = Array.isArray(parsed) ? parsed : [];
         } catch {
           existingPdfs = [];
         }
@@ -859,7 +872,13 @@ export default function FinancePage() {
                 {/* PDF Files */}
                 {(() => {
                   try {
-                    const pdfs = selectedInvoice.pdfFiles ? JSON.parse(selectedInvoice.pdfFiles) : [];
+                    if (!selectedInvoice.pdfFiles) {
+                      return null;
+                    }
+                    const parsed = typeof selectedInvoice.pdfFiles === 'string' 
+                      ? JSON.parse(selectedInvoice.pdfFiles) 
+                      : selectedInvoice.pdfFiles;
+                    const pdfs = Array.isArray(parsed) ? parsed : [];
                     return pdfs.length > 0 ? (
                       <div className="mb-6">
                         <h3 className="text-sm font-semibold text-gray-700 uppercase mb-2">PDF Files</h3>
