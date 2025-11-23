@@ -1574,8 +1574,16 @@ export default function JobsPage() {
 
               {(() => {
                 const isLocked = !!(editingJob && (editingJob.status === "AWAITING_QC" || editingJob.status === "COMPLETED"));
+                const isEmployee = !canManage;
                 return (
                   <form onSubmit={handleSubmit} className="space-y-4">
+                    {isEmployee && (
+                      <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                        <p className="text-sm text-red-800 font-medium">
+                          ⚠️ You do not have permission to edit jobs. Only administrators and managers can edit job details.
+                        </p>
+                      </div>
+                    )}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Title *
