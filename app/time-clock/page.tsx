@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { clockIn, clockOut, getCurrentStatus, getTodayEntries, getRecentEntries, getAvailableJobs, getAssignedJobs } from "./actions";
-import { createMaterialRequest } from "../material-requests/actions";
 import Link from "next/link";
 
 interface TimeEntry {
@@ -45,16 +44,6 @@ export default function TimeClockPage() {
   const [notes, setNotes] = useState("");
   const [currentTime, setCurrentTime] = useState("");
   const [currentDate, setCurrentDate] = useState("");
-  
-  // Material request states
-  const [showMaterialModal, setShowMaterialModal] = useState(false);
-  const [materialItemName, setMaterialItemName] = useState("");
-  const [materialQuantity, setMaterialQuantity] = useState(1);
-  const [materialUnit, setMaterialUnit] = useState("pcs");
-  const [materialDescription, setMaterialDescription] = useState("");
-  const [materialPriority, setMaterialPriority] = useState("MEDIUM");
-  const [materialNotes, setMaterialNotes] = useState("");
-  const [submittingMaterial, setSubmittingMaterial] = useState(false);
 
   useEffect(() => {
     const updateTime = () => {
@@ -207,44 +196,6 @@ export default function TimeClockPage() {
   };
 
 
-  const handleMaterialRequest = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubmittingMaterial(true);
-    setError(undefined);
-
-    if (!isClockedIn || !currentEntry?.job?.id) {
-      setError("You must be clocked into a job to request materials.");
-      setSubmittingMaterial(false);
-      return;
-    }
-
-    const formData = new FormData();
-    formData.append("jobId", currentEntry.job!.id);
-    formData.append("itemName", materialItemName);
-    formData.append("quantity", materialQuantity.toString());
-    formData.append("unit", materialUnit);
-    formData.append("description", materialDescription);
-    formData.append("priority", materialPriority);
-    formData.append("notes", materialNotes);
-
-    const res = await createMaterialRequest(formData);
-    
-    if (!res.ok) {
-      setError(res.error);
-      setSubmittingMaterial(false);
-      return;
-    }
-
-    setSuccess(`Material request submitted for ${materialItemName}!`);
-    setShowMaterialModal(false);
-    setMaterialItemName("");
-    setMaterialQuantity(1);
-    setMaterialUnit("pcs");
-    setMaterialDescription("");
-    setMaterialPriority("MEDIUM");
-    setMaterialNotes("");
-    setSubmittingMaterial(false);
-  };
 
   const calculateDuration = (entry: TimeEntry) => {
     if (!entry.clockOut) return "In progress";
@@ -471,15 +422,6 @@ export default function TimeClockPage() {
                     rows={3}
                   />
 
-                  {currentEntry?.job?.id && (
-                    <button
-                      onClick={() => setShowMaterialModal(true)}
-                      className="w-full bg-blue-600 text-white py-3 rounded-xl font-semibold hover:bg-blue-700 transition-colors shadow-lg"
-                    >
-                      Request Materials for {currentEntry.job?.title}
-                    </button>
-                  )}
-
                   <button
                     onClick={handleClockOut}
                     disabled={loading}
@@ -613,131 +555,6 @@ export default function TimeClockPage() {
         </div>
       </div>
 
-      {showMaterialModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Request Materials</h2>
-              {currentEntry?.job && (
-                <p className="text-sm text-gray-600 mb-6">
-                  For job: <span className="font-medium">{currentEntry.job.title}</span>
-                </p>
-              )}
-
-              <form onSubmit={handleMaterialRequest} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Item Name *
-                  </label>
-                  <input
-                    type="text"
-                    value={materialItemName}
-                    onChange={(e) => setMaterialItemName(e.target.value)}
-                    placeholder="e.g., Steel Handrail"
-                    required
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Quantity *
-                    </label>
-                    <input
-                      type="number"
-                      value={materialQuantity}
-                      onChange={(e) => setMaterialQuantity(Number(e.target.value))}
-                      min="1"
-                      required
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Unit *</label>
-                    <input
-                      type="text"
-                      value={materialUnit}
-                      onChange={(e) => setMaterialUnit(e.target.value)}
-                      placeholder="pcs, kg, lbs"
-                      required
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Description
-                  </label>
-                  <textarea
-                    value={materialDescription}
-                    onChange={(e) => setMaterialDescription(e.target.value)}
-                    placeholder="Additional details..."
-                    rows={3}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Priority
-                  </label>
-                  <select
-                    value={materialPriority}
-                    onChange={(e) => setMaterialPriority(e.target.value)}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                  >
-                    <option value="LOW">Low</option>
-                    <option value="MEDIUM">Medium</option>
-                    <option value="HIGH">High</option>
-                    <option value="URGENT">Urgent</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Notes
-                  </label>
-                  <textarea
-                    value={materialNotes}
-                    onChange={(e) => setMaterialNotes(e.target.value)}
-                    placeholder="Any additional notes..."
-                    rows={2}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                  />
-                </div>
-
-                <div className="flex gap-3 pt-4">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowMaterialModal(false);
-                      setMaterialItemName("");
-                      setMaterialQuantity(1);
-                      setMaterialUnit("pcs");
-                      setMaterialDescription("");
-                      setMaterialPriority("MEDIUM");
-                      setMaterialNotes("");
-                    }}
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={submittingMaterial || !materialItemName}
-                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-medium"
-                  >
-                    {submittingMaterial ? "Submitting..." : "Submit Request"}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
     </main>
   );
 }
