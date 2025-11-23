@@ -125,7 +125,7 @@ export async function getAllUsersStats(dateFrom?: string, dateTo?: string) {
 
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-      user.timeEntries.forEach((entry) => {
+      user.timeEntries.forEach((entry: any) => {
         if (entry.clockIn && entry.clockOut) {
           const clockInDate = new Date(entry.clockIn);
           const duration = new Date(entry.clockOut).getTime() - new Date(entry.clockIn).getTime();
