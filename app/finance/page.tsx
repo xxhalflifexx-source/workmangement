@@ -48,6 +48,8 @@ export default function FinancePage() {
   const [filteredInvoices, setFilteredInvoices] = useState<Invoice[]>([]);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [showDetails, setShowDetails] = useState(false);
+  const [uploadingPDFs, setUploadingPDFs] = useState<Record<string, boolean>>({});
+  const [selectedPDFFiles, setSelectedPDFFiles] = useState<Record<string, File[]>>({});
 
   // Filters
   const [searchQuery, setSearchQuery] = useState("");
