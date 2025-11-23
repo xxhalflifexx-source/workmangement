@@ -199,12 +199,14 @@ export async function getJobs() {
   const userRole = (session.user as any).role;
 
   // Admins and managers see all jobs
-  // Employees see only their assigned jobs
+  // Employees see only their assigned jobs (assignedTo must equal their userId)
+  const whereClause =
+    userRole === "ADMIN" || userRole === "MANAGER"
+      ? {} // Admins/managers see all jobs
+      : { assignedTo: userId }; // Employees only see jobs assigned to them
+
   const jobs = await prisma.job.findMany({
-    where:
-      userRole === "ADMIN" || userRole === "MANAGER"
-        ? {}
-        : { assignedTo: userId },
+    where: whereClause,
     include: {
       assignee: { select: { name: true, email: true } },
       creator: { select: { name: true } },
