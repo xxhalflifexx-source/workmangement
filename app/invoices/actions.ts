@@ -33,30 +33,44 @@ export async function getInvoice(id: string) {
 
 // Helper function to generate next invoice number
 async function getNextInvoiceNumber(): Promise<string> {
-	// Find the highest invoice number
-	const lastInvoice = await prisma.invoice.findFirst({
+	const currentYear = 2025;
+	
+	// Find all invoices with invoice numbers matching INV-2025-#### pattern
+	const invoices2025 = await prisma.invoice.findMany({
 		where: {
-			invoiceNumber: { not: null },
-		},
-		orderBy: {
-			createdAt: "desc",
+			invoiceNumber: {
+				startsWith: `INV-${currentYear}-`,
+			},
 		},
 		select: {
 			invoiceNumber: true,
 		},
+		orderBy: {
+			createdAt: "desc",
+		},
 	});
 
-	let nextNumber = 250001; // Starting number
+	let nextSequence = 1; // Start at 0001
 
-	if (lastInvoice?.invoiceNumber) {
-		// Extract number from format "INV-250001" or "250001"
-		const match = lastInvoice.invoiceNumber.match(/(\d+)$/);
-		if (match) {
-			nextNumber = parseInt(match[1], 10) + 1;
+	if (invoices2025.length > 0) {
+		// Extract sequence numbers from all 2025 invoices
+		const sequences = invoices2025
+			.map((inv) => {
+				// Match pattern INV-2025-#### and extract the 4-digit sequence
+				const match = inv.invoiceNumber?.match(/INV-2025-(\d{4})$/);
+				return match ? parseInt(match[1], 10) : 0;
+			})
+			.filter((seq) => seq > 0);
+
+		if (sequences.length > 0) {
+			// Find the highest sequence number and increment
+			const maxSequence = Math.max(...sequences);
+			nextSequence = maxSequence + 1;
 		}
 	}
 
-	return `INV-${nextNumber.toString().padStart(6, "0")}`;
+	// Format as INV-2025-#### with 4-digit sequence padded with zeros
+	return `INV-${currentYear}-${nextSequence.toString().padStart(4, "0")}`;
 }
 
 export async function createInvoice(formData: FormData) {
