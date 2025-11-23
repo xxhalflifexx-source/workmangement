@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authOptions";
 
-export async function getAllUsersStats() {
+export async function getAllUsersStats(dateFrom?: string, dateTo?: string) {
   const session = await getServerSession(authOptions);
   
   if (!session?.user) {
@@ -19,6 +19,20 @@ export async function getAllUsersStats() {
   }
 
   try {
+    // Parse date range if provided
+    let dateFromDate: Date | undefined;
+    let dateToDate: Date | undefined;
+
+    if (dateFrom) {
+      dateFromDate = new Date(dateFrom);
+      dateFromDate.setHours(0, 0, 0, 0);
+    }
+
+    if (dateTo) {
+      dateToDate = new Date(dateTo);
+      dateToDate.setHours(23, 59, 59, 999);
+    }
+
     const users = await prisma.user.findMany({
       select: {
         id: true,
@@ -51,7 +65,7 @@ export async function getAllUsersStats() {
 
     // Calculate stats for each user
     const usersWithStats = users.map((user) => {
-      let totalHours = 0;
+      let dateRangeHours = 0;
       let completedShifts = 0;
       let thisWeekHours = 0;
       let thisMonthHours = 0;
@@ -65,13 +79,30 @@ export async function getAllUsersStats() {
 
       user.timeEntries.forEach((entry) => {
         if (entry.clockIn && entry.clockOut) {
+          const clockInDate = new Date(entry.clockIn);
           const duration = new Date(entry.clockOut).getTime() - new Date(entry.clockIn).getTime();
           const hours = duration / (1000 * 60 * 60);
           
-          totalHours += hours;
-          completedShifts++;
+          // Check if entry is within date range
+          let isInDateRange = false;
+          if (dateFromDate && dateToDate) {
+            isInDateRange = clockInDate >= dateFromDate && clockInDate <= dateToDate;
+          } else if (dateFromDate) {
+            isInDateRange = clockInDate >= dateFromDate;
+          } else if (dateToDate) {
+            isInDateRange = clockInDate <= dateToDate;
+          } else {
+            // If no date range specified, default to this week
+            isInDateRange = clockInDate >= startOfWeek;
+          }
 
-          const clockInDate = new Date(entry.clockIn);
+          // Only count shifts and hours within the selected date range
+          if (isInDateRange) {
+            completedShifts++;
+            dateRangeHours += hours;
+          }
+
+          // Keep this week and this month for reference (not used in main display)
           if (clockInDate >= startOfWeek) {
             thisWeekHours += hours;
           }
@@ -87,7 +118,7 @@ export async function getAllUsersStats() {
         email: user.email,
         role: user.role,
         createdAt: user.createdAt,
-        totalHours: Math.round(totalHours * 10) / 10,
+        dateRangeHours: Math.round(dateRangeHours * 10) / 10,
         completedShifts,
         thisWeekHours: Math.round(thisWeekHours * 10) / 10,
         thisMonthHours: Math.round(thisMonthHours * 10) / 10,

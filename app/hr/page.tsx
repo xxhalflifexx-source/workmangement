@@ -18,7 +18,7 @@ interface UserStats {
   email: string | null;
   role: string;
   createdAt: string;
-  totalHours: number;
+  dateRangeHours: number;
   completedShifts: number;
   thisWeekHours: number;
   thisMonthHours: number;
@@ -33,16 +33,30 @@ export default function HRPage() {
   const [userEntries, setUserEntries] = useState<TimeEntry[]>([]);
   const [loadingEntries, setLoadingEntries] = useState(false);
   const [showEntriesModal, setShowEntriesModal] = useState(false);
+  
+  // Date range state - default to this week
+  const [dateFrom, setDateFrom] = useState<string>(() => {
+    const now = new Date();
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay());
+    startOfWeek.setHours(0, 0, 0, 0);
+    return startOfWeek.toISOString().split('T')[0];
+  });
+  const [dateTo, setDateTo] = useState<string>(() => {
+    const now = new Date();
+    now.setHours(23, 59, 59, 999);
+    return now.toISOString().split('T')[0];
+  });
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [dateFrom, dateTo]);
 
   const loadData = async () => {
     setLoading(true);
     setError(undefined);
 
-    const res = await getAllUsersStats();
+    const res = await getAllUsersStats(dateFrom || undefined, dateTo || undefined);
 
     if (!res.ok) {
       setError(res.error);
@@ -151,28 +165,69 @@ export default function HRPage() {
           </div>
         )}
 
+        {/* Date Range Filter */}
+        <div className="bg-white rounded-lg shadow p-6 border border-gray-200 mb-8">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900 mb-1">Date Range Filter</h2>
+              <p className="text-sm text-gray-500">Select a date range to calculate employee hours</p>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1">From Date</label>
+                <input
+                  type="date"
+                  value={dateFrom}
+                  onChange={(e) => setDateFrom(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                />
+              </div>
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1">To Date</label>
+                <input
+                  type="date"
+                  value={dateTo}
+                  onChange={(e) => setDateTo(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                />
+              </div>
+              <div className="flex items-end">
+                <button
+                  onClick={() => {
+                    const now = new Date();
+                    const startOfWeek = new Date(now);
+                    startOfWeek.setDate(now.getDate() - now.getDay());
+                    startOfWeek.setHours(0, 0, 0, 0);
+                    setDateFrom(startOfWeek.toISOString().split('T')[0]);
+                    const endOfWeek = new Date(now);
+                    endOfWeek.setHours(23, 59, 59, 999);
+                    setDateTo(endOfWeek.toISOString().split('T')[0]);
+                  }}
+                  className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium whitespace-nowrap"
+                >
+                  This Week
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Summary Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
             <div className="text-sm font-medium text-gray-500 mb-1">Total Employees</div>
             <div className="text-3xl font-bold text-gray-900">{users.length}</div>
           </div>
           <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
-            <div className="text-sm font-medium text-gray-500 mb-1">Total Hours (All Time)</div>
+            <div className="text-sm font-medium text-gray-500 mb-1">Total Hours (Selected Range)</div>
             <div className="text-3xl font-bold text-blue-600">
-              {users.reduce((sum, user) => sum + user.totalHours, 0).toFixed(1)}h
+              {users.reduce((sum, user) => sum + user.dateRangeHours, 0).toFixed(1)}h
             </div>
           </div>
           <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
-            <div className="text-sm font-medium text-gray-500 mb-1">This Week</div>
+            <div className="text-sm font-medium text-gray-500 mb-1">Completed Shifts</div>
             <div className="text-3xl font-bold text-green-600">
-              {users.reduce((sum, user) => sum + user.thisWeekHours, 0).toFixed(1)}h
-            </div>
-          </div>
-          <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
-            <div className="text-sm font-medium text-gray-500 mb-1">This Month</div>
-            <div className="text-3xl font-bold text-purple-600">
-              {users.reduce((sum, user) => sum + user.thisMonthHours, 0).toFixed(1)}h
+              {users.reduce((sum, user) => sum + user.completedShifts, 0)}
             </div>
           </div>
         </div>
@@ -193,13 +248,7 @@ export default function HRPage() {
                     Role
                   </th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Total Hours
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    This Week
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    This Month
+                    Hours (Selected Range)
                   </th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Shifts
@@ -212,7 +261,7 @@ export default function HRPage() {
               <tbody className="bg-white divide-y divide-gray-200">
                 {users.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
+                    <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
                       No employees found
                     </td>
                   </tr>
@@ -238,13 +287,7 @@ export default function HRPage() {
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium text-gray-900">
-                        {user.totalHours.toFixed(1)}h
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-600">
-                        {user.thisWeekHours.toFixed(1)}h
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-600">
-                        {user.thisMonthHours.toFixed(1)}h
+                        {user.dateRangeHours.toFixed(1)}h
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-600">
                         {user.completedShifts}
@@ -275,7 +318,7 @@ export default function HRPage() {
                 <div>
                   <h2 className="text-2xl font-bold text-gray-900">{selectedUser.name}'s Time Entries</h2>
                   <p className="text-sm text-gray-500 mt-1">
-                    Total: {selectedUser.totalHours.toFixed(1)}h across {selectedUser.completedShifts} shifts
+                    Hours (Selected Range): {selectedUser.dateRangeHours.toFixed(1)}h across {selectedUser.completedShifts} shifts
                   </p>
                 </div>
                 <button
