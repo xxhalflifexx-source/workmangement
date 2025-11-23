@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { getJobs, getAllUsers, createJob, updateJob, deleteJob, getJobActivities, addJobActivity, getAllCustomers, createCustomer, saveJobPhotos, submitJobPhotosToQC, getJobPhotos, removeJobPhoto } from "./actions";
+import { getJobs, getAllUsers, createJob, updateJob, deleteJob, getJobActivities, addJobActivity, getAllCustomers, createCustomer, saveJobPhotos, submitJobPhotosToQC, getJobPhotos, removeJobPhoto as removeJobPhotoFromDB } from "./actions";
 import { createMaterialRequest, getJobMaterialRequests } from "../material-requests/actions";
 import { getJobForInvoice, getCompanySettingsForInvoice } from "./invoice-actions";
 import { createInvoice } from "../invoices/actions";
@@ -536,7 +536,7 @@ export default function JobsPage() {
       formData.append("activityId", activityId);
       formData.append("photoUrl", photoUrl);
 
-      const res = await removeJobPhoto(formData);
+      const res = await removeJobPhotoFromDB(formData);
       if (res.ok) {
         setSuccess("Photo removed successfully!");
         await loadData(); // Refresh to update photo list
