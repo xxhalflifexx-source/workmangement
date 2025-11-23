@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authOptions";
 
-export async function clockIn(jobId?: string) {
+export async function clockIn(jobId?: string, notes?: string) {
   const session = await getServerSession(authOptions);
   
   if (!session?.user) {
@@ -67,6 +67,7 @@ export async function clockIn(jobId?: string) {
       jobId: jobId || null,
       clockIn: now,
       isRework,
+      notes: notes || null,
     },
     include: {
       job: { select: { title: true, id: true } },

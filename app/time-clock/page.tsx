@@ -42,6 +42,8 @@ export default function TimeClockPage() {
   const [success, setSuccess] = useState<string | undefined>();
   const [elapsedTime, setElapsedTime] = useState("");
   const [notes, setNotes] = useState("");
+  const [clockInDescription, setClockInDescription] = useState("");
+  const [descriptionError, setDescriptionError] = useState<string | undefined>();
   const [currentTime, setCurrentTime] = useState("");
   const [currentDate, setCurrentDate] = useState("");
 
@@ -144,12 +146,20 @@ export default function TimeClockPage() {
   };
 
   const handleClockIn = async () => {
-    setLoading(true);
     setError(undefined);
     setSuccess(undefined);
+    setDescriptionError(undefined);
+
+    // Validation: If no job is selected, description is mandatory
+    if (!selectedJobId && !clockInDescription.trim()) {
+      setDescriptionError("Please provide a description before clocking in.");
+      return;
+    }
+
+    setLoading(true);
 
     try {
-      const res = await clockIn(selectedJobId || undefined);
+      const res = await clockIn(selectedJobId || undefined, clockInDescription.trim() || undefined);
 
       if (!res.ok) {
         setError(res.error || "Failed to clock in");
@@ -162,6 +172,7 @@ export default function TimeClockPage() {
           : "Clocked in successfully!"
       );
       setSelectedJobId("");
+      setClockInDescription("");
       await loadData();
     } catch (err: any) {
       console.error("Clock in error:", err);
@@ -390,7 +401,18 @@ export default function TimeClockPage() {
                       </label>
                       <select
                         value={selectedJobId}
-                        onChange={(e) => setSelectedJobId(e.target.value)}
+                        onChange={(e) => {
+                          setSelectedJobId(e.target.value);
+                          // Clear description error when job is selected
+                          if (e.target.value) {
+                            setDescriptionError(undefined);
+                          } else {
+                            // If job is deselected, description becomes mandatory again
+                            if (!clockInDescription.trim()) {
+                              setDescriptionError(undefined); // Clear error, will show on submit
+                            }
+                          }
+                        }}
                         className="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-700"
                       >
                         <option value="">No specific job</option>
@@ -402,6 +424,40 @@ export default function TimeClockPage() {
                       </select>
                     </div>
                   )}
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Description {!selectedJobId && <span className="text-red-500">*</span>}
+                      {selectedJobId && <span className="text-gray-500 text-xs font-normal">(Optional)</span>}
+                    </label>
+                    <textarea
+                      value={clockInDescription}
+                      onChange={(e) => {
+                        setClockInDescription(e.target.value);
+                        // Clear error when user starts typing
+                        if (descriptionError && e.target.value.trim()) {
+                          setDescriptionError(undefined);
+                        }
+                      }}
+                      placeholder={selectedJobId ? "Add a description (optional)" : "Please provide a description of what you'll be working on"}
+                      className={`w-full border rounded-lg px-3 py-2 text-sm resize-none ${
+                        descriptionError 
+                          ? "border-red-300 bg-red-50" 
+                          : "border-gray-300"
+                      }`}
+                      rows={3}
+                      required={!selectedJobId}
+                    />
+                    {descriptionError && (
+                      <p className="mt-1 text-sm text-red-600">{descriptionError}</p>
+                    )}
+                    {!selectedJobId && (
+                      <p className="mt-1 text-xs text-gray-500">
+                        A description is required when clocking in without selecting a job.
+                      </p>
+                    )}
+                  </div>
+
                   <button
                     onClick={handleClockIn}
                     disabled={loading}
