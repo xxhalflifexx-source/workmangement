@@ -44,6 +44,7 @@ export default function TimeClockPage() {
   const [notes, setNotes] = useState("");
   const [clockInDescription, setClockInDescription] = useState("");
   const [descriptionError, setDescriptionError] = useState<string | undefined>();
+  const [showClockOutConfirm, setShowClockOutConfirm] = useState(false);
   const [currentTime, setCurrentTime] = useState("");
   const [currentDate, setCurrentDate] = useState("");
 
@@ -182,7 +183,12 @@ export default function TimeClockPage() {
     }
   };
 
-  const handleClockOut = async () => {
+  const handleClockOutClick = () => {
+    setShowClockOutConfirm(true);
+  };
+
+  const handleClockOutConfirm = async () => {
+    setShowClockOutConfirm(false);
     setLoading(true);
     setError(undefined);
     setSuccess(undefined);
@@ -204,6 +210,10 @@ export default function TimeClockPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleClockOutCancel = () => {
+    setShowClockOutConfirm(false);
   };
 
 
@@ -479,7 +489,7 @@ export default function TimeClockPage() {
                   />
 
                   <button
-                    onClick={handleClockOut}
+                    onClick={handleClockOutClick}
                     disabled={loading}
                     className="w-full bg-red-600 text-white py-4 rounded-xl font-semibold text-lg hover:bg-red-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed shadow-lg"
                   >
@@ -610,6 +620,54 @@ export default function TimeClockPage() {
           </div>
         </div>
       </div>
+
+      {/* Clock Out Confirmation Modal */}
+      {showClockOutConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full mx-4">
+            <div className="text-center mb-6">
+              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+                <svg
+                  className="h-6 w-6 text-red-600"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                  />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                Confirm Clock Out
+              </h3>
+              <p className="text-sm text-gray-600">
+                Are you sure you want to clock out?
+              </p>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={handleClockOutCancel}
+                disabled={loading}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors disabled:bg-gray-100 disabled:cursor-not-allowed"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleClockOutConfirm}
+                disabled={loading}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+              >
+                {loading ? "Processing..." : "Yes, Clock Out"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </main>
   );
