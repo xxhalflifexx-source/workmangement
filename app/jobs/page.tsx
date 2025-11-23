@@ -1320,8 +1320,8 @@ export default function JobsPage() {
                         </div>
                       )}
 
-                      {(jobPhotoFiles[job.id] || []).length > 0 && (
-                        <div className="flex gap-2 mt-3">
+                      <div className="flex gap-2 mt-3">
+                        {(jobPhotoFiles[job.id] || []).length > 0 && (
                           <button
                             onClick={() => handleSavePhotos(job.id)}
                             disabled={savingPhotos[job.id]}
@@ -1329,15 +1329,17 @@ export default function JobsPage() {
                           >
                             {savingPhotos[job.id] ? "Saving..." : "Save"}
                           </button>
-                          <button
-                            onClick={() => handleSubmitToQC(job.id)}
-                            disabled={savingPhotos[job.id]}
-                            className="flex-1 px-3 py-2 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium disabled:bg-gray-300 disabled:cursor-not-allowed"
-                          >
-                            {savingPhotos[job.id] ? "Submitting..." : "Submit to QC"}
-                          </button>
-                        </div>
-                      )}
+                        )}
+                        <button
+                          onClick={() => handleSubmitToQC(job.id)}
+                          disabled={savingPhotos[job.id]}
+                          className={`px-3 py-2 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium disabled:bg-gray-300 disabled:cursor-not-allowed ${
+                            (jobPhotoFiles[job.id] || []).length > 0 ? "flex-1" : "w-full"
+                          }`}
+                        >
+                          {savingPhotos[job.id] ? "Submitting..." : "Submit to QC"}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 )}

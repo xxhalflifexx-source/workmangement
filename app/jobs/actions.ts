@@ -732,18 +732,16 @@ export async function submitJobPhotosToQC(formData: FormData) {
     return { ok: false, error: "Unauthorized: You can only submit jobs assigned to you" };
   }
 
-  // Create JobActivity with photos if provided
-  if (images) {
-    await prisma.jobActivity.create({
-      data: {
-        jobId,
-        userId,
-        type: "UPDATE",
-        notes: "Photos uploaded and job submitted to QC",
-        images: images,
-      },
-    });
-  }
+  // Create JobActivity entry to track QC submission
+  await prisma.jobActivity.create({
+    data: {
+      jobId,
+      userId,
+      type: "UPDATE",
+      notes: images ? "Photos uploaded and job submitted to QC" : "Job submitted to QC",
+      images: images || null,
+    },
+  });
 
   // Update job status to AWAITING_QC
   await prisma.job.update({
