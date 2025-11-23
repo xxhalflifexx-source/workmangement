@@ -1542,7 +1542,7 @@ export default function JobsPage() {
               )}
 
               {(() => {
-                const isLocked = editingJob && (editingJob.status === "AWAITING_QC" || editingJob.status === "COMPLETED");
+                const isLocked = !!(editingJob && (editingJob.status === "AWAITING_QC" || editingJob.status === "COMPLETED"));
                 return (
                   <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
