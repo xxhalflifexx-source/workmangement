@@ -402,7 +402,9 @@ export default function JobsPage() {
       });
 
       if (!uploadRes.ok) {
-        setError("Failed to upload photos");
+        const errorData = await uploadRes.json().catch(() => ({}));
+        setError(errorData.error || "Failed to upload photos. Please check your storage configuration.");
+        setSavingPhotos((prev) => ({ ...prev, [jobId]: false }));
         return;
       }
 
@@ -450,7 +452,9 @@ export default function JobsPage() {
         });
 
         if (!uploadRes.ok) {
-          setError("Failed to upload photos");
+          const errorData = await uploadRes.json().catch(() => ({}));
+          setError(errorData.error || "Failed to upload photos. Please check your storage configuration.");
+          setSavingPhotos((prev) => ({ ...prev, [jobId]: false }));
           return;
         }
 

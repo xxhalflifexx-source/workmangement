@@ -18,7 +18,9 @@ export async function POST(request: NextRequest) {
 		if (!supabaseUrl || !supabaseServiceKey) {
 			console.error("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
 			return NextResponse.json(
-				{ error: "Storage not configured" },
+				{ 
+					error: "Photo storage is not configured. Please contact your administrator. Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY environment variables." 
+				},
 				{ status: 500 }
 			);
 		}
