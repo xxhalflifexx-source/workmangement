@@ -8,26 +8,38 @@ import { listInvoices } from "../invoices/actions";
 interface Invoice {
   id: string;
   invoiceNumber: string | null;
-  issueDate: Date;
-  dueDate: Date | null;
+  issueDate: string | Date;
+  dueDate: string | Date | null;
   total: number;
   balance: number;
   status: string;
   customer: { name: string } | null;
-  job: { title: string; id: string } | null;
-  createdAt: Date;
+  job: { title: string | null; id?: string } | null;
+  createdAt: string | Date;
   notes: string | null;
   lines: Array<{ description: string; quantity: number; rate: number; amount: number }>;
-  payments: Array<{ paymentDate: Date; amount: number; method: string | null }>;
+  payments: Array<{ paymentDate: string | Date; amount: number; method: string | null }>;
 }
 
 type SortField = "invoiceNumber" | "issueDate" | "total" | "status" | "customer" | "createdAt";
 type SortDirection = "asc" | "desc";
 
 export default function FinancePage() {
-  const { data: session } = useSession();
+  const { data: session, status: sessionStatus } = useSession();
   const userRole = (session?.user as any)?.role;
   const hasAccess = userRole === "ADMIN" || userRole === "MANAGER";
+
+  // Wait for session to load
+  if (sessionStatus === "loading") {
+    return (
+      <main className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </main>
+    );
+  }
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | undefined>();
@@ -81,9 +93,9 @@ export default function FinancePage() {
       filtered = filtered.filter(
         (inv) =>
           inv.invoiceNumber?.toLowerCase().includes(query) ||
-          inv.job?.title.toLowerCase().includes(query) ||
-          inv.job?.id.toLowerCase().includes(query) ||
-          inv.customer?.name.toLowerCase().includes(query)
+          inv.job?.title?.toLowerCase().includes(query) ||
+          inv.job?.id?.toLowerCase().includes(query) ||
+          inv.customer?.name?.toLowerCase().includes(query)
       );
     }
 
@@ -95,7 +107,11 @@ export default function FinancePage() {
         if (statusFilter === "OVERDUE") {
           if (inv.status === "PAID") return false;
           if (inv.dueDate) {
-            return new Date(inv.dueDate) < new Date() && inv.balance > 0;
+            try {
+              return new Date(inv.dueDate).getTime() < new Date().getTime() && inv.balance > 0;
+            } catch {
+              return false;
+            }
           }
           return false;
         }
@@ -107,12 +123,24 @@ export default function FinancePage() {
     if (dateFrom) {
       const fromDate = new Date(dateFrom);
       fromDate.setHours(0, 0, 0, 0);
-      filtered = filtered.filter((inv) => new Date(inv.issueDate) >= fromDate);
+      filtered = filtered.filter((inv) => {
+        try {
+          return inv.issueDate ? new Date(inv.issueDate).getTime() >= fromDate.getTime() : false;
+        } catch {
+          return false;
+        }
+      });
     }
     if (dateTo) {
       const toDate = new Date(dateTo);
       toDate.setHours(23, 59, 59, 999);
-      filtered = filtered.filter((inv) => new Date(inv.issueDate) <= toDate);
+      filtered = filtered.filter((inv) => {
+        try {
+          return inv.issueDate ? new Date(inv.issueDate).getTime() <= toDate.getTime() : false;
+        } catch {
+          return false;
+        }
+      });
     }
 
     // Sorting
@@ -126,8 +154,8 @@ export default function FinancePage() {
           bVal = b.invoiceNumber || "";
           break;
         case "issueDate":
-          aVal = new Date(a.issueDate).getTime();
-          bVal = new Date(b.issueDate).getTime();
+          aVal = a.issueDate ? new Date(a.issueDate).getTime() : 0;
+          bVal = b.issueDate ? new Date(b.issueDate).getTime() : 0;
           break;
         case "total":
           aVal = a.total;
@@ -142,8 +170,8 @@ export default function FinancePage() {
           bVal = b.customer?.name || "";
           break;
         case "createdAt":
-          aVal = new Date(a.createdAt).getTime();
-          bVal = new Date(b.createdAt).getTime();
+          aVal = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          bVal = b.createdAt ? new Date(b.createdAt).getTime() : 0;
           break;
         default:
           return 0;
@@ -167,11 +195,14 @@ export default function FinancePage() {
   };
 
   const getStatusBadge = (invoice: Invoice) => {
-    const isOverdue =
-      invoice.status !== "PAID" &&
-      invoice.dueDate &&
-      new Date(invoice.dueDate) < new Date() &&
-      invoice.balance > 0;
+    let isOverdue = false;
+    if (invoice.status !== "PAID" && invoice.dueDate && invoice.balance > 0) {
+      try {
+        isOverdue = new Date(invoice.dueDate).getTime() < new Date().getTime();
+      } catch {
+        isOverdue = false;
+      }
+    }
 
     if (isOverdue) {
       return (
@@ -209,7 +240,7 @@ export default function FinancePage() {
     }
   };
 
-  const formatDate = (date: Date | null) => {
+  const formatDate = (date: Date | string | null) => {
     if (!date) return "—";
     return new Date(date).toLocaleDateString("en-US", {
       year: "numeric",
@@ -225,9 +256,15 @@ export default function FinancePage() {
     }).format(amount);
   };
 
-  const getJobNumber = (job: { id: string } | null) => {
-    if (!job) return "—";
-    return job.id.slice(0, 8).toUpperCase();
+  const getJobNumber = (invoice: Invoice) => {
+    if (!invoice.job || !invoice.job.id) {
+      // If no job ID, try to use invoice ID as fallback
+      if (invoice.id && invoice.id.length >= 8) {
+        return invoice.id.slice(0, 8).toUpperCase();
+      }
+      return "—";
+    }
+    return invoice.job.id.slice(0, 8).toUpperCase();
   };
 
   // Access control
@@ -457,7 +494,7 @@ export default function FinancePage() {
                         {invoice.customer?.name || "—"}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {getJobNumber(invoice.job)}
+                        {getJobNumber(invoice)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {formatCurrency(invoice.total)}
@@ -541,7 +578,7 @@ export default function FinancePage() {
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600">Job Number:</span>
-                        <span className="font-medium">{getJobNumber(selectedInvoice.job)}</span>
+                        <span className="font-medium">{getJobNumber(selectedInvoice)}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600">Job Title:</span>

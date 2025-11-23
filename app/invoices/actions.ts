@@ -11,7 +11,7 @@ export async function listInvoices() {
 	if (role !== "ADMIN" && role !== "MANAGER") return { ok: false, error: "Unauthorized" };
 
 	const invoices = await prisma.invoice.findMany({
-		include: { payments: true, lines: true, customer: true, job: { select: { title: true } } },
+		include: { payments: true, lines: true, customer: true, job: { select: { title: true, id: true } } },
 		orderBy: { createdAt: "desc" },
 	});
 	return { ok: true, invoices };
@@ -25,7 +25,7 @@ export async function getInvoice(id: string) {
 
 	const invoice = await prisma.invoice.findUnique({
 		where: { id },
-		include: { payments: true, lines: true, customer: true, job: { select: { title: true } } },
+		include: { payments: true, lines: true, customer: true, job: { select: { title: true, id: true } } },
 	});
 	if (!invoice) return { ok: false, error: "Not found" };
 	return { ok: true, invoice };
@@ -272,7 +272,7 @@ export async function filterInvoices(filters: {
 
 	const invoices = await prisma.invoice.findMany({
 		where,
-		include: { payments: true, lines: true, customer: true, job: { select: { title: true } } },
+		include: { payments: true, lines: true, customer: true, job: { select: { title: true, id: true } } },
 		orderBy: { issueDate: "desc" },
 	});
 
