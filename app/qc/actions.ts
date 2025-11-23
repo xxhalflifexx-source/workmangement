@@ -66,6 +66,13 @@ export async function getJobsAwaitingQC(search?: string) {
         orderBy: { createdAt: "desc" },
       },
       reworkEntries: {
+        include: {
+          responsibleUser: { select: { id: true, name: true } },
+        },
+        orderBy: { createdAt: "desc" },
+      },
+      activities: {
+        select: { images: true },
         orderBy: { createdAt: "desc" },
       },
     },
