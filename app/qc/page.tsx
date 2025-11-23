@@ -57,7 +57,7 @@ export default async function QCPage({
   return (
     <main className="min-h-screen bg-gray-50">
       <header className="bg-white shadow-sm border-b">
-        <div className="max-w-full mx-auto px-3 sm:px-4 lg:px-5 py-4 flex justify-between items-center">
+        <div className="max-w-full mx-auto px-24 py-4 flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Quality Control Dashboard</h1>
             <p className="text-sm text-gray-500">
@@ -73,7 +73,7 @@ export default async function QCPage({
         </div>
       </header>
 
-      <div className="max-w-full mx-auto px-3 sm:px-4 lg:px-5 py-8 space-y-6">
+      <div className="max-w-full mx-auto px-24 py-8 space-y-6">
         {showSuccess && (
           <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg">
             QC result saved successfully. Job list below has been refreshed.

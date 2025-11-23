@@ -164,7 +164,7 @@ export default function InvoicesPage() {
 	return (
 		<main className="min-h-screen bg-gray-50">
 			<header className="bg-white shadow-sm border-b">
-				<div className="max-w-full mx-auto px-3 sm:px-4 lg:px-5 py-4 flex justify-between items-center">
+				<div className="max-w-full mx-auto px-24 py-4 flex justify-between items-center">
 					<div className="flex items-center gap-3">
 						<span className="text-2xl">📄</span>
 						<div>
@@ -183,7 +183,7 @@ export default function InvoicesPage() {
 				</div>
 			</header>
 
-			<div className="max-w-full mx-auto px-3 sm:px-4 lg:px-5 py-8">
+			<div className="max-w-full mx-auto px-24 py-8">
 				{error && <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">{error}</div>}
 
 				{/* Statistics Cards */}
