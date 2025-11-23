@@ -336,6 +336,11 @@ export default function JobsPage() {
   };
 
   const openActivityModal = async (job: Job) => {
+    // Prevent opening if job is locked
+    if (job.status === "AWAITING_QC" || job.status === "COMPLETED") {
+      setError("This job has been submitted to QC and cannot be edited until returned for rework.");
+      return;
+    }
     setSelectedJobForActivity(job);
     setShowActivityModal(true);
     setLoadingActivities(true);
@@ -352,6 +357,12 @@ export default function JobsPage() {
   const handleAddActivity = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedJobForActivity) return;
+
+    // Prevent adding activities if job is locked
+    if (selectedJobForActivity.status === "AWAITING_QC" || selectedJobForActivity.status === "COMPLETED") {
+      setError("This job has been submitted to QC and cannot be edited until returned for rework.");
+      return;
+    }
 
     setAddingActivity(true);
     setError(undefined);
@@ -572,6 +583,12 @@ export default function JobsPage() {
   const handleMaterialRequest = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedJobForMaterial) return;
+
+    // Prevent creating material requests if job is locked
+    if (selectedJobForMaterial.status === "AWAITING_QC" || selectedJobForMaterial.status === "COMPLETED") {
+      setError("This job has been submitted to QC and cannot be edited until returned for rework.");
+      return;
+    }
 
     setSubmittingMaterial(true);
     setError(undefined);
@@ -1472,15 +1489,17 @@ export default function JobsPage() {
                        <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t">
                          <button
                            onClick={() => openActivityModal(job)}
-                           className="px-3 py-2 text-sm border border-blue-300 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors font-medium"
-                           title="View notes, photos, and updates for this job"
+                           disabled={job.status === "AWAITING_QC" || job.status === "COMPLETED"}
+                           className="px-3 py-2 text-sm border border-blue-300 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors font-medium disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
+                           title={job.status === "AWAITING_QC" || job.status === "COMPLETED" ? "Job is locked - submitted to QC" : "View notes, photos, and updates for this job"}
                          >
                            📝 Activity
                          </button>
                          <button
                            onClick={() => openMaterialModal(job)}
-                           className="px-3 py-2 text-sm border border-green-300 text-green-600 rounded-lg hover:bg-green-50 transition-colors font-medium"
-                           title="View and request materials for this job"
+                           disabled={job.status === "AWAITING_QC" || job.status === "COMPLETED"}
+                           className="px-3 py-2 text-sm border border-green-300 text-green-600 rounded-lg hover:bg-green-50 transition-colors font-medium disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
+                           title={job.status === "AWAITING_QC" || job.status === "COMPLETED" ? "Job is locked - submitted to QC" : "View and request materials for this job"}
                          >
                            📦 Materials
                          </button>
@@ -1877,6 +1896,15 @@ export default function JobsPage() {
 
             {/* Content */}
             <div className="p-6 space-y-6">
+              {/* Lock Message */}
+              {selectedJobForActivity && (selectedJobForActivity.status === "AWAITING_QC" || selectedJobForActivity.status === "COMPLETED") && (
+                <div className="mb-4 p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                  <p className="text-sm text-purple-800 font-medium">
+                    🔒 This job has been submitted to QC and cannot be edited until returned for rework.
+                  </p>
+                </div>
+              )}
+
               {/* Add Activity Form */}
               <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-6">
                 <h3 className="text-lg font-bold text-gray-900 mb-4">➕ Add Update</h3>
@@ -1885,9 +1913,10 @@ export default function JobsPage() {
                     value={newActivityNotes}
                     onChange={(e) => setNewActivityNotes(e.target.value)}
                     placeholder="Add notes, updates, or progress report..."
-                    className="w-full border border-gray-300 rounded-lg p-3 text-sm resize-none"
+                    className="w-full border border-gray-300 rounded-lg p-3 text-sm resize-none disabled:bg-gray-100 disabled:cursor-not-allowed"
                     rows={3}
                     required={newActivityFiles.length === 0}
+                    disabled={selectedJobForActivity ? (selectedJobForActivity.status === "AWAITING_QC" || selectedJobForActivity.status === "COMPLETED") : false}
                   />
 
                   {/* Photo Upload */}
@@ -1899,10 +1928,15 @@ export default function JobsPage() {
                       onChange={handleActivityFileSelect}
                       className="hidden"
                       id="activity-photo-upload"
+                      disabled={selectedJobForActivity ? (selectedJobForActivity.status === "AWAITING_QC" || selectedJobForActivity.status === "COMPLETED") : false}
                     />
                     <label
                       htmlFor="activity-photo-upload"
-                      className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50"
+                      className={`inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 ${
+                        selectedJobForActivity && (selectedJobForActivity.status === "AWAITING_QC" || selectedJobForActivity.status === "COMPLETED")
+                          ? "opacity-50 cursor-not-allowed"
+                          : "cursor-pointer hover:bg-gray-50"
+                      }`}
                     >
                       <span>📷</span>
                       Attach Photos
@@ -1935,7 +1969,11 @@ export default function JobsPage() {
 
                   <button
                     type="submit"
-                    disabled={addingActivity || (!newActivityNotes && newActivityFiles.length === 0)}
+                    disabled={
+                      addingActivity ||
+                      (!newActivityNotes && newActivityFiles.length === 0) ||
+                      (selectedJobForActivity ? (selectedJobForActivity.status === "AWAITING_QC" || selectedJobForActivity.status === "COMPLETED") : false)
+                    }
                     className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
                   >
                     {addingActivity ? "Adding..." : "Add Update"}
@@ -2062,6 +2100,15 @@ export default function JobsPage() {
 
             {/* Content */}
             <div className="p-6 space-y-6">
+              {/* Lock Message */}
+              {selectedJobForMaterial && (selectedJobForMaterial.status === "AWAITING_QC" || selectedJobForMaterial.status === "COMPLETED") && (
+                <div className="mb-4 p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                  <p className="text-sm text-purple-800 font-medium">
+                    🔒 This job has been submitted to QC and cannot be edited until returned for rework.
+                  </p>
+                </div>
+              )}
+
               {/* Add Material Request Form */}
               <div className="bg-green-50 border-2 border-green-200 rounded-xl p-6">
                 <h3 className="text-lg font-bold text-gray-900 mb-4">➕ Request New Material</h3>
@@ -2077,7 +2124,8 @@ export default function JobsPage() {
                         onChange={(e) => setMaterialItemName(e.target.value)}
                         placeholder="e.g., Steel Handrail, Concrete Mix"
                         required
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                        disabled={selectedJobForMaterial ? (selectedJobForMaterial.status === "AWAITING_QC" || selectedJobForMaterial.status === "COMPLETED") : false}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 disabled:bg-gray-100 disabled:cursor-not-allowed"
                       />
                     </div>
 
@@ -2088,7 +2136,8 @@ export default function JobsPage() {
                       <select
                         value={materialPriority}
                         onChange={(e) => setMaterialPriority(e.target.value)}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                        disabled={selectedJobForMaterial ? (selectedJobForMaterial.status === "AWAITING_QC" || selectedJobForMaterial.status === "COMPLETED") : false}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 disabled:bg-gray-100 disabled:cursor-not-allowed"
                       >
                         <option value="LOW">Low - Can wait</option>
                         <option value="MEDIUM">Medium - Normal priority</option>
@@ -2109,7 +2158,8 @@ export default function JobsPage() {
                         onChange={(e) => setMaterialQuantity(Number(e.target.value))}
                         min="1"
                         required
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                        disabled={selectedJobForMaterial ? (selectedJobForMaterial.status === "AWAITING_QC" || selectedJobForMaterial.status === "COMPLETED") : false}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 disabled:bg-gray-100 disabled:cursor-not-allowed"
                       />
                     </div>
 
@@ -2121,7 +2171,8 @@ export default function JobsPage() {
                         onChange={(e) => setMaterialUnit(e.target.value)}
                         placeholder="pcs, kg, lbs"
                         required
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                        disabled={selectedJobForMaterial ? (selectedJobForMaterial.status === "AWAITING_QC" || selectedJobForMaterial.status === "COMPLETED") : false}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 disabled:bg-gray-100 disabled:cursor-not-allowed"
                       />
                     </div>
                   </div>
@@ -2135,7 +2186,8 @@ export default function JobsPage() {
                       onChange={(e) => setMaterialDescription(e.target.value)}
                       placeholder="Additional details about the material needed..."
                       rows={3}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                      disabled={selectedJobForMaterial ? (selectedJobForMaterial.status === "AWAITING_QC" || selectedJobForMaterial.status === "COMPLETED") : false}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 disabled:bg-gray-100 disabled:cursor-not-allowed"
                     />
                   </div>
 
@@ -2148,13 +2200,18 @@ export default function JobsPage() {
                       onChange={(e) => setMaterialNotes(e.target.value)}
                       placeholder="Any additional notes or requirements..."
                       rows={2}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                      disabled={selectedJobForMaterial ? (selectedJobForMaterial.status === "AWAITING_QC" || selectedJobForMaterial.status === "COMPLETED") : false}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 disabled:bg-gray-100 disabled:cursor-not-allowed"
                     />
                   </div>
 
                   <button
                     type="submit"
-                    disabled={submittingMaterial || !materialItemName}
+                    disabled={
+                      submittingMaterial ||
+                      !materialItemName ||
+                      (selectedJobForMaterial ? (selectedJobForMaterial.status === "AWAITING_QC" || selectedJobForMaterial.status === "COMPLETED") : false)
+                    }
                     className="w-full bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
                   >
                     {submittingMaterial ? "Submitting..." : "Submit Material Request"}
