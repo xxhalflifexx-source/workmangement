@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { getJobs, getAllUsers, createJob, updateJob, deleteJob, getJobActivities, addJobActivity, getAllCustomers, createCustomer, saveJobPhotos, submitJobPhotosToQC, getJobPhotos, removeJobPhoto as removeJobPhotoFromDB } from "./actions";
 import { createMaterialRequest, getJobMaterialRequests } from "../material-requests/actions";
+import { getCompanySettingsForInvoice } from "./invoice-actions";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import PhotoViewerModal from "../qc/PhotoViewerModal";
@@ -138,6 +139,7 @@ export default function JobsPage() {
   const [estimateValidUntil, setEstimateValidUntil] = useState("");
   const [estimateLineItems, setEstimateLineItems] = useState<any[]>([]);
   const [estimateNotes, setEstimateNotes] = useState("");
+  const [companySettings, setCompanySettings] = useState<any>(null);
   const estimateRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
