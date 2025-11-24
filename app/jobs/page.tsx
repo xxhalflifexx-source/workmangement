@@ -8,6 +8,7 @@ import { createInvoice } from "../invoices/actions";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { generateInvoicePDF, InvoicePDFData } from "@/lib/pdf-generator";
+import PhotoViewerModal from "../qc/PhotoViewerModal";
 
 interface Job {
   id: string;
@@ -108,6 +109,11 @@ export default function JobsPage() {
   const [savingPhotos, setSavingPhotos] = useState<Record<string, boolean>>({});
   const [jobExistingPhotos, setJobExistingPhotos] = useState<Record<string, Array<{ id: string; url: string; activityId: string }>>>({});
   const [removingPhotos, setRemovingPhotos] = useState<Record<string, boolean>>({});
+  
+  // Photo viewer modal state
+  const [showPhotoViewer, setShowPhotoViewer] = useState(false);
+  const [photoViewerPhotos, setPhotoViewerPhotos] = useState<string[]>([]);
+  const [photoViewerIndex, setPhotoViewerIndex] = useState(0);
   
   const [showMaterialModal, setShowMaterialModal] = useState(false);
   const [selectedJobForMaterial, setSelectedJobForMaterial] = useState<Job | null>(null);
@@ -442,6 +448,43 @@ export default function JobsPage() {
       ...prev,
       [jobId]: (prev[jobId] || []).filter((_, i) => i !== index),
     }));
+  };
+
+  // Helper function to collect all photos from a job (similar to QC)
+  const getAllJobPhotos = (job: Job, activitiesOverride?: any[]): string[] => {
+    const allPhotos: string[] = [];
+    
+    // Use provided activities or job activities
+    const activitiesToUse = activitiesOverride || (job as any).activities || [];
+    
+    // Photos from job activities
+    activitiesToUse.forEach((activity: any) => {
+      if (activity.images) {
+        try {
+          const parsed = JSON.parse(activity.images);
+          if (Array.isArray(parsed)) {
+            allPhotos.push(...parsed);
+          }
+        } catch {
+          // If not JSON, treat as single URL
+          if (typeof activity.images === "string") {
+            allPhotos.push(activity.images);
+          }
+        }
+      }
+    });
+    
+    return allPhotos;
+  };
+
+  // Open photo viewer with all photos from a job
+  const openPhotoViewer = (job: Job, initialIndex: number = 0, activitiesOverride?: any[]) => {
+    const allPhotos = getAllJobPhotos(job, activitiesOverride);
+    if (allPhotos.length > 0) {
+      setPhotoViewerPhotos(allPhotos);
+      setPhotoViewerIndex(initialIndex);
+      setShowPhotoViewer(true);
+    }
   };
 
   const handleSavePhotos = async (jobId: string) => {
@@ -1389,31 +1432,42 @@ export default function JobsPage() {
                           Saved Photos: {(jobExistingPhotos[job.id] || []).length}
                         </p>
                         <div className="grid grid-cols-2 gap-2">
-                          {(jobExistingPhotos[job.id] || []).map((photo) => (
-                            <div
-                              key={photo.id}
-                              className="relative bg-gray-100 border border-gray-200 rounded p-2 flex items-center gap-2"
-                            >
-                              <div className="w-10 h-10 bg-gray-200 rounded overflow-hidden">
-                                <img
-                                  src={photo.url}
-                                  alt="Saved photo"
-                                  className="w-full h-full object-cover"
-                                />
-                              </div>
-                              <p className="text-xs flex-1 truncate">Saved</p>
-                              {job.status !== "AWAITING_QC" && job.status !== "COMPLETED" && (
+                          {(jobExistingPhotos[job.id] || []).map((photo, photoIndex) => {
+                            const allPhotos = getAllJobPhotos(job);
+                            const photoIndexInAll = allPhotos.findIndex((url) => url === photo.url);
+                            return (
+                              <div
+                                key={photo.id}
+                                className="relative bg-gray-100 border border-gray-200 rounded p-2 flex items-center gap-2"
+                              >
                                 <button
-                                  onClick={() => handleRemovePhoto(job.id, photo.id, photo.url, photo.activityId)}
-                                  disabled={removingPhotos[photo.id]}
+                                  onClick={() => openPhotoViewer(job, photoIndexInAll >= 0 ? photoIndexInAll : photoIndex)}
+                                  className="w-10 h-10 bg-gray-200 rounded overflow-hidden hover:opacity-80 transition-opacity cursor-pointer flex-shrink-0"
                                   type="button"
-                                  className="text-red-500 hover:text-red-700 text-xs disabled:opacity-50"
                                 >
-                                  {removingPhotos[photo.id] ? "..." : "✕"}
+                                  <img
+                                    src={photo.url}
+                                    alt="Saved photo"
+                                    className="w-full h-full object-cover"
+                                  />
                                 </button>
-                              )}
-                            </div>
-                          ))}
+                                <p className="text-xs flex-1 truncate">Saved</p>
+                                {job.status !== "AWAITING_QC" && job.status !== "COMPLETED" && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleRemovePhoto(job.id, photo.id, photo.url, photo.activityId);
+                                    }}
+                                    disabled={removingPhotos[photo.id]}
+                                    type="button"
+                                    className="text-red-500 hover:text-red-700 text-xs disabled:opacity-50"
+                                  >
+                                    {removingPhotos[photo.id] ? "..." : "✕"}
+                                  </button>
+                                )}
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
                     )}
@@ -2059,24 +2113,31 @@ export default function JobsPage() {
                           {/* Photo Gallery */}
                           {images.length > 0 && (
                             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 mt-3">
-                              {images.map((imgPath: string, idx: number) => (
-                                <a
-                                  key={idx}
-                                  href={imgPath}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="group relative aspect-square rounded-lg overflow-hidden border-2 border-gray-300 hover:border-blue-500 transition-all"
-                                >
-                                  <img
-                                    src={imgPath}
-                                    alt={`Photo ${idx + 1}`}
-                                    className="w-full h-full object-cover group-hover:scale-110 transition-transform"
-                                  />
-                                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-opacity flex items-center justify-center">
-                                    <span className="opacity-0 group-hover:opacity-100 text-white text-xl">🔍</span>
-                                  </div>
-                                </a>
-                              ))}
+                              {images.map((imgPath: string, idx: number) => {
+                                // Use selectedJobForActivity and jobActivities for photo viewer
+                                if (!selectedJobForActivity) return null;
+                                
+                                const allPhotos = getAllJobPhotos(selectedJobForActivity, jobActivities);
+                                const photoIndexInAll = allPhotos.findIndex((url) => url === imgPath);
+                                
+                                return (
+                                  <button
+                                    key={idx}
+                                    onClick={() => openPhotoViewer(selectedJobForActivity, photoIndexInAll >= 0 ? photoIndexInAll : idx, jobActivities)}
+                                    className="group relative aspect-square rounded-lg overflow-hidden border-2 border-gray-300 hover:border-blue-500 transition-all cursor-pointer"
+                                    type="button"
+                                  >
+                                    <img
+                                      src={imgPath}
+                                      alt={`Photo ${idx + 1}`}
+                                      className="w-full h-full object-cover group-hover:scale-110 transition-transform"
+                                    />
+                                    <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-opacity flex items-center justify-center">
+                                      <span className="opacity-0 group-hover:opacity-100 text-white text-xl">🔍</span>
+                                    </div>
+                                  </button>
+                                );
+                              })}
                             </div>
                           )}
                         </div>
@@ -3022,6 +3083,15 @@ export default function JobsPage() {
           }
         }
       `}</style>
+
+      {/* Photo Viewer Modal */}
+      {showPhotoViewer && (
+        <PhotoViewerModal
+          photos={photoViewerPhotos}
+          initialIndex={photoViewerIndex}
+          onClose={() => setShowPhotoViewer(false)}
+        />
+      )}
     </main>
   );
 }
