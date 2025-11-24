@@ -21,6 +21,7 @@ interface Invoice {
   createdAt: string | Date;
   updatedAt?: string | Date;
   notes: string | null;
+  remarks: string | null; // Admin notes/remarks
   pdfFiles: string | null; // JSON array of PDF URLs
   lines: Array<{ description: string; quantity: number; rate: number; amount: number }>;
   payments: Array<{ paymentDate: string | Date; amount: number; method: string | null }>;
@@ -87,6 +88,15 @@ export default function FinancePage() {
   const [editableCustomerAddress, setEditableCustomerAddress] = useState("");
   const [editableCustomerPhone, setEditableCustomerPhone] = useState("");
   const [editableCustomerEmail, setEditableCustomerEmail] = useState("");
+  
+  // Payment Method fields
+  const [paymentBank, setPaymentBank] = useState("");
+  const [paymentAccountName, setPaymentAccountName] = useState("");
+  const [paymentAccountNumber, setPaymentAccountNumber] = useState("");
+  
+  // Prepared By fields
+  const [preparedByName, setPreparedByName] = useState("");
+  const [preparedByTitle, setPreparedByTitle] = useState("");
 
   // Edit Invoice states
   const [showEditModal, setShowEditModal] = useState(false);
@@ -95,6 +105,12 @@ export default function FinancePage() {
   const [editDueDate, setEditDueDate] = useState("");
   const [editNotes, setEditNotes] = useState("");
   const [editStatus, setEditStatus] = useState("");
+  const [editRemarks, setEditRemarks] = useState("");
+  const [editPaymentBank, setEditPaymentBank] = useState("");
+  const [editPaymentAccountName, setEditPaymentAccountName] = useState("");
+  const [editPaymentAccountNumber, setEditPaymentAccountNumber] = useState("");
+  const [editPreparedByName, setEditPreparedByName] = useState("");
+  const [editPreparedByTitle, setEditPreparedByTitle] = useState("");
   const [savingInvoice, setSavingInvoice] = useState(false);
   const [showStatusConfirm, setShowStatusConfirm] = useState(false);
   const [pendingStatus, setPendingStatus] = useState("");
@@ -156,7 +172,7 @@ export default function FinancePage() {
     if (statusFilter !== "ALL") {
       filtered = filtered.filter((inv) => {
         if (statusFilter === "PAID") return inv.status === "PAID";
-        if (statusFilter === "PENDING") return inv.status === "SENT" || inv.status === "DRAFT";
+        if (statusFilter === "PENDING") return inv.status === "PENDING";
         if (statusFilter === "OVERDUE") {
           if (inv.status === "PAID") return false;
           if (inv.dueDate) {
@@ -488,6 +504,11 @@ export default function FinancePage() {
       shippingFee: shippingFee || 0,
       total: total,
       notes: invoiceNotes || undefined,
+      paymentBank: paymentBank || undefined,
+      paymentAccountName: paymentAccountName || undefined,
+      paymentAccountNumber: paymentAccountNumber || undefined,
+      preparedByName: preparedByName || undefined,
+      preparedByTitle: preparedByTitle || undefined,
     };
 
     const pdf = generateInvoicePDF(pdfData);
@@ -568,7 +589,15 @@ export default function FinancePage() {
     setEditLines(invoice.lines || []);
     setEditDueDate(invoice.dueDate ? formatDateInput(invoice.dueDate) : "");
     setEditNotes(invoice.notes || "");
+    setEditRemarks(invoice.remarks || "");
     setEditStatus(invoice.status);
+    
+    // Initialize payment method and prepared by fields (can be stored in notes as JSON or separate)
+    setEditPaymentBank("");
+    setEditPaymentAccountName("");
+    setEditPaymentAccountNumber("");
+    setEditPreparedByName("");
+    setEditPreparedByTitle("");
     
     // Load company settings for PDF generation
     if (!companySettings) {
@@ -611,6 +640,11 @@ export default function FinancePage() {
       shippingFee: 0,
       total: total,
       notes: editNotes || undefined,
+      paymentBank: editPaymentBank || undefined,
+      paymentAccountName: editPaymentAccountName || undefined,
+      paymentAccountNumber: editPaymentAccountNumber || undefined,
+      preparedByName: editPreparedByName || undefined,
+      preparedByTitle: editPreparedByTitle || undefined,
     };
 
     const pdf = generateInvoicePDF(pdfData);
@@ -651,6 +685,7 @@ export default function FinancePage() {
       formData.append("dueDate", editDueDate);
     }
     formData.append("notes", editNotes || "");
+    formData.append("remarks", editRemarks || "");
     formData.append("status", editStatus);
     formData.append("lines", JSON.stringify(editLines));
 
@@ -861,11 +896,11 @@ export default function FinancePage() {
                 onChange={(e) => setStatusFilter(e.target.value)}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
               >
-                <option value="ALL">All Statuses</option>
-                <option value="PAID">Paid</option>
+                <option value="ALL">All Status</option>
                 <option value="PENDING">Pending</option>
+                <option value="PAID">Paid</option>
                 <option value="OVERDUE">Overdue</option>
-                <option value="DRAFT">Draft</option>
+                <option value="CANCELLED">Cancelled</option>
               </select>
             </div>
 
@@ -1026,6 +1061,9 @@ export default function FinancePage() {
                       </div>
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Remarks
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       PDF Files
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -1066,6 +1104,34 @@ export default function FinancePage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {formatDate(invoice.updatedAt || invoice.createdAt)}
+                      </td>
+                      <td className="px-6 py-4 text-sm max-w-xs" onClick={(e) => e.stopPropagation()}>
+                        {hasAccess ? (
+                          <input
+                            type="text"
+                            value={invoice.remarks || ""}
+                            onChange={async (e) => {
+                              // Update remarks immediately
+                              const newRemarks = e.target.value;
+                              try {
+                                const formData = new FormData();
+                                formData.append("invoiceId", invoice.id);
+                                formData.append("remarks", newRemarks);
+                                await updateInvoice(formData);
+                                await loadInvoices();
+                              } catch (err) {
+                                console.error("Failed to update remarks:", err);
+                              }
+                            }}
+                            placeholder="Add remarks..."
+                            className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        ) : (
+                          <span className="text-gray-500 text-xs">
+                            {invoice.remarks || "—"}
+                          </span>
+                        )}
                       </td>
                       <td className="px-6 py-4 text-sm" onClick={(e) => e.stopPropagation()}>
                         <div className="flex flex-col gap-2">
@@ -1706,6 +1772,70 @@ export default function FinancePage() {
                     />
                   </div>
 
+                  {/* Payment Method */}
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <h3 className="text-sm font-semibold text-gray-700 uppercase mb-3">Payment Method</h3>
+                    <div className="grid grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-xs text-gray-600 mb-1">Bank</label>
+                        <input
+                          type="text"
+                          value={paymentBank}
+                          onChange={(e) => setPaymentBank(e.target.value)}
+                          className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
+                          placeholder="Bank Name"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-600 mb-1">Account Name</label>
+                        <input
+                          type="text"
+                          value={paymentAccountName}
+                          onChange={(e) => setPaymentAccountName(e.target.value)}
+                          className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
+                          placeholder="Account Name"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-600 mb-1">Account Number</label>
+                        <input
+                          type="text"
+                          value={paymentAccountNumber}
+                          onChange={(e) => setPaymentAccountNumber(e.target.value)}
+                          className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
+                          placeholder="Account Number"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Prepared By */}
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <h3 className="text-sm font-semibold text-gray-700 uppercase mb-3">Prepared By</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs text-gray-600 mb-1">Name</label>
+                        <input
+                          type="text"
+                          value={preparedByName}
+                          onChange={(e) => setPreparedByName(e.target.value)}
+                          className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
+                          placeholder="Prepared By Name"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-600 mb-1">Title</label>
+                        <input
+                          type="text"
+                          value={preparedByTitle}
+                          onChange={(e) => setPreparedByTitle(e.target.value)}
+                          className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
+                          placeholder="Title/Position"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
                   {/* Actions */}
                   <div className="flex justify-end gap-3">
                     <button
@@ -1724,6 +1854,11 @@ export default function FinancePage() {
                         setEditableCustomerPhone("");
                         setEditableCustomerEmail("");
                         setInvoiceNumber("");
+                        setPaymentBank("");
+                        setPaymentAccountName("");
+                        setPaymentAccountNumber("");
+                        setPreparedByName("");
+                        setPreparedByTitle("");
                       }}
                       className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                     >
@@ -1788,8 +1923,6 @@ export default function FinancePage() {
                       onChange={(e) => handleStatusChange(e.target.value)}
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
                     >
-                      <option value="DRAFT">Draft</option>
-                      <option value="SENT">Sent</option>
                       <option value="PENDING">Pending</option>
                       <option value="PAID">Paid</option>
                       <option value="OVERDUE">Overdue</option>
@@ -1910,6 +2043,86 @@ export default function FinancePage() {
                       rows={3}
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
                     />
+                  </div>
+
+                  {/* Remarks (Admin Only) */}
+                  {hasAccess && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Remarks
+                      </label>
+                      <textarea
+                        value={editRemarks}
+                        onChange={(e) => setEditRemarks(e.target.value)}
+                        rows={2}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                        placeholder="Admin notes or remarks..."
+                      />
+                    </div>
+                  )}
+
+                  {/* Payment Method */}
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <h3 className="text-sm font-semibold text-gray-700 uppercase mb-3">Payment Method</h3>
+                    <div className="grid grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-xs text-gray-600 mb-1">Bank</label>
+                        <input
+                          type="text"
+                          value={editPaymentBank}
+                          onChange={(e) => setEditPaymentBank(e.target.value)}
+                          className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
+                          placeholder="Bank Name"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-600 mb-1">Account Name</label>
+                        <input
+                          type="text"
+                          value={editPaymentAccountName}
+                          onChange={(e) => setEditPaymentAccountName(e.target.value)}
+                          className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
+                          placeholder="Account Name"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-600 mb-1">Account Number</label>
+                        <input
+                          type="text"
+                          value={editPaymentAccountNumber}
+                          onChange={(e) => setEditPaymentAccountNumber(e.target.value)}
+                          className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
+                          placeholder="Account Number"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Prepared By */}
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <h3 className="text-sm font-semibold text-gray-700 uppercase mb-3">Prepared By</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs text-gray-600 mb-1">Name</label>
+                        <input
+                          type="text"
+                          value={editPreparedByName}
+                          onChange={(e) => setEditPreparedByName(e.target.value)}
+                          className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
+                          placeholder="Prepared By Name"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-600 mb-1">Title</label>
+                        <input
+                          type="text"
+                          value={editPreparedByTitle}
+                          onChange={(e) => setEditPreparedByTitle(e.target.value)}
+                          className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
+                          placeholder="Title/Position"
+                        />
+                      </div>
+                    </div>
                   </div>
 
                   {/* Actions */}

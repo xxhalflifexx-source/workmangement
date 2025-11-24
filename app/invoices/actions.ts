@@ -158,7 +158,7 @@ export async function createInvoice(formData: FormData) {
 			invoiceNumber,
 			jobId: jobId || null,
 			customerId: customerId || null,
-			status: "SENT",
+			status: "PENDING",
 			issueDate: issueDate ? parseCentralDate(issueDate) : centralToUTC(nowInCentral().toDate()),
 			dueDate: dueDate ? new Date(dueDate) : null,
 			sentDate: sentDate ? parseCentralDate(sentDate) : centralToUTC(nowInCentral().toDate()), // Auto-set sent date when creating
@@ -395,6 +395,7 @@ export async function updateInvoice(formData: FormData) {
 
 	const dueDate = (formData.get("dueDate") as string) || "";
 	const notes = (formData.get("notes") as string) || "";
+	const remarks = (formData.get("remarks") as string) || "";
 	const status = (formData.get("status") as string) || "";
 
 	const linesJson = (formData.get("lines") as string) || "[]";
@@ -430,6 +431,10 @@ export async function updateInvoice(formData: FormData) {
 
 	if (notes !== undefined) {
 		updateData.notes = notes || null;
+	}
+
+	if (remarks !== undefined) {
+		updateData.remarks = remarks || null;
 	}
 
 	if (status) {
@@ -468,7 +473,7 @@ export async function updateInvoiceStatus(invoiceId: string, status: string) {
 	const role = (session.user as any).role;
 	if (role !== "ADMIN" && role !== "MANAGER") return { ok: false, error: "Unauthorized" };
 
-	const validStatuses = ["DRAFT", "SENT", "PAID", "OVERDUE", "CANCELLED"];
+	const validStatuses = ["PENDING", "PAID", "OVERDUE", "CANCELLED"];
 	if (!validStatuses.includes(status)) {
 		return { ok: false, error: "Invalid status" };
 	}
