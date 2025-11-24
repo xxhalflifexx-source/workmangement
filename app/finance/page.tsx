@@ -1110,17 +1110,27 @@ export default function FinancePage() {
                           <input
                             type="text"
                             value={invoice.remarks || ""}
-                            onChange={async (e) => {
-                              // Update remarks immediately
+                            onChange={(e) => {
+                              // Only update local state, don't save yet
+                              const updatedInvoices = invoices.map((inv) =>
+                                inv.id === invoice.id ? { ...inv, remarks: e.target.value } : inv
+                              );
+                              setInvoices(updatedInvoices);
+                            }}
+                            onBlur={async (e) => {
+                              // Save only when user clicks away (blur event)
                               const newRemarks = e.target.value;
                               try {
                                 const formData = new FormData();
                                 formData.append("invoiceId", invoice.id);
                                 formData.append("remarks", newRemarks);
                                 await updateInvoice(formData);
+                                // Reload to get latest data
                                 await loadInvoices();
                               } catch (err) {
                                 console.error("Failed to update remarks:", err);
+                                // Reload on error to restore original value
+                                await loadInvoices();
                               }
                             }}
                             placeholder="Add remarks..."
