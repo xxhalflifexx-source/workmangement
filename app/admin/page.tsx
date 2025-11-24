@@ -55,12 +55,14 @@ export default function AdminPage() {
   const { data: session } = useSession();
   const userRole = (session?.user as any)?.role;
   const isAdmin = userRole === "ADMIN";
+  const canManageRoles = userRole === "ADMIN" || userRole === "MANAGER";
 
   const [finStart, setFinStart] = useState<string>(new Date(new Date().getFullYear(), 0, 1).toISOString().split("T")[0]);
   const [finEnd, setFinEnd] = useState<string>(new Date().toISOString().split("T")[0]);
   const [finLoading, setFinLoading] = useState(false);
   const [finSummary, setFinSummary] = useState<any>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
+  const [showRoleChangeConfirm, setShowRoleChangeConfirm] = useState<{ userId: string; newRole: string; userName: string; currentRole: string } | null>(null);
   const [userSearch, setUserSearch] = useState("");
 
   useEffect(() => {
@@ -106,20 +108,67 @@ export default function AdminPage() {
     setShowDeleteConfirm(null);
   };
 
-  const handleRoleChange = async (userId: string, newRole: string) => {
+  const handleRoleChange = (userId: string, newRole: string) => {
+    const user = users.find((u) => u.id === userId);
+    if (!user) return;
+    
+    // If role hasn't changed, do nothing
+    if (user.role === newRole) return;
+    
+    // Show confirmation modal
+    setShowRoleChangeConfirm({
+      userId,
+      newRole,
+      userName: user.name || user.email || "Unknown User",
+      currentRole: user.role,
+    });
+  };
+
+  const handleRoleChangeConfirm = async () => {
+    if (!showRoleChangeConfirm) return;
+    
     setError(undefined);
     setSuccess(undefined);
 
-    const res = await updateUserRole(userId, newRole);
+    const res = await updateUserRole(showRoleChangeConfirm.userId, showRoleChangeConfirm.newRole);
 
     if (!res.ok) {
       setError(res.error);
+      // Revert the dropdown to original role on error
+      setUsers(
+        users.map((u) => 
+          u.id === showRoleChangeConfirm.userId 
+            ? { ...u, role: showRoleChangeConfirm.currentRole } 
+            : u
+        )
+      );
     } else {
       setSuccess(res.message);
       setUsers(
-        users.map((u) => (u.id === userId ? { ...u, role: newRole } : u))
+        users.map((u) => 
+          u.id === showRoleChangeConfirm.userId 
+            ? { ...u, role: showRoleChangeConfirm.newRole } 
+            : u
+        )
       );
     }
+
+    setShowRoleChangeConfirm(null);
+  };
+
+  const handleRoleChangeCancel = () => {
+    if (!showRoleChangeConfirm) return;
+    
+    // Revert the dropdown to original role
+    setUsers(
+      users.map((u) => 
+        u.id === showRoleChangeConfirm.userId 
+          ? { ...u, role: showRoleChangeConfirm.currentRole } 
+          : u
+      )
+    );
+    
+    setShowRoleChangeConfirm(null);
   };
 
   const handleHourlyRateChange = async (userId: string, hourlyRate: number) => {
@@ -437,17 +486,25 @@ export default function AdminPage() {
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <select
-                            value={user.role}
-                            onChange={(e) => handleRoleChange(user.id, e.target.value)}
-                            className={`px-2 py-1 text-xs font-semibold rounded-full ${getRoleBadgeColor(
+                          {canManageRoles ? (
+                            <select
+                              value={user.role}
+                              onChange={(e) => handleRoleChange(user.id, e.target.value)}
+                              className={`px-2 py-1 text-xs font-semibold rounded-full ${getRoleBadgeColor(
+                                user.role
+                              )} border-none outline-none cursor-pointer`}
+                            >
+                              <option value="EMPLOYEE">EMPLOYEE</option>
+                              <option value="MANAGER">MANAGER</option>
+                              <option value="ADMIN">ADMIN</option>
+                            </select>
+                          ) : (
+                            <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getRoleBadgeColor(
                               user.role
-                            )} border-none outline-none cursor-pointer`}
-                          >
-                            <option value="EMPLOYEE">EMPLOYEE</option>
-                            <option value="MANAGER">MANAGER</option>
-                            <option value="ADMIN">ADMIN</option>
-                          </select>
+                            )}`}>
+                              {user.role}
+                            </span>
+                          )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                           <select
@@ -816,6 +873,52 @@ export default function AdminPage() {
                 className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
               >
                 Delete User
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Role Change Confirmation Modal */}
+      {showRoleChangeConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+            <h3 className="text-xl font-bold text-gray-900 mb-4">⚠️ Confirm Role Change</h3>
+            <p className="text-gray-600 mb-4">
+              Are you sure you want to change this user&apos;s role?
+            </p>
+            <div className="bg-gray-50 rounded-lg p-4 mb-6">
+              <div className="space-y-2 text-sm">
+                <div>
+                  <span className="font-medium text-gray-700">User:</span>{" "}
+                  <span className="text-gray-900">{showRoleChangeConfirm.userName}</span>
+                </div>
+                <div>
+                  <span className="font-medium text-gray-700">Current Role:</span>{" "}
+                  <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getRoleBadgeColor(showRoleChangeConfirm.currentRole)}`}>
+                    {showRoleChangeConfirm.currentRole}
+                  </span>
+                </div>
+                <div>
+                  <span className="font-medium text-gray-700">New Role:</span>{" "}
+                  <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getRoleBadgeColor(showRoleChangeConfirm.newRole)}`}>
+                    {showRoleChangeConfirm.newRole}
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={handleRoleChangeCancel}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleRoleChangeConfirm}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+              >
+                Confirm
               </button>
             </div>
           </div>
