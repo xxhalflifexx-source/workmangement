@@ -13,6 +13,8 @@ import {
   resetUserPasswordByAdmin,
 } from "./actions";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
+import RegistrationCodes from "../dashboard/RegistrationCodes";
 
 interface User {
   id: string;
@@ -48,7 +50,11 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | undefined>();
   const [success, setSuccess] = useState<string | undefined>();
-  const [activeTab, setActiveTab] = useState<"users" | "settings" | "financials">("users");
+  const [activeTab, setActiveTab] = useState<"users" | "settings" | "financials" | "registration-codes">("users");
+  
+  const { data: session } = useSession();
+  const userRole = (session?.user as any)?.role;
+  const isAdmin = userRole === "ADMIN";
 
   const [finStart, setFinStart] = useState<string>(new Date(new Date().getFullYear(), 0, 1).toISOString().split("T")[0]);
   const [finEnd, setFinEnd] = useState<string>(new Date().toISOString().split("T")[0]);
@@ -325,6 +331,18 @@ export default function AdminPage() {
               >
                 💹 Financials
               </button>
+              {isAdmin && (
+                <button
+                  onClick={() => setActiveTab("registration-codes")}
+                  className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                    activeTab === "registration-codes"
+                      ? "border-purple-500 text-purple-600"
+                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                  }`}
+                >
+                  🔑 Registration Codes
+                </button>
+              )}
             </nav>
           </div>
         </div>
@@ -741,6 +759,31 @@ export default function AdminPage() {
             ) : (
               <div className="p-6 text-gray-600">Select a date range and click Run.</div>
             )}
+          </div>
+        )}
+
+        {/* Registration Codes Tab - Admin Only */}
+        {activeTab === "registration-codes" && isAdmin && (
+          <div className="bg-white rounded-xl shadow border border-gray-200">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-900">Registration Codes</h2>
+              <p className="text-sm text-gray-500 mt-1">
+                Manage registration codes for new user signups. Only admins can view and manage these codes.
+              </p>
+            </div>
+            <div className="p-6">
+              <RegistrationCodes />
+            </div>
+          </div>
+        )}
+
+        {/* Access Denied Message for Non-Admins */}
+        {activeTab === "registration-codes" && !isAdmin && (
+          <div className="bg-white rounded-xl shadow border border-gray-200 p-8 text-center">
+            <div className="text-red-600 text-xl font-bold mb-2">⚠️ Access Denied</div>
+            <p className="text-gray-600">
+              You do not have permission to view registration codes. Only administrators can access this section.
+            </p>
           </div>
         )}
 
