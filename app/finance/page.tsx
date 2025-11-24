@@ -512,7 +512,7 @@ export default function FinancePage() {
     };
 
     const pdf = generateInvoicePDF(pdfData);
-    pdf.save(`Invoice-${invoiceNumber || "INV"}-${todayCentralISO()}.pdf`);
+    pdf.save(`${invoiceNumber || "INV"}-${todayCentralISO()}.pdf`);
   };
 
   const handleCreateInvoice = async (e: React.FormEvent) => {
@@ -648,7 +648,7 @@ export default function FinancePage() {
     };
 
     const pdf = generateInvoicePDF(pdfData);
-    pdf.save(`Invoice-${editingInvoice.invoiceNumber || "INV"}-${todayCentralISO()}.pdf`);
+    pdf.save(`${editingInvoice.invoiceNumber || "INV"}-${todayCentralISO()}.pdf`);
   };
 
   const updateEditLine = (index: number, field: string, value: any) => {
