@@ -44,22 +44,8 @@ export function centralToUTC(date: Date | string | number | dayjs.Dayjs): Date {
 
 /**
  * Convert a UTC date from database to Central Time
- * Explicitly parses as UTC to avoid browser timezone interpretation
  */
-export function utcToCentral(date: Date | string | number | dayjs.Dayjs | null | undefined): dayjs.Dayjs {
-  if (!date) {
-    return nowInCentral();
-  }
-  // If it's a string, explicitly parse as UTC first
-  if (typeof date === 'string') {
-    // Ensure ISO string is parsed as UTC
-    return dayjs.utc(date).tz(CENTRAL_TIMEZONE);
-  }
-  // If it's a Date object, convert to UTC string first to avoid local timezone interpretation
-  if (date instanceof Date) {
-    return dayjs.utc(date.toISOString()).tz(CENTRAL_TIMEZONE);
-  }
-  // For dayjs objects or numbers, use UTC parsing
+export function utcToCentral(date: Date | string | number | dayjs.Dayjs): dayjs.Dayjs {
   return dayjs.utc(date).tz(CENTRAL_TIMEZONE);
 }
 

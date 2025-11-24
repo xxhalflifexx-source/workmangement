@@ -9,7 +9,7 @@ import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { generateInvoicePDF, InvoicePDFData } from "@/lib/pdf-generator";
 import PhotoViewerModal from "../qc/PhotoViewerModal";
-import { formatDateShort, formatDateTime, formatDateInput, todayCentralISO, nowInCentral, centralToUTC, utcToCentral } from "@/lib/date-utils";
+import { formatDateShort, formatDateTime, formatDateInput, todayCentralISO, nowInCentral, centralToUTC } from "@/lib/date-utils";
 
 interface Job {
   id: string;
@@ -1212,11 +1212,8 @@ export default function JobsPage() {
     return true;
   });
 
-  // Format date helper - explicitly converts to Central Time
-  // All timestamps must use Central Time (UTC-06:00) regardless of browser timezone
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "No due date";
-    // Explicitly convert to Central Time to avoid browser timezone interpretation
     return formatDateShort(dateString);
   };
 
@@ -1910,7 +1907,7 @@ export default function JobsPage() {
                   <input
                     name="dueDate"
                     type="date"
-                    defaultValue={editingJob?.dueDate ? formatDateInput(editingJob.dueDate) : ""}
+                    defaultValue={editingJob?.dueDate ? new Date(editingJob.dueDate).toISOString().split("T")[0] : ""}
                     disabled={isLocked || isEmployee}
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 disabled:bg-gray-100 disabled:cursor-not-allowed"
                   />
