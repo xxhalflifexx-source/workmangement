@@ -992,7 +992,8 @@ export default function JobsPage() {
                 {/* Header */}
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">{job.title}</h3>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-1">{job.title}</h3>
+                    <p className="text-xs text-gray-500 mb-2">Job #: {job.id.slice(0, 8).toUpperCase()}</p>
                     <div className="flex gap-2 flex-wrap">
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(job.status)}`}>
                         {job.status.replace("_", " ")}
