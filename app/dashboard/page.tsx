@@ -240,10 +240,6 @@ export default async function Dashboard() {
                         {job.customer?.name ? `Customer: ${job.customer.name} • ` : ""}
                         Updated:{" "}
                         {formatDateShort(job.updatedAt)}
-                          month: "short",
-                          day: "numeric",
-                          year: "numeric",
-                        })}
                       </p>
                     </div>
                     <span
