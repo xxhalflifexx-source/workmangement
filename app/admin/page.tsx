@@ -54,6 +54,7 @@ export default function AdminPage() {
   
   const { data: session } = useSession();
   const userRole = (session?.user as any)?.role;
+  const currentUserId = (session?.user as any)?.id;
   const isAdmin = userRole === "ADMIN";
   const canManageRoles = userRole === "ADMIN" || userRole === "MANAGER";
 
@@ -885,7 +886,9 @@ export default function AdminPage() {
           <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
             <h3 className="text-xl font-bold text-gray-900 mb-4">⚠️ Confirm Role Change</h3>
             <p className="text-gray-600 mb-4">
-              Are you sure you want to change this user&apos;s role?
+              {showRoleChangeConfirm.userId === currentUserId
+                ? "Are you sure you want to change your own role? This will affect your permissions immediately."
+                : "Are you sure you want to change this user's role?"}
             </p>
             <div className="bg-gray-50 rounded-lg p-4 mb-6">
               <div className="space-y-2 text-sm">

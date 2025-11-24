@@ -307,16 +307,10 @@ export async function updateUserRole(userId: string, newRole: string) {
   }
 
   const userRole = (session.user as any).role;
-  const currentUserId = (session.user as any).id;
 
-  // Only admins and managers can change roles
+  // Only admins and managers can change roles (including their own)
   if (userRole !== "ADMIN" && userRole !== "MANAGER") {
     return { ok: false, error: "Unauthorized: Only admins and managers can change user roles" };
-  }
-
-  // Prevent changing own role
-  if (userId === currentUserId) {
-    return { ok: false, error: "You cannot change your own role" };
   }
 
   // Validate role
