@@ -376,9 +376,15 @@ export default function FinancePage() {
 
   const updateInvoiceLine = (index: number, field: string, value: any) => {
     const updated = [...invoiceLines];
-    updated[index][field] = value;
-    if (field === "quantity" || field === "rate") {
-      updated[index].amount = updated[index].quantity * updated[index].rate;
+    const line = updated[index];
+    if (field === "description") {
+      line.description = value;
+    } else if (field === "quantity") {
+      line.quantity = value;
+      line.amount = line.quantity * line.rate;
+    } else if (field === "rate") {
+      line.rate = value;
+      line.amount = line.quantity * line.rate;
     }
     setInvoiceLines(updated);
   };
@@ -446,9 +452,15 @@ export default function FinancePage() {
 
   const updateEditLine = (index: number, field: string, value: any) => {
     const updated = [...editLines];
-    updated[index][field] = value;
-    if (field === "quantity" || field === "rate") {
-      updated[index].amount = updated[index].quantity * updated[index].rate;
+    const line = updated[index];
+    if (field === "description") {
+      line.description = value;
+    } else if (field === "quantity") {
+      line.quantity = value;
+      line.amount = line.quantity * line.rate;
+    } else if (field === "rate") {
+      line.rate = value;
+      line.amount = line.quantity * line.rate;
     }
     setEditLines(updated);
   };
