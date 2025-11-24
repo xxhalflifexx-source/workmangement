@@ -26,7 +26,7 @@ interface Invoice {
   payments: Array<{ paymentDate: string | Date; amount: number; method: string | null }>;
 }
 
-type SortField = "invoiceNumber" | "issueDate" | "total" | "status" | "customer" | "createdAt" | "updatedAt";
+type SortField = "invoiceNumber" | "issueDate" | "total" | "status" | "customer" | "job" | "createdAt" | "updatedAt";
 type SortDirection = "asc" | "desc";
 
 export default function FinancePage() {
@@ -98,6 +98,8 @@ export default function FinancePage() {
   const [savingInvoice, setSavingInvoice] = useState(false);
   const [showStatusConfirm, setShowStatusConfirm] = useState(false);
   const [pendingStatus, setPendingStatus] = useState("");
+  const [showEditConfirm, setShowEditConfirm] = useState(false);
+  const [pendingEditData, setPendingEditData] = useState<any>(null);
 
   const loadInvoices = async () => {
     setLoading(true);
@@ -642,33 +644,49 @@ export default function FinancePage() {
     e.preventDefault();
     if (!editingInvoice) return;
 
+    // Prepare edit data
+    const formData = new FormData();
+    formData.append("invoiceId", editingInvoice.id);
+    if (editDueDate) {
+      formData.append("dueDate", editDueDate);
+    }
+    formData.append("notes", editNotes || "");
+    formData.append("status", editStatus);
+    formData.append("lines", JSON.stringify(editLines));
+
+    // Store pending data and show confirmation
+    setPendingEditData(formData);
+    setShowEditConfirm(true);
+  };
+
+  const confirmEditInvoice = async () => {
+    if (!editingInvoice || !pendingEditData) return;
+
     setSavingInvoice(true);
     setError(undefined);
 
     try {
-      const formData = new FormData();
-      formData.append("invoiceId", editingInvoice.id);
-      if (editDueDate) {
-        formData.append("dueDate", editDueDate);
-      }
-      formData.append("notes", editNotes || "");
-      formData.append("status", editStatus);
-      formData.append("lines", JSON.stringify(editLines));
-
-      const res = await updateInvoice(formData);
+      const res = await updateInvoice(pendingEditData);
       if (!res.ok) {
         setError(res.error || "Failed to update invoice");
         return;
       }
 
       setShowEditModal(false);
+      setShowEditConfirm(false);
       setEditingInvoice(null);
+      setPendingEditData(null);
       await loadInvoices();
     } catch (err: any) {
       setError(err?.message || "Failed to update invoice");
     } finally {
       setSavingInvoice(false);
     }
+  };
+
+  const cancelEditInvoice = () => {
+    setShowEditConfirm(false);
+    setPendingEditData(null);
   };
 
   const handleStatusChange = (newStatus: string) => {
@@ -938,6 +956,22 @@ export default function FinancePage() {
                     </th>
                     <th
                       className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                      onClick={() => handleSort("job")}
+                    >
+                      <div className="flex items-center gap-2">
+                        Job #
+                        {sortField === "job" && (
+                          <span>{sortDirection === "asc" ? "↑" : "↓"}</span>
+                        )}
+                      </div>
+                    </th>
+                    <th
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
+                      Job Title
+                    </th>
+                    <th
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                       onClick={() => handleSort("customer")}
                     >
                       <div className="flex items-center gap-2">
@@ -946,9 +980,6 @@ export default function FinancePage() {
                           <span>{sortDirection === "asc" ? "↑" : "↓"}</span>
                         )}
                       </div>
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Job Number
                     </th>
                     <th
                       className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
@@ -1015,11 +1046,14 @@ export default function FinancePage() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                         {invoice.invoiceNumber || "—"}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {invoice.customer?.name || "—"}
-                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {getJobNumber(invoice)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {invoice.job?.title || "—"}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {invoice.customer?.name || "—"}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {formatCurrency(invoice.total)}
@@ -1755,7 +1789,8 @@ export default function FinancePage() {
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
                     >
                       <option value="DRAFT">Draft</option>
-                      <option value="SENT">Sent / Pending</option>
+                      <option value="SENT">Sent</option>
+                      <option value="PENDING">Pending</option>
                       <option value="PAID">Paid</option>
                       <option value="OVERDUE">Overdue</option>
                       <option value="CANCELLED">Cancelled</option>
@@ -1923,6 +1958,33 @@ export default function FinancePage() {
                 </button>
                 <button
                   onClick={confirmStatusChange}
+                  disabled={savingInvoice}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+                >
+                  {savingInvoice ? "Updating..." : "Confirm"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Edit Invoice Confirmation Modal */}
+        {showEditConfirm && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+              <h3 className="text-xl font-bold text-gray-900 mb-4">Confirm Invoice Update</h3>
+              <p className="text-gray-600 mb-6">
+                Are you sure you want to update this invoice?
+              </p>
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={cancelEditInvoice}
+                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmEditInvoice}
                   disabled={savingInvoice}
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
                 >
