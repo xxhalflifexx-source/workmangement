@@ -90,7 +90,7 @@ export async function getInvoice(id: string) {
 }
 
 // Helper function to generate next invoice number
-async function getNextInvoiceNumber(): Promise<string> {
+export async function getNextInvoiceNumber(): Promise<string> {
 	const currentYear = 2025;
 	
 	// Find all invoices with invoice numbers matching INV-2025-#### pattern

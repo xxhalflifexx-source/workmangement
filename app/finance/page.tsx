@@ -3,8 +3,9 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
-import { listInvoices, updateInvoicePDFs, createInvoice, updateInvoice, updateInvoiceStatus, getUninvoicedJobs } from "../invoices/actions";
+import { listInvoices, updateInvoicePDFs, createInvoice, updateInvoice, updateInvoiceStatus, getUninvoicedJobs, getNextInvoiceNumber } from "../invoices/actions";
 import { getJobForInvoice, getCompanySettingsForInvoice } from "../jobs/invoice-actions";
+import { generateInvoicePDF, InvoicePDFData } from "@/lib/pdf-generator";
 import { formatDateShort, formatDateTime, formatDateInput, todayCentralISO, nowInCentral, utcToCentral, centralToUTC } from "@/lib/date-utils";
 
 interface Invoice {
@@ -75,8 +76,17 @@ export default function FinancePage() {
   const [invoiceIssueDate, setInvoiceIssueDate] = useState(todayCentralISO());
   const [invoiceDueDate, setInvoiceDueDate] = useState("");
   const [invoiceNotes, setInvoiceNotes] = useState("");
+  const [shippingFee, setShippingFee] = useState(0);
   const [creatingInvoice, setCreatingInvoice] = useState(false);
   const [selectedJobData, setSelectedJobData] = useState<any>(null);
+  const [companySettings, setCompanySettings] = useState<any>(null);
+  const [invoiceNumber, setInvoiceNumber] = useState("");
+
+  // Editable customer fields for invoice
+  const [editableCustomerName, setEditableCustomerName] = useState("");
+  const [editableCustomerAddress, setEditableCustomerAddress] = useState("");
+  const [editableCustomerPhone, setEditableCustomerPhone] = useState("");
+  const [editableCustomerEmail, setEditableCustomerEmail] = useState("");
 
   // Edit Invoice states
   const [showEditModal, setShowEditModal] = useState(false);
@@ -329,39 +339,75 @@ export default function FinancePage() {
     setSelectedJobId(jobId);
     setLoadingJobs(true);
     try {
-      const res = await getJobForInvoice(jobId);
-      if (res.ok && res.job) {
-        setSelectedJobData(res.job);
+      // Load job data, company settings, and invoice number in parallel
+      const [jobRes, settings, invoiceNum] = await Promise.all([
+        getJobForInvoice(jobId),
+        getCompanySettingsForInvoice(),
+        getNextInvoiceNumber(),
+      ]);
+
+      setCompanySettings(settings);
+      setInvoiceNumber(invoiceNum);
+
+      if (jobRes.ok && jobRes.job) {
+        setSelectedJobData(jobRes.job);
+        
+        // Initialize editable customer fields
+        if (jobRes.job.customer) {
+          setEditableCustomerName(jobRes.job.customer.name || "");
+          setEditableCustomerAddress(jobRes.job.customer.company || "");
+          setEditableCustomerPhone(jobRes.job.customer.phone || "");
+          setEditableCustomerEmail(jobRes.job.customer.email || "");
+        } else {
+          setEditableCustomerName("");
+          setEditableCustomerAddress("");
+          setEditableCustomerPhone("");
+          setEditableCustomerEmail("");
+        }
+
         // Auto-populate invoice lines from job data
         const lines = [];
-        if (res.job.laborBreakdown && res.job.laborBreakdown.length > 0) {
-          res.job.laborBreakdown.forEach((labor: any) => {
-            if (labor.hours > 0) {
-              lines.push({
-                description: `Labor - ${labor.name}`,
-                quantity: Math.round(labor.hours * 100) / 100,
-                rate: labor.rate,
-                amount: Math.round(labor.cost * 100) / 100,
-              });
-            }
+        
+        // For Fixed Price jobs, add a single line item
+        if (jobRes.job.pricingType === "FIXED" && (jobRes.job.finalPrice || jobRes.job.estimatedPrice)) {
+          lines.push({
+            description: jobRes.job.title,
+            quantity: 1,
+            rate: jobRes.job.finalPrice || jobRes.job.estimatedPrice || 0,
+            amount: jobRes.job.finalPrice || jobRes.job.estimatedPrice || 0,
           });
-        }
-        if (res.job.expenses && res.job.expenses.length > 0) {
-          res.job.expenses.forEach((expense: any) => {
-            lines.push({
-              description: `${expense.category} - ${expense.description}`,
-              quantity: expense.quantity || 1,
-              rate: expense.amount / (expense.quantity || 1),
-              amount: expense.amount,
+        } else {
+          // For T&M jobs, itemize labor and expenses
+          if (jobRes.job.laborBreakdown && jobRes.job.laborBreakdown.length > 0) {
+            jobRes.job.laborBreakdown.forEach((labor: any) => {
+              if (labor.hours > 0) {
+                lines.push({
+                  description: `Labor - ${labor.name}`,
+                  quantity: Math.round(labor.hours * 100) / 100,
+                  rate: labor.rate,
+                  amount: Math.round(labor.cost * 100) / 100,
+                });
+              }
             });
-          });
+          }
+          if (jobRes.job.expenses && jobRes.job.expenses.length > 0) {
+            jobRes.job.expenses.forEach((expense: any) => {
+              lines.push({
+                description: `${expense.category} - ${expense.description}`,
+                quantity: expense.quantity || 1,
+                rate: expense.amount / (expense.quantity || 1),
+                amount: expense.amount,
+              });
+            });
+          }
         }
+        
         if (lines.length === 0) {
-          lines.push({ description: res.job.title, quantity: 1, rate: 0, amount: 0 });
+          lines.push({ description: jobRes.job.title, quantity: 1, rate: 0, amount: 0 });
         }
         setInvoiceLines(lines);
       } else {
-        setError(res.error || "Failed to load job data");
+        setError(jobRes.error || "Failed to load job data");
       }
     } catch (err: any) {
       setError(err?.message || "Failed to load job data");
@@ -393,6 +439,59 @@ export default function FinancePage() {
     setInvoiceLines(invoiceLines.filter((_, i) => i !== index));
   };
 
+  const calculateInvoiceSubtotal = () => {
+    return invoiceLines.reduce((sum, line) => sum + line.amount, 0);
+  };
+
+  const calculateInvoiceTotal = () => {
+    return calculateInvoiceSubtotal() + (shippingFee || 0);
+  };
+
+  const handleDownloadPDF = () => {
+    if (!selectedJobData || !companySettings) {
+      setError("Job data or company settings not loaded");
+      return;
+    }
+
+    const subtotal = calculateInvoiceSubtotal();
+    const total = calculateInvoiceTotal();
+
+    // Prepare line items including shipping fee if > 0
+    const allLines = [...invoiceLines];
+    if (shippingFee > 0) {
+      allLines.push({
+        description: "Shipping Fee",
+        quantity: 1,
+        rate: shippingFee,
+        amount: shippingFee,
+      });
+    }
+
+    const pdfData: InvoicePDFData = {
+      invoiceNumber: invoiceNumber || "TEMP",
+      invoiceDate: invoiceIssueDate,
+      companyName: companySettings?.companyName || "TCB METAL WORKS",
+      companyAddress: companySettings?.address || undefined,
+      companyCity: companySettings?.city || undefined,
+      companyState: companySettings?.state || undefined,
+      companyZipCode: companySettings?.zipCode || undefined,
+      companyPhone: companySettings?.phone || undefined,
+      companyEmail: companySettings?.email || undefined,
+      customerName: editableCustomerName || selectedJobData.customer?.name || "Customer",
+      customerAddress: editableCustomerAddress || selectedJobData.customer?.company || undefined,
+      customerPhone: editableCustomerPhone || selectedJobData.customer?.phone || undefined,
+      customerEmail: editableCustomerEmail || selectedJobData.customer?.email || undefined,
+      lineItems: allLines,
+      subtotal: subtotal,
+      shippingFee: shippingFee || 0,
+      total: total,
+      notes: invoiceNotes || undefined,
+    };
+
+    const pdf = generateInvoicePDF(pdfData);
+    pdf.save(`Invoice-${invoiceNumber || "INV"}-${todayCentralISO()}.pdf`);
+  };
+
   const handleCreateInvoice = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedJobId) {
@@ -404,6 +503,17 @@ export default function FinancePage() {
     setError(undefined);
 
     try {
+      // Prepare line items including shipping fee as a line item if > 0
+      const lines = [...invoiceLines];
+      if (shippingFee > 0) {
+        lines.push({
+          description: "Shipping Fee",
+          quantity: 1,
+          rate: shippingFee,
+          amount: shippingFee,
+        });
+      }
+
       const formData = new FormData();
       formData.append("jobId", selectedJobId);
       if (selectedJobData?.customer?.id) {
@@ -414,13 +524,18 @@ export default function FinancePage() {
         formData.append("dueDate", invoiceDueDate);
       }
       formData.append("notes", invoiceNotes || "");
-      formData.append("lines", JSON.stringify(invoiceLines));
+      formData.append("lines", JSON.stringify(lines));
       formData.append("sentDate", todayCentralISO());
 
       const res = await createInvoice(formData);
       if (!res.ok) {
         setError(res.error || "Failed to create invoice");
         return;
+      }
+
+      // Store invoice number for PDF generation
+      if (res.invoice?.invoiceNumber) {
+        setInvoiceNumber(res.invoice.invoiceNumber);
       }
 
       // Reset form
@@ -431,6 +546,11 @@ export default function FinancePage() {
       setInvoiceIssueDate(todayCentralISO());
       setInvoiceDueDate("");
       setInvoiceNotes("");
+      setShippingFee(0);
+      setEditableCustomerName("");
+      setEditableCustomerAddress("");
+      setEditableCustomerPhone("");
+      setEditableCustomerEmail("");
 
       // Reload invoices
       await loadInvoices();
@@ -441,13 +561,58 @@ export default function FinancePage() {
     }
   };
 
-  const handleEditInvoice = (invoice: Invoice) => {
+  const handleEditInvoice = async (invoice: Invoice) => {
     setEditingInvoice(invoice);
     setEditLines(invoice.lines || []);
     setEditDueDate(invoice.dueDate ? formatDateInput(invoice.dueDate) : "");
     setEditNotes(invoice.notes || "");
     setEditStatus(invoice.status);
+    
+    // Load company settings for PDF generation
+    if (!companySettings) {
+      const settings = await getCompanySettingsForInvoice();
+      setCompanySettings(settings);
+    }
+    
     setShowEditModal(true);
+  };
+
+  const calculateEditSubtotal = () => {
+    return editLines.reduce((sum, line) => sum + line.amount, 0);
+  };
+
+  const handleDownloadEditPDF = () => {
+    if (!editingInvoice || !companySettings) {
+      setError("Invoice data or company settings not loaded");
+      return;
+    }
+
+    const subtotal = calculateEditSubtotal();
+    const total = subtotal;
+
+    const pdfData: InvoicePDFData = {
+      invoiceNumber: editingInvoice.invoiceNumber || "TEMP",
+      invoiceDate: typeof editingInvoice.issueDate === 'string' ? editingInvoice.issueDate : formatDateInput(editingInvoice.issueDate),
+      companyName: companySettings?.companyName || "TCB METAL WORKS",
+      companyAddress: companySettings?.address || undefined,
+      companyCity: companySettings?.city || undefined,
+      companyState: companySettings?.state || undefined,
+      companyZipCode: companySettings?.zipCode || undefined,
+      companyPhone: companySettings?.phone || undefined,
+      companyEmail: companySettings?.email || undefined,
+      customerName: editingInvoice.customer?.name || "Customer",
+      customerAddress: undefined,
+      customerPhone: undefined,
+      customerEmail: undefined,
+      lineItems: editLines,
+      subtotal: subtotal,
+      shippingFee: 0,
+      total: total,
+      notes: editNotes || undefined,
+    };
+
+    const pdf = generateInvoicePDF(pdfData);
+    pdf.save(`Invoice-${editingInvoice.invoiceNumber || "INV"}-${todayCentralISO()}.pdf`);
   };
 
   const updateEditLine = (index: number, field: string, value: any) => {
@@ -1247,6 +1412,19 @@ export default function FinancePage() {
                 </div>
 
                 <form onSubmit={handleCreateInvoice} className="space-y-6">
+                  {/* Header Actions */}
+                  <div className="flex justify-end gap-2 mb-4">
+                    {selectedJobId && companySettings && (
+                      <button
+                        type="button"
+                        onClick={handleDownloadPDF}
+                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+                      >
+                        📥 Download PDF
+                      </button>
+                    )}
+                  </div>
+
                   {/* Job Selection */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1277,8 +1455,19 @@ export default function FinancePage() {
                     )}
                   </div>
 
-                  {/* Invoice Dates */}
-                  <div className="grid grid-cols-2 gap-4">
+                  {/* Invoice Number and Dates */}
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Invoice Number
+                      </label>
+                      <input
+                        type="text"
+                        value={invoiceNumber || "Auto-generated"}
+                        disabled
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-gray-100 text-gray-600"
+                      />
+                    </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Issue Date <span className="text-red-500">*</span>
@@ -1303,6 +1492,55 @@ export default function FinancePage() {
                       />
                     </div>
                   </div>
+
+                  {/* Customer Information (Editable) */}
+                  {selectedJobData && (
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <h3 className="text-sm font-semibold text-gray-700 uppercase mb-3">Bill To</h3>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs text-gray-600 mb-1">Customer Name</label>
+                          <input
+                            type="text"
+                            value={editableCustomerName}
+                            onChange={(e) => setEditableCustomerName(e.target.value)}
+                            className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
+                            placeholder="Customer Name"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-gray-600 mb-1">Address</label>
+                          <input
+                            type="text"
+                            value={editableCustomerAddress}
+                            onChange={(e) => setEditableCustomerAddress(e.target.value)}
+                            className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
+                            placeholder="Address"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-gray-600 mb-1">Phone</label>
+                          <input
+                            type="text"
+                            value={editableCustomerPhone}
+                            onChange={(e) => setEditableCustomerPhone(e.target.value)}
+                            className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
+                            placeholder="Phone"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-gray-600 mb-1">Email</label>
+                          <input
+                            type="email"
+                            value={editableCustomerEmail}
+                            onChange={(e) => setEditableCustomerEmail(e.target.value)}
+                            className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
+                            placeholder="Email"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Invoice Lines */}
                   <div>
@@ -1375,10 +1613,36 @@ export default function FinancePage() {
                         <tfoot>
                           <tr className="bg-gray-50">
                             <td colSpan={3} className="px-4 py-3 text-right font-semibold">
+                              Subtotal:
+                            </td>
+                            <td className="px-4 py-3 text-right font-semibold">
+                              {formatCurrency(calculateInvoiceSubtotal())}
+                            </td>
+                            <td></td>
+                          </tr>
+                          <tr className="bg-gray-50">
+                            <td colSpan={3} className="px-4 py-3 text-right font-semibold">
+                              Shipping Fee:
+                            </td>
+                            <td className="px-4 py-3 text-right">
+                              <input
+                                type="number"
+                                value={shippingFee}
+                                onChange={(e) => setShippingFee(parseFloat(e.target.value) || 0)}
+                                className="w-24 border border-gray-300 rounded px-2 py-1 text-sm text-right"
+                                step="0.01"
+                                min="0"
+                                placeholder="0.00"
+                              />
+                            </td>
+                            <td></td>
+                          </tr>
+                          <tr className="bg-gray-100">
+                            <td colSpan={3} className="px-4 py-3 text-right font-bold text-lg">
                               Total:
                             </td>
                             <td className="px-4 py-3 text-right font-bold text-lg">
-                              {formatCurrency(invoiceLines.reduce((sum, line) => sum + line.amount, 0))}
+                              {formatCurrency(calculateInvoiceTotal())}
                             </td>
                             <td></td>
                           </tr>
@@ -1420,6 +1684,12 @@ export default function FinancePage() {
                         setInvoiceIssueDate(todayCentralISO());
                         setInvoiceDueDate("");
                         setInvoiceNotes("");
+                        setShippingFee(0);
+                        setEditableCustomerName("");
+                        setEditableCustomerAddress("");
+                        setEditableCustomerPhone("");
+                        setEditableCustomerEmail("");
+                        setInvoiceNumber("");
                       }}
                       className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                     >
@@ -1451,15 +1721,26 @@ export default function FinancePage() {
                       {editingInvoice.invoiceNumber || "No Invoice Number"}
                     </p>
                   </div>
-                  <button
-                    onClick={() => {
-                      setShowEditModal(false);
-                      setEditingInvoice(null);
-                    }}
-                    className="text-gray-400 hover:text-gray-600 text-2xl"
-                  >
-                    ✕
-                  </button>
+                  <div className="flex gap-2">
+                    {companySettings && (
+                      <button
+                        type="button"
+                        onClick={handleDownloadEditPDF}
+                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium text-sm"
+                      >
+                        📥 Download PDF
+                      </button>
+                    )}
+                    <button
+                      onClick={() => {
+                        setShowEditModal(false);
+                        setEditingInvoice(null);
+                      }}
+                      className="text-gray-400 hover:text-gray-600 text-2xl"
+                    >
+                      ✕
+                    </button>
+                  </div>
                 </div>
 
                 <form onSubmit={handleSaveEditInvoice} className="space-y-6">
