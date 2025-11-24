@@ -724,6 +724,11 @@ export default function JobsPage() {
       setQuotationCustomerEmail(job.customer.email || "");
     }
     
+    // Auto-populate prepared by with current user's name
+    if (session?.user?.name) {
+      setQuotationPreparedByName(session.user.name);
+    }
+    
     // Auto-generate quotation line items based on job pricing
     const lineItems = [];
     
@@ -2267,82 +2272,9 @@ export default function JobsPage() {
                   />
                 </div>
 
-                {/* Contract Agreement & Signatures */}
-                <div className="mb-8 border-t-2 border-gray-800 pt-8">
-                  <h3 className="text-md font-bold text-gray-900 mb-4">QUOTATION APPROVAL & AUTHORIZATION</h3>
-                  <p className="text-sm text-gray-700 mb-6 leading-relaxed">
-                    By signing below, the customer approves this quotation and authorizes the work to proceed as described. 
-                    The customer understands that this is a quotation and final costs may vary based on actual work performed. 
-                    Any significant changes will be communicated before proceeding.
-                  </p>
-
-                  <div className="grid grid-cols-2 gap-8 mt-8">
-                    {/* Customer Signature */}
-                    <div>
-                      <div className="mb-4">
-                        <label className="block text-xs font-semibold text-gray-600 uppercase mb-2">
-                          Customer Signature
-                        </label>
-                        <div className="border-b-2 border-gray-800 pb-1 h-16 flex items-end">
-                          <span className="text-gray-400 text-sm italic">Signature</span>
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div>
-                          <label className="block text-xs font-semibold text-gray-600 uppercase mb-1">
-                            Print Name
-                          </label>
-                          <div className="border-b border-gray-400 pb-1">
-                            {selectedJobForQuotation?.customer?.name || "________________"}
-                          </div>
-                        </div>
-                        <div>
-                          <label className="block text-xs font-semibold text-gray-600 uppercase mb-1">
-                            Date
-                          </label>
-                          <div className="border-b border-gray-400 pb-1">
-                            ________________
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Company Representative Signature */}
-                    <div>
-                      <div className="mb-4">
-                        <label className="block text-xs font-semibold text-gray-600 uppercase mb-2">
-                          Company Representative
-                        </label>
-                        <div className="border-b-2 border-gray-800 pb-1 h-16 flex items-end">
-                          <span className="text-gray-400 text-sm italic">Signature</span>
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div>
-                          <label className="block text-xs font-semibold text-gray-600 uppercase mb-1">
-                            Print Name
-                          </label>
-                          <div className="border-b border-gray-400 pb-1">
-                            ________________
-                          </div>
-                        </div>
-                        <div>
-                          <label className="block text-xs font-semibold text-gray-600 uppercase mb-1">
-                            Date
-                          </label>
-                          <div className="border-b border-gray-400 pb-1">
-                            ________________
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
                 {/* Footer */}
                 <div className="text-center text-gray-500 text-sm border-t pt-6">
-                  <p className="font-semibold">This document serves as both a quotation and work authorization agreement.</p>
-                  <p className="mt-2">Thank you for your business!</p>
+                  <p className="font-semibold">Thank you for your business!</p>
                 </div>
               </div>
             </div>
