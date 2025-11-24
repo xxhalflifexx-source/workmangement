@@ -3,6 +3,12 @@
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authOptions";
+import { nowInCentral, centralToUTC } from "@/lib/date-utils";
+
+// Set timezone for Node.js process
+if (typeof process !== "undefined") {
+  process.env.TZ = "America/Chicago";
+}
 
 export async function clockIn(jobId?: string, notes?: string) {
   const session = await getServerSession(authOptions);
@@ -13,7 +19,9 @@ export async function clockIn(jobId?: string, notes?: string) {
 
   const userId = (session.user as any).id;
 
-  const now = new Date();
+  // Get current time in Central Time, then convert to UTC for database storage
+  const nowCentral = nowInCentral();
+  const now = centralToUTC(nowCentral.toDate());
 
   // Check if already clocked in on another job.
   // Business rule: at most ONE active TimeEntry per user.
@@ -98,7 +106,9 @@ export async function clockOut(notes?: string) {
     return { ok: false, error: "Not clocked in" };
   }
 
-  const now = new Date();
+  // Get current time in Central Time, then convert to UTC for database storage
+  const nowCentral = nowInCentral();
+  const now = centralToUTC(nowCentral.toDate());
   const durationHours =
     (now.getTime() - activeEntry.clockIn.getTime()) / (1000 * 60 * 60);
 

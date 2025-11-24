@@ -9,6 +9,7 @@ import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { generateInvoicePDF, InvoicePDFData } from "@/lib/pdf-generator";
 import PhotoViewerModal from "../qc/PhotoViewerModal";
+import { formatDateShort, formatDateTime, formatDateInput, todayCentralISO, nowInCentral, centralToUTC, utcToCentral } from "@/lib/date-utils";
 
 interface Job {
   id: string;
@@ -137,7 +138,7 @@ export default function JobsPage() {
   const [selectedJobForInvoice, setSelectedJobForInvoice] = useState<any>(null);
   const [loadingInvoice, setLoadingInvoice] = useState(false);
   const [invoiceNumber, setInvoiceNumber] = useState("");
-  const [invoiceDate, setInvoiceDate] = useState(new Date().toISOString().split('T')[0]);
+  const [invoiceDate, setInvoiceDate] = useState(todayCentralISO());
   const [laborRate, setLaborRate] = useState(75);
   const [invoiceLineItems, setInvoiceLineItems] = useState<any[]>([]);
   const [invoiceNotes, setInvoiceNotes] = useState("");
@@ -160,7 +161,7 @@ export default function JobsPage() {
   const [showEstimateModal, setShowEstimateModal] = useState(false);
   const [selectedJobForEstimate, setSelectedJobForEstimate] = useState<Job | null>(null);
   const [estimateNumber, setEstimateNumber] = useState("");
-  const [estimateDate, setEstimateDate] = useState(new Date().toISOString().split('T')[0]);
+  const [estimateDate, setEstimateDate] = useState(todayCentralISO());
   const [estimateValidUntil, setEstimateValidUntil] = useState("");
   const [estimateLineItems, setEstimateLineItems] = useState<any[]>([]);
   const [estimateNotes, setEstimateNotes] = useState("");
@@ -710,7 +711,7 @@ export default function JobsPage() {
     setShowInvoiceModal(true);
     setLoadingInvoice(true);
     setInvoiceNumber(`INV-${Date.now()}`);
-    setInvoiceDate(new Date().toISOString().split('T')[0]);
+    setInvoiceDate(todayCentralISO());
     
     // Load both job data and company settings
     const [jobRes, settings] = await Promise.all([
@@ -872,7 +873,7 @@ export default function JobsPage() {
     };
 
     const pdf = generateInvoicePDF(pdfData);
-    pdf.save(`Invoice-${invoiceNumber || "INV"}-${new Date().toISOString().split('T')[0]}.pdf`);
+    pdf.save(`Invoice-${invoiceNumber || "INV"}-${todayCentralISO()}.pdf`);
   };
 
   const handleSaveInvoice = async () => {
@@ -898,7 +899,7 @@ export default function JobsPage() {
     formData.append("issueDate", invoiceDate);
     formData.append("notes", invoiceNotes || "");
     formData.append("lines", JSON.stringify(lines));
-    formData.append("sentDate", new Date().toISOString().split('T')[0]);
+    formData.append("sentDate", todayCentralISO());
 
     try {
       const res = await createInvoice(formData);
@@ -1018,12 +1019,11 @@ export default function JobsPage() {
     setSelectedJobForEstimate(job);
     setShowEstimateModal(true);
     setEstimateNumber(`EST-${Date.now()}`);
-    setEstimateDate(new Date().toISOString().split('T')[0]);
+    setEstimateDate(todayCentralISO());
     
-    // Set valid until date to 30 days from now
-    const validUntil = new Date();
-    validUntil.setDate(validUntil.getDate() + 30);
-    setEstimateValidUntil(validUntil.toISOString().split('T')[0]);
+    // Set valid until date to 30 days from now in Central Time
+    const validUntil = nowInCentral().add(30, 'day');
+    setEstimateValidUntil(validUntil.format('YYYY-MM-DD'));
     
     // Load company settings if not already loaded
     if (!companySettings) {
@@ -1212,13 +1212,12 @@ export default function JobsPage() {
     return true;
   });
 
+  // Format date helper - explicitly converts to Central Time
+  // All timestamps must use Central Time (UTC-06:00) regardless of browser timezone
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "No due date";
-    return new Date(dateString).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
+    // Explicitly convert to Central Time to avoid browser timezone interpretation
+    return formatDateShort(dateString);
   };
 
   return (
@@ -1911,7 +1910,7 @@ export default function JobsPage() {
                   <input
                     name="dueDate"
                     type="date"
-                    defaultValue={editingJob?.dueDate ? new Date(editingJob.dueDate).toISOString().split("T")[0] : ""}
+                    defaultValue={editingJob?.dueDate ? formatDateInput(editingJob.dueDate) : ""}
                     disabled={isLocked || isEmployee}
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 disabled:bg-gray-100 disabled:cursor-not-allowed"
                   />
@@ -2091,13 +2090,7 @@ export default function JobsPage() {
                                 </span>
                               </div>
                               <p className="text-xs text-gray-500">
-                                {new Date(activity.createdAt).toLocaleString("en-US", {
-                                  month: "short",
-                                  day: "numeric",
-                                  year: "numeric",
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                })}
+                                {formatDateTime(activity.createdAt)}
                               </p>
                               {activity.notes && (
                                 <p className="text-sm text-gray-700 mt-2">{activity.notes}</p>
@@ -2349,13 +2342,7 @@ export default function JobsPage() {
                               Quantity: <span className="font-medium">{request.quantity} {request.unit}</span>
                             </p>
                             <p className="text-xs text-gray-500">
-                              Requested by {request.user.name || request.user.email} • {new Date(request.requestedDate).toLocaleString("en-US", {
-                                month: "short",
-                                day: "numeric",
-                                year: "numeric",
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })}
+                              Requested by {request.user.name || request.user.email} • {formatDateTime(request.requestedDate)}
                             </p>
                             {request.description && (
                               <p className="text-sm text-gray-700 mt-2">{request.description}</p>
@@ -2445,7 +2432,7 @@ export default function JobsPage() {
                             className="font-semibold border-b border-gray-300 focus:border-blue-900 outline-none print-no-border bg-transparent"
                           />
                           <span className="font-semibold print-only ml-2">
-                            {invoiceDate ? new Date(invoiceDate).toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "numeric" }) : ""}
+                            {invoiceDate ? formatDateInput(invoiceDate).split('-').reverse().join('/') : ""}
                           </span>
                         </div>
                       </div>

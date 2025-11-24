@@ -3,6 +3,12 @@
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authOptions";
+import { startOfDayCentral, endOfDayCentral, parseCentralDate } from "@/lib/date-utils";
+
+// Set timezone for Node.js process
+if (typeof process !== "undefined") {
+  process.env.TZ = "America/Chicago";
+}
 
 export async function getAllUsersStats(dateFrom?: string, dateTo?: string) {
   const session = await getServerSession(authOptions);
@@ -24,13 +30,11 @@ export async function getAllUsersStats(dateFrom?: string, dateTo?: string) {
     let dateToDate: Date | undefined;
 
     if (dateFrom) {
-      dateFromDate = new Date(dateFrom);
-      dateFromDate.setHours(0, 0, 0, 0);
+      dateFromDate = startOfDayCentral(parseCentralDate(dateFrom));
     }
 
     if (dateTo) {
-      dateToDate = new Date(dateTo);
-      dateToDate.setHours(23, 59, 59, 999);
+      dateToDate = endOfDayCentral(parseCentralDate(dateTo));
     }
 
     // Try to fetch with clockInNotes, fallback if column doesn't exist

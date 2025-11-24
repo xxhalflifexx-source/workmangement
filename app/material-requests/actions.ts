@@ -4,6 +4,12 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authOptions";
 import { z } from "zod";
+import { nowInCentral, centralToUTC } from "@/lib/date-utils";
+
+// Set timezone for Node.js process
+if (typeof process !== "undefined") {
+  process.env.TZ = "America/Chicago";
+}
 
 const requestSchema = z.object({
   jobId: z.string().optional(),
@@ -180,7 +186,7 @@ export async function updateMaterialRequest(requestId: string, formData: FormDat
 
     // Set fulfilled date if status is FULFILLED
     if (parsed.data.status === "FULFILLED") {
-      updateData.fulfilledDate = new Date();
+      updateData.fulfilledDate = centralToUTC(nowInCentral().toDate());
     }
 
     const request = await prisma.materialRequest.update({

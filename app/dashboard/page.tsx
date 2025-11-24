@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authOptions";
 import Link from "next/link";
 import { getJobAlertsForCurrentUser } from "../jobs/actions";
+import { formatDateShort } from "@/lib/date-utils";
 
 export default async function Dashboard() {
   const session = await getServerSession(authOptions);
@@ -238,7 +239,7 @@ export default async function Dashboard() {
                       <p className="text-xs text-gray-500">
                         {job.customer?.name ? `Customer: ${job.customer.name} • ` : ""}
                         Updated:{" "}
-                        {new Date(job.updatedAt).toLocaleDateString("en-US", {
+                        {formatDateShort(job.updatedAt)}
                           month: "short",
                           day: "numeric",
                           year: "numeric",

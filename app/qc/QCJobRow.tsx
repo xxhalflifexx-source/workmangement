@@ -80,7 +80,7 @@ export default function QCJobRow({ job }: QCJobRowProps) {
   const jobNumber = job.id.substring(0, 8).toUpperCase();
 
   // Format date created
-  const dateCreated = new Date(job.createdAt).toLocaleDateString();
+  const dateCreated = formatDateShort(job.createdAt);
 
   // Get status display
   const statusDisplay = job.status === "AWAITING_QC" ? "Submit to QC" : job.status;
@@ -282,11 +282,11 @@ export default function QCJobRow({ job }: QCJobRowProps) {
                                 {te.user?.name || "Worker"}
                               </td>
                               <td className="px-3 py-2 border-b text-gray-600">
-                                {new Date(te.clockIn).toLocaleString()}
+                                {formatDateTime(te.clockIn)}
                               </td>
                               <td className="px-3 py-2 border-b text-gray-600">
                                 {te.clockOut
-                                  ? new Date(te.clockOut).toLocaleString()
+                                  ? formatDateTime(te.clockOut)
                                   : "Active"}
                               </td>
                               <td className="px-3 py-2 border-b text-right text-gray-900">
@@ -312,7 +312,7 @@ export default function QCJobRow({ job }: QCJobRowProps) {
                           <div key={qc.id} className="border-l-2 border-gray-300 pl-3">
                             <p>
                               <span className="font-medium">{qc.qcStatus}</span> on{" "}
-                              {new Date(qc.createdAt).toLocaleString()}
+                              {formatDateTime(qc.createdAt)}
                             </p>
                             {qc.notes && (
                               <p className="text-xs text-gray-500 mt-1">{qc.notes}</p>
@@ -329,7 +329,7 @@ export default function QCJobRow({ job }: QCJobRowProps) {
                         {job.reworkEntries.map((rw: any, idx: number) => (
                           <div key={rw.id} className="border-l-2 border-orange-300 pl-3">
                             <p>
-                              Rework on {new Date(rw.createdAt).toLocaleString()}
+                              Rework on {formatDateTime(rw.createdAt)}
                               {rw.responsibleUser && (
                                 <> • Responsible: {rw.responsibleUser.name}</>
                               )}

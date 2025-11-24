@@ -6,6 +6,12 @@ import { authOptions } from "@/lib/authOptions";
 import { z } from "zod";
 import { hash } from "bcryptjs";
 import { randomBytes } from "crypto";
+import { parseCentralDate, nowInCentral } from "@/lib/date-utils";
+
+// Set timezone for Node.js process
+if (typeof process !== "undefined") {
+  process.env.TZ = "America/Chicago";
+}
 
 const companySettingsSchema = z.object({
   companyName: z.string().min(1, "Company name is required"),
@@ -119,7 +125,7 @@ export async function createUserByAdmin(formData: FormData) {
         passwordHash,
         role: parsed.data.role,
         gender: parsed.data.gender || null,
-        birthDate: parsed.data.birthDate ? new Date(parsed.data.birthDate) : null,
+        birthDate: parsed.data.birthDate ? parseCentralDate(parsed.data.birthDate) : null,
         isVerified: true,
       },
     });
@@ -276,7 +282,7 @@ export async function updateUserProfileDetails(
     data.gender = gender && gender.trim().length > 0 ? gender : null;
   }
   if (typeof birthDate !== "undefined") {
-    data.birthDate = birthDate ? new Date(birthDate) : null;
+    data.birthDate = birthDate ? parseCentralDate(birthDate) : null;
   }
   if (typeof status !== "undefined") {
     data.status = status || null;
@@ -484,9 +490,8 @@ export async function getFinancialSummary(startDate?: string, endDate?: string) 
   }
 
   // Date range
-  const start = startDate ? new Date(startDate) : new Date(new Date().getFullYear(), 0, 1);
-  const end = endDate ? new Date(endDate) : new Date();
-  end.setHours(23,59,59,999);
+  const start = startDate ? parseCentralDate(startDate) : nowInCentral().startOf('year').toDate();
+  const end = endDate ? parseCentralDate(endDate) : nowInCentral().endOf('day').toDate();
 
   try {
     // Revenue = sum of job.finalPrice within range OR estimatedPrice when final missing and job completed

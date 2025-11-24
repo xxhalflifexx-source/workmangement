@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { listInvoices, updateInvoicePDFs } from "../invoices/actions";
+import { formatDateShort, formatDateTime, nowInCentral, utcToCentral } from "@/lib/date-utils";
 
 interface Invoice {
   id: string;
@@ -134,22 +135,22 @@ export default function FinancePage() {
 
     // Date range filter
     if (dateFrom) {
-      const fromDate = new Date(dateFrom);
+      const fromDate = utcToCentral(dateFrom + "T00:00:00").toDate();
       fromDate.setHours(0, 0, 0, 0);
       filtered = filtered.filter((inv) => {
         try {
-          return inv.issueDate ? new Date(inv.issueDate).getTime() >= fromDate.getTime() : false;
+          return inv.issueDate ? utcToCentral(inv.issueDate).toDate().getTime() >= fromDate.getTime() : false;
         } catch {
           return false;
         }
       });
     }
     if (dateTo) {
-      const toDate = new Date(dateTo);
+      const toDate = utcToCentral(dateTo + "T23:59:59").toDate();
       toDate.setHours(23, 59, 59, 999);
       filtered = filtered.filter((inv) => {
         try {
-          return inv.issueDate ? new Date(inv.issueDate).getTime() <= toDate.getTime() : false;
+          return inv.issueDate ? utcToCentral(inv.issueDate).toDate().getTime() <= toDate.getTime() : false;
         } catch {
           return false;
         }
@@ -167,8 +168,8 @@ export default function FinancePage() {
           bVal = b.invoiceNumber || "";
           break;
         case "issueDate":
-          aVal = a.issueDate ? new Date(a.issueDate).getTime() : 0;
-          bVal = b.issueDate ? new Date(b.issueDate).getTime() : 0;
+          aVal = a.issueDate ? utcToCentral(a.issueDate).toDate().getTime() : 0;
+          bVal = b.issueDate ? utcToCentral(b.issueDate).toDate().getTime() : 0;
           break;
         case "total":
           aVal = a.total;
@@ -183,8 +184,8 @@ export default function FinancePage() {
           bVal = b.customer?.name || "";
           break;
         case "createdAt":
-          aVal = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-          bVal = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+          aVal = a.createdAt ? utcToCentral(a.createdAt).toDate().getTime() : 0;
+          bVal = b.createdAt ? utcToCentral(b.createdAt).toDate().getTime() : 0;
           break;
         default:
           return 0;
@@ -211,7 +212,7 @@ export default function FinancePage() {
     let isOverdue = false;
     if (invoice.status !== "PAID" && invoice.dueDate && invoice.balance > 0) {
       try {
-        isOverdue = new Date(invoice.dueDate).getTime() < new Date().getTime();
+        isOverdue = utcToCentral(invoice.dueDate).toDate().getTime() < nowInCentral().toDate().getTime();
       } catch {
         isOverdue = false;
       }
@@ -255,7 +256,7 @@ export default function FinancePage() {
 
   const formatDate = (date: Date | string | null) => {
     if (!date) return "—";
-    return new Date(date).toLocaleDateString("en-US", {
+    return formatDateShort(date);
       year: "numeric",
       month: "short",
       day: "numeric",

@@ -12,6 +12,7 @@ import {
 import { getMaterialRequests, updateMaterialRequest } from "../material-requests/actions";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
+import { formatDateTime, nowInCentral, centralToUTC } from "@/lib/date-utils";
 
 interface InventoryItem {
   id: string;
@@ -140,7 +141,7 @@ export default function InventoryPage() {
       return;
     }
     // Update local state
-    setMaterialRequests((prev) => prev.map((r) => (r.id === requestId ? { ...r, status, fulfilledDate: status === "FULFILLED" ? new Date().toISOString() : r.fulfilledDate } : r)));
+    setMaterialRequests((prev) => prev.map((r) => (r.id === requestId ? { ...r, status, fulfilledDate: status === "FULFILLED" ? centralToUTC(nowInCentral().toDate()).toISOString() : r.fulfilledDate } : r)));
     setSuccess(`Request ${status.toLowerCase()} successfully`);
   };
 
@@ -257,13 +258,7 @@ export default function InventoryPage() {
   const outOfStockCount = items.filter((item) => item.quantity === 0).length;
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    return formatDateTime(dateString);
   };
 
   const formatCurrency = (amount: number | null) => {
@@ -908,7 +903,7 @@ export default function InventoryPage() {
                     <tbody className="divide-y">
                       {filtered.map((req) => (
                         <tr key={req.id} className="hover:bg-gray-50">
-                          <td className="px-4 py-3 text-sm text-gray-700">{new Date(req.requestedDate).toLocaleString()}</td>
+                          <td className="px-4 py-3 text-sm text-gray-700">{formatDateTime(req.requestedDate)}</td>
                           <td className="px-4 py-3 text-sm text-gray-900">
                             <div className="font-medium">{req.itemName}</div>
                             {req.description && <div className="text-xs text-gray-500 line-clamp-1">{req.description}</div>}

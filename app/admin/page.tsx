@@ -15,6 +15,8 @@ import {
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import RegistrationCodes from "../dashboard/RegistrationCodes";
+import { formatDateShort, formatDateInput, todayCentralISO, nowInCentral, utcToCentral } from "@/lib/date-utils";
+import { formatDateShort, formatDateInput, todayCentralISO, nowInCentral, utcToCentral } from "@/lib/date-utils";
 
 interface User {
   id: string;
@@ -58,8 +60,11 @@ export default function AdminPage() {
   const isAdmin = userRole === "ADMIN";
   const canManageRoles = userRole === "ADMIN" || userRole === "MANAGER";
 
-  const [finStart, setFinStart] = useState<string>(new Date(new Date().getFullYear(), 0, 1).toISOString().split("T")[0]);
-  const [finEnd, setFinEnd] = useState<string>(new Date().toISOString().split("T")[0]);
+  const [finStart, setFinStart] = useState<string>(() => {
+    const start = nowInCentral().startOf('year');
+    return start.format('YYYY-MM-DD');
+  });
+  const [finEnd, setFinEnd] = useState<string>(todayCentralISO());
   const [finLoading, setFinLoading] = useState(false);
   const [finSummary, setFinSummary] = useState<any>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
@@ -228,11 +233,7 @@ export default function AdminPage() {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
+    return formatDateShort(dateString);
   };
 
   const handleGenderChange = async (userId: string, gender: string) => {
@@ -525,9 +526,7 @@ export default function AdminPage() {
                               type="date"
                               value={
                                 user.birthDate
-                                  ? new Date(user.birthDate as string)
-                                      .toISOString()
-                                      .split("T")[0]
+                                  ? formatDateInput(user.birthDate as string)
                                   : ""
                               }
                               onChange={(e) => handleBirthDateChange(user.id, e.target.value)}
@@ -536,16 +535,14 @@ export default function AdminPage() {
                             <span className="text-[11px] text-gray-500">
                               {user.birthDate
                                 ? (() => {
-                                    const dob = new Date(user.birthDate as string);
-                                    const now = new Date();
-                                    let age = now.getFullYear() - dob.getFullYear();
-                                    const m = now.getMonth() - dob.getMonth();
-                                    if (m < 0 || (m === 0 && now.getDate() < dob.getDate())) {
+                                    const dob = utcToCentral(user.birthDate as string);
+                                    const now = nowInCentral();
+                                    let age = now.year() - dob.year();
+                                    const m = now.month() - dob.month();
+                                    if (m < 0 || (m === 0 && now.date() < dob.date())) {
                                       age--;
                                     }
-                                    const month = dob.toLocaleString("en-US", {
-                                      month: "short",
-                                    });
+                                    const month = dob.format("MMM");
                                     return `${age} yrs / ${month}`;
                                   })()
                                 : "Age / Month"}

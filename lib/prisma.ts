@@ -1,5 +1,10 @@
 import { PrismaClient } from "@prisma/client";
 
+// Set timezone for Node.js process to Central Time
+if (typeof process !== "undefined") {
+  process.env.TZ = "America/Chicago";
+}
+
 const globalForPrisma = global as unknown as { prisma: PrismaClient };
 
 // Configure Prisma to work with Supabase connection pooler

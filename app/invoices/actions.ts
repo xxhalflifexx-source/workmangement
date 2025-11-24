@@ -3,6 +3,12 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authOptions";
 import { prisma } from "@/lib/prisma";
+import { nowInCentral, centralToUTC, parseCentralDate } from "@/lib/date-utils";
+
+// Set timezone for Node.js process
+if (typeof process !== "undefined") {
+  process.env.TZ = "America/Chicago";
+}
 
 export async function listInvoices() {
 	const session = await getServerSession(authOptions);
@@ -153,9 +159,9 @@ export async function createInvoice(formData: FormData) {
 			jobId: jobId || null,
 			customerId: customerId || null,
 			status: "SENT",
-			issueDate: issueDate ? new Date(issueDate) : new Date(),
+			issueDate: issueDate ? parseCentralDate(issueDate) : centralToUTC(nowInCentral().toDate()),
 			dueDate: dueDate ? new Date(dueDate) : null,
-			sentDate: sentDate ? new Date(sentDate) : new Date(), // Auto-set sent date when creating
+			sentDate: sentDate ? parseCentralDate(sentDate) : centralToUTC(nowInCentral().toDate()), // Auto-set sent date when creating
 			notes: notes || null,
 			total,
 			balance: total,
@@ -193,7 +199,7 @@ export async function recordPayment(formData: FormData) {
 
 	const newBalance = Math.max(0, (invoice.balance || 0) - amount);
 	const newStatus = newBalance === 0 ? "PAID" : invoice.status;
-	const paymentDateObj = paymentDate ? new Date(paymentDate) : new Date();
+	const paymentDateObj = paymentDate ? parseCentralDate(paymentDate) : centralToUTC(nowInCentral().toDate());
 
 	const payment = await prisma.payment.create({
 		data: {

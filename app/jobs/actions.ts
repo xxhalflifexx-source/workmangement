@@ -6,6 +6,12 @@ import { authOptions } from "@/lib/authOptions";
 import { z } from "zod";
 import { sendJobStatusEmail } from "@/lib/email";
 import { revalidatePath } from "next/cache";
+import { parseCentralDate } from "@/lib/date-utils";
+
+// Set timezone for Node.js process
+if (typeof process !== "undefined") {
+  process.env.TZ = "America/Chicago";
+}
 
 const jobSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -79,7 +85,7 @@ export async function createJob(formData: FormData) {
       estimatedPrice: parsed.data.estimatedPrice ? parseFloat(parsed.data.estimatedPrice) : null,
       finalPrice: parsed.data.finalPrice ? parseFloat(parsed.data.finalPrice) : null,
       estimatedHours: parsed.data.estimatedHours ? parseFloat(parsed.data.estimatedHours) : null,
-      dueDate: parsed.data.dueDate ? new Date(parsed.data.dueDate) : null,
+      dueDate: parsed.data.dueDate ? parseCentralDate(parsed.data.dueDate) : null,
     },
     include: {
       assignee: { select: { name: true, email: true } },
@@ -150,7 +156,7 @@ export async function updateJob(jobId: string, formData: FormData) {
       estimatedPrice: parsed.data.estimatedPrice ? parseFloat(parsed.data.estimatedPrice) : null,
       finalPrice: parsed.data.finalPrice ? parseFloat(parsed.data.finalPrice) : null,
       estimatedHours: parsed.data.estimatedHours ? parseFloat(parsed.data.estimatedHours) : null,
-      dueDate: parsed.data.dueDate ? new Date(parsed.data.dueDate) : null,
+      dueDate: parsed.data.dueDate ? parseCentralDate(parsed.data.dueDate) : null,
     },
     include: {
       assignee: { select: { name: true, email: true } },

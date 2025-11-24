@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { clockIn, clockOut, getCurrentStatus, getTodayEntries, getRecentEntries, getAvailableJobs, getAssignedJobs } from "./actions";
 import Link from "next/link";
+import { nowInCentral, formatCentralTime, formatDateShort } from "@/lib/date-utils";
 
 interface TimeEntry {
   id: string;
@@ -51,19 +52,9 @@ export default function TimeClockPage() {
 
   useEffect(() => {
     const updateTime = () => {
-      const now = new Date();
-      setCurrentTime(now.toLocaleTimeString("en-US", {
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
-        hour12: true,
-      }));
-      setCurrentDate(now.toLocaleDateString("en-US", {
-        weekday: "short",
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      }));
+      const now = nowInCentral();
+      setCurrentTime(now.format("hh:mm:ss A"));
+      setCurrentDate(now.format("ddd, MMM DD, YYYY"));
     };
 
     updateTime();
@@ -79,6 +70,7 @@ export default function TimeClockPage() {
     if (!isClockedIn || !currentEntry) return;
 
     const interval = setInterval(() => {
+      // Both times are in UTC from database, calculate difference directly
       const start = new Date(currentEntry.clockIn).getTime();
       const now = new Date().getTime();
       const diff = now - start;
@@ -253,11 +245,7 @@ export default function TimeClockPage() {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
+    return formatDateShort(dateString);
   };
 
   return (
@@ -345,10 +333,7 @@ export default function TimeClockPage() {
                     </span>
                     {job.dueDate && (
                       <span className="text-gray-600">
-                        Due: {new Date(job.dueDate).toLocaleDateString("en-US", {
-                          month: "short",
-                          day: "numeric",
-                        })}
+                        Due: {formatDateShort(job.dueDate || "")}
                       </span>
                     )}
                   </div>

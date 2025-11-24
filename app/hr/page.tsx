@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { getAllUsersStats, getUserTimeEntries } from "./actions";
 import Link from "next/link";
+import { nowInCentral, formatDateShort, formatDateTime, formatDateInput, startOfDayCentral, endOfDayCentral } from "@/lib/date-utils";
+import dayjs from "dayjs";
 
 interface TimeEntry {
   id: string;
@@ -35,44 +37,31 @@ export default function HRPage() {
   const [loadingEntries, setLoadingEntries] = useState(false);
   const [showEntriesModal, setShowEntriesModal] = useState(false);
   
-  // Helper function to get Saturday of current week
+  // Helper function to get Saturday of current week in Central Time
   // Week runs Saturday (day 6) to Friday (day 5)
-  const getSaturdayOfWeek = (date: Date): Date => {
-    const saturday = new Date(date);
-    const day = saturday.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+  const getSaturdayOfWeek = (date: dayjs.Dayjs): dayjs.Dayjs => {
+    const day = date.day(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
     // Calculate days to subtract to get to Saturday
-    // If today is Sunday (0), subtract 1 to get Saturday
-    // If today is Monday (1), subtract 2 to get Saturday
-    // If today is Tuesday (2), subtract 3 to get Saturday
-    // If today is Wednesday (3), subtract 4 to get Saturday
-    // If today is Thursday (4), subtract 5 to get Saturday
-    // If today is Friday (5), subtract 6 to get Saturday
-    // If today is Saturday (6), subtract 0 (already Saturday)
     const daysToSubtract = day === 0 ? 1 : day === 6 ? 0 : day + 1;
-    saturday.setDate(saturday.getDate() - daysToSubtract);
-    saturday.setHours(0, 0, 0, 0);
-    return saturday;
+    return date.subtract(daysToSubtract, 'day').startOf('day');
   };
 
-  // Helper function to get Friday of the week (6 days after Saturday)
-  const getFridayOfWeek = (saturday: Date): Date => {
-    const friday = new Date(saturday);
-    friday.setDate(friday.getDate() + 6); // Saturday + 6 days = Friday
-    friday.setHours(23, 59, 59, 999);
-    return friday;
+  // Helper function to get Friday of the week (6 days after Saturday) in Central Time
+  const getFridayOfWeek = (saturday: dayjs.Dayjs): dayjs.Dayjs => {
+    return saturday.add(6, 'day').endOf('day');
   };
 
-  // Date range state - default to this week (Saturday to Friday)
+  // Date range state - default to this week (Saturday to Friday) in Central Time
   const [dateFrom, setDateFrom] = useState<string>(() => {
-    const now = new Date();
+    const now = nowInCentral();
     const saturday = getSaturdayOfWeek(now);
-    return saturday.toISOString().split('T')[0];
+    return saturday.format('YYYY-MM-DD');
   });
   const [dateTo, setDateTo] = useState<string>(() => {
-    const now = new Date();
+    const now = nowInCentral();
     const saturday = getSaturdayOfWeek(now);
     const friday = getFridayOfWeek(saturday);
-    return friday.toISOString().split('T')[0];
+    return friday.format('YYYY-MM-DD');
   });
 
   useEffect(() => {
@@ -112,19 +101,11 @@ export default function HRPage() {
   };
 
   const formatTime = (dateString: string) => {
-    return new Date(dateString).toLocaleTimeString("en-US", {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true,
-    });
+    return formatDateTime(dateString).split(', ')[1] || formatDateTime(dateString);
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
+    return formatDateShort(dateString);
   };
 
   const calculateDuration = (entry: TimeEntry) => {
@@ -228,13 +209,11 @@ export default function HRPage() {
                   onChange={(e) => {
                     const newDateTo = e.target.value;
                     setDateTo(newDateTo);
-                    // Automatically adjust start date to maintain 7-day week
+                    // Automatically adjust start date to maintain 7-day week in Central Time
                     if (newDateTo) {
-                      const toDate = new Date(newDateTo);
-                      const fromDate = new Date(toDate);
-                      fromDate.setDate(fromDate.getDate() - 6); // Subtract 6 days to get start of week
-                      fromDate.setHours(0, 0, 0, 0);
-                      setDateFrom(fromDate.toISOString().split('T')[0]);
+                      const toDate = nowInCentral().date(parseInt(newDateTo.split('-')[2])).month(parseInt(newDateTo.split('-')[1]) - 1).year(parseInt(newDateTo.split('-')[0]));
+                      const fromDate = toDate.subtract(6, 'day');
+                      setDateFrom(fromDate.format('YYYY-MM-DD'));
                     }
                   }}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
@@ -243,11 +222,11 @@ export default function HRPage() {
               <div className="flex items-end">
                 <button
                   onClick={() => {
-                    const now = new Date();
+                    const now = nowInCentral();
                     const saturday = getSaturdayOfWeek(now);
                     const friday = getFridayOfWeek(saturday);
-                    setDateFrom(saturday.toISOString().split('T')[0]);
-                    setDateTo(friday.toISOString().split('T')[0]);
+                    setDateFrom(saturday.format('YYYY-MM-DD'));
+                    setDateTo(friday.format('YYYY-MM-DD'));
                   }}
                   className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium whitespace-nowrap"
                 >

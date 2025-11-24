@@ -6,6 +6,12 @@ import { authOptions } from "@/lib/authOptions";
 import { sendJobStatusEmail } from "@/lib/email";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { nowInCentral, centralToUTC } from "@/lib/date-utils";
+
+// Set timezone for Node.js process
+if (typeof process !== "undefined") {
+  process.env.TZ = "America/Chicago";
+}
 
 type QCStatus = "PASS" | "FAIL" | "MINOR_ISSUES";
 

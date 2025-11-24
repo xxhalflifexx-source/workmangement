@@ -5,6 +5,7 @@ import Link from "next/link";
 import { listInvoices, createInvoice, recordPayment, filterInvoices, getInvoiceStatistics } from "./actions";
 import { getAllCustomers } from "../jobs/actions";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from "recharts";
+import { formatDateShort, todayCentralISO, nowInCentral } from "@/lib/date-utils";
 
 interface Invoice {
 	id: string;
@@ -46,7 +47,7 @@ export default function InvoicesPage() {
 	// Create form state
 	const [jobId, setJobId] = useState("");
 	const [customerId, setCustomerId] = useState("");
-	const [issueDate, setIssueDate] = useState(new Date().toISOString().split("T")[0]);
+	const [issueDate, setIssueDate] = useState(todayCentralISO());
 	const [dueDate, setDueDate] = useState("");
 	const [notes, setNotes] = useState("");
 	const [lines, setLines] = useState<Array<{ description: string; quantity: number; rate: number; amount: number }>>([
@@ -110,7 +111,7 @@ export default function InvoicesPage() {
 		if (dueDate) fd.append("dueDate", dueDate);
 		if (notes) fd.append("notes", notes);
 		fd.append("lines", JSON.stringify(lines));
-		fd.append("sentDate", new Date().toISOString().split("T")[0]);
+		fd.append("sentDate", todayCentralISO());
 		const res = await createInvoice(fd);
 		if (!res.ok) { setError(res.error); return; }
 		setShowCreate(false);
@@ -131,7 +132,7 @@ export default function InvoicesPage() {
 
 	const formatDate = (date: Date | null | undefined) => {
 		if (!date) return "--";
-		return new Date(date).toLocaleDateString("en-US", { month: "numeric", day: "numeric", year: "2-digit" });
+		return formatDateShort(date);
 	};
 
 	const calculateElapsed = (invoice: Invoice) => {
@@ -154,7 +155,7 @@ export default function InvoicesPage() {
 	};
 
 	// Generate month options
-	const currentYear = new Date().getFullYear();
+	const currentYear = nowInCentral().year();
 	const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
 	const months = Array.from({ length: 12 }, (_, i) => {
 		const month = i + 1;
@@ -477,7 +478,7 @@ export default function InvoicesPage() {
 								</div>
 								<div>
 									<label className="block text-xs text-gray-600 mb-1">Date</label>
-									<input name="paymentDate" type="date" defaultValue={new Date().toISOString().split("T")[0]} className="border rounded px-3 py-2 w-full" />
+									<input name="paymentDate" type="date" defaultValue={todayCentralISO()} className="border rounded px-3 py-2 w-full" />
 								</div>
 							</div>
 							<div>
