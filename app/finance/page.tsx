@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
-import { listInvoices, updateInvoicePDFs, createInvoice, updateInvoice, updateInvoiceStatus, getUninvoicedJobs, getNextInvoiceNumber } from "../invoices/actions";
+import { listInvoices, updateInvoicePDFs, createInvoice, updateInvoice, updateInvoiceStatus, getUninvoicedJobs, getNextInvoiceNumber, deleteInvoice } from "../invoices/actions";
 import { getJobForInvoice, getCompanySettingsForInvoice } from "../jobs/invoice-actions";
 import { generateInvoicePDF, InvoicePDFData } from "@/lib/pdf-generator";
 import { formatDateShort, formatDateTime, formatDateInput, todayCentralISO, nowInCentral, utcToCentral, centralToUTC } from "@/lib/date-utils";
@@ -1246,15 +1246,36 @@ export default function FinancePage() {
                           >
                             View
                           </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleEditInvoice(invoice);
-                            }}
-                            className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 transition-colors text-xs font-medium"
-                          >
-                            Edit
-                          </button>
+                          {hasAccess && (
+                            <>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEditInvoice(invoice);
+                                }}
+                                className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 transition-colors text-xs font-medium"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  if (confirm("Are you sure you want to delete this invoice? This action cannot be undone.")) {
+                                    const res = await deleteInvoice(invoice.id);
+                                    if (res.ok) {
+                                      await loadInvoices();
+                                      setSuccess("Invoice deleted successfully");
+                                    } else {
+                                      setError(res.error || "Failed to delete invoice");
+                                    }
+                                  }
+                                }}
+                                className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 transition-colors text-xs font-medium"
+                              >
+                                Delete
+                              </button>
+                            </>
+                          )}
                         </div>
                       </td>
                     </tr>

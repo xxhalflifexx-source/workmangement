@@ -144,6 +144,16 @@ export async function createInvoice(formData: FormData) {
 	const notes = (formData.get("notes") as string) || "";
 	const sentDate = (formData.get("sentDate") as string) || "";
 
+	// Prevent duplicate invoices for the same job
+	if (jobId) {
+		const existingInvoice = await prisma.invoice.findFirst({
+			where: { jobId },
+		});
+		if (existingInvoice) {
+			return { ok: false, error: "An invoice already exists for this job. Please edit the existing invoice instead." };
+		}
+	}
+
 	const linesJson = (formData.get("lines") as string) || "[]";
 	let lines: Array<{ description: string; quantity: number; rate: number; amount: number }> = [];
 	try { lines = JSON.parse(linesJson); } catch {}
@@ -490,6 +500,24 @@ export async function updateInvoiceStatus(invoiceId: string, status: string) {
 }
 
 // Update invoice PDF files
+export async function deleteInvoice(invoiceId: string) {
+	const session = await getServerSession(authOptions);
+	if (!session?.user) return { ok: false, error: "Not authenticated" };
+	const role = (session.user as any).role;
+	if (role !== "ADMIN" && role !== "MANAGER") return { ok: false, error: "Unauthorized" };
+
+	try {
+		// Delete related records first (lines and payments are cascade deleted)
+		await prisma.invoice.delete({
+			where: { id: invoiceId },
+		});
+		return { ok: true };
+	} catch (error: any) {
+		console.error("Delete invoice error:", error);
+		return { ok: false, error: error?.message || "Failed to delete invoice" };
+	}
+}
+
 export async function updateInvoicePDFs(invoiceId: string, pdfFiles: string[]) {
 	const session = await getServerSession(authOptions);
 	if (!session?.user) return { ok: false, error: "Not authenticated" };

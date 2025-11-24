@@ -96,6 +96,7 @@ model Customer {
   updatedAt DateTime @updatedAt
   jobs      Job[]
   invoices  Invoice[]
+  quotations Quotation[]
 }
 
 model Job {
@@ -129,6 +130,7 @@ model Job {
   materialRequests MaterialRequest[]
   expenses         JobExpense[]
   invoices         Invoice[]
+  quotations       Quotation[]
   qcRecords        QCRecord[]
   reworkEntries    ReworkEntry[]
 }
@@ -304,5 +306,42 @@ model Payment {
   paymentDate DateTime @default(now())
   createdAt   DateTime @default(now())
   invoice     Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+}
+
+model Quotation {
+  id                String            @id @default(cuid())
+  quotationNumber   String?           @unique // Auto-generated: QUO-2025-0001, etc.
+  jobId             String?
+  customerId        String?
+  customerName      String?
+  customerEmail     String?
+  customerAddress   String?
+  customerPhone     String?
+  status            String            @default("DRAFT") // DRAFT, SENT, ACCEPTED, REJECTED, EXPIRED
+  issueDate         DateTime          @default(now())
+  validUntil        DateTime?
+  total             Float             @default(0)
+  notes             String?
+  paymentBank       String?
+  paymentAccountName String?
+  paymentAccountNumber String?
+  preparedByName    String?
+  preparedByTitle    String?
+  shippingFee       Float             @default(0)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  job               Job?              @relation(fields: [jobId], references: [id], onDelete: SetNull)
+  customer          Customer?         @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  lines             QuotationLine[]
+}
+
+model QuotationLine {
+  id          String     @id @default(cuid())
+  quotationId String
+  description String
+  quantity    Float      @default(1)
+  rate        Float      @default(0)
+  amount      Float      @default(0)
+  quotation   Quotation  @relation(fields: [quotationId], references: [id], onDelete: Cascade)
 }
 

@@ -4,6 +4,8 @@ import { useEffect, useState, useRef } from "react";
 import { getJobs, getAllUsers, createJob, updateJob, deleteJob, getJobActivities, addJobActivity, getAllCustomers, createCustomer, saveJobPhotos, submitJobPhotosToQC, getJobPhotos, removeJobPhoto as removeJobPhotoFromDB } from "./actions";
 import { createMaterialRequest, getJobMaterialRequests } from "../material-requests/actions";
 import { getCompanySettingsForInvoice } from "./invoice-actions";
+import { createQuotation, getNextQuotationNumber } from "../quotations/actions";
+import { generateQuotationPDF, QuotationPDFData } from "@/lib/quotation-pdf-generator";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import PhotoViewerModal from "../qc/PhotoViewerModal";
@@ -131,16 +133,27 @@ export default function JobsPage() {
   const [estimatedDurationValue, setEstimatedDurationValue] = useState<string>("");
   const [estimatedDurationUnit, setEstimatedDurationUnit] = useState<"HOURS" | "DAYS" | "WEEKS" | "MONTHS">("HOURS");
   
-  // Estimate states
-  const [showEstimateModal, setShowEstimateModal] = useState(false);
-  const [selectedJobForEstimate, setSelectedJobForEstimate] = useState<Job | null>(null);
-  const [estimateNumber, setEstimateNumber] = useState("");
-  const [estimateDate, setEstimateDate] = useState(todayCentralISO());
-  const [estimateValidUntil, setEstimateValidUntil] = useState("");
-  const [estimateLineItems, setEstimateLineItems] = useState<any[]>([]);
-  const [estimateNotes, setEstimateNotes] = useState("");
+  // Quotation states
+  const [showQuotationModal, setShowQuotationModal] = useState(false);
+  const [selectedJobForQuotation, setSelectedJobForQuotation] = useState<Job | null>(null);
+  const [quotationNumber, setQuotationNumber] = useState("");
+  const [quotationDate, setQuotationDate] = useState(todayCentralISO());
+  const [quotationValidUntil, setQuotationValidUntil] = useState("");
+  const [quotationLineItems, setQuotationLineItems] = useState<any[]>([]);
+  const [quotationNotes, setQuotationNotes] = useState("");
+  const [quotationShippingFee, setQuotationShippingFee] = useState(0);
+  const [quotationPaymentBank, setQuotationPaymentBank] = useState("");
+  const [quotationPaymentAccountName, setQuotationPaymentAccountName] = useState("");
+  const [quotationPaymentAccountNumber, setQuotationPaymentAccountNumber] = useState("");
+  const [quotationPreparedByName, setQuotationPreparedByName] = useState("");
+  const [quotationPreparedByTitle, setQuotationPreparedByTitle] = useState("");
+  const [quotationCustomerName, setQuotationCustomerName] = useState("");
+  const [quotationCustomerAddress, setQuotationCustomerAddress] = useState("");
+  const [quotationCustomerPhone, setQuotationCustomerPhone] = useState("");
+  const [quotationCustomerEmail, setQuotationCustomerEmail] = useState("");
+  const [savingQuotation, setSavingQuotation] = useState(false);
   const [companySettings, setCompanySettings] = useState<any>(null);
-  const estimateRef = useRef<HTMLDivElement>(null);
+  const quotationRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     loadData();
@@ -678,21 +691,24 @@ export default function JobsPage() {
 
 
 
-  // Estimate Functions
-  const openEstimateModal = async (job: Job) => {
+  // Quotation Functions
+  const openQuotationModal = async (job: Job) => {
     if (!canManage) {
-      setError("Only managers and admins can generate estimates");
+      setError("Only managers and admins can create quotations");
       return;
     }
 
-    setSelectedJobForEstimate(job);
-    setShowEstimateModal(true);
-    setEstimateNumber(`EST-${Date.now()}`);
-    setEstimateDate(todayCentralISO());
+    setSelectedJobForQuotation(job);
+    setShowQuotationModal(true);
+    
+    // Generate quotation number
+    const nextNumber = await getNextQuotationNumber();
+    setQuotationNumber(nextNumber);
+    setQuotationDate(todayCentralISO());
     
     // Set valid until date to 30 days from now in Central Time
     const validUntil = nowInCentral().add(30, 'day');
-    setEstimateValidUntil(validUntil.format('YYYY-MM-DD'));
+    setQuotationValidUntil(validUntil.format('YYYY-MM-DD'));
     
     // Load company settings if not already loaded
     if (!companySettings) {
@@ -700,11 +716,18 @@ export default function JobsPage() {
       setCompanySettings(settings);
     }
     
-    // Auto-generate estimate line items based on job pricing
+    // Auto-populate customer info
+    if (job.customer) {
+      setQuotationCustomerName(job.customer.name || "");
+      setQuotationCustomerAddress(job.customer.company || "");
+      setQuotationCustomerPhone(job.customer.phone || "");
+      setQuotationCustomerEmail(job.customer.email || "");
+    }
+    
+    // Auto-generate quotation line items based on job pricing
     const lineItems = [];
     
     if (job.estimatedPrice && job.estimatedPrice > 0) {
-      // If there's an estimated price, use it
       lineItems.push({
         description: job.title,
         quantity: 1,
@@ -712,7 +735,6 @@ export default function JobsPage() {
         amount: job.estimatedPrice,
       });
     } else {
-      // Otherwise add a placeholder
       lineItems.push({
         description: job.title,
         quantity: 1,
@@ -721,124 +743,133 @@ export default function JobsPage() {
       });
     }
     
-    setEstimateLineItems(lineItems);
-    setEstimateNotes("This estimate is valid for 30 days from the date above. Final pricing may vary based on actual work performed.");
+    setQuotationLineItems(lineItems);
+    setQuotationNotes("This quotation is valid for 30 days from the date above. Final pricing may vary based on actual work performed.");
+    setQuotationShippingFee(0);
   };
 
-  const addEstimateLineItem = () => {
-    setEstimateLineItems([
-      ...estimateLineItems,
+  const addQuotationLineItem = () => {
+    setQuotationLineItems([
+      ...quotationLineItems,
       { description: "", quantity: 1, rate: 0, amount: 0 },
     ]);
   };
 
-  const updateEstimateLineItem = (index: number, field: string, value: any) => {
-    const updated = [...estimateLineItems];
-    updated[index][field] = value;
-    
-    // Auto-calculate amount
-    if (field === "quantity" || field === "rate") {
-      updated[index].amount = updated[index].quantity * updated[index].rate;
+  const updateQuotationLineItem = (index: number, field: string, value: any) => {
+    const updated = [...quotationLineItems];
+    const line = updated[index];
+    if (field === "description") {
+      line.description = value;
+    } else if (field === "quantity") {
+      line.quantity = value;
+      line.amount = line.quantity * line.rate;
+    } else if (field === "rate") {
+      line.rate = value;
+      line.amount = line.quantity * line.rate;
     }
-    
-    setEstimateLineItems(updated);
+    setQuotationLineItems(updated);
   };
 
-  const removeEstimateLineItem = (index: number) => {
-    setEstimateLineItems(estimateLineItems.filter((_, i) => i !== index));
+  const removeQuotationLineItem = (index: number) => {
+    setQuotationLineItems(quotationLineItems.filter((_, i) => i !== index));
   };
 
-  const calculateEstimateTotal = () => {
-    return estimateLineItems.reduce((sum, item) => sum + (item.amount || 0), 0);
+  const calculateQuotationSubtotal = () => {
+    return quotationLineItems.reduce((sum, item) => sum + (item.amount || 0), 0);
   };
 
-  const handlePrintEstimate = () => {
-    if (!selectedJobForEstimate || !estimateRef.current) return;
-    
-    // Temporarily change page title for printing
-    const originalTitle = document.title;
-    document.title = `Estimate ${selectedJobForEstimate?.title || ''}`;
-    
-    // Get the estimate content
-    const estimateContent = estimateRef.current.querySelector('.print-area');
-    if (!estimateContent) {
-      window.print();
-      setTimeout(() => { document.title = originalTitle; }, 1000);
+  const calculateQuotationTotal = () => {
+    return calculateQuotationSubtotal() + (quotationShippingFee || 0);
+  };
+
+  const handleSaveQuotation = async () => {
+    if (!selectedJobForQuotation || !canManage) {
+      setError("Unauthorized");
       return;
     }
-    
-    // Create a new window for printing
-    const printWindow = window.open('', '_blank', 'width=800,height=600');
-    if (!printWindow) {
-      // Fallback to regular print if popup blocked
-      window.print();
-      setTimeout(() => { document.title = originalTitle; }, 1000);
+
+    setSavingQuotation(true);
+    setError(undefined);
+
+    try {
+      const formData = new FormData();
+      formData.append("jobId", selectedJobForQuotation.id);
+      if (selectedJobForQuotation.customer?.id) {
+        formData.append("customerId", selectedJobForQuotation.customer.id);
+      }
+      formData.append("customerName", quotationCustomerName);
+      formData.append("customerAddress", quotationCustomerAddress);
+      formData.append("customerPhone", quotationCustomerPhone);
+      formData.append("customerEmail", quotationCustomerEmail);
+      formData.append("issueDate", quotationDate);
+      formData.append("validUntil", quotationValidUntil);
+      formData.append("notes", quotationNotes);
+      formData.append("shippingFee", quotationShippingFee.toString());
+      formData.append("paymentBank", quotationPaymentBank);
+      formData.append("paymentAccountName", quotationPaymentAccountName);
+      formData.append("paymentAccountNumber", quotationPaymentAccountNumber);
+      formData.append("preparedByName", quotationPreparedByName);
+      formData.append("preparedByTitle", quotationPreparedByTitle);
+      formData.append("lines", JSON.stringify(quotationLineItems));
+
+      const res = await createQuotation(formData);
+      if (res.ok) {
+        setSuccess("Quotation created successfully!");
+        setShowQuotationModal(false);
+        // Reset form
+        setQuotationLineItems([]);
+        setQuotationNotes("");
+        setQuotationShippingFee(0);
+      } else {
+        setError(res.error || "Failed to create quotation");
+      }
+    } catch (err: any) {
+      setError(err?.message || "Failed to create quotation");
+    } finally {
+      setSavingQuotation(false);
+    }
+  };
+
+  const handleDownloadQuotationPDF = () => {
+    if (!selectedJobForQuotation || !companySettings) {
+      setError("Job data or company settings not loaded");
       return;
     }
-    
-    // Write the estimate content to new window
-    printWindow.document.write(`
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>Estimate ${selectedJobForEstimate?.title || ''}</title>
-          <style>
-            @page {
-              margin: 0.5in;
-              size: letter;
-            }
-            body {
-              margin: 0;
-              padding: 0;
-              font-family: Arial, sans-serif;
-              background: white;
-            }
-            .print-area {
-              padding: 0.5in;
-            }
-            table {
-              width: 100%;
-              border-collapse: collapse;
-              margin: 20px 0;
-            }
-            th, td {
-              border: 1px solid #000;
-              padding: 8px;
-              text-align: left;
-            }
-            th {
-              background-color: #f0f0f0;
-              font-weight: bold;
-            }
-            input, textarea {
-              border: none;
-              background: transparent;
-              width: 100%;
-            }
-            .print-no-border {
-              border: none !important;
-            }
-          </style>
-        </head>
-        <body>
-          ${estimateContent.innerHTML}
-        </body>
-      </html>
-    `);
-    
-    printWindow.document.close();
-    
-    // Wait for content to load, then print
-    setTimeout(() => {
-      printWindow.focus();
-      printWindow.print();
-      // Close window after printing (optional)
-      setTimeout(() => {
-        printWindow.close();
-        document.title = originalTitle;
-      }, 500);
-    }, 250);
+
+    const subtotal = calculateQuotationSubtotal();
+    const total = calculateQuotationTotal();
+
+    const pdfData: QuotationPDFData = {
+      quotationNumber: quotationNumber || "TEMP",
+      quotationDate: quotationDate,
+      validUntil: quotationValidUntil || undefined,
+      companyName: companySettings?.companyName || "TCB METAL WORKS",
+      companyAddress: companySettings?.address || undefined,
+      companyCity: companySettings?.city || undefined,
+      companyState: companySettings?.state || undefined,
+      companyZipCode: companySettings?.zipCode || undefined,
+      companyPhone: companySettings?.phone || undefined,
+      companyEmail: companySettings?.email || undefined,
+      customerName: quotationCustomerName || selectedJobForQuotation.customer?.name || "Customer",
+      customerAddress: quotationCustomerAddress || selectedJobForQuotation.customer?.company || undefined,
+      customerPhone: quotationCustomerPhone || selectedJobForQuotation.customer?.phone || undefined,
+      customerEmail: quotationCustomerEmail || selectedJobForQuotation.customer?.email || undefined,
+      lineItems: quotationLineItems,
+      subtotal,
+      shippingFee: quotationShippingFee || 0,
+      total,
+      notes: quotationNotes || undefined,
+      paymentBank: quotationPaymentBank || undefined,
+      paymentAccountName: quotationPaymentAccountName || undefined,
+      paymentAccountNumber: quotationPaymentAccountNumber || undefined,
+      preparedByName: quotationPreparedByName || undefined,
+      preparedByTitle: quotationPreparedByTitle || undefined,
+    };
+
+    const pdf = generateQuotationPDF(pdfData);
+    pdf.save(`${quotationNumber || "QUO"}-${todayCentralISO()}.pdf`);
   };
+
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -1236,11 +1267,11 @@ export default function JobsPage() {
                          {canManage && (
                           <>
                             <button
-                              onClick={() => openEstimateModal(job)}
-                              className="px-3 py-2 text-sm border border-orange-300 text-orange-600 rounded-lg hover:bg-orange-50 transition-colors font-medium"
-                              title="Generate estimate/quote for this job"
+                              onClick={() => openQuotationModal(job)}
+                              className="px-3 py-2 text-sm border border-green-300 text-green-600 rounded-lg hover:bg-green-50 transition-colors font-medium"
+                              title="Create quotation for this job"
                             >
-                              💰 Estimate
+                              💰 Create Quotation
                             </button>
                           </>
                         )}
@@ -2022,27 +2053,27 @@ export default function JobsPage() {
         </div>
       )}
 
-      {/* Estimate Modal */}
-      {showEstimateModal && selectedJobForEstimate && (
+      {/* Quotation Modal */}
+      {showQuotationModal && selectedJobForQuotation && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 no-print print-area-container">
           <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[95vh] overflow-y-auto">
-            <div ref={estimateRef}>
+            <div ref={quotationRef}>
               {/* Estimate Header */}
               <div className="p-6 border-b bg-gray-50 no-print">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-2xl font-bold text-gray-900">Generate Estimate</h2>
+                  <h2 className="text-2xl font-bold text-gray-900">Create Quotation</h2>
                   <div className="flex gap-2">
                     <button
-                      onClick={handlePrintEstimate}
-                      className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors font-medium"
+                      onClick={handleDownloadQuotationPDF}
+                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
                     >
-                      🖨️ Print Estimate
+                      🖨️ Download PDF
                     </button>
                     <button
                       onClick={() => {
-                        setShowEstimateModal(false);
-                        setSelectedJobForEstimate(null);
-                        setEstimateLineItems([]);
+                        setShowQuotationModal(false);
+                        setSelectedJobForQuotation(null);
+                        setQuotationLineItems([]);
                       }}
                       className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                     >
@@ -2077,17 +2108,17 @@ export default function JobsPage() {
                   {/* Quote For */}
                   <div>
                     <h3 className="text-sm font-bold text-gray-700 uppercase mb-2">Quote For:</h3>
-                    {selectedJobForEstimate.customer ? (
+                    {selectedJobForQuotation.customer ? (
                       <div className="text-gray-900">
-                        <p className="font-semibold">{selectedJobForEstimate.customer.name}</p>
-                        {selectedJobForEstimate.customer.company && (
-                          <p>{selectedJobForEstimate.customer.company}</p>
+                        <p className="font-semibold">{selectedJobForQuotation.customer.name}</p>
+                        {selectedJobForQuotation.customer.company && (
+                          <p>{selectedJobForQuotation.customer.company}</p>
                         )}
-                        {selectedJobForEstimate.customer.phone && (
-                          <p>{selectedJobForEstimate.customer.phone}</p>
+                        {selectedJobForQuotation.customer.phone && (
+                          <p>{selectedJobForQuotation.customer.phone}</p>
                         )}
-                        {selectedJobForEstimate.customer.email && (
-                          <p>{selectedJobForEstimate.customer.email}</p>
+                        {selectedJobForQuotation.customer.email && (
+                          <p>{selectedJobForQuotation.customer.email}</p>
                         )}
                       </div>
                     ) : (
@@ -2099,35 +2130,35 @@ export default function JobsPage() {
                   <div className="text-right">
                     <div className="space-y-2">
                       <div className="grid grid-cols-2 gap-4">
-                        <span className="text-gray-600 text-right">Estimate #:</span>
+                        <span className="text-gray-600 text-right">Quotation #:</span>
                         <input
                           type="text"
-                          value={estimateNumber}
-                          onChange={(e) => setEstimateNumber(e.target.value)}
-                          className="font-semibold text-right border-b border-gray-300 focus:border-orange-500 outline-none print-no-border"
+                          value={quotationNumber}
+                          onChange={(e) => setQuotationNumber(e.target.value)}
+                          className="font-semibold text-right border-b border-gray-300 focus:border-green-500 outline-none print-no-border"
                         />
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         <span className="text-gray-600 text-right">Date:</span>
                         <input
                           type="date"
-                          value={estimateDate}
-                          onChange={(e) => setEstimateDate(e.target.value)}
-                          className="font-semibold text-right border-b border-gray-300 focus:border-orange-500 outline-none print-no-border"
+                          value={quotationDate}
+                          onChange={(e) => setQuotationDate(e.target.value)}
+                          className="font-semibold text-right border-b border-gray-300 focus:border-green-500 outline-none print-no-border"
                         />
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         <span className="text-gray-600 text-right">Valid Until:</span>
                         <input
                           type="date"
-                          value={estimateValidUntil}
-                          onChange={(e) => setEstimateValidUntil(e.target.value)}
-                          className="font-semibold text-right border-b border-gray-300 focus:border-orange-500 outline-none print-no-border"
+                          value={quotationValidUntil}
+                          onChange={(e) => setQuotationValidUntil(e.target.value)}
+                          className="font-semibold text-right border-b border-gray-300 focus:border-green-500 outline-none print-no-border"
                         />
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         <span className="text-gray-600 text-right">Job:</span>
-                        <span className="font-semibold text-right">{selectedJobForEstimate.title}</span>
+                        <span className="font-semibold text-right">{selectedJobForQuotation.title}</span>
                       </div>
                     </div>
                   </div>
@@ -2146,13 +2177,13 @@ export default function JobsPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {estimateLineItems.map((item, index) => (
+                      {quotationLineItems.map((item, index) => (
                         <tr key={index}>
                           <td className="border border-gray-300 px-4 py-2">
                             <input
                               type="text"
                               value={item.description}
-                              onChange={(e) => updateEstimateLineItem(index, "description", e.target.value)}
+                              onChange={(e) => updateQuotationLineItem(index, "description", e.target.value)}
                               className="w-full outline-none print-no-border"
                               placeholder="Description"
                             />
@@ -2161,7 +2192,7 @@ export default function JobsPage() {
                             <input
                               type="number"
                               value={item.quantity}
-                              onChange={(e) => updateEstimateLineItem(index, "quantity", parseFloat(e.target.value) || 0)}
+                              onChange={(e) => updateQuotationLineItem(index, "quantity", parseFloat(e.target.value) || 0)}
                               className="w-full text-center outline-none print-no-border"
                               step="0.01"
                             />
@@ -2170,7 +2201,7 @@ export default function JobsPage() {
                             <input
                               type="number"
                               value={item.rate}
-                              onChange={(e) => updateEstimateLineItem(index, "rate", parseFloat(e.target.value) || 0)}
+                              onChange={(e) => updateQuotationLineItem(index, "rate", parseFloat(e.target.value) || 0)}
                               className="w-full text-right outline-none print-no-border"
                               step="0.01"
                             />
@@ -2180,7 +2211,7 @@ export default function JobsPage() {
                           </td>
                           <td className="border border-gray-300 px-4 py-2 text-center no-print">
                             <button
-                              onClick={() => removeEstimateLineItem(index)}
+                              onClick={() => removeQuotationLineItem(index)}
                               className="text-red-600 hover:text-red-800 text-sm"
                             >
                               ✕
@@ -2192,7 +2223,7 @@ export default function JobsPage() {
                   </table>
                   
                   <button
-                    onClick={addEstimateLineItem}
+                    onClick={addQuotationLineItem}
                     className="mt-4 px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 transition-colors no-print"
                   >
                     + Add Line Item
@@ -2204,11 +2235,22 @@ export default function JobsPage() {
                   <div className="w-64">
                     <div className="flex justify-between py-2 border-b border-gray-300">
                       <span className="font-semibold">Subtotal:</span>
-                      <span>${calculateEstimateTotal().toFixed(2)}</span>
+                      <span>${calculateQuotationSubtotal().toFixed(2)}</span>
                     </div>
-                    <div className="flex justify-between py-3 border-t-2 border-gray-800">
-                      <span className="text-lg font-bold">Total Estimate:</span>
-                      <span className="text-lg font-bold">${calculateEstimateTotal().toFixed(2)}</span>
+                    <div className="flex justify-between py-2 border-b border-gray-300">
+                      <span className="font-semibold">Shipping Fee:</span>
+                      <input
+                        type="number"
+                        value={quotationShippingFee}
+                        onChange={(e) => setQuotationShippingFee(parseFloat(e.target.value) || 0)}
+                        className="w-20 text-right border-b border-gray-300 focus:border-green-500 outline-none"
+                        step="0.01"
+                        min="0"
+                      />
+                    </div>
+                    <div className="flex justify-between py-3 border-t-2 border-green-600">
+                      <span className="text-lg font-bold">Total:</span>
+                      <span className="text-lg font-bold text-green-600">${calculateQuotationTotal().toFixed(2)}</span>
                     </div>
                   </div>
                 </div>
@@ -2217,8 +2259,8 @@ export default function JobsPage() {
                 <div className="mb-8">
                   <h3 className="text-sm font-bold text-gray-700 uppercase mb-2">Terms & Conditions:</h3>
                   <textarea
-                    value={estimateNotes}
-                    onChange={(e) => setEstimateNotes(e.target.value)}
+                    value={quotationNotes}
+                    onChange={(e) => setQuotationNotes(e.target.value)}
                     rows={4}
                     className="w-full border border-gray-300 rounded-lg p-3 text-sm resize-none print-no-border"
                     placeholder="Add any terms, conditions, or notes..."
@@ -2227,10 +2269,10 @@ export default function JobsPage() {
 
                 {/* Contract Agreement & Signatures */}
                 <div className="mb-8 border-t-2 border-gray-800 pt-8">
-                  <h3 className="text-md font-bold text-gray-900 mb-4">ESTIMATE APPROVAL & AUTHORIZATION</h3>
+                  <h3 className="text-md font-bold text-gray-900 mb-4">QUOTATION APPROVAL & AUTHORIZATION</h3>
                   <p className="text-sm text-gray-700 mb-6 leading-relaxed">
-                    By signing below, the customer approves this estimate and authorizes the work to proceed as described. 
-                    The customer understands that this is an estimate and final costs may vary based on actual work performed. 
+                    By signing below, the customer approves this quotation and authorizes the work to proceed as described. 
+                    The customer understands that this is a quotation and final costs may vary based on actual work performed. 
                     Any significant changes will be communicated before proceeding.
                   </p>
 
@@ -2251,7 +2293,7 @@ export default function JobsPage() {
                             Print Name
                           </label>
                           <div className="border-b border-gray-400 pb-1">
-                            {selectedJobForEstimate?.customer?.name || "________________"}
+                            {selectedJobForQuotation?.customer?.name || "________________"}
                           </div>
                         </div>
                         <div>
@@ -2299,7 +2341,7 @@ export default function JobsPage() {
 
                 {/* Footer */}
                 <div className="text-center text-gray-500 text-sm border-t pt-6">
-                  <p className="font-semibold">This document serves as both an estimate and work authorization agreement.</p>
+                  <p className="font-semibold">This document serves as both a quotation and work authorization agreement.</p>
                   <p className="mt-2">Thank you for your business!</p>
                 </div>
               </div>
