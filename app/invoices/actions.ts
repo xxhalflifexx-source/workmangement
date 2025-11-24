@@ -337,6 +337,153 @@ export async function filterInvoices(filters: {
 	return { ok: true, invoices };
 }
 
+// Get jobs that don't have invoices yet
+export async function getUninvoicedJobs() {
+	const session = await getServerSession(authOptions);
+	if (!session?.user) return { ok: false, error: "Not authenticated" };
+	const role = (session.user as any).role;
+	if (role !== "ADMIN" && role !== "MANAGER") return { ok: false, error: "Unauthorized" };
+
+	try {
+		// Get all jobs
+		const allJobs = await prisma.job.findMany({
+			include: {
+				customer: true,
+				assignee: {
+					select: {
+						name: true,
+						email: true,
+					},
+				},
+			},
+			orderBy: {
+				createdAt: "desc",
+			},
+		});
+
+		// Get all jobs that have invoices
+		const jobsWithInvoices = await prisma.invoice.findMany({
+			where: {
+				jobId: { not: null },
+			},
+			select: {
+				jobId: true,
+			},
+		});
+
+		const invoicedJobIds = new Set(jobsWithInvoices.map((inv) => inv.jobId).filter(Boolean));
+
+		// Filter out jobs that already have invoices
+		const uninvoicedJobs = allJobs.filter((job) => !invoicedJobIds.has(job.id));
+
+		return { ok: true, jobs: uninvoicedJobs };
+	} catch (error: any) {
+		console.error("Get uninvoiced jobs error:", error);
+		return { ok: false, error: error?.message || "Failed to load jobs" };
+	}
+}
+
+// Update invoice
+export async function updateInvoice(formData: FormData) {
+	const session = await getServerSession(authOptions);
+	if (!session?.user) return { ok: false, error: "Not authenticated" };
+	const role = (session.user as any).role;
+	if (role !== "ADMIN" && role !== "MANAGER") return { ok: false, error: "Unauthorized" };
+
+	const invoiceId = formData.get("invoiceId") as string;
+	if (!invoiceId) return { ok: false, error: "Invoice ID is required" };
+
+	const dueDate = (formData.get("dueDate") as string) || "";
+	const notes = (formData.get("notes") as string) || "";
+	const status = (formData.get("status") as string) || "";
+
+	const linesJson = (formData.get("lines") as string) || "[]";
+	let lines: Array<{ description: string; quantity: number; rate: number; amount: number }> = [];
+	try {
+		lines = JSON.parse(linesJson);
+	} catch {}
+
+	const total = lines.reduce((s, l) => s + (l.amount || l.quantity * l.rate), 0);
+
+	// Get existing invoice to calculate balance
+	const existingInvoice = await prisma.invoice.findUnique({
+		where: { id: invoiceId },
+		include: { payments: true },
+	});
+
+	if (!existingInvoice) {
+		return { ok: false, error: "Invoice not found" };
+	}
+
+	const totalPaid = existingInvoice.payments.reduce((sum, p) => sum + p.amount, 0);
+	const newBalance = Math.max(0, total - totalPaid);
+
+	// Update invoice
+	const updateData: any = {
+		total,
+		balance: newBalance,
+	};
+
+	if (dueDate) {
+		updateData.dueDate = parseCentralDate(dueDate);
+	}
+
+	if (notes !== undefined) {
+		updateData.notes = notes || null;
+	}
+
+	if (status) {
+		updateData.status = status;
+	}
+
+	// Update lines - delete old ones and create new ones
+	await prisma.invoiceLine.deleteMany({
+		where: { invoiceId },
+	});
+
+	const invoice = await prisma.invoice.update({
+		where: { id: invoiceId },
+		data: {
+			...updateData,
+			updatedAt: centralToUTC(nowInCentral().toDate()),
+			lines: {
+				create: lines.map((l) => ({
+					description: l.description,
+					quantity: l.quantity,
+					rate: l.rate,
+					amount: l.amount || l.quantity * l.rate,
+				})),
+			},
+		},
+		include: { lines: true, customer: true, job: { select: { title: true, id: true } } },
+	});
+
+	return { ok: true, invoice };
+}
+
+// Update invoice status
+export async function updateInvoiceStatus(invoiceId: string, status: string) {
+	const session = await getServerSession(authOptions);
+	if (!session?.user) return { ok: false, error: "Not authenticated" };
+	const role = (session.user as any).role;
+	if (role !== "ADMIN" && role !== "MANAGER") return { ok: false, error: "Unauthorized" };
+
+	const validStatuses = ["DRAFT", "SENT", "PAID", "OVERDUE", "CANCELLED"];
+	if (!validStatuses.includes(status)) {
+		return { ok: false, error: "Invalid status" };
+	}
+
+	const invoice = await prisma.invoice.update({
+		where: { id: invoiceId },
+		data: {
+			status,
+			updatedAt: centralToUTC(nowInCentral().toDate()),
+		},
+	});
+
+	return { ok: true, invoice };
+}
+
 // Update invoice PDF files
 export async function updateInvoicePDFs(invoiceId: string, pdfFiles: string[]) {
 	const session = await getServerSession(authOptions);

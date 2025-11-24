@@ -3,8 +3,9 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
-import { listInvoices, updateInvoicePDFs } from "../invoices/actions";
-import { formatDateShort, formatDateTime, nowInCentral, utcToCentral } from "@/lib/date-utils";
+import { listInvoices, updateInvoicePDFs, createInvoice, updateInvoice, updateInvoiceStatus, getUninvoicedJobs } from "../invoices/actions";
+import { getJobForInvoice, getCompanySettingsForInvoice } from "../jobs/invoice-actions";
+import { formatDateShort, formatDateTime, formatDateInput, todayCentralISO, nowInCentral, utcToCentral, centralToUTC } from "@/lib/date-utils";
 
 interface Invoice {
   id: string;
@@ -17,13 +18,14 @@ interface Invoice {
   customer: { name: string } | null;
   job: { title: string | null; id?: string } | null;
   createdAt: string | Date;
+  updatedAt?: string | Date;
   notes: string | null;
   pdfFiles: string | null; // JSON array of PDF URLs
   lines: Array<{ description: string; quantity: number; rate: number; amount: number }>;
   payments: Array<{ paymentDate: string | Date; amount: number; method: string | null }>;
 }
 
-type SortField = "invoiceNumber" | "issueDate" | "total" | "status" | "customer" | "createdAt";
+type SortField = "invoiceNumber" | "issueDate" | "total" | "status" | "customer" | "createdAt" | "updatedAt";
 type SortDirection = "asc" | "desc";
 
 export default function FinancePage() {
@@ -61,6 +63,31 @@ export default function FinancePage() {
   // Sorting
   const [sortField, setSortField] = useState<SortField>("createdAt");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+
+  // Create Invoice states
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [uninvoicedJobs, setUninvoicedJobs] = useState<any[]>([]);
+  const [selectedJobId, setSelectedJobId] = useState("");
+  const [loadingJobs, setLoadingJobs] = useState(false);
+  const [invoiceLines, setInvoiceLines] = useState<Array<{ description: string; quantity: number; rate: number; amount: number }>>([
+    { description: "", quantity: 1, rate: 0, amount: 0 },
+  ]);
+  const [invoiceIssueDate, setInvoiceIssueDate] = useState(todayCentralISO());
+  const [invoiceDueDate, setInvoiceDueDate] = useState("");
+  const [invoiceNotes, setInvoiceNotes] = useState("");
+  const [creatingInvoice, setCreatingInvoice] = useState(false);
+  const [selectedJobData, setSelectedJobData] = useState<any>(null);
+
+  // Edit Invoice states
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
+  const [editLines, setEditLines] = useState<Array<{ description: string; quantity: number; rate: number; amount: number }>>([]);
+  const [editDueDate, setEditDueDate] = useState("");
+  const [editNotes, setEditNotes] = useState("");
+  const [editStatus, setEditStatus] = useState("");
+  const [savingInvoice, setSavingInvoice] = useState(false);
+  const [showStatusConfirm, setShowStatusConfirm] = useState(false);
+  const [pendingStatus, setPendingStatus] = useState("");
 
   const loadInvoices = async () => {
     setLoading(true);
@@ -187,6 +214,10 @@ export default function FinancePage() {
           aVal = a.createdAt ? utcToCentral(a.createdAt).toDate().getTime() : 0;
           bVal = b.createdAt ? utcToCentral(b.createdAt).toDate().getTime() : 0;
           break;
+        case "updatedAt":
+          aVal = a.updatedAt ? utcToCentral(a.updatedAt).toDate().getTime() : (a.createdAt ? utcToCentral(a.createdAt).toDate().getTime() : 0);
+          bVal = b.updatedAt ? utcToCentral(b.updatedAt).toDate().getTime() : (b.createdAt ? utcToCentral(b.createdAt).toDate().getTime() : 0);
+          break;
         default:
           return 0;
       }
@@ -275,6 +306,221 @@ export default function FinancePage() {
       return "—";
     }
     return invoice.job.id.slice(0, 8).toUpperCase();
+  };
+
+  const loadUninvoicedJobs = async () => {
+    setLoadingJobs(true);
+    setError(undefined);
+    try {
+      const res = await getUninvoicedJobs();
+      if (res.ok && res.jobs) {
+        setUninvoicedJobs(res.jobs);
+      } else {
+        setError(res.error || "Failed to load jobs");
+      }
+    } catch (err: any) {
+      setError(err?.message || "Failed to load jobs");
+    } finally {
+      setLoadingJobs(false);
+    }
+  };
+
+  const handleJobSelect = async (jobId: string) => {
+    setSelectedJobId(jobId);
+    setLoadingJobs(true);
+    try {
+      const res = await getJobForInvoice(jobId);
+      if (res.ok && res.job) {
+        setSelectedJobData(res.job);
+        // Auto-populate invoice lines from job data
+        const lines = [];
+        if (res.job.laborBreakdown && res.job.laborBreakdown.length > 0) {
+          res.job.laborBreakdown.forEach((labor: any) => {
+            if (labor.hours > 0) {
+              lines.push({
+                description: `Labor - ${labor.name}`,
+                quantity: Math.round(labor.hours * 100) / 100,
+                rate: labor.rate,
+                amount: Math.round(labor.cost * 100) / 100,
+              });
+            }
+          });
+        }
+        if (res.job.expenses && res.job.expenses.length > 0) {
+          res.job.expenses.forEach((expense: any) => {
+            lines.push({
+              description: `${expense.category} - ${expense.description}`,
+              quantity: expense.quantity || 1,
+              rate: expense.amount / (expense.quantity || 1),
+              amount: expense.amount,
+            });
+          });
+        }
+        if (lines.length === 0) {
+          lines.push({ description: res.job.title, quantity: 1, rate: 0, amount: 0 });
+        }
+        setInvoiceLines(lines);
+      } else {
+        setError(res.error || "Failed to load job data");
+      }
+    } catch (err: any) {
+      setError(err?.message || "Failed to load job data");
+    } finally {
+      setLoadingJobs(false);
+    }
+  };
+
+  const addInvoiceLine = () => {
+    setInvoiceLines([...invoiceLines, { description: "", quantity: 1, rate: 0, amount: 0 }]);
+  };
+
+  const updateInvoiceLine = (index: number, field: string, value: any) => {
+    const updated = [...invoiceLines];
+    updated[index][field] = value;
+    if (field === "quantity" || field === "rate") {
+      updated[index].amount = updated[index].quantity * updated[index].rate;
+    }
+    setInvoiceLines(updated);
+  };
+
+  const removeInvoiceLine = (index: number) => {
+    setInvoiceLines(invoiceLines.filter((_, i) => i !== index));
+  };
+
+  const handleCreateInvoice = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedJobId) {
+      setError("Please select a job");
+      return;
+    }
+
+    setCreatingInvoice(true);
+    setError(undefined);
+
+    try {
+      const formData = new FormData();
+      formData.append("jobId", selectedJobId);
+      if (selectedJobData?.customer?.id) {
+        formData.append("customerId", selectedJobData.customer.id);
+      }
+      formData.append("issueDate", invoiceIssueDate);
+      if (invoiceDueDate) {
+        formData.append("dueDate", invoiceDueDate);
+      }
+      formData.append("notes", invoiceNotes || "");
+      formData.append("lines", JSON.stringify(invoiceLines));
+      formData.append("sentDate", todayCentralISO());
+
+      const res = await createInvoice(formData);
+      if (!res.ok) {
+        setError(res.error || "Failed to create invoice");
+        return;
+      }
+
+      // Reset form
+      setShowCreateModal(false);
+      setSelectedJobId("");
+      setSelectedJobData(null);
+      setInvoiceLines([{ description: "", quantity: 1, rate: 0, amount: 0 }]);
+      setInvoiceIssueDate(todayCentralISO());
+      setInvoiceDueDate("");
+      setInvoiceNotes("");
+
+      // Reload invoices
+      await loadInvoices();
+    } catch (err: any) {
+      setError(err?.message || "Failed to create invoice");
+    } finally {
+      setCreatingInvoice(false);
+    }
+  };
+
+  const handleEditInvoice = (invoice: Invoice) => {
+    setEditingInvoice(invoice);
+    setEditLines(invoice.lines || []);
+    setEditDueDate(invoice.dueDate ? formatDateInput(invoice.dueDate) : "");
+    setEditNotes(invoice.notes || "");
+    setEditStatus(invoice.status);
+    setShowEditModal(true);
+  };
+
+  const updateEditLine = (index: number, field: string, value: any) => {
+    const updated = [...editLines];
+    updated[index][field] = value;
+    if (field === "quantity" || field === "rate") {
+      updated[index].amount = updated[index].quantity * updated[index].rate;
+    }
+    setEditLines(updated);
+  };
+
+  const addEditLine = () => {
+    setEditLines([...editLines, { description: "", quantity: 1, rate: 0, amount: 0 }]);
+  };
+
+  const removeEditLine = (index: number) => {
+    setEditLines(editLines.filter((_, i) => i !== index));
+  };
+
+  const handleSaveEditInvoice = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingInvoice) return;
+
+    setSavingInvoice(true);
+    setError(undefined);
+
+    try {
+      const formData = new FormData();
+      formData.append("invoiceId", editingInvoice.id);
+      if (editDueDate) {
+        formData.append("dueDate", editDueDate);
+      }
+      formData.append("notes", editNotes || "");
+      formData.append("status", editStatus);
+      formData.append("lines", JSON.stringify(editLines));
+
+      const res = await updateInvoice(formData);
+      if (!res.ok) {
+        setError(res.error || "Failed to update invoice");
+        return;
+      }
+
+      setShowEditModal(false);
+      setEditingInvoice(null);
+      await loadInvoices();
+    } catch (err: any) {
+      setError(err?.message || "Failed to update invoice");
+    } finally {
+      setSavingInvoice(false);
+    }
+  };
+
+  const handleStatusChange = (newStatus: string) => {
+    setPendingStatus(newStatus);
+    setShowStatusConfirm(true);
+  };
+
+  const confirmStatusChange = async () => {
+    if (!editingInvoice || !pendingStatus) return;
+
+    setSavingInvoice(true);
+    setError(undefined);
+
+    try {
+      const res = await updateInvoiceStatus(editingInvoice.id, pendingStatus);
+      if (!res.ok) {
+        setError(res.error || "Failed to update status");
+        return;
+      }
+
+      setEditStatus(pendingStatus);
+      setShowStatusConfirm(false);
+      setPendingStatus("");
+      await loadInvoices();
+    } catch (err: any) {
+      setError(err?.message || "Failed to update status");
+    } finally {
+      setSavingInvoice(false);
+    }
   };
 
   const handleUploadPDFs = async (invoiceId: string) => {
@@ -377,6 +623,22 @@ export default function FinancePage() {
       </header>
 
       <div className="max-w-full mx-auto px-24 py-8 space-y-6">
+        {/* Header with Create Button */}
+        <div className="flex justify-between items-center">
+          <h2 className="text-xl font-semibold text-gray-900">Invoices</h2>
+          {hasAccess && (
+            <button
+              onClick={() => {
+                setShowCreateModal(true);
+                loadUninvoicedJobs();
+              }}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+            >
+              + Create Invoice
+            </button>
+          )}
+        </div>
+
         {/* Filters */}
         <div className="bg-white rounded-xl shadow border border-gray-200 p-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -544,11 +806,22 @@ export default function FinancePage() {
                         )}
                       </div>
                     </th>
+                    <th
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                      onClick={() => handleSort("updatedAt")}
+                    >
+                      <div className="flex items-center gap-2">
+                        Updated At
+                        {sortField === "updatedAt" && (
+                          <span>{sortDirection === "asc" ? "↑" : "↓"}</span>
+                        )}
+                      </div>
+                    </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       PDF Files
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Details
+                      Actions
                     </th>
                   </tr>
                 </thead>
@@ -579,6 +852,9 @@ export default function FinancePage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {formatDate(invoice.createdAt)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {formatDate(invoice.updatedAt || invoice.createdAt)}
                       </td>
                       <td className="px-6 py-4 text-sm" onClick={(e) => e.stopPropagation()}>
                         <div className="flex flex-col gap-2">
@@ -671,8 +947,28 @@ export default function FinancePage() {
                           )}
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-600 hover:text-blue-700">
-                        View →
+                      <td className="px-6 py-4 whitespace-nowrap text-sm" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedInvoice(invoice);
+                              setShowDetails(true);
+                            }}
+                            className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-xs font-medium"
+                          >
+                            View
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEditInvoice(invoice);
+                            }}
+                            className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 transition-colors text-xs font-medium"
+                          >
+                            Edit
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -910,6 +1206,435 @@ export default function FinancePage() {
                     </p>
                   </div>
                 )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Create Invoice Modal */}
+        {showCreateModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="p-6">
+                <div className="flex justify-between items-start mb-6">
+                  <h2 className="text-2xl font-bold text-gray-900">Create Invoice</h2>
+                  <button
+                    onClick={() => {
+                      setShowCreateModal(false);
+                      setSelectedJobId("");
+                      setSelectedJobData(null);
+                      setInvoiceLines([{ description: "", quantity: 1, rate: 0, amount: 0 }]);
+                      setInvoiceIssueDate(todayCentralISO());
+                      setInvoiceDueDate("");
+                      setInvoiceNotes("");
+                    }}
+                    className="text-gray-400 hover:text-gray-600 text-2xl"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <form onSubmit={handleCreateInvoice} className="space-y-6">
+                  {/* Job Selection */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Select Job <span className="text-red-500">*</span>
+                    </label>
+                    {loadingJobs ? (
+                      <div className="text-center py-4">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                        <p className="text-gray-600 mt-2">Loading jobs...</p>
+                      </div>
+                    ) : (
+                      <select
+                        value={selectedJobId}
+                        onChange={(e) => handleJobSelect(e.target.value)}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                        required
+                      >
+                        <option value="">-- Select a job --</option>
+                        {uninvoicedJobs.map((job: any) => (
+                          <option key={job.id} value={job.id}>
+                            {job.title} {job.customer ? `- ${job.customer.name}` : ""}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                    {uninvoicedJobs.length === 0 && !loadingJobs && (
+                      <p className="text-sm text-gray-500 mt-2">All jobs have been invoiced.</p>
+                    )}
+                  </div>
+
+                  {/* Invoice Dates */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Issue Date <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="date"
+                        value={invoiceIssueDate}
+                        onChange={(e) => setInvoiceIssueDate(e.target.value)}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Due Date
+                      </label>
+                      <input
+                        type="date"
+                        value={invoiceDueDate}
+                        onChange={(e) => setInvoiceDueDate(e.target.value)}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Invoice Lines */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Line Items
+                    </label>
+                    <div className="border border-gray-300 rounded-lg overflow-hidden">
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
+                            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Quantity</th>
+                            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Rate</th>
+                            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Amount</th>
+                            <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase w-20">Action</th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {invoiceLines.map((line, index) => (
+                            <tr key={index}>
+                              <td className="px-4 py-3">
+                                <input
+                                  type="text"
+                                  value={line.description}
+                                  onChange={(e) => updateInvoiceLine(index, "description", e.target.value)}
+                                  className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
+                                  placeholder="Item description"
+                                  required
+                                />
+                              </td>
+                              <td className="px-4 py-3">
+                                <input
+                                  type="number"
+                                  value={line.quantity}
+                                  onChange={(e) => updateInvoiceLine(index, "quantity", parseFloat(e.target.value) || 0)}
+                                  className="w-full border border-gray-300 rounded px-2 py-1 text-sm text-right"
+                                  step="0.01"
+                                  min="0"
+                                  required
+                                />
+                              </td>
+                              <td className="px-4 py-3">
+                                <input
+                                  type="number"
+                                  value={line.rate}
+                                  onChange={(e) => updateInvoiceLine(index, "rate", parseFloat(e.target.value) || 0)}
+                                  className="w-full border border-gray-300 rounded px-2 py-1 text-sm text-right"
+                                  step="0.01"
+                                  min="0"
+                                  required
+                                />
+                              </td>
+                              <td className="px-4 py-3 text-right font-medium">
+                                {formatCurrency(line.amount)}
+                              </td>
+                              <td className="px-4 py-3 text-center">
+                                {invoiceLines.length > 1 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => removeInvoiceLine(index)}
+                                    className="text-red-600 hover:text-red-800 text-sm"
+                                  >
+                                    ✕
+                                  </button>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                        <tfoot>
+                          <tr className="bg-gray-50">
+                            <td colSpan={3} className="px-4 py-3 text-right font-semibold">
+                              Total:
+                            </td>
+                            <td className="px-4 py-3 text-right font-bold text-lg">
+                              {formatCurrency(invoiceLines.reduce((sum, line) => sum + line.amount, 0))}
+                            </td>
+                            <td></td>
+                          </tr>
+                        </tfoot>
+                      </table>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={addInvoiceLine}
+                      className="mt-2 px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-600 hover:bg-blue-50 transition-colors text-sm font-medium text-gray-600"
+                    >
+                      + Add Line Item
+                    </button>
+                  </div>
+
+                  {/* Notes */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Notes
+                    </label>
+                    <textarea
+                      value={invoiceNotes}
+                      onChange={(e) => setInvoiceNotes(e.target.value)}
+                      rows={3}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                      placeholder="Payment terms, work scope, warranty information..."
+                    />
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex justify-end gap-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowCreateModal(false);
+                        setSelectedJobId("");
+                        setSelectedJobData(null);
+                        setInvoiceLines([{ description: "", quantity: 1, rate: 0, amount: 0 }]);
+                        setInvoiceIssueDate(todayCentralISO());
+                        setInvoiceDueDate("");
+                        setInvoiceNotes("");
+                      }}
+                      className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={creatingInvoice || !selectedJobId}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+                    >
+                      {creatingInvoice ? "Creating..." : "Create Invoice"}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Edit Invoice Modal */}
+        {showEditModal && editingInvoice && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="p-6">
+                <div className="flex justify-between items-start mb-6">
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-900">Edit Invoice</h2>
+                    <p className="text-sm text-gray-500 mt-1">
+                      {editingInvoice.invoiceNumber || "No Invoice Number"}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setShowEditModal(false);
+                      setEditingInvoice(null);
+                    }}
+                    className="text-gray-400 hover:text-gray-600 text-2xl"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <form onSubmit={handleSaveEditInvoice} className="space-y-6">
+                  {/* Status */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Status
+                    </label>
+                    <select
+                      value={editStatus}
+                      onChange={(e) => handleStatusChange(e.target.value)}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                    >
+                      <option value="DRAFT">Draft</option>
+                      <option value="SENT">Sent / Pending</option>
+                      <option value="PAID">Paid</option>
+                      <option value="OVERDUE">Overdue</option>
+                      <option value="CANCELLED">Cancelled</option>
+                    </select>
+                  </div>
+
+                  {/* Due Date */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Due Date
+                    </label>
+                    <input
+                      type="date"
+                      value={editDueDate}
+                      onChange={(e) => setEditDueDate(e.target.value)}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                    />
+                  </div>
+
+                  {/* Invoice Lines */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Line Items
+                    </label>
+                    <div className="border border-gray-300 rounded-lg overflow-hidden">
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
+                            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Quantity</th>
+                            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Rate</th>
+                            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Amount</th>
+                            <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase w-20">Action</th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {editLines.map((line, index) => (
+                            <tr key={index}>
+                              <td className="px-4 py-3">
+                                <input
+                                  type="text"
+                                  value={line.description}
+                                  onChange={(e) => updateEditLine(index, "description", e.target.value)}
+                                  className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
+                                  required
+                                />
+                              </td>
+                              <td className="px-4 py-3">
+                                <input
+                                  type="number"
+                                  value={line.quantity}
+                                  onChange={(e) => updateEditLine(index, "quantity", parseFloat(e.target.value) || 0)}
+                                  className="w-full border border-gray-300 rounded px-2 py-1 text-sm text-right"
+                                  step="0.01"
+                                  min="0"
+                                  required
+                                />
+                              </td>
+                              <td className="px-4 py-3">
+                                <input
+                                  type="number"
+                                  value={line.rate}
+                                  onChange={(e) => updateEditLine(index, "rate", parseFloat(e.target.value) || 0)}
+                                  className="w-full border border-gray-300 rounded px-2 py-1 text-sm text-right"
+                                  step="0.01"
+                                  min="0"
+                                  required
+                                />
+                              </td>
+                              <td className="px-4 py-3 text-right font-medium">
+                                {formatCurrency(line.amount)}
+                              </td>
+                              <td className="px-4 py-3 text-center">
+                                {editLines.length > 1 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => removeEditLine(index)}
+                                    className="text-red-600 hover:text-red-800 text-sm"
+                                  >
+                                    ✕
+                                  </button>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                        <tfoot>
+                          <tr className="bg-gray-50">
+                            <td colSpan={3} className="px-4 py-3 text-right font-semibold">
+                              Total:
+                            </td>
+                            <td className="px-4 py-3 text-right font-bold text-lg">
+                              {formatCurrency(editLines.reduce((sum, line) => sum + line.amount, 0))}
+                            </td>
+                            <td></td>
+                          </tr>
+                        </tfoot>
+                      </table>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={addEditLine}
+                      className="mt-2 px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-600 hover:bg-blue-50 transition-colors text-sm font-medium text-gray-600"
+                    >
+                      + Add Line Item
+                    </button>
+                  </div>
+
+                  {/* Notes */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Notes
+                    </label>
+                    <textarea
+                      value={editNotes}
+                      onChange={(e) => setEditNotes(e.target.value)}
+                      rows={3}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                    />
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex justify-end gap-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowEditModal(false);
+                        setEditingInvoice(null);
+                      }}
+                      className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={savingInvoice}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+                    >
+                      {savingInvoice ? "Saving..." : "Save Changes"}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Status Change Confirmation Modal */}
+        {showStatusConfirm && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+              <h3 className="text-xl font-bold text-gray-900 mb-4">Confirm Status Change</h3>
+              <p className="text-gray-600 mb-6">
+                Are you sure you want to update this invoice status to <strong>{pendingStatus}</strong>?
+              </p>
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => {
+                    setShowStatusConfirm(false);
+                    setPendingStatus("");
+                  }}
+                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmStatusChange}
+                  disabled={savingInvoice}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+                >
+                  {savingInvoice ? "Updating..." : "Confirm"}
+                </button>
               </div>
             </div>
           </div>
