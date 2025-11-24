@@ -257,10 +257,6 @@ export default function FinancePage() {
   const formatDate = (date: Date | string | null) => {
     if (!date) return "—";
     return formatDateShort(date);
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
   };
 
   const formatCurrency = (amount: number) => {
