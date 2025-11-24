@@ -49,6 +49,7 @@ export default function FinancePage() {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | undefined>();
+  const [success, setSuccess] = useState<string | undefined>();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [filteredInvoices, setFilteredInvoices] = useState<Invoice[]>([]);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
@@ -853,6 +854,30 @@ export default function FinancePage() {
       </header>
 
       <div className="max-w-full mx-auto px-24 py-8 space-y-6">
+        {/* Success/Error Messages */}
+        {success && (
+          <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg">
+            {success}
+            <button
+              onClick={() => setSuccess(undefined)}
+              className="float-right text-green-600 hover:text-green-800"
+            >
+              ×
+            </button>
+          </div>
+        )}
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
+            {error}
+            <button
+              onClick={() => setError(undefined)}
+              className="float-right text-red-600 hover:text-red-800"
+            >
+              ×
+            </button>
+          </div>
+        )}
+        
         {/* Header with Create Button */}
         <div className="flex justify-between items-center">
           <h2 className="text-xl font-semibold text-gray-900">Invoices</h2>
