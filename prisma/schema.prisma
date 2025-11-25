@@ -179,6 +179,7 @@ model InventoryAdjustment {
 
 model MaterialRequest {
   id              String         @id @default(cuid())
+  requestNumber   String?        @unique // Auto-generated: MR0001, MR0002, etc.
   jobId           String?
   userId          String
   itemName        String
@@ -186,10 +187,11 @@ model MaterialRequest {
   unit            String
   description     String?
   priority        String         @default("MEDIUM") // LOW, MEDIUM, HIGH, URGENT
-  status          String         @default("PENDING") // PENDING, APPROVED, REJECTED, FULFILLED
+  status          String         @default("PENDING") // PENDING, APPROVED, REJECTED, FULFILLED, ON_HOLD
   requestedDate   DateTime       @default(now())
   fulfilledDate   DateTime?
   notes           String?
+  recommendedAction String?     // APPROVE, PARTIAL, DENY - set by admin/manager
   job             Job?           @relation(fields: [jobId], references: [id], onDelete: SetNull)
   user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

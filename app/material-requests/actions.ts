@@ -25,7 +25,55 @@ const updateRequestSchema = z.object({
   status: z.enum(["PENDING", "APPROVED", "REJECTED", "FULFILLED", "ON_HOLD"]),
   notes: z.string().optional(),
   quantity: z.number().int().min(1, "Quantity must be at least 1").max(9, "Quantity must be a single digit (1-9)").optional(),
+  recommendedAction: z.enum(["APPROVE", "PARTIAL", "DENY"]).optional(),
 });
+
+// Generate next request number (MR0001, MR0002, etc.)
+export async function getNextRequestNumber(): Promise<string> {
+  try {
+    // Find all requests with request numbers matching MR#### pattern
+    const allRequests = await prisma.materialRequest.findMany({
+      where: {
+        requestNumber: {
+          not: null,
+        },
+      },
+      select: {
+        requestNumber: true,
+      },
+      orderBy: {
+        requestedDate: "desc",
+      },
+    });
+
+    let nextSequence = 1;
+
+    if (allRequests.length > 0) {
+      // Extract sequence numbers from all requests
+      const sequences = allRequests
+        .map((req) => {
+          // Match pattern MR#### and extract the 4-digit sequence
+          const match = req.requestNumber?.match(/MR(\d{4})$/);
+          return match ? parseInt(match[1], 10) : 0;
+        })
+        .filter((seq) => seq > 0);
+
+      if (sequences.length > 0) {
+        // Find the highest sequence number and increment
+        const maxSequence = Math.max(...sequences);
+        nextSequence = maxSequence + 1;
+      }
+    }
+
+    // Format as MR#### with 4-digit sequence padded with zeros
+    return `MR${nextSequence.toString().padStart(4, "0")}`;
+  } catch (error) {
+    console.error("Error generating request number:", error);
+    // Fallback: generate based on count
+    const count = await prisma.materialRequest.count();
+    return `MR${(count + 1).toString().padStart(4, "0")}`;
+  }
+}
 
 export async function createMaterialRequest(formData: FormData) {
   const session = await getServerSession(authOptions);
@@ -53,8 +101,12 @@ export async function createMaterialRequest(formData: FormData) {
   }
 
   try {
+    // Generate request number
+    const requestNumber = await getNextRequestNumber();
+
     const request = await prisma.materialRequest.create({
       data: {
+        requestNumber,
         jobId: parsed.data.jobId || null,
         userId,
         itemName: parsed.data.itemName,
@@ -192,6 +244,12 @@ export async function updateMaterialRequest(requestId: string, formData: FormDat
     // Update quantity if provided
     if (parsed.data.quantity !== undefined) {
       updateData.quantity = parsed.data.quantity;
+    }
+
+    // Update recommended action if provided (admin/manager only)
+    const recommendedAction = formData.get("recommendedAction") as string | null;
+    if (recommendedAction && (recommendedAction === "APPROVE" || recommendedAction === "PARTIAL" || recommendedAction === "DENY")) {
+      updateData.recommendedAction = recommendedAction;
     }
 
     // Set fulfilled date if status is FULFILLED

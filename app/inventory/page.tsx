@@ -9,7 +9,7 @@ import {
   adjustInventory,
   getItemAdjustments,
 } from "./actions";
-import { getMaterialRequests, updateMaterialRequest } from "../material-requests/actions";
+import { getMaterialRequests, updateMaterialRequest, createMaterialRequest, getInventoryItemsForRequest, getNextRequestNumber } from "../material-requests/actions";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { formatDateTime, nowInCentral, centralToUTC } from "@/lib/date-utils";
@@ -44,6 +44,7 @@ interface Adjustment {
 
 interface MaterialRequest {
   id: string;
+  requestNumber: string | null;
   itemName: string;
   quantity: number;
   unit: string;
@@ -53,6 +54,7 @@ interface MaterialRequest {
   requestedDate: string;
   fulfilledDate: string | null;
   notes: string | null;
+  recommendedAction: string | null;
   job: {
     id: string;
     title: string;
@@ -61,6 +63,14 @@ interface MaterialRequest {
     name: string | null;
     email: string | null;
   };
+}
+
+interface InventoryItemForRequest {
+  id: string;
+  name: string;
+  quantity: number;
+  unit: string;
+  minStockLevel: number;
 }
 
 export default function InventoryPage() {
@@ -104,10 +114,19 @@ export default function InventoryPage() {
   const [filterRequestStatus, setFilterRequestStatus] = useState("ALL");
   const [filterRequestJob, setFilterRequestJob] = useState("ALL");
   const [filterRequester, setFilterRequester] = useState("ALL");
-  const [requestSortField, setRequestSortField] = useState<"requestedDate" | "itemName" | "quantity" | "status">("requestedDate");
+  const [requestSortField, setRequestSortField] = useState<"requestNumber" | "requestedDate" | "itemName" | "quantity" | "status">("requestedDate");
   const [requestSortDirection, setRequestSortDirection] = useState<"asc" | "desc">("desc");
   const [requestCurrentPage, setRequestCurrentPage] = useState(1);
   const requestsPerPage = 20;
+  
+  // Material request submission form state
+  const [showRequestForm, setShowRequestForm] = useState(false);
+  const [requestItemName, setRequestItemName] = useState("");
+  const [requestQuantity, setRequestQuantity] = useState(1);
+  const [requestUnit, setRequestUnit] = useState("pcs");
+  const [requestNotes, setRequestNotes] = useState("");
+  const [submittingRequest, setSubmittingRequest] = useState(false);
+  const [inventoryItemsForRequest, setInventoryItemsForRequest] = useState<InventoryItemForRequest[]>([]);
 
   useEffect(() => {
     loadData();
@@ -304,14 +323,39 @@ export default function InventoryPage() {
     currentPage * itemsPerPage
   );
 
+  // Get current stock for an item
+  const getCurrentStock = (itemName: string): number => {
+    const inventoryItem = items.find((item) => item.name.toLowerCase() === itemName.toLowerCase());
+    return inventoryItem ? inventoryItem.quantity : 0;
+  };
+
+  // Calculate recommended action based on stock
+  const getRecommendedAction = (req: MaterialRequest): string => {
+    if (req.recommendedAction) {
+      return req.recommendedAction; // Use admin/manager set action if exists
+    }
+    const currentStock = getCurrentStock(req.itemName);
+    const requestedQty = req.quantity;
+    
+    if (currentStock >= requestedQty) {
+      return "APPROVE";
+    } else if (currentStock > 0) {
+      return "PARTIAL";
+    } else {
+      return "DENY";
+    }
+  };
+
   // Materials Requested tab: Filtering and sorting
   const filteredRequests = materialRequests.filter((req) => {
     const matchesSearch =
       requestSearchTerm === "" ||
+      (req.requestNumber || "").toLowerCase().includes(requestSearchTerm.toLowerCase()) ||
       req.itemName.toLowerCase().includes(requestSearchTerm.toLowerCase()) ||
       req.description?.toLowerCase().includes(requestSearchTerm.toLowerCase()) ||
       (req.job?.title || "").toLowerCase().includes(requestSearchTerm.toLowerCase()) ||
-      (req.user.name || req.user.email || "").toLowerCase().includes(requestSearchTerm.toLowerCase());
+      (req.user.name || req.user.email || "").toLowerCase().includes(requestSearchTerm.toLowerCase()) ||
+      req.status.toLowerCase().includes(requestSearchTerm.toLowerCase());
 
     const matchesStatus = filterRequestStatus === "ALL" || req.status === filterRequestStatus;
     const matchesJob = filterRequestJob === "ALL" || (filterRequestJob === "NO_JOB" && !req.job) || req.job?.id === filterRequestJob;
@@ -324,6 +368,10 @@ export default function InventoryPage() {
   const sortedRequests = [...filteredRequests].sort((a, b) => {
     let aVal: any, bVal: any;
     switch (requestSortField) {
+      case "requestNumber":
+        aVal = a.requestNumber || "";
+        bVal = b.requestNumber || "";
+        break;
       case "requestedDate":
         aVal = new Date(a.requestedDate).getTime();
         bVal = new Date(b.requestedDate).getTime();
@@ -386,18 +434,22 @@ export default function InventoryPage() {
   };
 
   const exportRequestsToCSV = () => {
-    const headers = ["Request ID", "Job #", "Requested By", "Item", "Quantity", "Unit", "Status", "Date Requested", "Date Fulfilled"];
-    const rows = sortedRequests.map((req) => [
-      req.id.substring(0, 8),
-      req.job?.title || "—",
-      req.user.name || req.user.email || "",
-      req.itemName,
-      req.quantity.toString(),
-      req.unit,
-      req.status,
-      formatDate(req.requestedDate),
-      req.fulfilledDate ? formatDate(req.fulfilledDate) : "—",
-    ]);
+    const headers = ["Request ID", "Employee", "Item", "Qty Requested", "Current Stock", "Recommended Action", "Notes", "Status"];
+    const rows = sortedRequests.map((req) => {
+      const currentStock = getCurrentStock(req.itemName);
+      const recommendedAction = getRecommendedAction(req);
+      const inventoryItem = items.find((item) => item.name.toLowerCase() === req.itemName.toLowerCase());
+      return [
+        req.requestNumber || req.id.substring(0, 8),
+        req.user.name || req.user.email || "",
+        req.itemName,
+        `${req.quantity} ${req.unit}`,
+        inventoryItem ? `${currentStock} ${inventoryItem.unit}` : "N/A",
+        recommendedAction === "APPROVE" ? "Approve" : recommendedAction === "PARTIAL" ? "Partial" : "Deny",
+        req.notes || "",
+        req.status === "REJECTED" ? "Denied" : req.status,
+      ];
+    });
     const csvContent = [headers, ...rows].map((row) => row.map((cell) => `"${cell}"`).join(",")).join("\n");
     const blob = new Blob([csvContent], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
@@ -830,7 +882,7 @@ export default function InventoryPage() {
                 <div className="flex-1 w-full sm:w-auto">
                   <input
                     type="text"
-                    placeholder="Search by item, job, or requester..."
+                    placeholder="Search by Request ID, Employee, Item, or Status..."
                     value={requestSearchTerm}
                     onChange={(e) => {
                       setRequestSearchTerm(e.target.value);
@@ -840,12 +892,22 @@ export default function InventoryPage() {
                   />
                 </div>
 
-                <button
-                  onClick={exportRequestsToCSV}
-                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
-                >
-                  📥 Export CSV
-                </button>
+                <div className="flex gap-2">
+                  {userRole === "EMPLOYEE" && (
+                    <button
+                      onClick={() => setShowRequestForm(true)}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium whitespace-nowrap"
+                    >
+                      + Submit Request
+                    </button>
+                  )}
+                  <button
+                    onClick={exportRequestsToCSV}
+                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
+                  >
+                    📥 Export CSV
+                  </button>
+                </div>
               </div>
 
               <div className="flex flex-wrap gap-3">
@@ -866,27 +928,6 @@ export default function InventoryPage() {
                 </select>
 
                 <select
-                  value={filterRequestJob}
-                  onChange={(e) => {
-                    setFilterRequestJob(e.target.value);
-                    setRequestCurrentPage(1);
-                  }}
-                  className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
-                >
-                  <option value="ALL">All Jobs</option>
-                  <option value="NO_JOB">No Job</option>
-                  {materialRequests
-                    .filter((r) => r.job)
-                    .map((r) => r.job!)
-                    .filter((job, index, self) => index === self.findIndex((j) => j.id === job.id))
-                    .map((job) => (
-                      <option key={job.id} value={job.id}>
-                        {job.title}
-                      </option>
-                    ))}
-                </select>
-
-                <select
                   value={filterRequester}
                   onChange={(e) => {
                     setFilterRequester(e.target.value);
@@ -894,7 +935,7 @@ export default function InventoryPage() {
                   }}
                   className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
                 >
-                  <option value="ALL">All Requesters</option>
+                  <option value="ALL">All Employees</option>
                   {materialRequests
                     .map((r) => r.user.email)
                     .filter((email): email is string => email !== null && email !== undefined)
@@ -934,17 +975,27 @@ export default function InventoryPage() {
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                           <button
                             onClick={() => {
+                              setRequestSortField("requestNumber");
+                              setRequestSortDirection(requestSortField === "requestNumber" && requestSortDirection === "asc" ? "desc" : "asc");
+                            }}
+                            className="flex items-center gap-1 hover:text-gray-700"
+                          >
+                            Request ID
+                            {requestSortField === "requestNumber" && (requestSortDirection === "asc" ? "↑" : "↓")}
+                          </button>
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                          <button
+                            onClick={() => {
                               setRequestSortField("requestedDate");
                               setRequestSortDirection(requestSortField === "requestedDate" && requestSortDirection === "asc" ? "desc" : "asc");
                             }}
                             className="flex items-center gap-1 hover:text-gray-700"
                           >
-                            Date Requested
+                            Employee
                             {requestSortField === "requestedDate" && (requestSortDirection === "asc" ? "↑" : "↓")}
                           </button>
                         </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Request ID</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Job #</th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                           <button
                             onClick={() => {
@@ -965,11 +1016,13 @@ export default function InventoryPage() {
                             }}
                             className="flex items-center gap-1 hover:text-gray-700"
                           >
-                            Quantity
+                            Qty Requested
                             {requestSortField === "quantity" && (requestSortDirection === "asc" ? "↑" : "↓")}
                           </button>
                         </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Requested By</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Current Stock</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Recommended Action</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Notes</th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                           <button
                             onClick={() => {
@@ -982,117 +1035,172 @@ export default function InventoryPage() {
                             {requestSortField === "status" && (requestSortDirection === "asc" ? "↑" : "↓")}
                           </button>
                         </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date Fulfilled</th>
                         <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y">
-                      {paginatedRequests.map((req) => (
-                        <tr key={req.id} className="hover:bg-gray-50">
-                          <td className="px-4 py-3 text-sm text-gray-700">{formatDate(req.requestedDate)}</td>
-                          <td className="px-4 py-3 text-sm text-gray-500 font-mono">{req.id.substring(0, 8)}</td>
-                          <td className="px-4 py-3 text-sm text-blue-700">{req.job ? req.job.title : "—"}</td>
-                          <td className="px-4 py-3 text-sm text-gray-900">
-                            <div className="font-medium">{req.itemName}</div>
-                            {req.description && <div className="text-xs text-gray-500 line-clamp-1">{req.description}</div>}
-                          </td>
-                          <td className="px-4 py-3 text-sm text-gray-900">
-                            {req.status === "PENDING" ? (
-                              <input
-                                id={`qty-${req.id}`}
-                                type="number"
-                                defaultValue={Math.floor(req.quantity)}
-                                min="1"
-                                max="9"
-                                step="1"
-                                maxLength={1}
-                                onKeyDown={(e) => {
-                                  if (e.key === '.' || e.key === '-' || e.key === 'e' || e.key === 'E' || e.key === '+') {
-                                    e.preventDefault();
-                                  }
-                                }}
-                                onChange={(e) => {
-                                  const value = e.target.value;
-                                  if (value === "" || (value.length <= 1 && /^[1-9]$/.test(value))) {
-                                    // Valid
-                                  } else {
-                                    e.target.value = Math.floor(req.quantity).toString();
-                                  }
-                                }}
-                                onBlur={(e) => {
-                                  const numValue = Number(e.target.value);
-                                  if (isNaN(numValue) || numValue < 1) {
-                                    e.target.value = "1";
-                                  } else if (numValue > 9) {
-                                    e.target.value = "9";
-                                  } else {
-                                    e.target.value = Math.floor(numValue).toString();
-                                  }
-                                  const form = new FormData();
-                                  form.append("status", req.status);
-                                  form.append("quantity", e.target.value);
-                                  updateMaterialRequest(req.id, form).then((res) => {
-                                    if (!res.ok) {
-                                      setError(res.error);
-                                      e.target.value = Math.floor(req.quantity).toString();
-                                    } else {
-                                      loadMaterialRequests();
+                      {paginatedRequests.map((req) => {
+                        const currentStock = getCurrentStock(req.itemName);
+                        const recommendedAction = getRecommendedAction(req);
+                        const inventoryItem = items.find((item) => item.name.toLowerCase() === req.itemName.toLowerCase());
+                        return (
+                          <tr key={req.id} className="hover:bg-gray-50">
+                            <td className="px-4 py-3 text-sm text-gray-900 font-mono font-semibold">
+                              {req.requestNumber || req.id.substring(0, 8)}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-gray-700">
+                              {req.user.name || req.user.email || "—"}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-gray-900">
+                              <div className="font-medium">{req.itemName}</div>
+                              {req.description && <div className="text-xs text-gray-500 line-clamp-1">{req.description}</div>}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-gray-900">
+                              {req.status === "PENDING" && canManage ? (
+                                <input
+                                  id={`qty-${req.id}`}
+                                  type="number"
+                                  defaultValue={Math.floor(req.quantity)}
+                                  min="1"
+                                  max="9"
+                                  step="1"
+                                  maxLength={1}
+                                  onKeyDown={(e) => {
+                                    if (e.key === '.' || e.key === '-' || e.key === 'e' || e.key === 'E' || e.key === '+') {
+                                      e.preventDefault();
                                     }
-                                  });
-                                }}
-                                className="w-16 px-2 py-1 border border-gray-300 rounded text-sm text-center"
-                              />
-                            ) : (
-                              <span>{Math.floor(req.quantity)} {req.unit}</span>
-                            )}
-                          </td>
-                          <td className="px-4 py-3 text-sm text-gray-700">{req.user.name || req.user.email}</td>
-                          <td className="px-4 py-3 text-sm">
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              req.status === "FULFILLED" ? "bg-green-100 text-green-700" :
-                              req.status === "APPROVED" ? "bg-blue-100 text-blue-700" :
-                              req.status === "REJECTED" ? "bg-red-100 text-red-700" :
-                              req.status === "ON_HOLD" ? "bg-yellow-100 text-yellow-700" :
-                              "bg-gray-100 text-gray-700"
-                            }`}>
-                              {req.status === "REJECTED" ? "Denied" : req.status}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 text-sm text-gray-500">
-                            {req.fulfilledDate ? formatDate(req.fulfilledDate) : "—"}
-                          </td>
-                          <td className="px-4 py-3 text-right text-sm">
-                            {req.status === "PENDING" && canManage && (
-                              <div className="inline-flex gap-2 items-center">
-                                <input id={`amt-${req.id}`} type="number" step="0.01" placeholder="Amount" className="w-28 px-2 py-1 border rounded text-sm" />
-                                <button onClick={() => {
-                                  const input = document.getElementById(`amt-${req.id}`) as HTMLInputElement | null;
-                                  const val = input?.value || "";
-                                  const form = new FormData();
-                                  form.append("status", "APPROVED");
-                                  if (val) form.append("amount", val);
-                                  updateMaterialRequest(req.id, form).then((res) => {
-                                    if (!res.ok) { setError(res.error); return; }
-                                    loadMaterialRequests();
-                                    setSuccess("Request approved");
-                                  });
-                                }} className="px-3 py-1 border border-blue-300 text-blue-700 rounded-lg hover:bg-blue-50">Approve</button>
-                                <button onClick={() => handleUpdateRequestStatus(req.id, "REJECTED")} className="px-3 py-1 border border-red-300 text-red-700 rounded-lg hover:bg-red-50">Deny</button>
-                                <button onClick={() => handleUpdateRequestStatus(req.id, "ON_HOLD")} className="px-3 py-1 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">On Hold</button>
-                              </div>
-                            )}
-                            {req.status === "ON_HOLD" && canManage && (
-                              <div className="inline-flex gap-2 items-center">
-                                <button onClick={() => handleUpdateRequestStatus(req.id, "PENDING")} className="px-3 py-1 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">Resume</button>
-                                <button onClick={() => handleUpdateRequestStatus(req.id, "REJECTED")} className="px-3 py-1 border border-red-300 text-red-700 rounded-lg hover:bg-red-50">Deny</button>
-                              </div>
-                            )}
-                            {req.status === "APPROVED" && canManage && (
-                              <button onClick={() => handleUpdateRequestStatus(req.id, "FULFILLED")} className="px-3 py-1 border border-green-300 text-green-700 rounded-lg hover:bg-green-50">Mark Fulfilled</button>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
+                                  }}
+                                  onChange={(e) => {
+                                    const value = e.target.value;
+                                    if (value === "" || (value.length <= 1 && /^[1-9]$/.test(value))) {
+                                      // Valid
+                                    } else {
+                                      e.target.value = Math.floor(req.quantity).toString();
+                                    }
+                                  }}
+                                  onBlur={(e) => {
+                                    const numValue = Number(e.target.value);
+                                    if (isNaN(numValue) || numValue < 1) {
+                                      e.target.value = "1";
+                                    } else if (numValue > 9) {
+                                      e.target.value = "9";
+                                    } else {
+                                      e.target.value = Math.floor(numValue).toString();
+                                    }
+                                    const form = new FormData();
+                                    form.append("status", req.status);
+                                    form.append("quantity", e.target.value);
+                                    updateMaterialRequest(req.id, form).then((res) => {
+                                      if (!res.ok) {
+                                        setError(res.error);
+                                        e.target.value = Math.floor(req.quantity).toString();
+                                      } else {
+                                        loadMaterialRequests();
+                                      }
+                                    });
+                                  }}
+                                  className="w-16 px-2 py-1 border border-gray-300 rounded text-sm text-center"
+                                />
+                              ) : (
+                                <span>{Math.floor(req.quantity)} {req.unit}</span>
+                              )}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-gray-900">
+                              {inventoryItem ? (
+                                <span className={currentStock === 0 ? "text-red-600 font-semibold" : currentStock < req.quantity ? "text-orange-600 font-semibold" : "text-green-600 font-semibold"}>
+                                  {currentStock} {inventoryItem.unit}
+                                </span>
+                              ) : (
+                                <span className="text-gray-400">N/A</span>
+                              )}
+                            </td>
+                            <td className="px-4 py-3 text-sm">
+                              {canManage ? (
+                                <select
+                                  value={req.recommendedAction || recommendedAction}
+                                  onChange={(e) => {
+                                    const form = new FormData();
+                                    form.append("status", req.status);
+                                    form.append("recommendedAction", e.target.value);
+                                    updateMaterialRequest(req.id, form).then((res) => {
+                                      if (!res.ok) {
+                                        setError(res.error);
+                                      } else {
+                                        loadMaterialRequests();
+                                      }
+                                    });
+                                  }}
+                                  className={`text-xs font-medium px-2 py-1 rounded ${
+                                    (req.recommendedAction || recommendedAction) === "APPROVE" ? "bg-green-100 text-green-700 border border-green-300" :
+                                    (req.recommendedAction || recommendedAction) === "PARTIAL" ? "bg-orange-100 text-orange-700 border border-orange-300" :
+                                    "bg-red-100 text-red-700 border border-red-300"
+                                  }`}
+                                >
+                                  <option value="APPROVE">Approve</option>
+                                  <option value="PARTIAL">Partial</option>
+                                  <option value="DENY">Deny</option>
+                                </select>
+                              ) : (
+                                <span className={`px-2 py-1 rounded text-xs font-medium ${
+                                  recommendedAction === "APPROVE" ? "bg-green-100 text-green-700" :
+                                  recommendedAction === "PARTIAL" ? "bg-orange-100 text-orange-700" :
+                                  "bg-red-100 text-red-700"
+                                }`}>
+                                  {recommendedAction === "APPROVE" ? "Approve" : recommendedAction === "PARTIAL" ? "Partial" : "Deny"}
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-gray-600 max-w-xs">
+                              {req.notes ? (
+                                <div className="line-clamp-2" title={req.notes}>{req.notes}</div>
+                              ) : (
+                                <span className="text-gray-400">—</span>
+                              )}
+                            </td>
+                            <td className="px-4 py-3 text-sm">
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                req.status === "FULFILLED" ? "bg-green-100 text-green-700" :
+                                req.status === "APPROVED" ? "bg-blue-100 text-blue-700" :
+                                req.status === "REJECTED" ? "bg-red-100 text-red-700" :
+                                req.status === "ON_HOLD" ? "bg-yellow-100 text-yellow-700" :
+                                "bg-gray-100 text-gray-700"
+                              }`}>
+                                {req.status === "REJECTED" ? "Denied" : req.status}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-right text-sm">
+                              {req.status === "PENDING" && canManage && (
+                                <div className="inline-flex gap-2 items-center flex-wrap">
+                                  <input id={`amt-${req.id}`} type="number" step="0.01" placeholder="Amount" className="w-28 px-2 py-1 border rounded text-sm" />
+                                  <button onClick={() => {
+                                    const input = document.getElementById(`amt-${req.id}`) as HTMLInputElement | null;
+                                    const val = input?.value || "";
+                                    const form = new FormData();
+                                    form.append("status", "APPROVED");
+                                    if (val) form.append("amount", val);
+                                    updateMaterialRequest(req.id, form).then((res) => {
+                                      if (!res.ok) { setError(res.error); return; }
+                                      loadMaterialRequests();
+                                      setSuccess("Request approved");
+                                    });
+                                  }} className="px-3 py-1 border border-blue-300 text-blue-700 rounded-lg hover:bg-blue-50 text-xs">Approve</button>
+                                  <button onClick={() => handleUpdateRequestStatus(req.id, "REJECTED")} className="px-3 py-1 border border-red-300 text-red-700 rounded-lg hover:bg-red-50 text-xs">Deny</button>
+                                  <button onClick={() => handleUpdateRequestStatus(req.id, "ON_HOLD")} className="px-3 py-1 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 text-xs">On Hold</button>
+                                </div>
+                              )}
+                              {req.status === "ON_HOLD" && canManage && (
+                                <div className="inline-flex gap-2 items-center">
+                                  <button onClick={() => handleUpdateRequestStatus(req.id, "PENDING")} className="px-3 py-1 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 text-xs">Resume</button>
+                                  <button onClick={() => handleUpdateRequestStatus(req.id, "REJECTED")} className="px-3 py-1 border border-red-300 text-red-700 rounded-lg hover:bg-red-50 text-xs">Deny</button>
+                                </div>
+                              )}
+                              {req.status === "APPROVED" && canManage && (
+                                <button onClick={() => handleUpdateRequestStatus(req.id, "FULFILLED")} className="px-3 py-1 border border-green-300 text-green-700 rounded-lg hover:bg-green-50 text-xs">Mark Fulfilled</button>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -1151,6 +1259,144 @@ export default function InventoryPage() {
           </div>
         )}
       </div>
+
+      {/* Material Request Submission Modal (Employees) */}
+      {showRequestForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full">
+            <div className="p-6">
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">Submit Material Request</h2>
+
+              <form onSubmit={(e) => { e.preventDefault(); handleSubmitMaterialRequest(); }} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Employee *
+                  </label>
+                  <input
+                    type="text"
+                    value={session?.user?.name || session?.user?.email || ""}
+                    disabled
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-50 text-gray-600"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Item *
+                  </label>
+                  <select
+                    value={requestItemName}
+                    onChange={(e) => {
+                      setRequestItemName(e.target.value);
+                      const selectedItem = inventoryItemsForRequest.find((item) => item.name === e.target.value);
+                      if (selectedItem) {
+                        setRequestUnit(selectedItem.unit);
+                      }
+                    }}
+                    required
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                  >
+                    <option value="">Select an item...</option>
+                    {inventoryItemsForRequest.map((item) => (
+                      <option key={item.id} value={item.name}>
+                        {item.name} ({item.quantity} {item.unit} in stock)
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Qty Requested *
+                    </label>
+                    <input
+                      type="number"
+                      value={requestQuantity}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value === "" || (value.length <= 1 && /^[1-9]$/.test(value))) {
+                          setRequestQuantity(value === "" ? 1 : Number(value));
+                        }
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === '.' || e.key === '-' || e.key === 'e' || e.key === 'E' || e.key === '+') {
+                          e.preventDefault();
+                        }
+                      }}
+                      onBlur={(e) => {
+                        const numValue = Number(e.target.value);
+                        if (isNaN(numValue) || numValue < 1) {
+                          setRequestQuantity(1);
+                        } else if (numValue > 9) {
+                          setRequestQuantity(9);
+                        } else {
+                          setRequestQuantity(Math.floor(numValue));
+                        }
+                      }}
+                      min="1"
+                      max="9"
+                      step="1"
+                      maxLength={1}
+                      required
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Unit *
+                    </label>
+                    <input
+                      type="text"
+                      value={requestUnit}
+                      onChange={(e) => setRequestUnit(e.target.value)}
+                      required
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Notes (optional)
+                  </label>
+                  <textarea
+                    value={requestNotes}
+                    onChange={(e) => setRequestNotes(e.target.value)}
+                    rows={3}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                    placeholder="Add any additional notes or details..."
+                  />
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowRequestForm(false);
+                      setRequestItemName("");
+                      setRequestQuantity(1);
+                      setRequestUnit("pcs");
+                      setRequestNotes("");
+                    }}
+                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={submittingRequest}
+                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:bg-gray-400 disabled:cursor-not-allowed"
+                  >
+                    {submittingRequest ? "Submitting..." : "Submit Request"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Create/Edit Modal */}
       {showModal && (
