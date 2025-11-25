@@ -897,7 +897,8 @@ export default function InventoryPage() {
                   <option value="ALL">All Requesters</option>
                   {materialRequests
                     .map((r) => r.user.email)
-                    .filter((email, index, self) => email && index === self.indexOf(email))
+                    .filter((email): email is string => email !== null && email !== undefined)
+                    .filter((email, index, self) => index === self.indexOf(email))
                     .map((email) => (
                       <option key={email} value={email}>
                         {materialRequests.find((r) => r.user.email === email)?.user.name || email}
