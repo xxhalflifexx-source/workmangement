@@ -458,7 +458,7 @@ export default function InventoryPage() {
         item.name,
         item.sku || "",
         item.category || "",
-        item.quantity.toString(),
+        Math.floor(item.quantity).toString(),
         item.unit,
         item.location || "",
         status.text,
@@ -717,7 +717,7 @@ export default function InventoryPage() {
               <table className="w-full">
                 <thead className="bg-gray-50 border-b">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">
                           <button
                             onClick={() => {
                               setSortField("name");
@@ -729,10 +729,10 @@ export default function InventoryPage() {
                             {sortField === "name" && (sortDirection === "asc" ? "↑" : "↓")}
                           </button>
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">
                       Category
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">
                           <button
                             onClick={() => {
                               setSortField("quantity");
@@ -740,14 +740,14 @@ export default function InventoryPage() {
                             }}
                             className="flex items-center gap-1 hover:text-gray-700"
                           >
-                      Quantity
+                            Quantity
                             {sortField === "quantity" && (sortDirection === "asc" ? "↑" : "↓")}
                           </button>
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Unit
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">
+                      Unit
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">
                           <button
                             onClick={() => {
                               setSortField("location");
@@ -755,14 +755,14 @@ export default function InventoryPage() {
                             }}
                             className="flex items-center gap-1 hover:text-gray-700"
                           >
-                      Location
+                            Location
                             {sortField === "location" && (sortDirection === "asc" ? "↑" : "↓")}
                           </button>
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">
                       Status
                     </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">
                           <button
                             onClick={() => {
                               setSortField("updatedAt");
@@ -773,8 +773,8 @@ export default function InventoryPage() {
                             Last Updated
                             {sortField === "updatedAt" && (sortDirection === "asc" ? "↑" : "↓")}
                           </button>
-                        </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    </th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500">
                       Actions
                     </th>
                   </tr>
@@ -784,49 +784,46 @@ export default function InventoryPage() {
                     const stockStatus = getStockStatus(item);
                     return (
                       <tr key={item.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4">
-                          <div className="flex items-start">
-                            <div>
-                              <div className="text-sm font-medium text-gray-900">{item.name}</div>
-                              {item.sku && (
-                                <div className="text-xs text-gray-500">SKU: {item.sku}</div>
-                              )}
-                              {item.description && (
-                                <div className="text-xs text-gray-500 mt-1 line-clamp-1">
-                                  {item.description}
-                                </div>
-                              )}
+                        <td className="px-4 py-3 text-sm text-gray-900">
+                          <div className="font-medium">{item.name}</div>
+                          {item.sku && (
+                            <div className="text-xs text-gray-500">SKU: {item.sku}</div>
+                          )}
+                          {item.description && (
+                            <div className="text-xs text-gray-500 line-clamp-1">
+                              {item.description}
                             </div>
-                          </div>
+                          )}
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="px-4 py-3 text-sm text-gray-900">
                           {item.category ? (
                             <span className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-800 rounded-full">
                               {item.category}
                             </span>
                           ) : (
-                            <span className="text-sm text-gray-400">—</span>
+                            <span className="text-gray-400">—</span>
                           )}
                         </td>
-                        <td className="px-6 py-4">
-                          <div className="text-sm font-semibold text-gray-900">
-                            {item.quantity} {item.unit}
-                          </div>
-                          {item.minStockLevel > 0 && (
-                            <div className="text-xs text-gray-500">Min: {item.minStockLevel}</div>
-                          )}
+                        <td className="px-4 py-3 text-sm text-gray-900">
+                          {Math.floor(item.quantity)}
                         </td>
-                        <td className="px-6 py-4 text-sm text-gray-900">
+                        <td className="px-4 py-3 text-sm text-gray-900">
+                          {item.unit}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-900">
                           {item.location || <span className="text-gray-400">—</span>}
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="px-4 py-3 text-sm">
                           <span
                             className={`px-2 py-1 text-xs font-medium rounded-full ${stockStatus.color}`}
                           >
                             {stockStatus.icon} {stockStatus.text}
                           </span>
                         </td>
-                        <td className="px-6 py-4 text-right text-sm font-medium space-x-2">
+                        <td className="px-4 py-3 text-sm text-gray-600">
+                          {formatDate(item.updatedAt)}
+                        </td>
+                        <td className="px-4 py-3 text-right text-sm space-x-2">
                           <button
                             onClick={() => openHistoryModal(item)}
                             className="text-gray-600 hover:text-gray-900"
