@@ -1095,7 +1095,7 @@ export default function InventoryPage() {
                               {req.description && <div className="text-xs text-gray-500 line-clamp-1">{req.description}</div>}
                             </td>
                             <td className="px-4 py-3 text-sm text-gray-900">
-                              {req.status === "PENDING" && canManage && (
+                              {req.status === "PENDING" && canManage ? (
                                 <input
                                   id={`qty-${req.id}`}
                                   type="number"
