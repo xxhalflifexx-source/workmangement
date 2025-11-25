@@ -474,12 +474,12 @@ export default function InventoryPage() {
   };
 
   const exportRequestsToCSV = () => {
-    const headers = ["Job No.", "Employee", "Item", "Qty Requested", "Status", "Action", "Notes", "Date Requested", "Date Approved"];
+    const headers = ["Job No.", "Employee", "Item", "Qty Requested", "Status", "Action", "Date Requested", "Date Approved", "Notes"];
     const rows = sortedRequests.map((req) => {
       const currentStock = getCurrentStock(req.itemName);
       const recommendedAction = getRecommendedAction(req);
       const inventoryItem = items.find((item) => item.name.toLowerCase() === req.itemName.toLowerCase());
-      const status = inventoryItem ? (currentStock >= req.quantity ? "AVAILABLE" : "UNAVAILABLE") : "UNAVAILABLE";
+      const status = inventoryItem ? (currentStock >= req.quantity ? "Available" : "Unavailable") : "Unavailable";
       const dateApproved = req.status === "APPROVED" || req.status === "FULFILLED" ? (req.fulfilledDate ? formatDate(req.fulfilledDate) : "") : "";
       return [
         req.job ? req.job.id.substring(0, 8).toUpperCase() : "",
@@ -488,9 +488,9 @@ export default function InventoryPage() {
         `${req.quantity} ${req.unit}`,
         status,
         recommendedAction === "APPROVE" ? "Approve" : recommendedAction === "PARTIAL" ? "Partial" : recommendedAction === "DENY" ? "Deny" : "Pending",
-        req.notes || "",
         formatDate(req.requestedDate),
         dateApproved,
+        req.notes || "",
       ];
     });
     const csvContent = [headers, ...rows].map((row) => row.map((cell) => `"${cell}"`).join(",")).join("\n");
@@ -1054,7 +1054,6 @@ export default function InventoryPage() {
                         </th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Status</th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Action</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Notes</th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                           <button
                             onClick={() => {
@@ -1068,6 +1067,7 @@ export default function InventoryPage() {
                           </button>
                         </th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Date Approved</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Notes</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y">
@@ -1140,10 +1140,10 @@ export default function InventoryPage() {
                             <td className="px-4 py-3 text-sm text-gray-900">
                               {inventoryItem ? (
                                 <span className={currentStock >= req.quantity ? "text-green-600 font-semibold" : "text-red-600 font-semibold"}>
-                                  {currentStock >= req.quantity ? "AVAILABLE" : "UNAVAILABLE"}
+                                  {currentStock >= req.quantity ? "Available" : "Unavailable"}
                                 </span>
                               ) : (
-                                <span className="text-red-600 font-semibold">UNAVAILABLE</span>
+                                <span className="text-red-600 font-semibold">Unavailable</span>
                               )}
                             </td>
                             <td className="px-4 py-3 text-sm">
@@ -1185,6 +1185,12 @@ export default function InventoryPage() {
                                 </span>
                               )}
                             </td>
+                            <td className="px-4 py-3 text-sm text-gray-600">
+                              {formatDate(req.requestedDate)}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-gray-600">
+                              {req.status === "APPROVED" || req.status === "FULFILLED" ? (req.fulfilledDate ? formatDate(req.fulfilledDate) : "—") : "—"}
+                            </td>
                             <td className="px-4 py-3 text-sm text-gray-600 max-w-xs">
                               {canManage ? (
                                 <textarea
@@ -1218,12 +1224,6 @@ export default function InventoryPage() {
                                   <span className="text-gray-400">—</span>
                                 )
                               )}
-                            </td>
-                            <td className="px-4 py-3 text-sm text-gray-600">
-                              {formatDate(req.requestedDate)}
-                            </td>
-                            <td className="px-4 py-3 text-sm text-gray-600">
-                              {req.status === "APPROVED" || req.status === "FULFILLED" ? (req.fulfilledDate ? formatDate(req.fulfilledDate) : "—") : "—"}
                             </td>
                           </tr>
                         );
