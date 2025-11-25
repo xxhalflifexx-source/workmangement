@@ -184,10 +184,10 @@ export async function getMaterialRequests() {
 
     return { ok: true, requests };
   } catch (error: any) {
-    // Handle case where requestNumber column doesn't exist yet
-    if (error?.code === "P2022" || error?.message?.includes("requestNumber")) {
-      console.error("Database migration needed: requestNumber column missing");
-      return { ok: false, error: "Database migration required. Please run: npx prisma migrate deploy" };
+    // Handle case where columns don't exist yet
+    if (error?.code === "P2022" || error?.message?.includes("requestNumber") || error?.message?.includes("dateDelivered") || error?.message?.includes("orderStatus")) {
+      console.error("Database migration needed: MaterialRequest columns missing");
+      return { ok: false, error: "Database migration required. Please run the migration SQL scripts in prisma/migrations/ or use: npx prisma migrate deploy" };
     }
     console.error("Get material requests error:", error);
     return { ok: false, error: "Failed to load material requests" };
