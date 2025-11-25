@@ -363,9 +363,11 @@ export async function updateMaterialRequest(requestId: string, formData: FormDat
   const rawQuantity = formData.get("quantity") as string | null;
   const quantity = rawQuantity != null && rawQuantity !== "" ? Number(rawQuantity) : undefined;
 
-  // Check if we're only updating recommendedAction or orderStatus (manual-only fields)
-  const recommendedAction = formData.get("recommendedAction") as string | null;
-  const orderStatus = formData.get("orderStatus") as string | null;
+  // Get recommendedAction and orderStatus for checking if we're only updating manual fields
+  const recommendedActionRaw = formData.get("recommendedAction") as string | null;
+  const recommendedAction = recommendedActionRaw && recommendedActionRaw !== "" ? recommendedActionRaw : null;
+  const orderStatusRaw = formData.get("orderStatus") as string | null;
+  const orderStatus = orderStatusRaw && orderStatusRaw !== "" ? orderStatusRaw : null;
   const isOnlyUpdatingManualFields = (recommendedAction || orderStatus) && !formData.get("notes") && quantity === undefined;
 
   // Fetch existing request first to get current status and job relation
@@ -381,10 +383,24 @@ export async function updateMaterialRequest(requestId: string, formData: FormDat
   // Use existing status if we're only updating manual fields, otherwise use provided status
   const statusValue = isOnlyUpdatingManualFields ? existing.status : (formData.get("status") as string || existing.status);
 
+  // Handle recommendedAction - convert empty string to undefined for validation
+  const rawRecommendedAction = formData.get("recommendedAction") as string | null;
+  const recommendedActionForValidation = rawRecommendedAction && rawRecommendedAction !== "" ? rawRecommendedAction : undefined;
+  
+  // Handle orderStatus - convert empty string to undefined for validation
+  const rawOrderStatus = formData.get("orderStatus") as string | null;
+  const orderStatusForValidation = rawOrderStatus && rawOrderStatus !== "" ? rawOrderStatus : undefined;
+
+  // Handle notes - convert null/empty to undefined for validation
+  const rawNotes = formData.get("notes") as string | null;
+  const notesForValidation = rawNotes && rawNotes !== "" ? rawNotes : undefined;
+
   const data = {
     status: statusValue,
-    notes: formData.get("notes") as string | undefined,
+    notes: notesForValidation,
     quantity: quantity,
+    recommendedAction: recommendedActionForValidation,
+    orderStatus: orderStatusForValidation,
   };
 
   const parsed = updateRequestSchema.safeParse(data);
@@ -426,16 +442,16 @@ export async function updateMaterialRequest(requestId: string, formData: FormDat
 
     // Update recommended action if provided (admin/manager only)
     // This is a MANUAL-ONLY field and does NOT trigger status changes or inventory updates
-    if (recommendedAction && (recommendedAction === "PENDING" || recommendedAction === "APPROVE" || recommendedAction === "PARTIAL" || recommendedAction === "REJECTED")) {
-      updateData.recommendedAction = recommendedAction;
+    // Use the validated value from parsed data
+    if (parsed.data.recommendedAction !== undefined) {
+      updateData.recommendedAction = parsed.data.recommendedAction || null;
     }
 
     // Update order status if provided (admin/manager only)
     // This is a MANUAL-ONLY field and does NOT trigger inventory updates
-    if (orderStatus !== null) {
-      if (orderStatus === "" || orderStatus === "TO_ORDER" || orderStatus === "ORDERED" || orderStatus === "RECEIVED") {
-        updateData.orderStatus = orderStatus === "" ? null : orderStatus;
-      }
+    // Use the validated value from parsed data
+    if (parsed.data.orderStatus !== undefined) {
+      updateData.orderStatus = parsed.data.orderStatus || null;
     }
 
     // Set date delivered if order status is RECEIVED
