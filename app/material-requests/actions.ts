@@ -377,8 +377,10 @@ export async function updateMaterialRequest(requestId: string, formData: FormDat
 
     // Update order status if provided (admin/manager only)
     const orderStatus = formData.get("orderStatus") as string | null;
-    if (orderStatus && (orderStatus === "TO_ORDER" || orderStatus === "ORDERED" || orderStatus === "RECEIVED")) {
-      updateData.orderStatus = orderStatus;
+    if (orderStatus !== null) {
+      if (orderStatus === "" || orderStatus === "TO_ORDER" || orderStatus === "ORDERED" || orderStatus === "RECEIVED") {
+        updateData.orderStatus = orderStatus === "" ? null : orderStatus;
+      }
     }
 
     // Set date delivered if order status is RECEIVED

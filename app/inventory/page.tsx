@@ -1168,7 +1168,14 @@ export default function InventoryPage() {
                                       }
                                     }
                                     const form = new FormData();
-                                    form.append("status", req.status);
+                                    // Update status based on action: APPROVE -> APPROVED, REJECTED -> REJECTED, others keep current status
+                                    let newStatus = req.status;
+                                    if (newValue === "APPROVE") {
+                                      newStatus = "APPROVED";
+                                    } else if (newValue === "REJECTED") {
+                                      newStatus = "REJECTED";
+                                    }
+                                    form.append("status", newStatus);
                                     form.append("recommendedAction", newValue);
                                     const res = await updateMaterialRequest(req.id, form);
                                     if (!res.ok) {
@@ -1217,7 +1224,13 @@ export default function InventoryPage() {
                                     }
                                     const form = new FormData();
                                     form.append("status", req.status);
-                                    form.append("orderStatus", newValue);
+                                    // Only append orderStatus if it's not empty
+                                    if (newValue && newValue !== "") {
+                                      form.append("orderStatus", newValue);
+                                    } else {
+                                      // Allow clearing by sending empty string
+                                      form.append("orderStatus", "");
+                                    }
                                     // Set dateDelivered when status is RECEIVED
                                     if (newValue === "RECEIVED") {
                                       form.append("dateDelivered", new Date().toISOString());
