@@ -85,19 +85,33 @@ export default function InventoryPage() {
   const [adjustments, setAdjustments] = useState<Adjustment[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
 
+  // Tab state
+  const [activeTab, setActiveTab] = useState<"inventory" | "materials">("inventory");
+  
+  // Inventory tab filters and sorting
   const [searchTerm, setSearchTerm] = useState("");
   const [filterCategory, setFilterCategory] = useState("ALL");
   const [filterStockStatus, setFilterStockStatus] = useState("ALL");
+  const [sortField, setSortField] = useState<"name" | "quantity" | "location" | "updatedAt">("name");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 20;
   
+  // Materials Requested tab filters and sorting
   const [materialRequests, setMaterialRequests] = useState<MaterialRequest[]>([]);
   const [loadingRequests, setLoadingRequests] = useState(false);
-  const [filterRequestStatus, setFilterRequestStatus] = useState("PENDING");
+  const [requestSearchTerm, setRequestSearchTerm] = useState("");
+  const [filterRequestStatus, setFilterRequestStatus] = useState("ALL");
+  const [filterRequestJob, setFilterRequestJob] = useState("ALL");
+  const [filterRequester, setFilterRequester] = useState("ALL");
+  const [requestSortField, setRequestSortField] = useState<"requestedDate" | "itemName" | "quantity" | "status">("requestedDate");
+  const [requestSortDirection, setRequestSortDirection] = useState<"asc" | "desc">("desc");
+  const [requestCurrentPage, setRequestCurrentPage] = useState(1);
+  const requestsPerPage = 20;
 
   useEffect(() => {
     loadData();
-    if (canManage) {
-      loadMaterialRequests();
-    }
+    loadMaterialRequests(); // All users can see requests (employees see only their own)
   }, []);
 
   const loadData = async () => {
@@ -236,6 +250,7 @@ export default function InventoryPage() {
 
   const categories = Array.from(new Set(items.map((item) => item.category).filter(Boolean))) as string[];
 
+  // Inventory tab: Filtering and sorting
   const filteredItems = items.filter((item) => {
     const matchesSearch =
       searchTerm === "" ||
@@ -253,6 +268,145 @@ export default function InventoryPage() {
 
     return matchesSearch && matchesCategory && matchesStockStatus;
   });
+
+  // Sort inventory items
+  const sortedItems = [...filteredItems].sort((a, b) => {
+    let aVal: any, bVal: any;
+    switch (sortField) {
+      case "name":
+        aVal = a.name.toLowerCase();
+        bVal = b.name.toLowerCase();
+        break;
+      case "quantity":
+        aVal = a.quantity;
+        bVal = b.quantity;
+        break;
+      case "location":
+        aVal = (a.location || "").toLowerCase();
+        bVal = (b.location || "").toLowerCase();
+        break;
+      case "updatedAt":
+        aVal = new Date(a.updatedAt).getTime();
+        bVal = new Date(b.updatedAt).getTime();
+        break;
+      default:
+        return 0;
+    }
+    if (aVal < bVal) return sortDirection === "asc" ? -1 : 1;
+    if (aVal > bVal) return sortDirection === "asc" ? 1 : -1;
+    return 0;
+  });
+
+  // Paginate inventory items
+  const totalInventoryPages = Math.ceil(sortedItems.length / itemsPerPage);
+  const paginatedItems = sortedItems.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  // Materials Requested tab: Filtering and sorting
+  const filteredRequests = materialRequests.filter((req) => {
+    const matchesSearch =
+      requestSearchTerm === "" ||
+      req.itemName.toLowerCase().includes(requestSearchTerm.toLowerCase()) ||
+      req.description?.toLowerCase().includes(requestSearchTerm.toLowerCase()) ||
+      (req.job?.title || "").toLowerCase().includes(requestSearchTerm.toLowerCase()) ||
+      (req.user.name || req.user.email || "").toLowerCase().includes(requestSearchTerm.toLowerCase());
+
+    const matchesStatus = filterRequestStatus === "ALL" || req.status === filterRequestStatus;
+    const matchesJob = filterRequestJob === "ALL" || (filterRequestJob === "NO_JOB" && !req.job) || req.job?.id === filterRequestJob;
+    const matchesRequester = filterRequester === "ALL" || req.user.email === filterRequester;
+
+    return matchesSearch && matchesStatus && matchesJob && matchesRequester;
+  });
+
+  // Sort material requests
+  const sortedRequests = [...filteredRequests].sort((a, b) => {
+    let aVal: any, bVal: any;
+    switch (requestSortField) {
+      case "requestedDate":
+        aVal = new Date(a.requestedDate).getTime();
+        bVal = new Date(b.requestedDate).getTime();
+        break;
+      case "itemName":
+        aVal = a.itemName.toLowerCase();
+        bVal = b.itemName.toLowerCase();
+        break;
+      case "quantity":
+        aVal = a.quantity;
+        bVal = b.quantity;
+        break;
+      case "status":
+        aVal = a.status;
+        bVal = b.status;
+        break;
+      default:
+        return 0;
+    }
+    if (aVal < bVal) return requestSortDirection === "asc" ? -1 : 1;
+    if (aVal > bVal) return requestSortDirection === "asc" ? 1 : -1;
+    return 0;
+  });
+
+  // Paginate material requests
+  const totalRequestPages = Math.ceil(sortedRequests.length / requestsPerPage);
+  const paginatedRequests = sortedRequests.slice(
+    (requestCurrentPage - 1) * requestsPerPage,
+    requestCurrentPage * requestsPerPage
+  );
+
+  // Get unique values for filters
+  const uniqueJobs = Array.from(new Set(materialRequests.map((r) => r.job?.id).filter(Boolean)));
+  const uniqueRequesters = Array.from(new Set(materialRequests.map((r) => r.user.email).filter(Boolean)));
+
+  // Export functions
+  const exportInventoryToCSV = () => {
+    const headers = ["Item Name", "SKU", "Category", "Quantity", "Unit", "Location", "Status", "Last Updated"];
+    const rows = sortedItems.map((item) => {
+      const status = getStockStatus(item);
+      return [
+        item.name,
+        item.sku || "",
+        item.category || "",
+        item.quantity.toString(),
+        item.unit,
+        item.location || "",
+        status.text,
+        formatDate(item.updatedAt),
+      ];
+    });
+    const csvContent = [headers, ...rows].map((row) => row.map((cell) => `"${cell}"`).join(",")).join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `inventory-${new Date().toISOString().split("T")[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const exportRequestsToCSV = () => {
+    const headers = ["Request ID", "Job #", "Requested By", "Item", "Quantity", "Unit", "Status", "Date Requested", "Date Fulfilled"];
+    const rows = sortedRequests.map((req) => [
+      req.id.substring(0, 8),
+      req.job?.title || "—",
+      req.user.name || req.user.email || "",
+      req.itemName,
+      req.quantity.toString(),
+      req.unit,
+      req.status,
+      formatDate(req.requestedDate),
+      req.fulfilledDate ? formatDate(req.fulfilledDate) : "—",
+    ]);
+    const csvContent = [headers, ...rows].map((row) => row.map((cell) => `"${cell}"`).join(",")).join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `material-requests-${new Date().toISOString().split("T")[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   const lowStockCount = items.filter((item) => item.quantity > 0 && item.quantity <= item.minStockLevel).length;
   const outOfStockCount = items.filter((item) => item.quantity === 0).length;
@@ -300,8 +454,8 @@ export default function InventoryPage() {
           </div>
         )}
 
-        {/* Stock Alerts */}
-        {(lowStockCount > 0 || outOfStockCount > 0) && (
+        {/* Stock Alerts - Only show on Inventory tab */}
+        {activeTab === "inventory" && (lowStockCount > 0 || outOfStockCount > 0) && (
           <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
             {outOfStockCount > 0 && (
               <div className="bg-red-50 border-2 border-red-200 rounded-lg p-4 flex items-center gap-3">
@@ -324,110 +478,209 @@ export default function InventoryPage() {
           </div>
         )}
 
-        {/* Controls */}
-        <div className="mb-6 space-y-4">
-          <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
-            <div className="flex-1 w-full sm:w-auto">
-              <input
-                type="text"
-                placeholder="Search by name, SKU, or description..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm"
-              />
-            </div>
-
-            {canManage && (
+        {/* Tabs */}
+        <div className="bg-white rounded-xl shadow border border-gray-200 mb-6">
+          <div className="border-b border-gray-200">
+            <nav className="flex space-x-8 px-6" aria-label="Tabs">
               <button
-                onClick={openCreateModal}
-                className="w-full sm:w-auto bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium whitespace-nowrap"
+                onClick={() => {
+                  setActiveTab("inventory");
+                  setCurrentPage(1);
+                }}
+                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === "inventory"
+                    ? "border-blue-500 text-blue-600"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                }`}
               >
-                + Add Item
+                Inventory
               </button>
-            )}
-          </div>
-
-          <div className="flex flex-wrap gap-3">
-            <select
-              value={filterCategory}
-              onChange={(e) => setFilterCategory(e.target.value)}
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
-            >
-              <option value="ALL">All Categories</option>
-              {categories.map((cat) => (
-                <option key={cat} value={cat}>
-                  {cat}
-                </option>
-              ))}
-            </select>
-
-            <select
-              value={filterStockStatus}
-              onChange={(e) => setFilterStockStatus(e.target.value)}
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
-            >
-              <option value="ALL">All Stock Status</option>
-              <option value="IN_STOCK">In Stock</option>
-              <option value="LOW">Low/Out of Stock</option>
-            </select>
+              <button
+                onClick={() => {
+                  setActiveTab("materials");
+                  setRequestCurrentPage(1);
+                  if (materialRequests.length === 0) {
+                    loadMaterialRequests();
+                  }
+                }}
+                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === "materials"
+                    ? "border-blue-500 text-blue-600"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                }`}
+              >
+                Materials Requested
+              </button>
+            </nav>
           </div>
         </div>
 
-        {/* Inventory Table */}
-        {loading ? (
-          <div className="text-center py-12 bg-white rounded-xl shadow">
-            <div className="text-gray-500">Loading inventory...</div>
-          </div>
-        ) : filteredItems.length === 0 ? (
-          <div className="bg-white rounded-xl shadow p-12 text-center">
-            <div className="text-6xl mb-4">📦</div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">
-              {items.length === 0 ? "No inventory items yet" : "No items match your search"}
-            </h3>
-            <p className="text-gray-600 mb-6">
-              {items.length === 0
-                ? canManage
-                  ? "Add your first inventory item to get started"
-                  : "No items in inventory yet"
-                : "Try adjusting your filters or search term"}
-            </p>
-            {canManage && items.length === 0 && (
-              <button
-                onClick={openCreateModal}
-                className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium"
-              >
-                Add First Item
-              </button>
-            )}
-          </div>
-        ) : (
-          <div className="bg-white rounded-xl shadow overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50 border-b">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Item
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Category
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Quantity
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Location
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredItems.map((item) => {
+        {/* Inventory Tab Content */}
+        {activeTab === "inventory" && (
+          <div className="space-y-6">
+            {/* Controls */}
+            <div className="bg-white rounded-xl shadow border border-gray-200 p-6">
+              <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center mb-4">
+                <div className="flex-1 w-full sm:w-auto">
+                  <input
+                    type="text"
+                    placeholder="Search by name, SKU, or description..."
+                    value={searchTerm}
+                    onChange={(e) => {
+                      setSearchTerm(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                    className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm"
+                  />
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    onClick={exportInventoryToCSV}
+                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
+                  >
+                    📥 Export CSV
+                  </button>
+                  {canManage && (
+                    <button
+                      onClick={openCreateModal}
+                      className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium whitespace-nowrap"
+                    >
+                      + Add Item
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-3">
+                <select
+                  value={filterCategory}
+                  onChange={(e) => {
+                    setFilterCategory(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                >
+                  <option value="ALL">All Categories</option>
+                  {categories.map((cat) => (
+                    <option key={cat} value={cat}>
+                      {cat}
+                    </option>
+                  ))}
+                </select>
+
+                <select
+                  value={filterStockStatus}
+                  onChange={(e) => {
+                    setFilterStockStatus(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                >
+                  <option value="ALL">All Stock Status</option>
+                  <option value="IN_STOCK">In Stock</option>
+                  <option value="LOW">Low/Out of Stock</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Inventory Table */}
+            {loading ? (
+              <div className="text-center py-12 bg-white rounded-xl shadow">
+                <div className="text-gray-500">Loading inventory...</div>
+              </div>
+            ) : sortedItems.length === 0 ? (
+              <div className="bg-white rounded-xl shadow p-12 text-center">
+                <div className="text-6xl mb-4">📦</div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                  {items.length === 0 ? "No inventory items yet" : "No items match your search"}
+                </h3>
+                <p className="text-gray-600 mb-6">
+                  {items.length === 0
+                    ? canManage
+                      ? "Add your first inventory item to get started"
+                      : "No items in inventory yet"
+                    : "Try adjusting your filters or search term"}
+                </p>
+                {canManage && items.length === 0 && (
+                  <button
+                    onClick={openCreateModal}
+                    className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                  >
+                    Add First Item
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div className="bg-white rounded-xl shadow overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50 border-b">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <button
+                            onClick={() => {
+                              setSortField("name");
+                              setSortDirection(sortField === "name" && sortDirection === "asc" ? "desc" : "asc");
+                            }}
+                            className="flex items-center gap-1 hover:text-gray-700"
+                          >
+                            Item Name
+                            {sortField === "name" && (sortDirection === "asc" ? "↑" : "↓")}
+                          </button>
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Category
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <button
+                            onClick={() => {
+                              setSortField("quantity");
+                              setSortDirection(sortField === "quantity" && sortDirection === "asc" ? "desc" : "asc");
+                            }}
+                            className="flex items-center gap-1 hover:text-gray-700"
+                          >
+                            Quantity
+                            {sortField === "quantity" && (sortDirection === "asc" ? "↑" : "↓")}
+                          </button>
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Unit
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <button
+                            onClick={() => {
+                              setSortField("location");
+                              setSortDirection(sortField === "location" && sortDirection === "asc" ? "desc" : "asc");
+                            }}
+                            className="flex items-center gap-1 hover:text-gray-700"
+                          >
+                            Location
+                            {sortField === "location" && (sortDirection === "asc" ? "↑" : "↓")}
+                          </button>
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Status
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <button
+                            onClick={() => {
+                              setSortField("updatedAt");
+                              setSortDirection(sortField === "updatedAt" && sortDirection === "asc" ? "desc" : "asc");
+                            }}
+                            className="flex items-center gap-1 hover:text-gray-700"
+                          >
+                            Last Updated
+                            {sortField === "updatedAt" && (sortDirection === "asc" ? "↑" : "↓")}
+                          </button>
+                        </th>
+                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {paginatedItems.map((item) => {
                     const stockStatus = getStockStatus(item);
                     return (
                       <tr key={item.id} className="hover:bg-gray-50">
@@ -513,6 +766,387 @@ export default function InventoryPage() {
                 </tbody>
               </table>
             </div>
+            </div>
+            )}
+
+            {/* Pagination */}
+            {totalInventoryPages > 1 && (
+              <div className="bg-white rounded-xl shadow border border-gray-200 p-4 flex items-center justify-between">
+                <div className="text-sm text-gray-700">
+                  Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, sortedItems.length)} of {sortedItems.length} items
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                    disabled={currentPage === 1}
+                    className="px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Previous
+                  </button>
+                  {Array.from({ length: Math.min(5, totalInventoryPages) }, (_, i) => {
+                    let pageNum;
+                    if (totalInventoryPages <= 5) {
+                      pageNum = i + 1;
+                    } else if (currentPage <= 3) {
+                      pageNum = i + 1;
+                    } else if (currentPage >= totalInventoryPages - 2) {
+                      pageNum = totalInventoryPages - 4 + i;
+                    } else {
+                      pageNum = currentPage - 2 + i;
+                    }
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => setCurrentPage(pageNum)}
+                        className={`px-3 py-1 border rounded-lg ${
+                          currentPage === pageNum
+                            ? "bg-blue-600 text-white border-blue-600"
+                            : "border-gray-300 hover:bg-gray-50"
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
+                  <button
+                    onClick={() => setCurrentPage(Math.min(totalInventoryPages, currentPage + 1))}
+                    disabled={currentPage === totalInventoryPages}
+                    className="px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Materials Requested Tab Content */}
+        {activeTab === "materials" && (
+          <div className="space-y-6">
+            {/* Controls */}
+            <div className="bg-white rounded-xl shadow border border-gray-200 p-6">
+              <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center mb-4">
+                <div className="flex-1 w-full sm:w-auto">
+                  <input
+                    type="text"
+                    placeholder="Search by item, job, or requester..."
+                    value={requestSearchTerm}
+                    onChange={(e) => {
+                      setRequestSearchTerm(e.target.value);
+                      setRequestCurrentPage(1);
+                    }}
+                    className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm"
+                  />
+                </div>
+
+                <button
+                  onClick={exportRequestsToCSV}
+                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
+                >
+                  📥 Export CSV
+                </button>
+              </div>
+
+              <div className="flex flex-wrap gap-3">
+                <select
+                  value={filterRequestStatus}
+                  onChange={(e) => {
+                    setFilterRequestStatus(e.target.value);
+                    setRequestCurrentPage(1);
+                  }}
+                  className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                >
+                  <option value="ALL">All Status</option>
+                  <option value="PENDING">Pending</option>
+                  <option value="APPROVED">Approved</option>
+                  <option value="ON_HOLD">On Hold</option>
+                  <option value="REJECTED">Denied</option>
+                  <option value="FULFILLED">Fulfilled</option>
+                </select>
+
+                <select
+                  value={filterRequestJob}
+                  onChange={(e) => {
+                    setFilterRequestJob(e.target.value);
+                    setRequestCurrentPage(1);
+                  }}
+                  className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                >
+                  <option value="ALL">All Jobs</option>
+                  <option value="NO_JOB">No Job</option>
+                  {materialRequests
+                    .filter((r) => r.job)
+                    .map((r) => r.job!)
+                    .filter((job, index, self) => index === self.findIndex((j) => j.id === job.id))
+                    .map((job) => (
+                      <option key={job.id} value={job.id}>
+                        {job.title}
+                      </option>
+                    ))}
+                </select>
+
+                <select
+                  value={filterRequester}
+                  onChange={(e) => {
+                    setFilterRequester(e.target.value);
+                    setRequestCurrentPage(1);
+                  }}
+                  className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                >
+                  <option value="ALL">All Requesters</option>
+                  {materialRequests
+                    .map((r) => r.user.email)
+                    .filter((email, index, self) => email && index === self.indexOf(email))
+                    .map((email) => (
+                      <option key={email} value={email}>
+                        {materialRequests.find((r) => r.user.email === email)?.user.name || email}
+                      </option>
+                    ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Materials Requested Table */}
+            {loadingRequests ? (
+              <div className="text-center py-12 bg-white rounded-xl shadow">
+                <div className="text-gray-500">Loading material requests...</div>
+              </div>
+            ) : sortedRequests.length === 0 ? (
+              <div className="bg-white rounded-xl shadow p-12 text-center">
+                <div className="text-6xl mb-4">📋</div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                  {materialRequests.length === 0 ? "No material requests yet" : "No requests match your search"}
+                </h3>
+                <p className="text-gray-600">
+                  {materialRequests.length === 0
+                    ? "Material requests will appear here when employees submit them"
+                    : "Try adjusting your filters or search term"}
+                </p>
+              </div>
+            ) : (
+              <div className="bg-white rounded-xl shadow overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50 border-b">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                          <button
+                            onClick={() => {
+                              setRequestSortField("requestedDate");
+                              setRequestSortDirection(requestSortField === "requestedDate" && requestSortDirection === "asc" ? "desc" : "asc");
+                            }}
+                            className="flex items-center gap-1 hover:text-gray-700"
+                          >
+                            Date Requested
+                            {requestSortField === "requestedDate" && (requestSortDirection === "asc" ? "↑" : "↓")}
+                          </button>
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Request ID</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Job #</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                          <button
+                            onClick={() => {
+                              setRequestSortField("itemName");
+                              setRequestSortDirection(requestSortField === "itemName" && requestSortDirection === "asc" ? "desc" : "asc");
+                            }}
+                            className="flex items-center gap-1 hover:text-gray-700"
+                          >
+                            Item
+                            {requestSortField === "itemName" && (requestSortDirection === "asc" ? "↑" : "↓")}
+                          </button>
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                          <button
+                            onClick={() => {
+                              setRequestSortField("quantity");
+                              setRequestSortDirection(requestSortField === "quantity" && requestSortDirection === "asc" ? "desc" : "asc");
+                            }}
+                            className="flex items-center gap-1 hover:text-gray-700"
+                          >
+                            Quantity
+                            {requestSortField === "quantity" && (requestSortDirection === "asc" ? "↑" : "↓")}
+                          </button>
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Requested By</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                          <button
+                            onClick={() => {
+                              setRequestSortField("status");
+                              setRequestSortDirection(requestSortField === "status" && requestSortDirection === "asc" ? "desc" : "asc");
+                            }}
+                            className="flex items-center gap-1 hover:text-gray-700"
+                          >
+                            Status
+                            {requestSortField === "status" && (requestSortDirection === "asc" ? "↑" : "↓")}
+                          </button>
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date Fulfilled</th>
+                        <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y">
+                      {paginatedRequests.map((req) => (
+                        <tr key={req.id} className="hover:bg-gray-50">
+                          <td className="px-4 py-3 text-sm text-gray-700">{formatDate(req.requestedDate)}</td>
+                          <td className="px-4 py-3 text-sm text-gray-500 font-mono">{req.id.substring(0, 8)}</td>
+                          <td className="px-4 py-3 text-sm text-blue-700">{req.job ? req.job.title : "—"}</td>
+                          <td className="px-4 py-3 text-sm text-gray-900">
+                            <div className="font-medium">{req.itemName}</div>
+                            {req.description && <div className="text-xs text-gray-500 line-clamp-1">{req.description}</div>}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-900">
+                            {req.status === "PENDING" ? (
+                              <input
+                                id={`qty-${req.id}`}
+                                type="number"
+                                defaultValue={Math.floor(req.quantity)}
+                                min="1"
+                                max="9"
+                                step="1"
+                                maxLength={1}
+                                onKeyDown={(e) => {
+                                  if (e.key === '.' || e.key === '-' || e.key === 'e' || e.key === 'E' || e.key === '+') {
+                                    e.preventDefault();
+                                  }
+                                }}
+                                onChange={(e) => {
+                                  const value = e.target.value;
+                                  if (value === "" || (value.length <= 1 && /^[1-9]$/.test(value))) {
+                                    // Valid
+                                  } else {
+                                    e.target.value = Math.floor(req.quantity).toString();
+                                  }
+                                }}
+                                onBlur={(e) => {
+                                  const numValue = Number(e.target.value);
+                                  if (isNaN(numValue) || numValue < 1) {
+                                    e.target.value = "1";
+                                  } else if (numValue > 9) {
+                                    e.target.value = "9";
+                                  } else {
+                                    e.target.value = Math.floor(numValue).toString();
+                                  }
+                                  const form = new FormData();
+                                  form.append("status", req.status);
+                                  form.append("quantity", e.target.value);
+                                  updateMaterialRequest(req.id, form).then((res) => {
+                                    if (!res.ok) {
+                                      setError(res.error);
+                                      e.target.value = Math.floor(req.quantity).toString();
+                                    } else {
+                                      loadMaterialRequests();
+                                    }
+                                  });
+                                }}
+                                className="w-16 px-2 py-1 border border-gray-300 rounded text-sm text-center"
+                              />
+                            ) : (
+                              <span>{Math.floor(req.quantity)} {req.unit}</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-700">{req.user.name || req.user.email}</td>
+                          <td className="px-4 py-3 text-sm">
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              req.status === "FULFILLED" ? "bg-green-100 text-green-700" :
+                              req.status === "APPROVED" ? "bg-blue-100 text-blue-700" :
+                              req.status === "REJECTED" ? "bg-red-100 text-red-700" :
+                              req.status === "ON_HOLD" ? "bg-yellow-100 text-yellow-700" :
+                              "bg-gray-100 text-gray-700"
+                            }`}>
+                              {req.status === "REJECTED" ? "Denied" : req.status}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-500">
+                            {req.fulfilledDate ? formatDate(req.fulfilledDate) : "—"}
+                          </td>
+                          <td className="px-4 py-3 text-right text-sm">
+                            {req.status === "PENDING" && canManage && (
+                              <div className="inline-flex gap-2 items-center">
+                                <input id={`amt-${req.id}`} type="number" step="0.01" placeholder="Amount" className="w-28 px-2 py-1 border rounded text-sm" />
+                                <button onClick={() => {
+                                  const input = document.getElementById(`amt-${req.id}`) as HTMLInputElement | null;
+                                  const val = input?.value || "";
+                                  const form = new FormData();
+                                  form.append("status", "APPROVED");
+                                  if (val) form.append("amount", val);
+                                  updateMaterialRequest(req.id, form).then((res) => {
+                                    if (!res.ok) { setError(res.error); return; }
+                                    loadMaterialRequests();
+                                    setSuccess("Request approved");
+                                  });
+                                }} className="px-3 py-1 border border-blue-300 text-blue-700 rounded-lg hover:bg-blue-50">Approve</button>
+                                <button onClick={() => handleUpdateRequestStatus(req.id, "REJECTED")} className="px-3 py-1 border border-red-300 text-red-700 rounded-lg hover:bg-red-50">Deny</button>
+                                <button onClick={() => handleUpdateRequestStatus(req.id, "ON_HOLD")} className="px-3 py-1 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">On Hold</button>
+                              </div>
+                            )}
+                            {req.status === "ON_HOLD" && canManage && (
+                              <div className="inline-flex gap-2 items-center">
+                                <button onClick={() => handleUpdateRequestStatus(req.id, "PENDING")} className="px-3 py-1 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">Resume</button>
+                                <button onClick={() => handleUpdateRequestStatus(req.id, "REJECTED")} className="px-3 py-1 border border-red-300 text-red-700 rounded-lg hover:bg-red-50">Deny</button>
+                              </div>
+                            )}
+                            {req.status === "APPROVED" && canManage && (
+                              <button onClick={() => handleUpdateRequestStatus(req.id, "FULFILLED")} className="px-3 py-1 border border-green-300 text-green-700 rounded-lg hover:bg-green-50">Mark Fulfilled</button>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* Pagination */}
+            {totalRequestPages > 1 && (
+              <div className="bg-white rounded-xl shadow border border-gray-200 p-4 flex items-center justify-between">
+                <div className="text-sm text-gray-700">
+                  Showing {(requestCurrentPage - 1) * requestsPerPage + 1} to {Math.min(requestCurrentPage * requestsPerPage, sortedRequests.length)} of {sortedRequests.length} requests
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setRequestCurrentPage(Math.max(1, requestCurrentPage - 1))}
+                    disabled={requestCurrentPage === 1}
+                    className="px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Previous
+                  </button>
+                  {Array.from({ length: Math.min(5, totalRequestPages) }, (_, i) => {
+                    let pageNum;
+                    if (totalRequestPages <= 5) {
+                      pageNum = i + 1;
+                    } else if (requestCurrentPage <= 3) {
+                      pageNum = i + 1;
+                    } else if (requestCurrentPage >= totalRequestPages - 2) {
+                      pageNum = totalRequestPages - 4 + i;
+                    } else {
+                      pageNum = requestCurrentPage - 2 + i;
+                    }
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => setRequestCurrentPage(pageNum)}
+                        className={`px-3 py-1 border rounded-lg ${
+                          requestCurrentPage === pageNum
+                            ? "bg-blue-600 text-white border-blue-600"
+                            : "border-gray-300 hover:bg-gray-50"
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
+                  <button
+                    onClick={() => setRequestCurrentPage(Math.min(totalRequestPages, requestCurrentPage + 1))}
+                    disabled={requestCurrentPage === totalRequestPages}
+                    className="px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -851,172 +1485,6 @@ export default function InventoryPage() {
         </div>
       )}
 
-      {/* Material Requests (Managers/Admins) */}
-      {canManage && (
-        <div className="bg-white rounded-xl shadow border border-gray-200 mb-8">
-          <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-            <div>
-              <h2 className="text-xl font-semibold text-gray-900">Material Requests</h2>
-              <p className="text-sm text-gray-500">View and manage all job material requests</p>
-            </div>
-            <div className="flex gap-2 items-center">
-              <label className="text-sm text-gray-600">Filter:</label>
-              <select
-                value={filterRequestStatus}
-                onChange={(e) => setFilterRequestStatus(e.target.value)}
-                className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
-              >
-                <option value="ALL">All</option>
-                <option value="PENDING">Pending</option>
-                <option value="APPROVED">Approved</option>
-                <option value="ON_HOLD">On Hold</option>
-                <option value="REJECTED">Rejected</option>
-                <option value="FULFILLED">Fulfilled</option>
-              </select>
-              <button onClick={loadMaterialRequests} className="text-sm px-3 py-2 border rounded-lg hover:bg-gray-50">Refresh</button>
-            </div>
-          </div>
-
-          {loadingRequests ? (
-            <div className="p-6 text-center text-gray-600">Loading requests...</div>
-          ) : (
-            <div className="p-4 overflow-x-auto">
-              {(() => {
-                const filtered = materialRequests.filter((r) => filterRequestStatus === "ALL" ? true : r.status === filterRequestStatus);
-                if (filtered.length === 0) {
-                  return <div className="text-center text-gray-500 py-8">No material requests</div>;
-                }
-                return (
-                  <table className="min-w-full">
-                    <thead className="bg-gray-50 border-b">
-                      <tr>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Requested</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Item</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Qty</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Job</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">By</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Priority</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                        <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y">
-                      {filtered.map((req) => (
-                        <tr key={req.id} className="hover:bg-gray-50">
-                          <td className="px-4 py-3 text-sm text-gray-700">{formatDateTime(req.requestedDate)}</td>
-                          <td className="px-4 py-3 text-sm text-gray-900">
-                            <div className="font-medium">{req.itemName}</div>
-                            {req.description && <div className="text-xs text-gray-500 line-clamp-1">{req.description}</div>}
-                          </td>
-                          <td className="px-4 py-3 text-sm text-gray-900">
-                            {req.status === "PENDING" ? (
-                              <input
-                                id={`qty-${req.id}`}
-                                type="number"
-                                defaultValue={Math.floor(req.quantity)}
-                                min="1"
-                                max="9"
-                                step="1"
-                                maxLength={1}
-                                onKeyDown={(e) => {
-                                  // Prevent decimal point, minus sign, and 'e' (scientific notation)
-                                  if (e.key === '.' || e.key === '-' || e.key === 'e' || e.key === 'E' || e.key === '+') {
-                                    e.preventDefault();
-                                  }
-                                }}
-                                onChange={(e) => {
-                                  const value = e.target.value;
-                                  // Only allow single digit numbers (1-9), no decimals
-                                  if (value === "" || (value.length <= 1 && /^[1-9]$/.test(value))) {
-                                    // Value is valid, allow it
-                                  } else {
-                                    // If user tries to enter more than one digit or decimal, keep current value
-                                    e.target.value = Math.floor(req.quantity).toString();
-                                  }
-                                }}
-                                onBlur={(e) => {
-                                  // Ensure value is a whole number between 1-9 on blur
-                                  const numValue = Number(e.target.value);
-                                  if (isNaN(numValue) || numValue < 1) {
-                                    e.target.value = "1";
-                                  } else if (numValue > 9) {
-                                    e.target.value = "9";
-                                  } else {
-                                    e.target.value = Math.floor(numValue).toString(); // Ensure whole number, no decimals
-                                  }
-                                  // Auto-save quantity change
-                                  const form = new FormData();
-                                  form.append("status", req.status);
-                                  form.append("quantity", e.target.value);
-                                  updateMaterialRequest(req.id, form).then((res) => {
-                                    if (!res.ok) {
-                                      setError(res.error);
-                                      // Revert to original value on error
-                                      e.target.value = Math.floor(req.quantity).toString();
-                                    } else {
-                                      loadMaterialRequests();
-                                    }
-                                  });
-                                }}
-                                className="w-16 px-2 py-1 border border-gray-300 rounded text-sm text-center"
-                              />
-                            ) : (
-                              <span>{Math.floor(req.quantity)} {req.unit}</span>
-                            )}
-                          </td>
-                          <td className="px-4 py-3 text-sm text-blue-700">{req.job ? req.job.title : "—"}</td>
-                          <td className="px-4 py-3 text-sm text-gray-700">{req.user.name || req.user.email}</td>
-                          <td className="px-4 py-3 text-sm">
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${req.priority === "URGENT" ? "bg-red-100 text-red-700" : req.priority === "HIGH" ? "bg-orange-100 text-orange-700" : req.priority === "MEDIUM" ? "bg-yellow-100 text-yellow-700" : "bg-green-100 text-green-700"}`}>
-                              {req.priority}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 text-sm">
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${req.status === "FULFILLED" ? "bg-green-100 text-green-700" : req.status === "APPROVED" ? "bg-blue-100 text-blue-700" : req.status === "REJECTED" ? "bg-red-100 text-red-700" : "bg-gray-100 text-gray-700"}`}>
-                              {req.status}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 text-right text-sm">
-                            {req.status === "PENDING" && (
-                              <div className="inline-flex gap-2 items-center">
-                                <input id={`amt-${req.id}`} type="number" step="0.01" placeholder="Amount" className="w-28 px-2 py-1 border rounded text-sm" />
-                                <button onClick={() => {
-                                  const input = document.getElementById(`amt-${req.id}`) as HTMLInputElement | null;
-                                  const val = input?.value || "";
-                                  const form = new FormData();
-                                  form.append("status", "APPROVED");
-                                  if (val) form.append("amount", val);
-                                  updateMaterialRequest(req.id, form).then((res) => {
-                                    if (!res.ok) { setError(res.error); return; }
-                                    // refresh inline
-                                    loadMaterialRequests();
-                                    setSuccess("Request approved");
-                                  });
-                                }} className="px-3 py-1 border border-blue-300 text-blue-700 rounded-lg hover:bg-blue-50">Approve</button>
-                                <button onClick={() => handleUpdateRequestStatus(req.id, "REJECTED")} className="px-3 py-1 border border-red-300 text-red-700 rounded-lg hover:bg-red-50">Reject</button>
-                                <button onClick={() => handleUpdateRequestStatus(req.id, "ON_HOLD")} className="px-3 py-1 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">On Hold</button>
-                              </div>
-                            )}
-                            {req.status === "ON_HOLD" && (
-                              <div className="inline-flex gap-2 items-center">
-                                <button onClick={() => handleUpdateRequestStatus(req.id, "PENDING")} className="px-3 py-1 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">Resume</button>
-                                <button onClick={() => handleUpdateRequestStatus(req.id, "REJECTED")} className="px-3 py-1 border border-red-300 text-red-700 rounded-lg hover:bg-red-50">Reject</button>
-                              </div>
-                            )}
-                            {req.status === "APPROVED" && (
-                              <button onClick={() => handleUpdateRequestStatus(req.id, "FULFILLED")} className="px-3 py-1 border border-green-300 text-green-700 rounded-lg hover:bg-green-50">Mark Fulfilled</button>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                );
-              })()}
-            </div>
-          )}
-        </div>
-      )}
     </main>
   );
 }
