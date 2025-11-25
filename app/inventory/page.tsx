@@ -1122,7 +1122,7 @@ export default function InventoryPage() {
                                       e.target.value = Math.floor(req.quantity).toString();
                                     }
                                   }}
-                                  onBlur={(e) => {
+                                  onBlur={async (e) => {
                                     const numValue = Number(e.target.value);
                                     if (isNaN(numValue) || numValue < 1) {
                                       e.target.value = "1";
