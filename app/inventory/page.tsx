@@ -53,8 +53,10 @@ interface MaterialRequest {
   status: string;
   requestedDate: string;
   fulfilledDate: string | null;
+  dateDelivered: string | null;
   notes: string | null;
   recommendedAction: string | null;
+  orderStatus: string | null;
   job: {
     id: string;
     title: string;
@@ -474,22 +476,25 @@ export default function InventoryPage() {
   };
 
   const exportRequestsToCSV = () => {
-    const headers = ["Job No.", "Employee", "Item", "Qty Requested", "Status", "Action", "Date Requested", "Date Approved", "Notes"];
+    const headers = ["Job No.", "Employee", "Item", "Qty Requested", "Availability", "Action", "Status", "Date Requested", "Date Approved", "Date Delivered", "Notes"];
     const rows = sortedRequests.map((req) => {
       const currentStock = getCurrentStock(req.itemName);
       const recommendedAction = getRecommendedAction(req);
       const inventoryItem = items.find((item) => item.name.toLowerCase() === req.itemName.toLowerCase());
-      const status = inventoryItem ? (currentStock >= req.quantity ? "Available" : "Unavailable") : "Unavailable";
+      const availability = inventoryItem ? (currentStock >= req.quantity ? "Available" : "Unavailable") : "Unavailable";
       const dateApproved = req.status === "APPROVED" || req.status === "FULFILLED" ? (req.fulfilledDate ? formatDate(req.fulfilledDate) : "") : "";
+      const orderStatus = req.orderStatus === "TO_ORDER" ? "To Order" : req.orderStatus === "ORDERED" ? "Ordered" : req.orderStatus === "RECEIVED" ? "Received" : "";
       return [
         req.job ? req.job.id.substring(0, 8).toUpperCase() : "",
         req.user.name || req.user.email || "",
         req.itemName,
         `${req.quantity} ${req.unit}`,
-        status,
-        recommendedAction === "APPROVE" ? "Approve" : recommendedAction === "PARTIAL" ? "Partial" : recommendedAction === "DENY" ? "Deny" : "Pending",
+        availability,
+        recommendedAction === "APPROVE" ? "Approve" : recommendedAction === "PARTIAL" ? "Partial" : recommendedAction === "REJECTED" ? "Rejected" : "Pending",
+        orderStatus,
         formatDate(req.requestedDate),
         dateApproved,
+        req.dateDelivered ? formatDate(req.dateDelivered) : "",
         req.notes || "",
       ];
     });
@@ -1052,8 +1057,9 @@ export default function InventoryPage() {
                             {requestSortField === "quantity" && (requestSortDirection === "asc" ? "↑" : "↓")}
                           </button>
                         </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Status</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Availability</th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Action</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Status</th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                           <button
                             onClick={() => {
@@ -1067,6 +1073,7 @@ export default function InventoryPage() {
                           </button>
                         </th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Date Approved</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Date Delivered</th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Notes</th>
                       </tr>
                     </thead>
@@ -1088,7 +1095,7 @@ export default function InventoryPage() {
                               {req.description && <div className="text-xs text-gray-500 line-clamp-1">{req.description}</div>}
                             </td>
                             <td className="px-4 py-3 text-sm text-gray-900">
-                              {req.status === "PENDING" && canManage ? (
+                              {req.status === "PENDING" && canManage && (
                                 <input
                                   id={`qty-${req.id}`}
                                   type="number"
@@ -1150,38 +1157,89 @@ export default function InventoryPage() {
                               {canManage ? (
                                 <select
                                   value={req.recommendedAction || "PENDING"}
-                                  onChange={(e) => {
+                                  onChange={async (e) => {
+                                    const newValue = e.target.value;
+                                    // Show confirmation for APPROVE
+                                    if (newValue === "APPROVE") {
+                                      const confirmed = window.confirm("Are you sure?");
+                                      if (!confirmed) {
+                                        e.target.value = req.recommendedAction || "PENDING";
+                                        return;
+                                      }
+                                    }
                                     const form = new FormData();
                                     form.append("status", req.status);
-                                    form.append("recommendedAction", e.target.value);
-                                    updateMaterialRequest(req.id, form).then((res) => {
-                                      if (!res.ok) {
-                                        setError(res.error);
-                                      } else {
-                                        loadMaterialRequests();
-                                      }
-                                    });
+                                    form.append("recommendedAction", newValue);
+                                    const res = await updateMaterialRequest(req.id, form);
+                                    if (!res.ok) {
+                                      setError(res.error);
+                                      e.target.value = req.recommendedAction || "PENDING";
+                                    } else {
+                                      loadMaterialRequests();
+                                    }
                                   }}
                                   className={`text-xs font-medium px-2 py-1 rounded border ${
                                     (req.recommendedAction || "PENDING") === "APPROVE" ? "bg-green-100 text-green-700 border-green-300" :
                                     (req.recommendedAction || "PENDING") === "PARTIAL" ? "bg-orange-100 text-orange-700 border-orange-300" :
-                                    (req.recommendedAction || "PENDING") === "DENY" ? "bg-red-100 text-red-700 border-red-300" :
+                                    (req.recommendedAction || "PENDING") === "REJECTED" ? "bg-red-100 text-red-700 border-red-300" :
                                     "bg-yellow-100 text-yellow-700 border-yellow-300"
                                   }`}
                                 >
                                   <option value="PENDING">Pending</option>
                                   <option value="APPROVE">Approve</option>
                                   <option value="PARTIAL">Partial</option>
-                                  <option value="DENY">Deny</option>
+                                  <option value="REJECTED">Rejected</option>
                                 </select>
                               ) : (
                                 <span className={`px-2 py-1 rounded text-xs font-medium ${
                                   recommendedAction === "APPROVE" ? "bg-green-100 text-green-700" :
                                   recommendedAction === "PARTIAL" ? "bg-orange-100 text-orange-700" :
-                                  recommendedAction === "DENY" ? "bg-red-100 text-red-700" :
+                                  recommendedAction === "REJECTED" ? "bg-red-100 text-red-700" :
                                   "bg-yellow-100 text-yellow-700"
                                 }`}>
-                                  {recommendedAction === "APPROVE" ? "Approve" : recommendedAction === "PARTIAL" ? "Partial" : recommendedAction === "DENY" ? "Deny" : "Pending"}
+                                  {recommendedAction === "APPROVE" ? "Approve" : recommendedAction === "PARTIAL" ? "Partial" : recommendedAction === "REJECTED" ? "Rejected" : "Pending"}
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-4 py-3 text-sm">
+                              {canManage ? (
+                                <select
+                                  value={req.orderStatus || ""}
+                                  onChange={async (e) => {
+                                    const newValue = e.target.value;
+                                    // Show confirmation for RECEIVED
+                                    if (newValue === "RECEIVED") {
+                                      const confirmed = window.confirm("Are you sure?");
+                                      if (!confirmed) {
+                                        e.target.value = req.orderStatus || "";
+                                        return;
+                                      }
+                                    }
+                                    const form = new FormData();
+                                    form.append("status", req.status);
+                                    form.append("orderStatus", newValue);
+                                    // Set dateDelivered when status is RECEIVED
+                                    if (newValue === "RECEIVED") {
+                                      form.append("dateDelivered", new Date().toISOString());
+                                    }
+                                    const res = await updateMaterialRequest(req.id, form);
+                                    if (!res.ok) {
+                                      setError(res.error);
+                                      e.target.value = req.orderStatus || "";
+                                    } else {
+                                      loadMaterialRequests();
+                                    }
+                                  }}
+                                  className="text-xs font-medium px-2 py-1 rounded border border-gray-300 bg-white"
+                                >
+                                  <option value="">Select...</option>
+                                  <option value="TO_ORDER">To Order</option>
+                                  <option value="ORDERED">Ordered</option>
+                                  <option value="RECEIVED">Received</option>
+                                </select>
+                              ) : (
+                                <span className="px-2 py-1 rounded text-xs font-medium text-gray-600">
+                                  {req.orderStatus === "TO_ORDER" ? "To Order" : req.orderStatus === "ORDERED" ? "Ordered" : req.orderStatus === "RECEIVED" ? "Received" : "—"}
                                 </span>
                               )}
                             </td>
@@ -1190,6 +1248,9 @@ export default function InventoryPage() {
                             </td>
                             <td className="px-4 py-3 text-sm text-gray-600">
                               {req.status === "APPROVED" || req.status === "FULFILLED" ? (req.fulfilledDate ? formatDate(req.fulfilledDate) : "—") : "—"}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-gray-600">
+                              {req.dateDelivered ? formatDate(req.dateDelivered) : "—"}
                             </td>
                             <td className="px-4 py-3 text-sm text-gray-600 max-w-xs">
                               {canManage ? (

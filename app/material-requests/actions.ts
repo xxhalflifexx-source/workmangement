@@ -25,7 +25,8 @@ const updateRequestSchema = z.object({
   status: z.enum(["PENDING", "APPROVED", "REJECTED", "FULFILLED", "ON_HOLD"]),
   notes: z.string().optional(),
   quantity: z.number().int().min(1, "Quantity must be at least 1").max(9, "Quantity must be a single digit (1-9)").optional(),
-  recommendedAction: z.enum(["PENDING", "APPROVE", "PARTIAL", "DENY"]).optional(),
+  recommendedAction: z.enum(["PENDING", "APPROVE", "PARTIAL", "REJECTED"]).optional(),
+  orderStatus: z.enum(["TO_ORDER", "ORDERED", "RECEIVED"]).optional(),
 });
 
 // Generate next request number (MR0001, MR0002, etc.)
@@ -316,8 +317,20 @@ export async function updateMaterialRequest(requestId: string, formData: FormDat
 
     // Update recommended action if provided (admin/manager only)
     const recommendedAction = formData.get("recommendedAction") as string | null;
-    if (recommendedAction && (recommendedAction === "PENDING" || recommendedAction === "APPROVE" || recommendedAction === "PARTIAL" || recommendedAction === "DENY")) {
+    if (recommendedAction && (recommendedAction === "PENDING" || recommendedAction === "APPROVE" || recommendedAction === "PARTIAL" || recommendedAction === "REJECTED")) {
       updateData.recommendedAction = recommendedAction;
+    }
+
+    // Update order status if provided (admin/manager only)
+    const orderStatus = formData.get("orderStatus") as string | null;
+    if (orderStatus && (orderStatus === "TO_ORDER" || orderStatus === "ORDERED" || orderStatus === "RECEIVED")) {
+      updateData.orderStatus = orderStatus;
+    }
+
+    // Set date delivered if order status is RECEIVED
+    const dateDelivered = formData.get("dateDelivered") as string | null;
+    if (dateDelivered && orderStatus === "RECEIVED") {
+      updateData.dateDelivered = new Date(dateDelivered);
     }
 
     // Set fulfilled date if status is APPROVED or FULFILLED (to track approval/fulfillment date)

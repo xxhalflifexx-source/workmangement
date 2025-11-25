@@ -190,8 +190,10 @@ model MaterialRequest {
   status          String         @default("PENDING") // PENDING, APPROVED, REJECTED, FULFILLED, ON_HOLD
   requestedDate   DateTime       @default(now())
   fulfilledDate   DateTime?
+  dateDelivered   DateTime?
   notes           String?
-  recommendedAction String?     // APPROVE, PARTIAL, DENY - set by admin/manager
+  recommendedAction String?     // APPROVE, PARTIAL, REJECTED - set by admin/manager
+  orderStatus     String?        // TO_ORDER, ORDERED, RECEIVED - set by admin/manager
   job             Job?           @relation(fields: [jobId], references: [id], onDelete: SetNull)
   user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
