@@ -128,7 +128,7 @@ export default function JobsPage() {
   const [materialPriority, setMaterialPriority] = useState("MEDIUM");
   const [materialNotes, setMaterialNotes] = useState("");
   const [submittingMaterial, setSubmittingMaterial] = useState(false);
-
+  
   // Estimated duration for jobs (stored in hours, can be entered as hours/days/weeks/months)
   const [estimatedDurationValue, setEstimatedDurationValue] = useState<string>("");
   const [estimatedDurationUnit, setEstimatedDurationUnit] = useState<"HOURS" | "DAYS" | "WEEKS" | "MONTHS">("HOURS");
@@ -723,7 +723,7 @@ export default function JobsPage() {
     // Load company settings if not already loaded
     if (!companySettings) {
       const settings = await getCompanySettingsForInvoice();
-      setCompanySettings(settings);
+    setCompanySettings(settings);
     }
     
     // Auto-populate customer info
@@ -740,24 +740,24 @@ export default function JobsPage() {
     }
     
     // Auto-generate quotation line items based on job pricing
-    const lineItems = [];
-    
+      const lineItems = [];
+      
     if (job.estimatedPrice && job.estimatedPrice > 0) {
-      lineItems.push({
-        description: job.title,
-        quantity: 1,
+        lineItems.push({
+          description: job.title,
+          quantity: 1,
         rate: job.estimatedPrice,
         amount: job.estimatedPrice,
-      });
-    } else {
-      lineItems.push({
-        description: job.title,
-        quantity: 1,
-        rate: 0,
-        amount: 0,
-      });
-    }
-    
+        });
+      } else {
+        lineItems.push({
+          description: job.title,
+          quantity: 1,
+          rate: 0,
+          amount: 0,
+        });
+      }
+      
     setQuotationLineItems(lineItems);
     setQuotationNotes("This quotation is valid for 30 days from the date above. Final pricing may vary based on actual work performed.");
     setQuotationShippingFee(0);
@@ -918,7 +918,7 @@ export default function JobsPage() {
       const res = currentQuotationId 
         ? await updateQuotation(formData)
         : await createQuotation(formData);
-      
+    
       if (res.ok) {
         setSuccess(currentQuotationId ? "Quotation updated successfully!" : "Quotation created successfully!");
         if (res.quotation) {
@@ -929,9 +929,9 @@ export default function JobsPage() {
         if (quotationsRes.ok) {
           setSavedQuotations(quotationsRes.quotations || []);
         }
-      } else {
+    } else {
         setError(res.error || "Failed to save quotation");
-      }
+    }
     } catch (err: any) {
       setError(err?.message || "Failed to save quotation");
     } finally {
@@ -972,7 +972,7 @@ export default function JobsPage() {
       paymentAccountNumber: quotationPaymentAccountNumber || undefined,
       preparedByName: quotationPreparedByName || undefined,
       preparedByTitle: quotationPreparedByTitle || undefined,
-    };
+  };
 
     const pdf = generateQuotationPDF(pdfData);
     const jobTitle = selectedJobForQuotation.title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
@@ -1385,14 +1385,14 @@ export default function JobsPage() {
                           </>
                         )}
                         {canManage && (
-                          <button
-                            onClick={() => openEditModal(job)}
+                        <button
+                          onClick={() => openEditModal(job)}
                             disabled={job.status === "AWAITING_QC" || job.status === "COMPLETED"}
                             className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
                             title={job.status === "AWAITING_QC" || job.status === "COMPLETED" ? "Job is locked - submitted to QC" : "Edit job"}
-                          >
-                            Edit
-                          </button>
+                        >
+                          Edit
+                        </button>
                         )}
                          {canManage && (
                            <button
@@ -1429,7 +1429,7 @@ export default function JobsPage() {
                 const isLocked = !!(editingJob && (editingJob.status === "AWAITING_QC" || editingJob.status === "COMPLETED"));
                 const isEmployee = !canManage;
                 return (
-                  <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleSubmit} className="space-y-4">
                     {isEmployee && (
                       <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
                         <p className="text-sm text-red-800 font-medium">
@@ -1437,31 +1437,31 @@ export default function JobsPage() {
                         </p>
                       </div>
                     )}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Title *
-                      </label>
-                    <input
-                      name="title"
-                      type="text"
-                      defaultValue={editingJob?.title}
-                      required
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Title *
+                  </label>
+                  <input
+                    name="title"
+                    type="text"
+                    defaultValue={editingJob?.title}
+                    required
                       disabled={isLocked || isEmployee}
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                    />
-                    </div>
+                  />
+                </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Description
                   </label>
-                    <textarea
-                      name="description"
-                      defaultValue={editingJob?.description || ""}
-                      rows={4}
+                  <textarea
+                    name="description"
+                    defaultValue={editingJob?.description || ""}
+                    rows={4}
                       disabled={isLocked || isEmployee}
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                    />
+                  />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -1477,11 +1477,11 @@ export default function JobsPage() {
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 disabled:bg-gray-100 disabled:cursor-not-allowed"
                     >
                   <option value="NOT_STARTED">Not Started</option>
-                  <option value="IN_PROGRESS">In Progress</option>
+                      <option value="IN_PROGRESS">In Progress</option>
                   <option value="AWAITING_QC">Submit to QC</option>
                   <option value="REWORK">Rework</option>
-                  <option value="COMPLETED">Completed</option>
-                  <option value="CANCELLED">Cancelled</option>
+                      <option value="COMPLETED">Completed</option>
+                      <option value="CANCELLED">Cancelled</option>
                     </select>
                   </div>
 
@@ -1641,26 +1641,26 @@ export default function JobsPage() {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Final/Agreed Price
-                        </label>
-                        <div className="relative">
-                          <span className="absolute left-3 top-2.5 text-gray-500">$</span>
-                          <input
-                            name="finalPrice"
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            defaultValue={editingJob?.finalPrice || ""}
-                            placeholder="0.00"
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Final/Agreed Price
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-2.5 text-gray-500">$</span>
+                        <input
+                          name="finalPrice"
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          defaultValue={editingJob?.finalPrice || ""}
+                          placeholder="0.00"
                             disabled={isLocked || isEmployee}
                             className="w-full border border-gray-300 rounded-lg pl-7 pr-3 py-2 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                          />
-                        </div>
-                        <p className="text-xs text-gray-500 mt-1">
-                          Leave empty until price is finalized with customer
-                        </p>
+                        />
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Leave empty until price is finalized with customer
+                      </p>
                       </div>
 
                       <div>
@@ -1915,19 +1915,19 @@ export default function JobsPage() {
                                 
                                 return (
                                   <button
-                                    key={idx}
+                                  key={idx}
                                     onClick={() => openPhotoViewer(selectedJobForActivity, photoIndexInAll >= 0 ? photoIndexInAll : idx, jobActivities)}
                                     className="group relative aspect-square rounded-lg overflow-hidden border-2 border-gray-300 hover:border-blue-500 transition-all cursor-pointer"
                                     type="button"
-                                  >
-                                    <img
-                                      src={imgPath}
-                                      alt={`Photo ${idx + 1}`}
-                                      className="w-full h-full object-cover group-hover:scale-110 transition-transform"
-                                    />
-                                    <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-opacity flex items-center justify-center">
-                                      <span className="opacity-0 group-hover:opacity-100 text-white text-xl">🔍</span>
-                                    </div>
+                                >
+                                  <img
+                                    src={imgPath}
+                                    alt={`Photo ${idx + 1}`}
+                                    className="w-full h-full object-cover group-hover:scale-110 transition-transform"
+                                  />
+                                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-opacity flex items-center justify-center">
+                                    <span className="opacity-0 group-hover:opacity-100 text-white text-xl">🔍</span>
+                                  </div>
                                   </button>
                                 );
                               })}
@@ -2209,20 +2209,20 @@ export default function JobsPage() {
                         <div className="flex-1">
                           <div className="text-sm font-medium text-gray-900">
                             {formatDateShort(new Date(quo.createdAt))} - ${quo.total.toFixed(2)}
-                          </div>
+              </div>
                           <div className="text-xs text-gray-500">
                             {quo.lines?.length || 0} line items
                           </div>
                         </div>
-                        <div className="flex gap-2">
-                          <button
+                    <div className="flex gap-2">
+                      <button
                             onClick={() => openQuotationForEdit(quo)}
                             className="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700"
-                          >
+                      >
                             Edit
-                          </button>
-                          <button
-                            onClick={() => {
+                      </button>
+                      <button
+                        onClick={() => {
                               const pdfData: QuotationPDFData = {
                                 quotationDate: quo.issueDate ? formatDateInput(new Date(quo.issueDate)) : todayCentralISO(),
                                 validUntil: quo.validUntil ? formatDateInput(new Date(quo.validUntil)) : undefined,
@@ -2253,16 +2253,16 @@ export default function JobsPage() {
                               pdf.save(`quotation-${jobTitle}-${formatDateInput(new Date(quo.createdAt))}.pdf`);
                             }}
                             className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
-                          >
+                      >
                             Download PDF
-                          </button>
-                        </div>
-                      </div>
-                    ))}
+                      </button>
+                    </div>
                   </div>
+                    ))}
                 </div>
-              )}
-              
+                      </div>
+                    )}
+
               {/* Estimate Header */}
               <div className="p-6 border-b bg-gray-50 no-print">
                 <div className="flex items-center justify-between">
@@ -2274,14 +2274,14 @@ export default function JobsPage() {
                       <span className="text-sm text-gray-500">Auto-saving...</span>
                     )}
                     {savedQuotations.length > 0 && (
-                      <button
+                              <button
                         onClick={() => setShowSavedQuotations(!showSavedQuotations)}
                         className="px-3 py-1 text-sm border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors"
-                      >
+                              >
                         {showSavedQuotations ? "Hide" : "View"} Saved Quotations ({savedQuotations.length})
-                      </button>
-                    )}
-                  </div>
+                              </button>
+            )}
+          </div>
                   <div className="flex gap-2">
                     <button
                       onClick={handleSaveQuotation}

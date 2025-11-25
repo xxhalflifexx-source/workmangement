@@ -42,7 +42,7 @@ export const authOptions: NextAuthOptions = {
           console.log("[auth] not verified");
           throw new Error("Please verify your email before logging in");
         }
-
+        
         // Check approval status (treat missing status as APPROVED to avoid locking old accounts)
         if (user.status && user.status !== "APPROVED") {
           console.log("[auth] user not approved, status:", user.status);

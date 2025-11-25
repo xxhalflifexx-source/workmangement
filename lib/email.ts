@@ -4,7 +4,7 @@ const resendApiKey = process.env.RESEND_API_KEY || "";
 // Check if email is disabled - be more strict about what counts as "disabled"
 const isEmailDisabled =
   !resendApiKey ||
-  resendApiKey.trim() === "" ||
+  resendApiKey.trim() === "" || 
   resendApiKey.toLowerCase().includes("placeholder") ||
   resendApiKey.toLowerCase().includes("replace") ||
   !resendApiKey.startsWith("re_"); // Resend keys always start with "re_"
