@@ -26,17 +26,23 @@ const adjustmentSchema = z.object({
 });
 
 export async function getInventoryItems() {
-  const session = await getServerSession(authOptions);
-  
-  if (!session?.user) {
-    return { ok: false, error: "Not authenticated" };
+  try {
+    const session = await getServerSession(authOptions);
+    
+    if (!session?.user) {
+      console.error("[Inventory] getInventoryItems: Not authenticated");
+      return { ok: false, error: "Not authenticated" };
+    }
+
+    const items = await prisma.inventoryItem.findMany({
+      orderBy: { name: "asc" },
+    });
+
+    return { ok: true, items };
+  } catch (error: any) {
+    console.error("[Inventory] getInventoryItems error:", error);
+    return { ok: false, error: "Failed to load inventory items" };
   }
-
-  const items = await prisma.inventoryItem.findMany({
-    orderBy: { name: "asc" },
-  });
-
-  return { ok: true, items };
 }
 
 export async function createInventoryItem(formData: FormData) {
@@ -69,6 +75,7 @@ export async function createInventoryItem(formData: FormData) {
   const parsed = itemSchema.safeParse(data);
 
   if (!parsed.success) {
+    console.error("[Inventory] createInventoryItem validation error:", parsed.error.errors);
     return { ok: false, error: parsed.error.errors[0].message };
   }
 
@@ -88,8 +95,10 @@ export async function createInventoryItem(formData: FormData) {
       },
     });
 
+    console.log("[Inventory] createInventoryItem success:", item.id);
     return { ok: true, item };
   } catch (error: any) {
+    console.error("[Inventory] createInventoryItem error:", error);
     if (error.code === "P2002") {
       return { ok: false, error: "SKU already exists" };
     }
@@ -127,6 +136,7 @@ export async function updateInventoryItem(itemId: string, formData: FormData) {
   const parsed = itemSchema.safeParse(data);
 
   if (!parsed.success) {
+    console.error("[Inventory] updateInventoryItem validation error:", parsed.error.errors);
     return { ok: false, error: parsed.error.errors[0].message };
   }
 
@@ -147,32 +157,48 @@ export async function updateInventoryItem(itemId: string, formData: FormData) {
       },
     });
 
+    console.log("[Inventory] updateInventoryItem success:", itemId);
     return { ok: true, item };
   } catch (error: any) {
+    console.error("[Inventory] updateInventoryItem error:", error, "itemId:", itemId);
     if (error.code === "P2002") {
       return { ok: false, error: "SKU already exists" };
+    }
+    if (error.code === "P2025") {
+      return { ok: false, error: "Item not found" };
     }
     return { ok: false, error: "Failed to update item" };
   }
 }
 
 export async function deleteInventoryItem(itemId: string) {
-  const session = await getServerSession(authOptions);
-  
-  if (!session?.user) {
-    return { ok: false, error: "Not authenticated" };
+  try {
+    const session = await getServerSession(authOptions);
+    
+    if (!session?.user) {
+      console.error("[Inventory] deleteInventoryItem: Not authenticated");
+      return { ok: false, error: "Not authenticated" };
+    }
+
+    const userRole = (session.user as any).role;
+
+    // Only admins can delete items
+    if (userRole !== "ADMIN") {
+      console.error("[Inventory] deleteInventoryItem: Unauthorized", { userId: (session.user as any).id, role: userRole });
+      return { ok: false, error: "Unauthorized: Only admins can delete inventory items" };
+    }
+
+    await prisma.inventoryItem.delete({ where: { id: itemId } });
+    console.log("[Inventory] deleteInventoryItem success:", itemId);
+
+    return { ok: true };
+  } catch (error: any) {
+    console.error("[Inventory] deleteInventoryItem error:", error, "itemId:", itemId);
+    if (error.code === "P2025") {
+      return { ok: false, error: "Item not found" };
+    }
+    return { ok: false, error: "Failed to delete item" };
   }
-
-  const userRole = (session.user as any).role;
-
-  // Only admins can delete items
-  if (userRole !== "ADMIN") {
-    return { ok: false, error: "Unauthorized: Only admins can delete inventory items" };
-  }
-
-  await prisma.inventoryItem.delete({ where: { id: itemId } });
-
-  return { ok: true };
 }
 
 export async function adjustInventory(formData: FormData) {
@@ -240,8 +266,8 @@ export async function adjustInventory(formData: FormData) {
     ]);
 
     return { ok: true, adjustment, item: updatedItem };
-  } catch (error) {
-    console.error("Adjust inventory error:", error);
+  } catch (error: any) {
+    console.error("[Inventory] adjustInventory error:", error, "itemId:", parsed.data.itemId, "quantityChange:", parsed.data.quantityChange);
     return { ok: false, error: "Failed to adjust inventory" };
   }
 }

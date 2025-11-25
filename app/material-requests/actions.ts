@@ -466,10 +466,11 @@ export async function updateMaterialRequest(requestId: string, formData: FormDat
     // - JobExpense creation
     // - Any automatic calculations
 
+    console.log("[MaterialRequest] updateMaterialRequest success:", requestId, "updates:", Object.keys(updateData));
     return { ok: true, request };
-  } catch (error) {
-    console.error("Update material request error:", error);
-    return { ok: false, error: "Failed to update material request" };
+  } catch (error: any) {
+    console.error("[MaterialRequest] updateMaterialRequest error:", error, "requestId:", requestId, "errorCode:", error?.code, "errorMessage:", error?.message);
+    return { ok: false, error: error?.message || "Failed to update material request" };
   }
 }
 

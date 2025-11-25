@@ -175,9 +175,11 @@ export default function InventoryPage() {
       if (res.ok) {
         setMaterialRequests(res.requests as any);
       } else {
+        console.error("[Inventory] loadMaterialRequests error:", res.error);
         setError(res.error);
       }
-    } catch (e) {
+    } catch (e: any) {
+      console.error("[Inventory] loadMaterialRequests exception:", e);
       setError("Failed to load material requests");
     }
     setLoadingRequests(false);
@@ -185,16 +187,22 @@ export default function InventoryPage() {
 
   const handleUpdateRequestStatus = async (requestId: string, status: string) => {
     setError(undefined);
-    const formData = new FormData();
-    formData.append("status", status);
-    const res = await updateMaterialRequest(requestId, formData);
-    if (!res.ok) {
-      setError(res.error);
-      return;
+    try {
+      const formData = new FormData();
+      formData.append("status", status);
+      const res = await updateMaterialRequest(requestId, formData);
+      if (!res.ok) {
+        console.error("[Inventory] handleUpdateRequestStatus error:", res.error, "requestId:", requestId, "status:", status);
+        setError(res.error);
+        return;
+      }
+      // Update local state
+      setMaterialRequests((prev) => prev.map((r) => (r.id === requestId ? { ...r, status, fulfilledDate: status === "FULFILLED" ? centralToUTC(nowInCentral().toDate()).toISOString() : r.fulfilledDate } : r)));
+      setSuccess(`Request ${status.toLowerCase()} successfully`);
+    } catch (e: any) {
+      console.error("[Inventory] handleUpdateRequestStatus exception:", e, "requestId:", requestId, "status:", status);
+      setError("Failed to update request status");
     }
-    // Update local state
-    setMaterialRequests((prev) => prev.map((r) => (r.id === requestId ? { ...r, status, fulfilledDate: status === "FULFILLED" ? centralToUTC(nowInCentral().toDate()).toISOString() : r.fulfilledDate } : r)));
-    setSuccess(`Request ${status.toLowerCase()} successfully`);
   };
 
   const handleSubmitMaterialRequest = async () => {
@@ -1123,17 +1131,23 @@ export default function InventoryPage() {
                                     } else {
                                       e.target.value = Math.floor(numValue).toString();
                                     }
-                                    const form = new FormData();
-                                    form.append("status", req.status);
-                                    form.append("quantity", e.target.value);
-                                    updateMaterialRequest(req.id, form).then((res) => {
+                                    try {
+                                      const form = new FormData();
+                                      form.append("status", req.status);
+                                      form.append("quantity", e.target.value);
+                                      const res = await updateMaterialRequest(req.id, form);
                                       if (!res.ok) {
+                                        console.error("[Inventory] Quantity update error:", res.error, "requestId:", req.id, "quantity:", e.target.value);
                                         setError(res.error);
                                         e.target.value = Math.floor(req.quantity).toString();
                                       } else {
                                         loadMaterialRequests();
                                       }
-                                    });
+                                    } catch (err: any) {
+                                      console.error("[Inventory] Quantity update exception:", err, "requestId:", req.id, "quantity:", e.target.value);
+                                      setError("Failed to update quantity");
+                                      e.target.value = Math.floor(req.quantity).toString();
+                                    }
                                   }}
                                   className="w-16 px-2 py-1 border border-gray-300 rounded text-sm text-center"
                                 />
@@ -1164,16 +1178,23 @@ export default function InventoryPage() {
                                         return;
                                       }
                                     }
-                                    const form = new FormData();
-                                    // Keep current status - Recommended Action is independent and does NOT change status
-                                    form.append("status", req.status);
-                                    form.append("recommendedAction", newValue);
-                                    const res = await updateMaterialRequest(req.id, form);
-                                    if (!res.ok) {
-                                      setError(res.error);
+                                    try {
+                                      const form = new FormData();
+                                      // Keep current status - Recommended Action is independent and does NOT change status
+                                      form.append("status", req.status);
+                                      form.append("recommendedAction", newValue);
+                                      const res = await updateMaterialRequest(req.id, form);
+                                      if (!res.ok) {
+                                        console.error("[Inventory] Recommended Action update error:", res.error, "requestId:", req.id, "newValue:", newValue);
+                                        setError(res.error);
+                                        e.target.value = req.recommendedAction || "PENDING";
+                                      } else {
+                                        loadMaterialRequests();
+                                      }
+                                    } catch (err: any) {
+                                      console.error("[Inventory] Recommended Action update exception:", err, "requestId:", req.id, "newValue:", newValue);
+                                      setError("Failed to update recommended action");
                                       e.target.value = req.recommendedAction || "PENDING";
-                                    } else {
-                                      loadMaterialRequests();
                                     }
                                   }}
                                   className={`text-xs font-medium px-2 py-1 rounded border ${
@@ -1213,25 +1234,32 @@ export default function InventoryPage() {
                                         return;
                                       }
                                     }
-                                    const form = new FormData();
-                                    form.append("status", req.status);
-                                    // Only append orderStatus if it's not empty
-                                    if (newValue && newValue !== "") {
-                                      form.append("orderStatus", newValue);
-                                    } else {
-                                      // Allow clearing by sending empty string
-                                      form.append("orderStatus", "");
-                                    }
-                                    // Set dateDelivered when status is RECEIVED
-                                    if (newValue === "RECEIVED") {
-                                      form.append("dateDelivered", new Date().toISOString());
-                                    }
-                                    const res = await updateMaterialRequest(req.id, form);
-                                    if (!res.ok) {
-                                      setError(res.error);
+                                    try {
+                                      const form = new FormData();
+                                      form.append("status", req.status);
+                                      // Only append orderStatus if it's not empty
+                                      if (newValue && newValue !== "") {
+                                        form.append("orderStatus", newValue);
+                                      } else {
+                                        // Allow clearing by sending empty string
+                                        form.append("orderStatus", "");
+                                      }
+                                      // Set dateDelivered when status is RECEIVED
+                                      if (newValue === "RECEIVED") {
+                                        form.append("dateDelivered", new Date().toISOString());
+                                      }
+                                      const res = await updateMaterialRequest(req.id, form);
+                                      if (!res.ok) {
+                                        console.error("[Inventory] Order Status update error:", res.error, "requestId:", req.id, "newValue:", newValue);
+                                        setError(res.error);
+                                        e.target.value = req.orderStatus || "";
+                                      } else {
+                                        loadMaterialRequests();
+                                      }
+                                    } catch (err: any) {
+                                      console.error("[Inventory] Order Status update exception:", err, "requestId:", req.id, "newValue:", newValue);
+                                      setError("Failed to update order status");
                                       e.target.value = req.orderStatus || "";
-                                    } else {
-                                      loadMaterialRequests();
                                     }
                                   }}
                                   className="text-xs font-medium px-2 py-1 rounded border border-gray-300 bg-white"
@@ -1266,16 +1294,23 @@ export default function InventoryPage() {
                                     // Only update if notes changed
                                     if (newNotes !== (req.notes || "")) {
                                       const form = new FormData();
-                                      form.append("status", req.status);
-                                      form.append("notes", newNotes);
-                                      updateMaterialRequest(req.id, form).then((res) => {
+                                      try {
+                                        const form = new FormData();
+                                        form.append("status", req.status);
+                                        form.append("notes", newNotes);
+                                        const res = await updateMaterialRequest(req.id, form);
                                         if (!res.ok) {
+                                          console.error("[Inventory] Notes update error:", res.error, "requestId:", req.id);
                                           setError(res.error);
                                           e.target.value = req.notes || "";
                                         } else {
                                           loadMaterialRequests();
                                         }
-                                      });
+                                      } catch (err: any) {
+                                        console.error("[Inventory] Notes update exception:", err, "requestId:", req.id);
+                                        setError("Failed to update notes");
+                                        e.target.value = req.notes || "";
+                                      }
                                     }
                                   }}
                                   rows={2}
