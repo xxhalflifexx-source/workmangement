@@ -320,8 +320,16 @@ export async function updateMaterialRequest(requestId: string, formData: FormDat
       updateData.recommendedAction = recommendedAction;
     }
 
-    // Set fulfilled date if status is FULFILLED
-    if (parsed.data.status === "FULFILLED") {
+    // Set fulfilled date if status is APPROVED or FULFILLED (to track approval/fulfillment date)
+    // For APPROVED: set the approval date
+    // For FULFILLED: set the fulfillment date (or keep approval date if already set)
+    if (parsed.data.status === "APPROVED") {
+      // Set approval date if not already set
+      if (!existing?.fulfilledDate) {
+        updateData.fulfilledDate = centralToUTC(nowInCentral().toDate());
+      }
+    } else if (parsed.data.status === "FULFILLED") {
+      // Always set fulfillment date when status changes to FULFILLED
       updateData.fulfilledDate = centralToUTC(nowInCentral().toDate());
     }
 

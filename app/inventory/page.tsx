@@ -472,20 +472,23 @@ export default function InventoryPage() {
   };
 
   const exportRequestsToCSV = () => {
-    const headers = ["Request ID", "Employee", "Item", "Qty Requested", "Status", "Recommended Action", "Notes"];
+    const headers = ["Job Number", "Employee", "Item", "Qty Requested", "Status", "Action", "Notes", "Date Requested", "Date Approved"];
     const rows = sortedRequests.map((req) => {
       const currentStock = getCurrentStock(req.itemName);
       const recommendedAction = getRecommendedAction(req);
       const inventoryItem = items.find((item) => item.name.toLowerCase() === req.itemName.toLowerCase());
       const status = inventoryItem ? (currentStock >= req.quantity ? "AVAILABLE" : "UNAVAILABLE") : "UNAVAILABLE";
+      const dateApproved = req.status === "APPROVED" || req.status === "FULFILLED" ? (req.fulfilledDate ? formatDate(req.fulfilledDate) : "") : "";
       return [
-        req.requestNumber || req.id.substring(0, 8),
+        req.job ? req.job.id.substring(0, 8).toUpperCase() : "",
         req.user.name || req.user.email || "",
         req.itemName,
         `${req.quantity} ${req.unit}`,
         status,
         recommendedAction === "APPROVE" ? "Approve" : recommendedAction === "PARTIAL" ? "Partial" : recommendedAction === "DENY" ? "Deny" : "Pending",
         req.notes || "",
+        formatDate(req.requestedDate),
+        dateApproved,
       ];
     });
     const csvContent = [headers, ...rows].map((row) => row.map((cell) => `"${cell}"`).join(",")).join("\n");
@@ -1010,18 +1013,7 @@ export default function InventoryPage() {
                   <table className="w-full">
                     <thead className="bg-gray-50 border-b">
                       <tr>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                          <button
-                            onClick={() => {
-                              setRequestSortField("requestNumber");
-                              setRequestSortDirection(requestSortField === "requestNumber" && requestSortDirection === "asc" ? "desc" : "asc");
-                            }}
-                            className="flex items-center gap-1 hover:text-gray-700"
-                          >
-                            Request ID
-                            {requestSortField === "requestNumber" && (requestSortDirection === "asc" ? "↑" : "↓")}
-                          </button>
-                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Job Number</th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                           <button
                             onClick={() => {
@@ -1059,8 +1051,21 @@ export default function InventoryPage() {
                           </button>
                         </th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Recommended Action</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Notes</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                          <button
+                            onClick={() => {
+                              setRequestSortField("requestedDate");
+                              setRequestSortDirection(requestSortField === "requestedDate" && requestSortDirection === "asc" ? "desc" : "asc");
+                            }}
+                            className="flex items-center gap-1 hover:text-gray-700"
+                          >
+                            Date Requested
+                            {requestSortField === "requestedDate" && (requestSortDirection === "asc" ? "↑" : "↓")}
+                          </button>
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date Approved</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y">
@@ -1071,7 +1076,7 @@ export default function InventoryPage() {
                         return (
                           <tr key={req.id} className="hover:bg-gray-50">
                             <td className="px-4 py-3 text-sm text-gray-900 font-mono font-semibold">
-                              {req.requestNumber || req.id.substring(0, 8)}
+                              {req.job ? req.job.id.substring(0, 8).toUpperCase() : "—"}
                             </td>
                             <td className="px-4 py-3 text-sm text-gray-700">
                               {req.user.name || req.user.email || "—"}
@@ -1211,6 +1216,12 @@ export default function InventoryPage() {
                                   <span className="text-gray-400">—</span>
                                 )
                               )}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-gray-600">
+                              {formatDate(req.requestedDate)}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-gray-600">
+                              {req.status === "APPROVED" || req.status === "FULFILLED" ? (req.fulfilledDate ? formatDate(req.fulfilledDate) : "—") : "—"}
                             </td>
                           </tr>
                         );
