@@ -333,8 +333,26 @@ export async function updateMaterialRequest(requestId: string, formData: FormDat
   const rawQuantity = formData.get("quantity") as string | null;
   const quantity = rawQuantity != null && rawQuantity !== "" ? Number(rawQuantity) : undefined;
 
+  // Check if we're only updating recommendedAction or orderStatus (manual-only fields)
+  const recommendedAction = formData.get("recommendedAction") as string | null;
+  const orderStatus = formData.get("orderStatus") as string | null;
+  const isOnlyUpdatingManualFields = (recommendedAction || orderStatus) && !formData.get("notes") && quantity === undefined;
+
+  // Fetch existing request first to get current status and job relation
+  const existing = await prisma.materialRequest.findUnique({
+    where: { id: requestId },
+    include: { job: { select: { id: true, title: true } } },
+  });
+
+  if (!existing) {
+    return { ok: false, error: "Material request not found" };
+  }
+
+  // Use existing status if we're only updating manual fields, otherwise use provided status
+  const statusValue = isOnlyUpdatingManualFields ? existing.status : (formData.get("status") as string || existing.status);
+
   const data = {
-    status: formData.get("status") as string,
+    status: statusValue,
     notes: formData.get("notes") as string | undefined,
     quantity: quantity,
   };
@@ -353,16 +371,23 @@ export async function updateMaterialRequest(requestId: string, formData: FormDat
       return { ok: false, error: "Invalid amount" };
     }
 
-    // Fetch request to get job relation before updating
-    const existing = await prisma.materialRequest.findUnique({
-      where: { id: requestId },
-      include: { job: { select: { id: true, title: true } } },
-    });
+    const updateData: any = {};
 
-    const updateData: any = {
-      status: parsed.data.status,
-      notes: parsed.data.notes || null,
-    };
+    // Only update status if it's actually changing (not when only updating Recommended Action)
+    const currentStatus = existing?.status || parsed.data.status;
+    const newStatus = parsed.data.status;
+    const statusChanged = existing && existing.status !== newStatus;
+    if (statusChanged) {
+      updateData.status = newStatus;
+    } else if (!isOnlyUpdatingManualFields) {
+      // Only set status if we're not just updating manual fields
+      updateData.status = parsed.data.status;
+    }
+
+    // Update notes if provided
+    if (parsed.data.notes !== undefined) {
+      updateData.notes = parsed.data.notes || null;
+    }
 
     // Update quantity if provided
     if (parsed.data.quantity !== undefined) {
@@ -370,13 +395,13 @@ export async function updateMaterialRequest(requestId: string, formData: FormDat
     }
 
     // Update recommended action if provided (admin/manager only)
-    const recommendedAction = formData.get("recommendedAction") as string | null;
+    // This is a MANUAL-ONLY field and does NOT trigger status changes or inventory updates
     if (recommendedAction && (recommendedAction === "PENDING" || recommendedAction === "APPROVE" || recommendedAction === "PARTIAL" || recommendedAction === "REJECTED")) {
       updateData.recommendedAction = recommendedAction;
     }
 
     // Update order status if provided (admin/manager only)
-    const orderStatus = formData.get("orderStatus") as string | null;
+    // This is a MANUAL-ONLY field and does NOT trigger inventory updates
     if (orderStatus !== null) {
       if (orderStatus === "" || orderStatus === "TO_ORDER" || orderStatus === "ORDERED" || orderStatus === "RECEIVED") {
         updateData.orderStatus = orderStatus === "" ? null : orderStatus;
@@ -389,17 +414,18 @@ export async function updateMaterialRequest(requestId: string, formData: FormDat
       updateData.dateDelivered = new Date(dateDelivered);
     }
 
-    // Set fulfilled date if status is APPROVED or FULFILLED (to track approval/fulfillment date)
-    // For APPROVED: set the approval date
-    // For FULFILLED: set the fulfillment date (or keep approval date if already set)
-    if (parsed.data.status === "APPROVED") {
-      // Set approval date if not already set
-      if (!existing?.fulfilledDate) {
+    // Only set fulfilled date if status is ACTUALLY CHANGING to APPROVED or FULFILLED
+    // Do NOT set this when only updating Recommended Action
+    if (statusChanged) {
+      if (newStatus === "APPROVED") {
+        // Set approval date if not already set
+        if (!existing?.fulfilledDate) {
+          updateData.fulfilledDate = centralToUTC(nowInCentral().toDate());
+        }
+      } else if (newStatus === "FULFILLED") {
+        // Always set fulfillment date when status changes to FULFILLED
         updateData.fulfilledDate = centralToUTC(nowInCentral().toDate());
       }
-    } else if (parsed.data.status === "FULFILLED") {
-      // Always set fulfillment date when status changes to FULFILLED
-      updateData.fulfilledDate = centralToUTC(nowInCentral().toDate());
     }
 
     const request = await prisma.materialRequest.update({
@@ -412,7 +438,8 @@ export async function updateMaterialRequest(requestId: string, formData: FormDat
     });
 
     // On approval, export to financials by creating a JobExpense if amount provided
-    if (parsed.data.status === "APPROVED" && amount && amount > 0) {
+    // ONLY create JobExpense if status ACTUALLY CHANGED to APPROVED (not when only updating Recommended Action)
+    if (statusChanged && newStatus === "APPROVED" && amount && amount > 0) {
       try {
         await prisma.jobExpense.create({
           data: {
@@ -431,6 +458,13 @@ export async function updateMaterialRequest(requestId: string, formData: FormDat
         // Do not fail the request update if expense creation fails
       }
     }
+
+    // IMPORTANT: Recommended Action updates are MANUAL-ONLY
+    // They do NOT trigger:
+    // - Status changes
+    // - Inventory count changes
+    // - JobExpense creation
+    // - Any automatic calculations
 
     return { ok: true, request };
   } catch (error) {

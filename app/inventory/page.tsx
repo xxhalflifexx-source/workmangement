@@ -1165,14 +1165,8 @@ export default function InventoryPage() {
                                       }
                                     }
                                     const form = new FormData();
-                                    // Update status based on action: APPROVE -> APPROVED, REJECTED -> REJECTED, others keep current status
-                                    let newStatus = req.status;
-                                    if (newValue === "APPROVE") {
-                                      newStatus = "APPROVED";
-                                    } else if (newValue === "REJECTED") {
-                                      newStatus = "REJECTED";
-                                    }
-                                    form.append("status", newStatus);
+                                    // Keep current status - Recommended Action is independent and does NOT change status
+                                    form.append("status", req.status);
                                     form.append("recommendedAction", newValue);
                                     const res = await updateMaterialRequest(req.id, form);
                                     if (!res.ok) {
