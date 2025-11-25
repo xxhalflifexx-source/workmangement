@@ -1205,10 +1205,37 @@ export default function InventoryPage() {
                               )}
                             </td>
                             <td className="px-4 py-3 text-sm text-gray-600 max-w-xs">
-                              {req.notes ? (
-                                <div className="line-clamp-2" title={req.notes}>{req.notes}</div>
+                              {canManage ? (
+                                <textarea
+                                  id={`notes-${req.id}`}
+                                  defaultValue={req.notes || ""}
+                                  onBlur={(e) => {
+                                    const newNotes = e.target.value.trim();
+                                    // Only update if notes changed
+                                    if (newNotes !== (req.notes || "")) {
+                                      const form = new FormData();
+                                      form.append("status", req.status);
+                                      form.append("notes", newNotes);
+                                      updateMaterialRequest(req.id, form).then((res) => {
+                                        if (!res.ok) {
+                                          setError(res.error);
+                                          e.target.value = req.notes || "";
+                                        } else {
+                                          loadMaterialRequests();
+                                        }
+                                      });
+                                    }
+                                  }}
+                                  rows={2}
+                                  className="w-full px-2 py-1 border border-gray-300 rounded text-sm resize-none"
+                                  placeholder="Add notes..."
+                                />
                               ) : (
-                                <span className="text-gray-400">—</span>
+                                req.notes ? (
+                                  <div className="line-clamp-2" title={req.notes}>{req.notes}</div>
+                                ) : (
+                                  <span className="text-gray-400">—</span>
+                                )
                               )}
                             </td>
                             <td className="px-4 py-3 text-sm">
