@@ -32,28 +32,56 @@ const updateRequestSchema = z.object({
 export async function getNextRequestNumber(): Promise<string> {
   try {
     // Find all requests with request numbers matching MR#### pattern
+    // Use raw query to handle case where column might not exist yet
     const allRequests = await prisma.materialRequest.findMany({
-      where: {
-        requestNumber: {
-          not: null,
-        },
-      },
       select: {
-        requestNumber: true,
+        id: true,
+        requestedDate: true,
       },
       orderBy: {
         requestedDate: "desc",
       },
     });
 
+    // Try to get requestNumber if column exists
+    // Note: This will work once the migration is applied
+    // For now, we'll use a count-based approach as fallback
+    let requestNumbers: string[] = [];
+    try {
+      // Use a try-catch to handle case where column might not exist
+      const requestsWithNumbers = await prisma.materialRequest.findMany({
+        where: {
+          requestNumber: {
+            not: null,
+          },
+        },
+        select: {
+          requestNumber: true,
+        },
+        orderBy: {
+          requestedDate: "desc",
+        },
+      });
+      requestNumbers = requestsWithNumbers
+        .map((r) => r.requestNumber)
+        .filter((rn): rn is string => rn !== null);
+    } catch (err: any) {
+      // Column doesn't exist yet, use fallback
+      if (err?.code === "P2022" || err?.message?.includes("requestNumber")) {
+        console.log("requestNumber column not found, using count-based fallback");
+      } else {
+        throw err; // Re-throw if it's a different error
+      }
+    }
+
     let nextSequence = 1;
 
-    if (allRequests.length > 0) {
+    if (requestNumbers.length > 0) {
       // Extract sequence numbers from all requests
-      const sequences = allRequests
-        .map((req) => {
+      const sequences = requestNumbers
+        .map((rn) => {
           // Match pattern MR#### and extract the 4-digit sequence
-          const match = req.requestNumber?.match(/MR(\d{4})$/);
+          const match = rn.match(/MR(\d{4})$/);
           return match ? parseInt(match[1], 10) : 0;
         })
         .filter((seq) => seq > 0);
@@ -63,6 +91,9 @@ export async function getNextRequestNumber(): Promise<string> {
         const maxSequence = Math.max(...sequences);
         nextSequence = maxSequence + 1;
       }
+    } else {
+      // Fallback: generate based on count
+      nextSequence = allRequests.length + 1;
     }
 
     // Format as MR#### with 4-digit sequence padded with zeros
@@ -139,17 +170,27 @@ export async function getMaterialRequests() {
   const userId = (session.user as any).id;
   const userRole = (session.user as any).role;
 
-  // Employees see only their requests, managers/admins see all
-  const requests = await prisma.materialRequest.findMany({
-    where: userRole === "EMPLOYEE" ? { userId } : {},
-    include: {
-      job: { select: { title: true, id: true } },
-      user: { select: { name: true, email: true } },
-    },
-    orderBy: { requestedDate: "desc" },
-  });
+  try {
+    // Employees see only their requests, managers/admins see all
+    const requests = await prisma.materialRequest.findMany({
+      where: userRole === "EMPLOYEE" ? { userId } : {},
+      include: {
+        job: { select: { title: true, id: true } },
+        user: { select: { name: true, email: true } },
+      },
+      orderBy: { requestedDate: "desc" },
+    });
 
-  return { ok: true, requests };
+    return { ok: true, requests };
+  } catch (error: any) {
+    // Handle case where requestNumber column doesn't exist yet
+    if (error?.code === "P2022" || error?.message?.includes("requestNumber")) {
+      console.error("Database migration needed: requestNumber column missing");
+      return { ok: false, error: "Database migration required. Please run: npx prisma migrate deploy" };
+    }
+    console.error("Get material requests error:", error);
+    return { ok: false, error: "Failed to load material requests" };
+  }
 }
 
 // Get inventory items for dropdown
