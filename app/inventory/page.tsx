@@ -13,6 +13,7 @@ import { getMaterialRequests, updateMaterialRequest, createMaterialRequest, getI
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { formatDateTime, nowInCentral, centralToUTC } from "@/lib/date-utils";
+import { InventoryErrorBoundary } from "./error-boundary";
 
 interface InventoryItem {
   id: string;
@@ -131,8 +132,46 @@ export default function InventoryPage() {
   const [inventoryItemsForRequest, setInventoryItemsForRequest] = useState<InventoryItemForRequest[]>([]);
 
   useEffect(() => {
-    loadData();
-    loadMaterialRequests(); // All users can see requests (employees see only their own)
+    // Global error handlers for better error tracking
+    const handleError = (event: ErrorEvent) => {
+      console.error("[Inventory] Global error:", {
+        message: event.message,
+        filename: event.filename,
+        lineno: event.lineno,
+        colno: event.colno,
+        error: event.error,
+        stack: event.error?.stack,
+        timestamp: new Date().toISOString(),
+      });
+    };
+
+    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      console.error("[Inventory] Unhandled promise rejection:", {
+        reason: event.reason,
+        promise: event.promise,
+        timestamp: new Date().toISOString(),
+      });
+    };
+
+    window.addEventListener("error", handleError);
+    window.addEventListener("unhandledrejection", handleUnhandledRejection);
+
+    const initializeData = async () => {
+      try {
+        console.log("[Inventory] Initializing data load...");
+        await Promise.all([loadData(), loadMaterialRequests()]);
+        console.log("[Inventory] Data loaded successfully");
+      } catch (error: any) {
+        console.error("[Inventory] Failed to initialize data:", error);
+        setError(`Failed to load data: ${error?.message || "Unknown error"}`);
+      }
+    };
+    initializeData();
+
+    return () => {
+      window.removeEventListener("error", handleError);
+      window.removeEventListener("unhandledrejection", handleUnhandledRejection);
+    };
   }, []);
 
   // Load inventory items when request form is opened
@@ -153,19 +192,27 @@ export default function InventoryPage() {
   }, [showRequestForm]);
 
   const loadData = async () => {
-    setLoading(true);
-    setError(undefined);
-    setSuccess(undefined);
+    try {
+      setLoading(true);
+      setError(undefined);
+      setSuccess(undefined);
 
-    const res = await getInventoryItems();
+      console.log("[Inventory] Loading inventory items...");
+      const res = await getInventoryItems();
 
-    if (res.ok) {
-      setItems(res.items as any);
-    } else {
-      setError(res.error);
+      if (res.ok) {
+        console.log("[Inventory] Inventory items loaded:", res.items?.length || 0, "items");
+        setItems(res.items as any);
+      } else {
+        console.error("[Inventory] Failed to load inventory items:", res.error);
+        setError(res.error || "Failed to load inventory items");
+      }
+    } catch (error: any) {
+      console.error("[Inventory] Exception loading inventory items:", error);
+      setError(`Failed to load inventory items: ${error?.message || "Unknown error"}`);
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   const loadMaterialRequests = async () => {
@@ -206,40 +253,49 @@ export default function InventoryPage() {
   };
 
   const handleSubmitMaterialRequest = async () => {
-    if (!requestItemName || !requestQuantity || !requestUnit) {
-      setError("Please fill in all required fields");
-      return;
-    }
+    try {
+      if (!requestItemName || !requestQuantity || !requestUnit) {
+        setError("Please fill in all required fields");
+        return;
+      }
 
-    setSubmittingRequest(true);
-    setError(undefined);
-    setSuccess(undefined);
+      console.log("[Inventory] Submitting material request:", { requestItemName, requestQuantity, requestUnit, requestNotes });
+      setSubmittingRequest(true);
+      setError(undefined);
+      setSuccess(undefined);
 
-    const formData = new FormData();
-    formData.append("itemName", requestItemName);
-    formData.append("quantity", requestQuantity.toString());
-    formData.append("unit", requestUnit);
-    formData.append("priority", "MEDIUM");
-    if (requestNotes) {
-      formData.append("notes", requestNotes);
-    }
+      const formData = new FormData();
+      formData.append("itemName", requestItemName);
+      formData.append("quantity", requestQuantity.toString());
+      formData.append("unit", requestUnit);
+      formData.append("priority", "MEDIUM");
+      if (requestNotes) {
+        formData.append("notes", requestNotes);
+      }
 
-    const res = await createMaterialRequest(formData);
+      const res = await createMaterialRequest(formData);
 
-    if (!res.ok) {
-      setError(res.error || "Failed to submit material request");
+      if (!res.ok) {
+        console.error("[Inventory] Failed to submit material request:", res.error);
+        setError(res.error || "Failed to submit material request");
+        setSubmittingRequest(false);
+        return;
+      }
+
+      console.log("[Inventory] Material request submitted successfully");
+      setSuccess("Material request submitted successfully!");
+      setShowRequestForm(false);
+      setRequestItemName("");
+      setRequestQuantity(1);
+      setRequestUnit("pcs");
+      setRequestNotes("");
       setSubmittingRequest(false);
-      return;
+      await loadMaterialRequests();
+    } catch (error: any) {
+      console.error("[Inventory] Exception submitting material request:", error);
+      setError(`Failed to submit material request: ${error?.message || "Unknown error"}`);
+      setSubmittingRequest(false);
     }
-
-    setSuccess("Material request submitted successfully!");
-    setShowRequestForm(false);
-    setRequestItemName("");
-    setRequestQuantity(1);
-    setRequestUnit("pcs");
-    setRequestNotes("");
-    setSubmittingRequest(false);
-    await loadMaterialRequests();
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -532,7 +588,8 @@ export default function InventoryPage() {
   };
 
   return (
-    <main className="min-h-screen bg-gray-50">
+    <InventoryErrorBoundary>
+      <main className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-full mx-auto px-24 py-4 flex justify-between items-center">
@@ -1859,6 +1916,7 @@ export default function InventoryPage() {
       )}
 
     </main>
+    </InventoryErrorBoundary>
   );
 }
 

@@ -108,33 +108,39 @@ export async function getNextRequestNumber(): Promise<string> {
 }
 
 export async function createMaterialRequest(formData: FormData) {
-  const session = await getServerSession(authOptions);
-  
-  if (!session?.user) {
-    return { ok: false, error: "Not authenticated" };
-  }
-
-  const userId = (session.user as any).id;
-
-  const data = {
-    jobId: formData.get("jobId") as string | undefined,
-    itemName: formData.get("itemName") as string,
-    quantity: Number(formData.get("quantity")),
-    unit: formData.get("unit") as string,
-    description: formData.get("description") as string | undefined,
-    priority: formData.get("priority") as string || "MEDIUM",
-    notes: formData.get("notes") as string | undefined,
-  };
-
-  const parsed = requestSchema.safeParse(data);
-
-  if (!parsed.success) {
-    return { ok: false, error: parsed.error.errors[0].message };
-  }
-
   try {
+    const session = await getServerSession(authOptions);
+    
+    if (!session?.user) {
+      console.error("[MaterialRequest] createMaterialRequest: Not authenticated");
+      return { ok: false, error: "Not authenticated" };
+    }
+
+    const userId = (session.user as any).id;
+    const userEmail = (session.user as any).email;
+
+    const data = {
+      jobId: formData.get("jobId") as string | undefined,
+      itemName: formData.get("itemName") as string,
+      quantity: Number(formData.get("quantity")),
+      unit: formData.get("unit") as string,
+      description: formData.get("description") as string | undefined,
+      priority: formData.get("priority") as string || "MEDIUM",
+      notes: formData.get("notes") as string | undefined,
+    };
+
+    console.log("[MaterialRequest] createMaterialRequest:", { userId, userEmail, itemName: data.itemName, quantity: data.quantity });
+
+    const parsed = requestSchema.safeParse(data);
+
+    if (!parsed.success) {
+      console.error("[MaterialRequest] createMaterialRequest validation error:", parsed.error.errors);
+      return { ok: false, error: parsed.error.errors[0].message };
+    }
+
     // Generate request number
     const requestNumber = await getNextRequestNumber();
+    console.log("[MaterialRequest] Generated request number:", requestNumber);
 
     const request = await prisma.materialRequest.create({
       data: {
@@ -154,10 +160,17 @@ export async function createMaterialRequest(formData: FormData) {
       },
     });
 
+    console.log("[MaterialRequest] createMaterialRequest success:", request.id, "requestNumber:", requestNumber);
     return { ok: true, request };
-  } catch (error) {
-    console.error("Create material request error:", error);
-    return { ok: false, error: "Failed to create material request" };
+  } catch (error: any) {
+    console.error("[MaterialRequest] createMaterialRequest error:", {
+      error,
+      errorCode: error?.code,
+      errorMessage: error?.message,
+      errorStack: error?.stack,
+      timestamp: new Date().toISOString(),
+    });
+    return { ok: false, error: error?.message || "Failed to create material request" };
   }
 }
 
@@ -199,11 +212,16 @@ export async function getMaterialRequests() {
       orderBy: { requestedDate: "desc" },
     });
 
+    console.log("[MaterialRequest] getMaterialRequests success:", requests.length, "requests");
     return { ok: true, requests };
   } catch (error: any) {
     // Handle case where columns don't exist yet - try with minimal fields
     if (error?.code === "P2022" || error?.message?.includes("requestNumber") || error?.message?.includes("dateDelivered") || error?.message?.includes("orderStatus")) {
-      console.error("Database migration needed: MaterialRequest columns missing, trying fallback query");
+      console.error("[MaterialRequest] Database migration needed: MaterialRequest columns missing, trying fallback query", {
+        errorCode: error?.code,
+        errorMessage: error?.message,
+        timestamp: new Date().toISOString(),
+      });
       
       // Fallback: query only fields that definitely exist
       try {
@@ -237,13 +255,25 @@ export async function getMaterialRequests() {
           recommendedAction: null,
         }));
 
+        console.log("[MaterialRequest] Fallback query success:", requestsWithDefaults.length, "requests");
         return { ok: true, requests: requestsWithDefaults };
       } catch (fallbackError: any) {
-        console.error("Fallback query also failed:", fallbackError);
+        console.error("[MaterialRequest] Fallback query also failed:", {
+          error: fallbackError,
+          errorCode: fallbackError?.code,
+          errorMessage: fallbackError?.message,
+          timestamp: new Date().toISOString(),
+        });
         return { ok: false, error: "Database migration required. Please run: ALTER TABLE \"MaterialRequest\" ADD COLUMN IF NOT EXISTS \"dateDelivered\" TIMESTAMP(3), ADD COLUMN IF NOT EXISTS \"orderStatus\" TEXT, ADD COLUMN IF NOT EXISTS \"requestNumber\" TEXT, ADD COLUMN IF NOT EXISTS \"recommendedAction\" TEXT;" };
       }
     }
-    console.error("Get material requests error:", error);
+    console.error("[MaterialRequest] getMaterialRequests error:", {
+      error,
+      errorCode: error?.code,
+      errorMessage: error?.message,
+      errorStack: error?.stack,
+      timestamp: new Date().toISOString(),
+    });
     return { ok: false, error: "Failed to load material requests" };
   }
 }
