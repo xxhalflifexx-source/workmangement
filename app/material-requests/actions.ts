@@ -25,7 +25,7 @@ const updateRequestSchema = z.object({
   status: z.enum(["PENDING", "APPROVED", "REJECTED", "FULFILLED", "ON_HOLD"]),
   notes: z.string().optional(),
   quantity: z.number().int().min(1, "Quantity must be at least 1").max(9, "Quantity must be a single digit (1-9)").optional(),
-  recommendedAction: z.enum(["APPROVE", "PARTIAL", "DENY"]).optional(),
+  recommendedAction: z.enum(["PENDING", "APPROVE", "PARTIAL", "DENY"]).optional(),
 });
 
 // Generate next request number (MR0001, MR0002, etc.)
@@ -316,7 +316,7 @@ export async function updateMaterialRequest(requestId: string, formData: FormDat
 
     // Update recommended action if provided (admin/manager only)
     const recommendedAction = formData.get("recommendedAction") as string | null;
-    if (recommendedAction && (recommendedAction === "APPROVE" || recommendedAction === "PARTIAL" || recommendedAction === "DENY")) {
+    if (recommendedAction && (recommendedAction === "PENDING" || recommendedAction === "APPROVE" || recommendedAction === "PARTIAL" || recommendedAction === "DENY")) {
       updateData.recommendedAction = recommendedAction;
     }
 

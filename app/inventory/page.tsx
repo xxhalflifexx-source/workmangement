@@ -114,7 +114,7 @@ export default function InventoryPage() {
   const [filterRequestStatus, setFilterRequestStatus] = useState("ALL");
   const [filterRequestJob, setFilterRequestJob] = useState("ALL");
   const [filterRequester, setFilterRequester] = useState("ALL");
-  const [requestSortField, setRequestSortField] = useState<"requestNumber" | "requestedDate" | "itemName" | "quantity" | "status">("requestedDate");
+  const [requestSortField, setRequestSortField] = useState<"requestNumber" | "requestedDate" | "itemName" | "quantity">("requestedDate");
   const [requestSortDirection, setRequestSortDirection] = useState<"asc" | "desc">("desc");
   const [requestCurrentPage, setRequestCurrentPage] = useState(1);
   const requestsPerPage = 20;
@@ -383,21 +383,9 @@ export default function InventoryPage() {
     return inventoryItem ? inventoryItem.quantity : 0;
   };
 
-  // Calculate recommended action based on stock
+  // Get recommended action (manual only, no auto-calculation)
   const getRecommendedAction = (req: MaterialRequest): string => {
-    if (req.recommendedAction) {
-      return req.recommendedAction; // Use admin/manager set action if exists
-    }
-    const currentStock = getCurrentStock(req.itemName);
-    const requestedQty = req.quantity;
-    
-    if (currentStock >= requestedQty) {
-      return "APPROVE";
-    } else if (currentStock > 0) {
-      return "PARTIAL";
-    } else {
-      return "DENY";
-    }
+    return req.recommendedAction || "PENDING"; // Return stored value or default to PENDING
   };
 
   // Materials Requested tab: Filtering and sorting
@@ -437,10 +425,6 @@ export default function InventoryPage() {
       case "quantity":
         aVal = a.quantity;
         bVal = b.quantity;
-        break;
-      case "status":
-        aVal = a.status;
-        bVal = b.status;
         break;
       default:
         return 0;
@@ -488,7 +472,7 @@ export default function InventoryPage() {
   };
 
   const exportRequestsToCSV = () => {
-    const headers = ["Request ID", "Employee", "Item", "Qty Requested", "Current Stock", "Recommended Action", "Notes", "Status"];
+    const headers = ["Request ID", "Employee", "Item", "Qty Requested", "Current Stock", "Recommended Action", "Notes"];
     const rows = sortedRequests.map((req) => {
       const currentStock = getCurrentStock(req.itemName);
       const recommendedAction = getRecommendedAction(req);
@@ -499,9 +483,8 @@ export default function InventoryPage() {
         req.itemName,
         `${req.quantity} ${req.unit}`,
         inventoryItem ? `${currentStock} ${inventoryItem.unit}` : "N/A",
-        recommendedAction === "APPROVE" ? "Approve" : recommendedAction === "PARTIAL" ? "Partial" : "Deny",
+        recommendedAction === "APPROVE" ? "Approve" : recommendedAction === "PARTIAL" ? "Partial" : recommendedAction === "DENY" ? "Deny" : "Pending",
         req.notes || "",
-        req.status === "REJECTED" ? "Denied" : req.status,
       ];
     });
     const csvContent = [headers, ...rows].map((row) => row.map((cell) => `"${cell}"`).join(",")).join("\n");
@@ -1077,19 +1060,6 @@ export default function InventoryPage() {
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Current Stock</th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Recommended Action</th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Notes</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                          <button
-                            onClick={() => {
-                              setRequestSortField("status");
-                              setRequestSortDirection(requestSortField === "status" && requestSortDirection === "asc" ? "desc" : "asc");
-                            }}
-                            className="flex items-center gap-1 hover:text-gray-700"
-                          >
-                            Status
-                            {requestSortField === "status" && (requestSortDirection === "asc" ? "↑" : "↓")}
-                          </button>
-                        </th>
-                        <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y">
@@ -1171,7 +1141,7 @@ export default function InventoryPage() {
                             <td className="px-4 py-3 text-sm">
                               {canManage ? (
                                 <select
-                                  value={req.recommendedAction || recommendedAction}
+                                  value={req.recommendedAction || "PENDING"}
                                   onChange={(e) => {
                                     const form = new FormData();
                                     form.append("status", req.status);
@@ -1184,12 +1154,14 @@ export default function InventoryPage() {
                                       }
                                     });
                                   }}
-                                  className={`text-xs font-medium px-2 py-1 rounded ${
-                                    (req.recommendedAction || recommendedAction) === "APPROVE" ? "bg-green-100 text-green-700 border border-green-300" :
-                                    (req.recommendedAction || recommendedAction) === "PARTIAL" ? "bg-orange-100 text-orange-700 border border-orange-300" :
-                                    "bg-red-100 text-red-700 border border-red-300"
+                                  className={`text-xs font-medium px-2 py-1 rounded border ${
+                                    (req.recommendedAction || "PENDING") === "APPROVE" ? "bg-green-100 text-green-700 border-green-300" :
+                                    (req.recommendedAction || "PENDING") === "PARTIAL" ? "bg-orange-100 text-orange-700 border-orange-300" :
+                                    (req.recommendedAction || "PENDING") === "DENY" ? "bg-red-100 text-red-700 border-red-300" :
+                                    "bg-yellow-100 text-yellow-700 border-yellow-300"
                                   }`}
                                 >
+                                  <option value="PENDING">Pending</option>
                                   <option value="APPROVE">Approve</option>
                                   <option value="PARTIAL">Partial</option>
                                   <option value="DENY">Deny</option>
@@ -1198,9 +1170,10 @@ export default function InventoryPage() {
                                 <span className={`px-2 py-1 rounded text-xs font-medium ${
                                   recommendedAction === "APPROVE" ? "bg-green-100 text-green-700" :
                                   recommendedAction === "PARTIAL" ? "bg-orange-100 text-orange-700" :
-                                  "bg-red-100 text-red-700"
+                                  recommendedAction === "DENY" ? "bg-red-100 text-red-700" :
+                                  "bg-yellow-100 text-yellow-700"
                                 }`}>
-                                  {recommendedAction === "APPROVE" ? "Approve" : recommendedAction === "PARTIAL" ? "Partial" : "Deny"}
+                                  {recommendedAction === "APPROVE" ? "Approve" : recommendedAction === "PARTIAL" ? "Partial" : recommendedAction === "DENY" ? "Deny" : "Pending"}
                                 </span>
                               )}
                             </td>
@@ -1236,47 +1209,6 @@ export default function InventoryPage() {
                                 ) : (
                                   <span className="text-gray-400">—</span>
                                 )
-                              )}
-                            </td>
-                            <td className="px-4 py-3 text-sm">
-                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                req.status === "FULFILLED" ? "bg-green-100 text-green-700" :
-                                req.status === "APPROVED" ? "bg-blue-100 text-blue-700" :
-                                req.status === "REJECTED" ? "bg-red-100 text-red-700" :
-                                req.status === "ON_HOLD" ? "bg-yellow-100 text-yellow-700" :
-                                "bg-gray-100 text-gray-700"
-                              }`}>
-                                {req.status === "REJECTED" ? "Denied" : req.status}
-                              </span>
-                            </td>
-                            <td className="px-4 py-3 text-right text-sm">
-                              {req.status === "PENDING" && canManage && (
-                                <div className="inline-flex gap-2 items-center flex-wrap">
-                                  <input id={`amt-${req.id}`} type="number" step="0.01" placeholder="Amount" className="w-28 px-2 py-1 border rounded text-sm" />
-                                  <button onClick={() => {
-                                    const input = document.getElementById(`amt-${req.id}`) as HTMLInputElement | null;
-                                    const val = input?.value || "";
-                                    const form = new FormData();
-                                    form.append("status", "APPROVED");
-                                    if (val) form.append("amount", val);
-                                    updateMaterialRequest(req.id, form).then((res) => {
-                                      if (!res.ok) { setError(res.error); return; }
-                                      loadMaterialRequests();
-                                      setSuccess("Request approved");
-                                    });
-                                  }} className="px-3 py-1 border border-blue-300 text-blue-700 rounded-lg hover:bg-blue-50 text-xs">Approve</button>
-                                  <button onClick={() => handleUpdateRequestStatus(req.id, "REJECTED")} className="px-3 py-1 border border-red-300 text-red-700 rounded-lg hover:bg-red-50 text-xs">Deny</button>
-                                  <button onClick={() => handleUpdateRequestStatus(req.id, "ON_HOLD")} className="px-3 py-1 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 text-xs">On Hold</button>
-                                </div>
-                              )}
-                              {req.status === "ON_HOLD" && canManage && (
-                                <div className="inline-flex gap-2 items-center">
-                                  <button onClick={() => handleUpdateRequestStatus(req.id, "PENDING")} className="px-3 py-1 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 text-xs">Resume</button>
-                                  <button onClick={() => handleUpdateRequestStatus(req.id, "REJECTED")} className="px-3 py-1 border border-red-300 text-red-700 rounded-lg hover:bg-red-50 text-xs">Deny</button>
-                                </div>
-                              )}
-                              {req.status === "APPROVED" && canManage && (
-                                <button onClick={() => handleUpdateRequestStatus(req.id, "FULFILLED")} className="px-3 py-1 border border-green-300 text-green-700 rounded-lg hover:bg-green-50 text-xs">Mark Fulfilled</button>
                               )}
                             </td>
                           </tr>
