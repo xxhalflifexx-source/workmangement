@@ -14,7 +14,7 @@ if (typeof process !== "undefined") {
 const requestSchema = z.object({
   jobId: z.string().optional(),
   itemName: z.string().min(1, "Item name is required"),
-  quantity: z.number().int().min(1, "Quantity must be at least 1"),
+  quantity: z.number().int().min(1, "Quantity must be at least 1").max(9, "Quantity must be a single digit (1-9)"),
   unit: z.string().min(1, "Unit is required"),
   description: z.string().optional(),
   priority: z.enum(["LOW", "MEDIUM", "HIGH", "URGENT"]),

@@ -642,7 +642,9 @@ export default function JobsPage() {
     const formData = new FormData();
     formData.append("jobId", selectedJobForMaterial.id);
     formData.append("itemName", materialItemName);
-    formData.append("quantity", materialQuantity.toString());
+    // Ensure quantity is a whole number between 1-9
+    const quantity = Math.max(1, Math.min(9, Math.floor(materialQuantity)));
+    formData.append("quantity", quantity.toString());
     formData.append("unit", materialUnit);
     formData.append("description", materialDescription);
     formData.append("priority", materialPriority);
@@ -2027,8 +2029,37 @@ export default function JobsPage() {
                       <input
                         type="number"
                         value={materialQuantity}
-                        onChange={(e) => setMaterialQuantity(Number(e.target.value))}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          // Only allow single digit numbers (1-9), no decimals
+                          if (value === "" || (value.length <= 1 && /^[1-9]$/.test(value))) {
+                            setMaterialQuantity(value === "" ? 1 : Number(value));
+                          } else {
+                            // If user tries to enter more than one digit or decimal, keep current value
+                            e.target.value = materialQuantity.toString();
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          // Prevent decimal point, minus sign, and 'e' (scientific notation)
+                          if (e.key === '.' || e.key === '-' || e.key === 'e' || e.key === 'E' || e.key === '+') {
+                            e.preventDefault();
+                          }
+                        }}
+                        onBlur={(e) => {
+                          // Ensure value is a whole number between 1-9 on blur
+                          const numValue = Number(e.target.value);
+                          if (isNaN(numValue) || numValue < 1) {
+                            setMaterialQuantity(1);
+                          } else if (numValue > 9) {
+                            setMaterialQuantity(9);
+                          } else {
+                            setMaterialQuantity(Math.floor(numValue)); // Ensure whole number, no decimals
+                          }
+                        }}
                         min="1"
+                        max="9"
+                        step="1"
+                        maxLength={1}
                         required
                         disabled={selectedJobForMaterial ? (selectedJobForMaterial.status === "AWAITING_QC" || selectedJobForMaterial.status === "COMPLETED") : false}
                         className="w-full border border-gray-300 rounded-lg px-3 py-2 disabled:bg-gray-100 disabled:cursor-not-allowed"
