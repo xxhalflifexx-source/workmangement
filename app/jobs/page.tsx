@@ -2284,6 +2284,13 @@ export default function JobsPage() {
                   </div>
                   <div className="flex gap-2">
                     <button
+                      onClick={handleSaveQuotation}
+                      disabled={savingQuotation}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:bg-gray-400 disabled:cursor-not-allowed"
+                    >
+                      {savingQuotation ? "Saving..." : "💾 Save"}
+                    </button>
+                    <button
                       onClick={handleDownloadQuotationPDF}
                       className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
                     >
@@ -2294,6 +2301,7 @@ export default function JobsPage() {
                         setShowQuotationModal(false);
                         setSelectedJobForQuotation(null);
                         setQuotationLineItems([]);
+                        setCurrentQuotationId(null);
                       }}
                       className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                     >
