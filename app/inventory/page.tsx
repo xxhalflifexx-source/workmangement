@@ -472,17 +472,18 @@ export default function InventoryPage() {
   };
 
   const exportRequestsToCSV = () => {
-    const headers = ["Request ID", "Employee", "Item", "Qty Requested", "Current Stock", "Recommended Action", "Notes"];
+    const headers = ["Request ID", "Employee", "Item", "Qty Requested", "Status", "Recommended Action", "Notes"];
     const rows = sortedRequests.map((req) => {
       const currentStock = getCurrentStock(req.itemName);
       const recommendedAction = getRecommendedAction(req);
       const inventoryItem = items.find((item) => item.name.toLowerCase() === req.itemName.toLowerCase());
+      const status = inventoryItem ? (currentStock >= req.quantity ? "AVAILABLE" : "UNAVAILABLE") : "UNAVAILABLE";
       return [
         req.requestNumber || req.id.substring(0, 8),
         req.user.name || req.user.email || "",
         req.itemName,
         `${req.quantity} ${req.unit}`,
-        inventoryItem ? `${currentStock} ${inventoryItem.unit}` : "N/A",
+        status,
         recommendedAction === "APPROVE" ? "Approve" : recommendedAction === "PARTIAL" ? "Partial" : recommendedAction === "DENY" ? "Deny" : "Pending",
         req.notes || "",
       ];
@@ -1057,7 +1058,7 @@ export default function InventoryPage() {
                             {requestSortField === "quantity" && (requestSortDirection === "asc" ? "↑" : "↓")}
                           </button>
                         </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Current Stock</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Recommended Action</th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Notes</th>
                       </tr>
@@ -1131,11 +1132,11 @@ export default function InventoryPage() {
                             </td>
                             <td className="px-4 py-3 text-sm text-gray-900">
                               {inventoryItem ? (
-                                <span className={currentStock === 0 ? "text-red-600 font-semibold" : currentStock < req.quantity ? "text-orange-600 font-semibold" : "text-green-600 font-semibold"}>
-                                  {currentStock} {inventoryItem.unit}
+                                <span className={currentStock >= req.quantity ? "text-green-600 font-semibold" : "text-red-600 font-semibold"}>
+                                  {currentStock >= req.quantity ? "AVAILABLE" : "UNAVAILABLE"}
                                 </span>
                               ) : (
-                                <span className="text-gray-400">N/A</span>
+                                <span className="text-red-600 font-semibold">UNAVAILABLE</span>
                               )}
                             </td>
                             <td className="px-4 py-3 text-sm">
