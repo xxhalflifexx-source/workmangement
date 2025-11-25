@@ -390,9 +390,11 @@ export default function InventoryPage() {
 
   // Materials Requested tab: Filtering and sorting
   const filteredRequests = materialRequests.filter((req) => {
+    const jobNumber = req.job ? req.job.id.substring(0, 8).toUpperCase() : "";
     const matchesSearch =
       requestSearchTerm === "" ||
       (req.requestNumber || "").toLowerCase().includes(requestSearchTerm.toLowerCase()) ||
+      jobNumber.toLowerCase().includes(requestSearchTerm.toLowerCase()) ||
       req.itemName.toLowerCase().includes(requestSearchTerm.toLowerCase()) ||
       req.description?.toLowerCase().includes(requestSearchTerm.toLowerCase()) ||
       (req.job?.title || "").toLowerCase().includes(requestSearchTerm.toLowerCase()) ||
@@ -472,7 +474,7 @@ export default function InventoryPage() {
   };
 
   const exportRequestsToCSV = () => {
-    const headers = ["Job Number", "Employee", "Item", "Qty Requested", "Status", "Action", "Notes", "Date Requested", "Date Approved"];
+    const headers = ["Job No.", "Employee", "Item", "Qty Requested", "Status", "Action", "Notes", "Date Requested", "Date Approved"];
     const rows = sortedRequests.map((req) => {
       const currentStock = getCurrentStock(req.itemName);
       const recommendedAction = getRecommendedAction(req);
@@ -923,7 +925,7 @@ export default function InventoryPage() {
                 <div className="flex-1 w-full sm:w-auto">
                   <input
                     type="text"
-                    placeholder="Search by Request ID, Employee, Item, or Status..."
+                    placeholder="Search by Job No., Request ID, Employee, Item, or Status..."
                     value={requestSearchTerm}
                     onChange={(e) => {
                       setRequestSearchTerm(e.target.value);
@@ -1013,7 +1015,7 @@ export default function InventoryPage() {
                   <table className="w-full">
                     <thead className="bg-gray-50 border-b">
                       <tr>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Job Number</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Job No.</th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                           <button
                             onClick={() => {
