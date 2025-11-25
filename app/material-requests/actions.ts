@@ -173,9 +173,26 @@ export async function getMaterialRequests() {
 
   try {
     // Employees see only their requests, managers/admins see all
+    // Use select to avoid querying columns that might not exist yet
     const requests = await prisma.materialRequest.findMany({
       where: userRole === "EMPLOYEE" ? { userId } : {},
-      include: {
+      select: {
+        id: true,
+        requestNumber: true,
+        jobId: true,
+        userId: true,
+        itemName: true,
+        quantity: true,
+        unit: true,
+        description: true,
+        priority: true,
+        status: true,
+        requestedDate: true,
+        fulfilledDate: true,
+        dateDelivered: true,
+        notes: true,
+        recommendedAction: true,
+        orderStatus: true,
         job: { select: { title: true, id: true } },
         user: { select: { name: true, email: true } },
       },
@@ -184,10 +201,47 @@ export async function getMaterialRequests() {
 
     return { ok: true, requests };
   } catch (error: any) {
-    // Handle case where columns don't exist yet
+    // Handle case where columns don't exist yet - try with minimal fields
     if (error?.code === "P2022" || error?.message?.includes("requestNumber") || error?.message?.includes("dateDelivered") || error?.message?.includes("orderStatus")) {
-      console.error("Database migration needed: MaterialRequest columns missing");
-      return { ok: false, error: "Database migration required. Please run the migration SQL scripts in prisma/migrations/ or use: npx prisma migrate deploy" };
+      console.error("Database migration needed: MaterialRequest columns missing, trying fallback query");
+      
+      // Fallback: query only fields that definitely exist
+      try {
+        const requests = await prisma.materialRequest.findMany({
+          where: userRole === "EMPLOYEE" ? { userId } : {},
+          select: {
+            id: true,
+            jobId: true,
+            userId: true,
+            itemName: true,
+            quantity: true,
+            unit: true,
+            description: true,
+            priority: true,
+            status: true,
+            requestedDate: true,
+            fulfilledDate: true,
+            notes: true,
+            job: { select: { title: true, id: true } },
+            user: { select: { name: true, email: true } },
+          },
+          orderBy: { requestedDate: "desc" },
+        });
+
+        // Add null values for missing fields
+        const requestsWithDefaults = requests.map((req: any) => ({
+          ...req,
+          requestNumber: null,
+          dateDelivered: null,
+          orderStatus: null,
+          recommendedAction: null,
+        }));
+
+        return { ok: true, requests: requestsWithDefaults };
+      } catch (fallbackError: any) {
+        console.error("Fallback query also failed:", fallbackError);
+        return { ok: false, error: "Database migration required. Please run: ALTER TABLE \"MaterialRequest\" ADD COLUMN IF NOT EXISTS \"dateDelivered\" TIMESTAMP(3), ADD COLUMN IF NOT EXISTS \"orderStatus\" TEXT, ADD COLUMN IF NOT EXISTS \"requestNumber\" TEXT, ADD COLUMN IF NOT EXISTS \"recommendedAction\" TEXT;" };
+      }
     }
     console.error("Get material requests error:", error);
     return { ok: false, error: "Failed to load material requests" };
