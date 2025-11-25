@@ -5,45 +5,28 @@ import { authOptions } from "@/lib/authOptions";
 import { prisma } from "@/lib/prisma";
 import { nowInCentral, centralToUTC, parseCentralDate } from "@/lib/date-utils";
 
-export async function getNextQuotationNumber(): Promise<string> {
-	const currentYear = nowInCentral().year();
-	
-	// Find all quotations with quotation numbers matching QUO-2025-#### pattern
-	const quotations2025 = await prisma.quotation.findMany({
-		where: {
-			quotationNumber: {
-				startsWith: `QUO-${currentYear}-`,
+export async function getQuotationsByJobId(jobId: string) {
+	const session = await getServerSession(authOptions);
+	if (!session?.user) return { ok: false, error: "Not authenticated" };
+	const role = (session.user as any).role;
+	if (role !== "ADMIN" && role !== "MANAGER") return { ok: false, error: "Unauthorized" };
+
+	try {
+		const quotations = await prisma.quotation.findMany({
+			where: { jobId },
+			include: {
+				lines: true,
+				job: { select: { title: true, id: true } },
+				customer: true,
 			},
-		},
-		select: {
-			quotationNumber: true,
-		},
-		orderBy: {
-			createdAt: "desc",
-		},
-	});
+			orderBy: { createdAt: "desc" },
+		});
 
-	let nextSequence = 1;
-
-	if (quotations2025.length > 0) {
-		// Extract sequence numbers from all 2025 quotations
-		const sequences = quotations2025
-			.map((quo) => {
-				// Match pattern QUO-2025-#### and extract the 4-digit sequence
-				const match = quo.quotationNumber?.match(/QUO-(\d{4})-(\d{4})$/);
-				return match ? parseInt(match[2], 10) : 0;
-			})
-			.filter((seq) => seq > 0);
-
-		if (sequences.length > 0) {
-			// Find the highest sequence number and increment
-			const maxSequence = Math.max(...sequences);
-			nextSequence = maxSequence + 1;
-		}
+		return { ok: true, quotations };
+	} catch (error: any) {
+		console.error("Get quotations by job error:", error);
+		return { ok: false, error: error?.message || "Failed to load quotations" };
 	}
-
-	// Format as QUO-2025-#### with 4-digit sequence padded with zeros
-	return `QUO-${currentYear}-${nextSequence.toString().padStart(4, "0")}`;
 }
 
 export async function createQuotation(formData: FormData) {
@@ -74,12 +57,9 @@ export async function createQuotation(formData: FormData) {
 
 	const total = lines.reduce((s, l) => s + (l.amount || l.quantity * l.rate), 0) + shippingFee;
 
-	// Generate quotation number
-	const quotationNumber = await getNextQuotationNumber();
-
 	const quotation = await prisma.quotation.create({
 		data: {
-			quotationNumber,
+			quotationNumber: null, // No quotation numbers
 			jobId: jobId || null,
 			customerId: customerId || null,
 			customerName: customerName || null,

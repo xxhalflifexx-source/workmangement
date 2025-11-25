@@ -1,7 +1,6 @@
 import { jsPDF } from "jspdf";
 
 export interface QuotationPDFData {
-  quotationNumber: string;
   quotationDate: string;
   validUntil?: string;
   companyName: string;
@@ -55,12 +54,10 @@ export function generateQuotationPDF(data: QuotationPDFData): jsPDF {
   doc.text("QUOTATION", margin, yPos);
   yPos += 10;
 
-  // Quotation Number and Date
+  // Quotation Date
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(50, 50, 50);
-  doc.text(`Quotation Number: #${data.quotationNumber}`, margin, yPos);
-  yPos += 5;
   
   const quotationDateFormatted = new Date(data.quotationDate).toLocaleDateString("en-GB", {
     day: "2-digit",

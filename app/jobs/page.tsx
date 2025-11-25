@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { getJobs, getAllUsers, createJob, updateJob, deleteJob, getJobActivities, addJobActivity, getAllCustomers, createCustomer, saveJobPhotos, submitJobPhotosToQC, getJobPhotos, removeJobPhoto as removeJobPhotoFromDB } from "./actions";
 import { createMaterialRequest, getJobMaterialRequests } from "../material-requests/actions";
 import { getCompanySettingsForInvoice } from "./invoice-actions";
-import { createQuotation, getNextQuotationNumber } from "../quotations/actions";
+import { createQuotation, updateQuotation, getQuotationsByJobId, getQuotation } from "../quotations/actions";
 import { generateQuotationPDF, QuotationPDFData } from "@/lib/quotation-pdf-generator";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
@@ -136,7 +136,7 @@ export default function JobsPage() {
   // Quotation states
   const [showQuotationModal, setShowQuotationModal] = useState(false);
   const [selectedJobForQuotation, setSelectedJobForQuotation] = useState<Job | null>(null);
-  const [quotationNumber, setQuotationNumber] = useState("");
+  const [currentQuotationId, setCurrentQuotationId] = useState<string | null>(null); // For editing existing quotations
   const [quotationDate, setQuotationDate] = useState(todayCentralISO());
   const [quotationValidUntil, setQuotationValidUntil] = useState("");
   const [quotationLineItems, setQuotationLineItems] = useState<any[]>([]);
@@ -152,8 +152,12 @@ export default function JobsPage() {
   const [quotationCustomerPhone, setQuotationCustomerPhone] = useState("");
   const [quotationCustomerEmail, setQuotationCustomerEmail] = useState("");
   const [savingQuotation, setSavingQuotation] = useState(false);
+  const [autoSavingQuotation, setAutoSavingQuotation] = useState(false);
   const [companySettings, setCompanySettings] = useState<any>(null);
+  const [savedQuotations, setSavedQuotations] = useState<any[]>([]);
+  const [showSavedQuotations, setShowSavedQuotations] = useState(false);
   const quotationRef = useRef<HTMLDivElement>(null);
+  const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     loadData();
@@ -700,10 +704,14 @@ export default function JobsPage() {
 
     setSelectedJobForQuotation(job);
     setShowQuotationModal(true);
+    setCurrentQuotationId(null); // New quotation
     
-    // Generate quotation number
-    const nextNumber = await getNextQuotationNumber();
-    setQuotationNumber(nextNumber);
+    // Load saved quotations for this job
+    const quotationsRes = await getQuotationsByJobId(job.id);
+    if (quotationsRes.ok) {
+      setSavedQuotations(quotationsRes.quotations || []);
+    }
+    
     setQuotationDate(todayCentralISO());
     
     // Set valid until date to 30 days from now in Central Time
@@ -751,6 +759,35 @@ export default function JobsPage() {
     setQuotationLineItems(lineItems);
     setQuotationNotes("This quotation is valid for 30 days from the date above. Final pricing may vary based on actual work performed.");
     setQuotationShippingFee(0);
+    
+    // Auto-save after a short delay
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current);
+    }
+    autoSaveTimeoutRef.current = setTimeout(() => {
+      handleAutoSaveQuotation();
+    }, 2000); // Auto-save after 2 seconds of inactivity
+  };
+  
+  const openQuotationForEdit = async (quotation: any) => {
+    if (!selectedJobForQuotation) return;
+    
+    setCurrentQuotationId(quotation.id);
+    setQuotationDate(quotation.issueDate ? formatDateInput(new Date(quotation.issueDate)) : todayCentralISO());
+    setQuotationValidUntil(quotation.validUntil ? formatDateInput(new Date(quotation.validUntil)) : "");
+    setQuotationLineItems(quotation.lines || []);
+    setQuotationNotes(quotation.notes || "");
+    setQuotationShippingFee(quotation.shippingFee || 0);
+    setQuotationPaymentBank(quotation.paymentBank || "");
+    setQuotationPaymentAccountName(quotation.paymentAccountName || "");
+    setQuotationPaymentAccountNumber(quotation.paymentAccountNumber || "");
+    setQuotationPreparedByName(quotation.preparedByName || "");
+    setQuotationPreparedByTitle(quotation.preparedByTitle || "");
+    setQuotationCustomerName(quotation.customerName || "");
+    setQuotationCustomerAddress(quotation.customerAddress || "");
+    setQuotationCustomerPhone(quotation.customerPhone || "");
+    setQuotationCustomerEmail(quotation.customerEmail || "");
+    setShowSavedQuotations(false);
   };
 
   const addQuotationLineItem = () => {
@@ -773,6 +810,14 @@ export default function JobsPage() {
       line.amount = line.quantity * line.rate;
     }
     setQuotationLineItems(updated);
+    
+    // Trigger auto-save after changes
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current);
+    }
+    autoSaveTimeoutRef.current = setTimeout(() => {
+      handleAutoSaveQuotation();
+    }, 2000);
   };
 
   const removeQuotationLineItem = (index: number) => {
@@ -787,17 +832,16 @@ export default function JobsPage() {
     return calculateQuotationSubtotal() + (quotationShippingFee || 0);
   };
 
-  const handleSaveQuotation = async () => {
-    if (!selectedJobForQuotation || !canManage) {
-      setError("Unauthorized");
-      return;
-    }
+  const handleAutoSaveQuotation = async () => {
+    if (!selectedJobForQuotation || !canManage) return;
+    if (quotationLineItems.length === 0) return; // Don't save empty quotations
 
-    setSavingQuotation(true);
-    setError(undefined);
-
+    setAutoSavingQuotation(true);
     try {
       const formData = new FormData();
+      if (currentQuotationId) {
+        formData.append("quotationId", currentQuotationId);
+      }
       formData.append("jobId", selectedJobForQuotation.id);
       if (selectedJobForQuotation.customer?.id) {
         formData.append("customerId", selectedJobForQuotation.customer.id);
@@ -817,19 +861,77 @@ export default function JobsPage() {
       formData.append("preparedByTitle", quotationPreparedByTitle);
       formData.append("lines", JSON.stringify(quotationLineItems));
 
-      const res = await createQuotation(formData);
-      if (res.ok) {
-        setSuccess("Quotation created successfully!");
-        setShowQuotationModal(false);
-        // Reset form
-        setQuotationLineItems([]);
-        setQuotationNotes("");
-        setQuotationShippingFee(0);
-      } else {
-        setError(res.error || "Failed to create quotation");
+      const res = currentQuotationId 
+        ? await updateQuotation(formData)
+        : await createQuotation(formData);
+      
+      if (res.ok && res.quotation) {
+        setCurrentQuotationId(res.quotation.id);
+        // Reload saved quotations
+        const quotationsRes = await getQuotationsByJobId(selectedJobForQuotation.id);
+        if (quotationsRes.ok) {
+          setSavedQuotations(quotationsRes.quotations || []);
+        }
       }
     } catch (err: any) {
-      setError(err?.message || "Failed to create quotation");
+      console.error("Auto-save error:", err);
+    } finally {
+      setAutoSavingQuotation(false);
+    }
+  };
+
+  const handleSaveQuotation = async () => {
+    if (!selectedJobForQuotation || !canManage) {
+      setError("Unauthorized");
+      return;
+    }
+
+    setSavingQuotation(true);
+    setError(undefined);
+
+    try {
+      const formData = new FormData();
+      if (currentQuotationId) {
+        formData.append("quotationId", currentQuotationId);
+      }
+      formData.append("jobId", selectedJobForQuotation.id);
+      if (selectedJobForQuotation.customer?.id) {
+        formData.append("customerId", selectedJobForQuotation.customer.id);
+      }
+      formData.append("customerName", quotationCustomerName);
+      formData.append("customerAddress", quotationCustomerAddress);
+      formData.append("customerPhone", quotationCustomerPhone);
+      formData.append("customerEmail", quotationCustomerEmail);
+      formData.append("issueDate", quotationDate);
+      formData.append("validUntil", quotationValidUntil);
+      formData.append("notes", quotationNotes);
+      formData.append("shippingFee", quotationShippingFee.toString());
+      formData.append("paymentBank", quotationPaymentBank);
+      formData.append("paymentAccountName", quotationPaymentAccountName);
+      formData.append("paymentAccountNumber", quotationPaymentAccountNumber);
+      formData.append("preparedByName", quotationPreparedByName);
+      formData.append("preparedByTitle", quotationPreparedByTitle);
+      formData.append("lines", JSON.stringify(quotationLineItems));
+
+      const res = currentQuotationId 
+        ? await updateQuotation(formData)
+        : await createQuotation(formData);
+      
+      if (res.ok) {
+        setSuccess(currentQuotationId ? "Quotation updated successfully!" : "Quotation created successfully!");
+        if (res.quotation) {
+          setCurrentQuotationId(res.quotation.id);
+        }
+        // Reload saved quotations
+        const quotationsRes = await getQuotationsByJobId(selectedJobForQuotation.id);
+        if (quotationsRes.ok) {
+          setSavedQuotations(quotationsRes.quotations || []);
+        }
+      } else {
+        setError(res.error || "Failed to save quotation");
+      }
+    } catch (err: any) {
+      setError(err?.message || "Failed to save quotation");
     } finally {
       setSavingQuotation(false);
     }
@@ -845,7 +947,6 @@ export default function JobsPage() {
     const total = calculateQuotationTotal();
 
     const pdfData: QuotationPDFData = {
-      quotationNumber: quotationNumber || "TEMP",
       quotationDate: quotationDate,
       validUntil: quotationValidUntil || undefined,
       companyName: companySettings?.companyName || "TCB METAL WORKS",
@@ -872,7 +973,8 @@ export default function JobsPage() {
     };
 
     const pdf = generateQuotationPDF(pdfData);
-    pdf.save(`${quotationNumber || "QUO"}-${todayCentralISO()}.pdf`);
+    const jobTitle = selectedJobForQuotation.title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+    pdf.save(`quotation-${jobTitle}-${todayCentralISO()}.pdf`);
   };
 
 
@@ -2063,10 +2165,92 @@ export default function JobsPage() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 no-print print-area-container">
           <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[95vh] overflow-y-auto">
             <div ref={quotationRef}>
+              {/* Saved Quotations List */}
+              {showSavedQuotations && savedQuotations.length > 0 && (
+                <div className="p-6 border-b bg-blue-50 no-print">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Saved Quotations</h3>
+                  <div className="space-y-2 max-h-60 overflow-y-auto">
+                    {savedQuotations.map((quo) => (
+                      <div
+                        key={quo.id}
+                        className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50"
+                      >
+                        <div className="flex-1">
+                          <div className="text-sm font-medium text-gray-900">
+                            {formatDateShort(new Date(quo.createdAt))} - ${quo.total.toFixed(2)}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {quo.lines?.length || 0} line items
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => openQuotationForEdit(quo)}
+                            className="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => {
+                              const pdfData: QuotationPDFData = {
+                                quotationDate: quo.issueDate ? formatDateInput(new Date(quo.issueDate)) : todayCentralISO(),
+                                validUntil: quo.validUntil ? formatDateInput(new Date(quo.validUntil)) : undefined,
+                                companyName: companySettings?.companyName || "TCB METAL WORKS",
+                                companyAddress: companySettings?.address || undefined,
+                                companyCity: companySettings?.city || undefined,
+                                companyState: companySettings?.state || undefined,
+                                companyZipCode: companySettings?.zipCode || undefined,
+                                companyPhone: companySettings?.phone || undefined,
+                                companyEmail: companySettings?.email || undefined,
+                                customerName: quo.customerName || "Customer",
+                                customerAddress: quo.customerAddress || undefined,
+                                customerPhone: quo.customerPhone || undefined,
+                                customerEmail: quo.customerEmail || undefined,
+                                lineItems: quo.lines || [],
+                                subtotal: (quo.total || 0) - (quo.shippingFee || 0),
+                                shippingFee: quo.shippingFee || 0,
+                                total: quo.total || 0,
+                                notes: quo.notes || undefined,
+                                paymentBank: quo.paymentBank || undefined,
+                                paymentAccountName: quo.paymentAccountName || undefined,
+                                paymentAccountNumber: quo.paymentAccountNumber || undefined,
+                                preparedByName: quo.preparedByName || undefined,
+                                preparedByTitle: quo.preparedByTitle || undefined,
+                              };
+                              const pdf = generateQuotationPDF(pdfData);
+                              const jobTitle = selectedJobForQuotation?.title.replace(/[^a-z0-9]/gi, '_').toLowerCase() || 'quotation';
+                              pdf.save(`quotation-${jobTitle}-${formatDateInput(new Date(quo.createdAt))}.pdf`);
+                            }}
+                            className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+                          >
+                            Download PDF
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
               {/* Estimate Header */}
               <div className="p-6 border-b bg-gray-50 no-print">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-2xl font-bold text-gray-900">Create Quotation</h2>
+                  <div className="flex items-center gap-4">
+                    <h2 className="text-2xl font-bold text-gray-900">
+                      {currentQuotationId ? "Edit Quotation" : "Create Quotation"}
+                    </h2>
+                    {autoSavingQuotation && (
+                      <span className="text-sm text-gray-500">Auto-saving...</span>
+                    )}
+                    {savedQuotations.length > 0 && (
+                      <button
+                        onClick={() => setShowSavedQuotations(!showSavedQuotations)}
+                        className="px-3 py-1 text-sm border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors"
+                      >
+                        {showSavedQuotations ? "Hide" : "View"} Saved Quotations ({savedQuotations.length})
+                      </button>
+                    )}
+                  </div>
                   <div className="flex gap-2">
                     <button
                       onClick={handleDownloadQuotationPDF}
@@ -2135,20 +2319,15 @@ export default function JobsPage() {
                   <div className="text-right">
                     <div className="space-y-2">
                       <div className="grid grid-cols-2 gap-4">
-                        <span className="text-gray-600 text-right">Quotation #:</span>
-                        <input
-                          type="text"
-                          value={quotationNumber}
-                          onChange={(e) => setQuotationNumber(e.target.value)}
-                          className="font-semibold text-right border-b border-gray-300 focus:border-green-500 outline-none print-no-border"
-                        />
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
                         <span className="text-gray-600 text-right">Date:</span>
                         <input
                           type="date"
                           value={quotationDate}
-                          onChange={(e) => setQuotationDate(e.target.value)}
+                          onChange={(e) => {
+                            setQuotationDate(e.target.value);
+                            if (autoSaveTimeoutRef.current) clearTimeout(autoSaveTimeoutRef.current);
+                            autoSaveTimeoutRef.current = setTimeout(() => handleAutoSaveQuotation(), 2000);
+                          }}
                           className="font-semibold text-right border-b border-gray-300 focus:border-green-500 outline-none print-no-border"
                         />
                       </div>
@@ -2157,7 +2336,11 @@ export default function JobsPage() {
                         <input
                           type="date"
                           value={quotationValidUntil}
-                          onChange={(e) => setQuotationValidUntil(e.target.value)}
+                          onChange={(e) => {
+                            setQuotationValidUntil(e.target.value);
+                            if (autoSaveTimeoutRef.current) clearTimeout(autoSaveTimeoutRef.current);
+                            autoSaveTimeoutRef.current = setTimeout(() => handleAutoSaveQuotation(), 2000);
+                          }}
                           className="font-semibold text-right border-b border-gray-300 focus:border-green-500 outline-none print-no-border"
                         />
                       </div>
@@ -2247,7 +2430,11 @@ export default function JobsPage() {
                       <input
                         type="number"
                         value={quotationShippingFee}
-                        onChange={(e) => setQuotationShippingFee(parseFloat(e.target.value) || 0)}
+                        onChange={(e) => {
+                          setQuotationShippingFee(parseFloat(e.target.value) || 0);
+                          if (autoSaveTimeoutRef.current) clearTimeout(autoSaveTimeoutRef.current);
+                          autoSaveTimeoutRef.current = setTimeout(() => handleAutoSaveQuotation(), 2000);
+                        }}
                         className="w-20 text-right border-b border-gray-300 focus:border-green-500 outline-none"
                         step="0.01"
                         min="0"
@@ -2265,7 +2452,11 @@ export default function JobsPage() {
                   <h3 className="text-sm font-bold text-gray-700 uppercase mb-2">Terms & Conditions:</h3>
                   <textarea
                     value={quotationNotes}
-                    onChange={(e) => setQuotationNotes(e.target.value)}
+                    onChange={(e) => {
+                      setQuotationNotes(e.target.value);
+                      if (autoSaveTimeoutRef.current) clearTimeout(autoSaveTimeoutRef.current);
+                      autoSaveTimeoutRef.current = setTimeout(() => handleAutoSaveQuotation(), 2000);
+                    }}
                     rows={4}
                     className="w-full border border-gray-300 rounded-lg p-3 text-sm resize-none print-no-border"
                     placeholder="Add any terms, conditions, or notes..."
