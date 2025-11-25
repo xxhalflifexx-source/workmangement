@@ -1289,11 +1289,10 @@ export default function InventoryPage() {
                                 <textarea
                                   id={`notes-${req.id}`}
                                   defaultValue={req.notes || ""}
-                                  onBlur={(e) => {
+                                  onBlur={async (e) => {
                                     const newNotes = e.target.value.trim();
                                     // Only update if notes changed
                                     if (newNotes !== (req.notes || "")) {
-                                      const form = new FormData();
                                       try {
                                         const form = new FormData();
                                         form.append("status", req.status);
