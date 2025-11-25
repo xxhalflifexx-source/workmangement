@@ -47,8 +47,8 @@ export default function FinancePage() {
     );
   }
 
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | undefined>();
+	const [loading, setLoading] = useState(true);
+	const [error, setError] = useState<string | undefined>();
   const [success, setSuccess] = useState<string | undefined>();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [filteredInvoices, setFilteredInvoices] = useState<Invoice[]>([]);
@@ -145,13 +145,13 @@ export default function FinancePage() {
       setInvoices([]);
       setFilteredInvoices([]);
     } finally {
-      setLoading(false);
+setLoading(false);
     }
-  };
+	};
 
-  useEffect(() => {
+	useEffect(() => {
     loadInvoices();
-  }, []);
+	}, []);
 
   // Apply filters and search
   useEffect(() => {
@@ -836,22 +836,22 @@ export default function FinancePage() {
     );
   }
 
-  return (
-    <main className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-sm border-b">
+	return (
+		<main className="min-h-screen bg-gray-50">
+			<header className="bg-white shadow-sm border-b">
         <div className="max-w-full mx-auto px-24 py-4 flex justify-between items-center">
-          <div>
+					<div>
             <h1 className="text-2xl font-bold text-gray-900">💰 Finance</h1>
             <p className="text-sm text-gray-500">Track invoices and financial records</p>
-          </div>
+					</div>
           <Link
             href="/dashboard"
             className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
           >
             Back to Dashboard
-          </Link>
-        </div>
-      </header>
+					</Link>
+				</div>
+			</header>
 
       <div className="max-w-full mx-auto px-24 py-8 space-y-6">
         {/* Success/Error Messages */}
@@ -894,11 +894,11 @@ export default function FinancePage() {
           )}
         </div>
 
-        {/* Filters */}
+				{/* Filters */}
         <div className="bg-white rounded-xl shadow border border-gray-200 p-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {/* Search */}
-            <div>
+						<div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Search
               </label>
@@ -909,10 +909,10 @@ export default function FinancePage() {
                 placeholder="Invoice #, Job #, Customer..."
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
               />
-            </div>
+						</div>
 
             {/* Status Filter */}
-            <div>
+						<div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Status
               </label>
@@ -927,7 +927,7 @@ export default function FinancePage() {
                 <option value="OVERDUE">Overdue</option>
                 <option value="CANCELLED">Cancelled</option>
               </select>
-            </div>
+						</div>
 
             {/* Date From */}
             <div>
@@ -953,8 +953,8 @@ export default function FinancePage() {
                 onChange={(e) => setDateTo(e.target.value)}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
               />
-            </div>
-          </div>
+					</div>
+				</div>
 
           {/* Clear Filters */}
           {(searchQuery || statusFilter !== "ALL" || dateFrom || dateTo) && (
@@ -975,14 +975,14 @@ export default function FinancePage() {
         </div>
 
         {/* Error Message */}
-        {error && (
+				{error && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
             {error}
           </div>
-        )}
+				)}
 
         {/* Loading State */}
-        {loading ? (
+				{loading ? (
           <div className="bg-white rounded-xl shadow border border-gray-200 p-12 text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
             <p className="text-gray-600">Loading invoices...</p>
@@ -1301,14 +1301,14 @@ export default function FinancePage() {
                               </button>
                             </>
                           )}
-                        </div>
+							</div>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-            </div>
-          </div>
+							</div>
+							</div>
         )}
 
         {/* Invoice Details Modal */}
@@ -1322,7 +1322,7 @@ export default function FinancePage() {
                     <p className="text-sm text-gray-500 mt-1">
                       {selectedInvoice.invoiceNumber || "No Invoice Number"}
                     </p>
-                  </div>
+							</div>
                   <button
                     onClick={() => {
                       setShowDetails(false);
@@ -1332,7 +1332,7 @@ export default function FinancePage() {
                   >
                     ✕
                   </button>
-                </div>
+						</div>
 
                 {/* Invoice Info */}
                 <div className="grid grid-cols-2 gap-6 mb-6">
@@ -1344,7 +1344,7 @@ export default function FinancePage() {
                       <div className="flex justify-between">
                         <span className="text-gray-600">Invoice Number:</span>
                         <span className="font-medium">{selectedInvoice.invoiceNumber || "—"}</span>
-                      </div>
+											</div>
                       <div className="flex justify-between">
                         <span className="text-gray-600">Status:</span>
                         <span>{getStatusBadge(selectedInvoice)}</span>
@@ -1451,8 +1451,8 @@ export default function FinancePage() {
                         </tbody>
                       </table>
                     </div>
-                  </div>
-                )}
+									</div>
+								)}
 
                 {/* Payments */}
                 {selectedInvoice.payments && selectedInvoice.payments.length > 0 && (
@@ -1491,7 +1491,7 @@ export default function FinancePage() {
                           ))}
                         </tbody>
                       </table>
-                    </div>
+							</div>
                   </div>
                 )}
 
@@ -1536,10 +1536,10 @@ export default function FinancePage() {
                     <h3 className="text-sm font-semibold text-gray-700 uppercase mb-2">Notes</h3>
                     <p className="text-sm text-gray-600 bg-gray-50 rounded-lg p-3">
                       {selectedInvoice.notes}
-                    </p>
-                  </div>
+								</p>
+							</div>
                 )}
-              </div>
+						</div>
             </div>
           </div>
         )}
@@ -1608,8 +1608,8 @@ export default function FinancePage() {
                     )}
                     {uninvoicedJobs.length === 0 && !loadingJobs && (
                       <p className="text-sm text-gray-500 mt-2">All jobs have been invoiced.</p>
-                    )}
-                  </div>
+				)}
+			</div>
 
                   {/* Invoice Number and Dates */}
                   <div className="grid grid-cols-3 gap-4">

@@ -155,24 +155,24 @@ export default function TimeClockPage() {
     try {
       const res = await clockIn(selectedJobId || undefined, clockInDescription.trim() || undefined);
 
-      if (!res.ok) {
+    if (!res.ok) {
         setError(res.error || "Failed to clock in");
-        return;
-      }
+      return;
+    }
 
-      setSuccess(
-        selectedJobId
-          ? "Clocked in successfully to job!"
-          : "Clocked in successfully!"
-      );
-      setSelectedJobId("");
+    setSuccess(
+      selectedJobId
+        ? "Clocked in successfully to job!"
+        : "Clocked in successfully!"
+    );
+    setSelectedJobId("");
       setClockInDescription("");
       await loadData();
     } catch (err: any) {
       console.error("Clock in error:", err);
       setError(err?.message || "Something went wrong while clocking in.");
     } finally {
-      setLoading(false);
+    setLoading(false);
     }
   };
 
@@ -186,22 +186,22 @@ export default function TimeClockPage() {
     setError(undefined);
     setSuccess(undefined);
 
-    try {
+      try {
       const res = await clockOut(notes);
 
-      if (!res.ok) {
+    if (!res.ok) {
         setError(res.error || "Failed to clock out");
-        return;
-      }
+      return;
+    }
 
-      setSuccess("Clocked out successfully!");
-      setNotes("");
+    setSuccess("Clocked out successfully!");
+    setNotes("");
       await loadData();
     } catch (err: any) {
       console.error("Clock out error:", err);
       setError(err?.message || "Something went wrong while clocking out.");
     } finally {
-      setLoading(false);
+    setLoading(false);
     }
   };
 
@@ -633,30 +633,30 @@ export default function TimeClockPage() {
                     d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
                   />
                 </svg>
-              </div>
+                </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
                 Confirm Clock Out
               </h3>
               <p className="text-sm text-gray-600">
                 Are you sure you want to clock out?
               </p>
-            </div>
+                  </div>
 
             <div className="flex gap-3">
-              <button
+                  <button
                 onClick={handleClockOutCancel}
                 disabled={loading}
                 className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors disabled:bg-gray-100 disabled:cursor-not-allowed"
-              >
-                Cancel
-              </button>
-              <button
+                  >
+                    Cancel
+                  </button>
+                  <button
                 onClick={handleClockOutConfirm}
                 disabled={loading}
                 className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
-              >
+                  >
                 {loading ? "Processing..." : "Yes, Clock Out"}
-              </button>
+                  </button>
             </div>
           </div>
         </div>

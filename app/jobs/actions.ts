@@ -207,7 +207,7 @@ export async function getJobs() {
   // Admins and managers see all jobs
   // Employees see only their assigned jobs (assignedTo must equal their userId)
   const whereClause =
-    userRole === "ADMIN" || userRole === "MANAGER"
+      userRole === "ADMIN" || userRole === "MANAGER"
       ? {} // Admins/managers see all jobs
       : { assignedTo: userId }; // Employees only see jobs assigned to them
 

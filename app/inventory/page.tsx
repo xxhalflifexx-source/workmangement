@@ -133,6 +133,23 @@ export default function InventoryPage() {
     loadMaterialRequests(); // All users can see requests (employees see only their own)
   }, []);
 
+  // Load inventory items when request form is opened
+  useEffect(() => {
+    if (showRequestForm) {
+      const loadInventoryItems = async () => {
+        try {
+          const res = await getInventoryItemsForRequest();
+          if (res.ok) {
+            setInventoryItemsForRequest(res.items as any);
+          }
+        } catch (e) {
+          console.error("Failed to load inventory items for request", e);
+        }
+      };
+      loadInventoryItems();
+    }
+  }, [showRequestForm]);
+
   const loadData = async () => {
     setLoading(true);
     setError(undefined);
@@ -176,6 +193,43 @@ export default function InventoryPage() {
     // Update local state
     setMaterialRequests((prev) => prev.map((r) => (r.id === requestId ? { ...r, status, fulfilledDate: status === "FULFILLED" ? centralToUTC(nowInCentral().toDate()).toISOString() : r.fulfilledDate } : r)));
     setSuccess(`Request ${status.toLowerCase()} successfully`);
+  };
+
+  const handleSubmitMaterialRequest = async () => {
+    if (!requestItemName || !requestQuantity || !requestUnit) {
+      setError("Please fill in all required fields");
+      return;
+    }
+
+    setSubmittingRequest(true);
+    setError(undefined);
+    setSuccess(undefined);
+
+    const formData = new FormData();
+    formData.append("itemName", requestItemName);
+    formData.append("quantity", requestQuantity.toString());
+    formData.append("unit", requestUnit);
+    formData.append("priority", "MEDIUM");
+    if (requestNotes) {
+      formData.append("notes", requestNotes);
+    }
+
+    const res = await createMaterialRequest(formData);
+
+    if (!res.ok) {
+      setError(res.error || "Failed to submit material request");
+      setSubmittingRequest(false);
+      return;
+    }
+
+    setSuccess("Material request submitted successfully!");
+    setShowRequestForm(false);
+    setRequestItemName("");
+    setRequestQuantity(1);
+    setRequestUnit("pcs");
+    setRequestNotes("");
+    setSubmittingRequest(false);
+    await loadMaterialRequests();
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
