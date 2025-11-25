@@ -24,6 +24,7 @@ const requestSchema = z.object({
 const updateRequestSchema = z.object({
   status: z.enum(["PENDING", "APPROVED", "REJECTED", "FULFILLED", "ON_HOLD"]),
   notes: z.string().optional(),
+  quantity: z.number().int().min(1, "Quantity must be at least 1").max(9, "Quantity must be a single digit (1-9)").optional(),
 });
 
 export async function createMaterialRequest(formData: FormData) {
@@ -154,9 +155,13 @@ export async function updateMaterialRequest(requestId: string, formData: FormDat
     return { ok: false, error: "Unauthorized: Only managers and admins can update requests" };
   }
 
+  const rawQuantity = formData.get("quantity") as string | null;
+  const quantity = rawQuantity != null && rawQuantity !== "" ? Number(rawQuantity) : undefined;
+
   const data = {
     status: formData.get("status") as string,
     notes: formData.get("notes") as string | undefined,
+    quantity: quantity,
   };
 
   const parsed = updateRequestSchema.safeParse(data);
@@ -183,6 +188,11 @@ export async function updateMaterialRequest(requestId: string, formData: FormDat
       status: parsed.data.status,
       notes: parsed.data.notes || null,
     };
+
+    // Update quantity if provided
+    if (parsed.data.quantity !== undefined) {
+      updateData.quantity = parsed.data.quantity;
+    }
 
     // Set fulfilled date if status is FULFILLED
     if (parsed.data.status === "FULFILLED") {

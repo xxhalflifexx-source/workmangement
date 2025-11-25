@@ -908,7 +908,62 @@ export default function InventoryPage() {
                             <div className="font-medium">{req.itemName}</div>
                             {req.description && <div className="text-xs text-gray-500 line-clamp-1">{req.description}</div>}
                           </td>
-                          <td className="px-4 py-3 text-sm text-gray-900">{Math.floor(req.quantity)} {req.unit}</td>
+                          <td className="px-4 py-3 text-sm text-gray-900">
+                            {req.status === "PENDING" ? (
+                              <input
+                                id={`qty-${req.id}`}
+                                type="number"
+                                defaultValue={Math.floor(req.quantity)}
+                                min="1"
+                                max="9"
+                                step="1"
+                                maxLength={1}
+                                onKeyDown={(e) => {
+                                  // Prevent decimal point, minus sign, and 'e' (scientific notation)
+                                  if (e.key === '.' || e.key === '-' || e.key === 'e' || e.key === 'E' || e.key === '+') {
+                                    e.preventDefault();
+                                  }
+                                }}
+                                onChange={(e) => {
+                                  const value = e.target.value;
+                                  // Only allow single digit numbers (1-9), no decimals
+                                  if (value === "" || (value.length <= 1 && /^[1-9]$/.test(value))) {
+                                    // Value is valid, allow it
+                                  } else {
+                                    // If user tries to enter more than one digit or decimal, keep current value
+                                    e.target.value = Math.floor(req.quantity).toString();
+                                  }
+                                }}
+                                onBlur={(e) => {
+                                  // Ensure value is a whole number between 1-9 on blur
+                                  const numValue = Number(e.target.value);
+                                  if (isNaN(numValue) || numValue < 1) {
+                                    e.target.value = "1";
+                                  } else if (numValue > 9) {
+                                    e.target.value = "9";
+                                  } else {
+                                    e.target.value = Math.floor(numValue).toString(); // Ensure whole number, no decimals
+                                  }
+                                  // Auto-save quantity change
+                                  const form = new FormData();
+                                  form.append("status", req.status);
+                                  form.append("quantity", e.target.value);
+                                  updateMaterialRequest(req.id, form).then((res) => {
+                                    if (!res.ok) {
+                                      setError(res.error);
+                                      // Revert to original value on error
+                                      e.target.value = Math.floor(req.quantity).toString();
+                                    } else {
+                                      loadMaterialRequests();
+                                    }
+                                  });
+                                }}
+                                className="w-16 px-2 py-1 border border-gray-300 rounded text-sm text-center"
+                              />
+                            ) : (
+                              <span>{Math.floor(req.quantity)} {req.unit}</span>
+                            )}
+                          </td>
                           <td className="px-4 py-3 text-sm text-blue-700">{req.job ? req.job.title : "—"}</td>
                           <td className="px-4 py-3 text-sm text-gray-700">{req.user.name || req.user.email}</td>
                           <td className="px-4 py-3 text-sm">
