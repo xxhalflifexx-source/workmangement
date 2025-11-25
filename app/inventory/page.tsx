@@ -1050,9 +1050,9 @@ export default function InventoryPage() {
                             {requestSortField === "quantity" && (requestSortDirection === "asc" ? "↑" : "↓")}
                           </button>
                         </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Notes</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Status</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Action</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Notes</th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                           <button
                             onClick={() => {
@@ -1065,7 +1065,7 @@ export default function InventoryPage() {
                             {requestSortField === "requestedDate" && (requestSortDirection === "asc" ? "↑" : "↓")}
                           </button>
                         </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date Approved</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Date Approved</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y">
