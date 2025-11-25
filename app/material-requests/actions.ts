@@ -152,6 +152,33 @@ export async function getMaterialRequests() {
   return { ok: true, requests };
 }
 
+// Get inventory items for dropdown
+export async function getInventoryItemsForRequest() {
+  const session = await getServerSession(authOptions);
+  
+  if (!session?.user) {
+    return { ok: false, error: "Not authenticated" };
+  }
+
+  try {
+    const items = await prisma.inventoryItem.findMany({
+      select: {
+        id: true,
+        name: true,
+        quantity: true,
+        unit: true,
+        minStockLevel: true,
+      },
+      orderBy: { name: "asc" },
+    });
+
+    return { ok: true, items };
+  } catch (error) {
+    console.error("Get inventory items error:", error);
+    return { ok: false, error: "Failed to load inventory items" };
+  }
+}
+
 export async function getJobMaterialRequests(jobId: string) {
   const session = await getServerSession(authOptions);
   
