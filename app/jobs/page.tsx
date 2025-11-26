@@ -25,10 +25,25 @@ interface Job {
   finalPrice: number | null;
   estimatedHours: number | null;
   dueDate: string | null;
-  assignee: { name: string; email: string } | null;
+  assignee: { id: string; name: string; email: string } | null;
   creator: { name: string };
   customer: { id: string; name: string; phone: string | null; email: string | null; company: string | null } | null;
   createdAt: string;
+  timeEntries?: Array<{
+    id: string;
+    clockIn: string;
+    clockOut: string | null;
+    durationHours: number | null;
+    user: {
+      id: string;
+      name: string | null;
+    } | null;
+  }>;
+  activities?: Array<{
+    id: string;
+    images: string | null;
+    createdAt: string;
+  }>;
 }
 
 interface User {
