@@ -555,31 +555,31 @@ export default function TimeClockPage() {
                     return (
                       <div
                         key={entry.id}
-                        className="p-3 bg-gray-50 rounded-lg"
+                        className="p-3 sm:p-4 bg-gray-50 rounded-lg border border-gray-200"
                       >
-                        <div className="flex justify-between items-start">
-                          <div className="flex-1">
-                            <p className="text-sm font-medium text-gray-900">
+                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm sm:text-base font-medium text-gray-900">
                               {formatTime(entry.clockIn)} - {entry.clockOut ? formatTime(entry.clockOut) : "In progress"}
                             </p>
                             {entry.job && (
-                              <p className="text-xs text-blue-600 mt-1">
+                              <p className="text-xs sm:text-sm text-blue-600 mt-1 break-words">
                                 {entry.job.title}
                               </p>
                             )}
                             {entry.clockInNotes && (
-                              <p className="text-xs text-gray-600 mt-1">
+                              <p className="text-xs sm:text-sm text-gray-600 mt-1.5 break-words">
                                 <span className="font-medium text-blue-700">Clock In:</span> {entry.clockInNotes}
                               </p>
                             )}
                             {entry.notes && (
-                              <p className="text-xs text-gray-600 mt-1">
+                              <p className="text-xs sm:text-sm text-gray-600 mt-1.5 break-words">
                                 <span className="font-medium text-green-700">Clock Out:</span> {entry.notes}
                               </p>
                             )}
                             {images.length > 0 && (
-                              <div className="mt-2">
-                                <p className="text-xs text-gray-500 mb-1">
+                              <div className="mt-2 sm:mt-3">
+                                <p className="text-xs text-gray-500 mb-1.5 font-medium">
                                   {images.length} photo(s)
                                 </p>
                                 <div className="flex gap-2 flex-wrap">
@@ -587,7 +587,8 @@ export default function TimeClockPage() {
                                     <button
                                       key={idx}
                                       onClick={() => openPhotoViewer(images, idx)}
-                                      className="block w-16 h-16 rounded border border-gray-300 overflow-hidden hover:ring-2 hover:ring-blue-500 transition-all cursor-pointer"
+                                      className="block w-16 h-16 sm:w-20 sm:h-20 rounded-lg border-2 border-gray-300 overflow-hidden hover:ring-2 hover:ring-blue-500 active:ring-blue-600 transition-all cursor-pointer touch-manipulation shadow-sm"
+                                      aria-label={`View photo ${idx + 1}`}
                                     >
                                       <img
                                         src={imgPath}
@@ -600,7 +601,7 @@ export default function TimeClockPage() {
                               </div>
                             )}
                           </div>
-                          <div className="text-sm font-semibold text-blue-600 ml-4">
+                          <div className="text-sm sm:text-base font-semibold text-blue-600 sm:ml-4 flex-shrink-0">
                             {calculateDuration(entry)}
                           </div>
                         </div>
@@ -673,12 +674,12 @@ export default function TimeClockPage() {
 
       {/* Clock Out Confirmation Modal */}
       {showClockOutConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-          <div className="bg-white rounded-xl shadow-2xl p-4 sm:p-6 max-w-md w-full my-4">
-            <div className="text-center mb-6">
-              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4 overflow-y-auto">
+          <div className="bg-white rounded-xl shadow-2xl p-4 sm:p-6 max-w-md w-full my-2 sm:my-4 max-h-[95vh] overflow-y-auto">
+            <div className="text-center mb-4 sm:mb-6">
+              <div className="mx-auto flex items-center justify-center h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-red-100 mb-3 sm:mb-4">
                 <svg
-                  className="h-6 w-6 text-red-600"
+                  className="h-5 w-5 sm:h-6 sm:w-6 text-red-600"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -691,34 +692,34 @@ export default function TimeClockPage() {
                   />
                 </svg>
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-1 sm:mb-2">
                 Confirm Clock Out
               </h3>
-              <p className="text-sm text-gray-600">
+              <p className="text-xs sm:text-sm text-gray-600 break-words px-2">
                 {currentEntry?.job 
                   ? `Clock out from "${currentEntry.job.title}"?`
                   : "Are you sure you want to clock out?"}
               </p>
             </div>
 
-            <div className="space-y-4 mb-6">
+            <div className="space-y-3 sm:space-y-4 mb-4 sm:mb-6">
               {/* Notes */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
                   Notes (Optional)
                 </label>
                 <textarea
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder="Add notes about your shift..."
-                  className="w-full min-h-[44px] border border-gray-300 rounded-lg p-3 text-sm resize-none"
+                  className="w-full min-h-[44px] border border-gray-300 rounded-lg p-2.5 sm:p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   rows={3}
                 />
               </div>
 
               {/* Photo Upload */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
                   Photos (Optional)
                 </label>
                 <input
@@ -731,32 +732,33 @@ export default function TimeClockPage() {
                 />
                 <label
                   htmlFor="clock-out-photos"
-                  className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors min-h-[44px]"
+                  className="cursor-pointer inline-flex items-center justify-center gap-2 px-4 py-2.5 sm:py-2 bg-white border-2 border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 active:bg-gray-100 transition-colors min-h-[44px] w-full sm:w-auto touch-manipulation"
                 >
-                  <span>📷</span>
-                  Choose Photos
+                  <span className="text-base">📷</span>
+                  <span>Choose Photos</span>
                 </label>
 
                 {clockOutPhotos.length > 0 && (
                   <div className="mt-3 space-y-2">
-                    <p className="text-xs text-gray-600">
+                    <p className="text-xs text-gray-600 font-medium">
                       {clockOutPhotos.length} photo(s) selected
                     </p>
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-2 max-h-[200px] sm:max-h-none overflow-y-auto">
                       {clockOutPhotos.map((file, index) => (
                         <div
                           key={index}
-                          className="relative bg-gray-100 border border-gray-200 rounded p-2"
+                          className="relative bg-gray-100 border border-gray-200 rounded-lg p-1.5 sm:p-2 aspect-square"
                         >
                           <img
                             src={URL.createObjectURL(file)}
                             alt={`Preview ${index + 1}`}
-                            className="w-full h-20 object-cover rounded"
+                            className="w-full h-full object-cover rounded"
                           />
                           <button
                             onClick={() => removePhoto(index)}
                             type="button"
-                            className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600"
+                            className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 sm:w-5 sm:h-5 flex items-center justify-center text-sm sm:text-xs hover:bg-red-600 active:bg-red-700 touch-manipulation shadow-md"
+                            aria-label={`Remove photo ${index + 1}`}
                           >
                             ×
                           </button>
@@ -768,18 +770,18 @@ export default function TimeClockPage() {
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
               <button
                 onClick={handleClockOutCancel}
-                disabled={loading}
-                className="flex-1 min-h-[44px] px-4 py-2 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors disabled:bg-gray-100 disabled:cursor-not-allowed"
+                disabled={loading || uploadingPhotos}
+                className="flex-1 min-h-[44px] px-4 py-2.5 sm:py-2 border-2 border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 active:bg-gray-100 transition-colors disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed touch-manipulation"
               >
                 Cancel
               </button>
               <button
                 onClick={handleClockOutConfirm}
                 disabled={loading || uploadingPhotos}
-                className="flex-1 min-h-[44px] px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+                className="flex-1 min-h-[44px] px-4 py-2.5 sm:py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 active:bg-red-800 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed touch-manipulation shadow-md"
               >
                 {uploadingPhotos ? "Uploading..." : loading ? "Processing..." : "Yes, Clock Out"}
               </button>

@@ -375,13 +375,13 @@ export default function HRPage() {
 
       {/* Time Entries Modal */}
       {showEntriesModal && selectedUser && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-2xl font-bold text-gray-900">{selectedUser.name}'s Time Entries</h2>
-                  <p className="text-sm text-gray-500 mt-1">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2 sm:p-4 z-50">
+          <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4 z-10">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex-1 min-w-0">
+                  <h2 className="text-lg sm:text-2xl font-bold text-gray-900 truncate">{selectedUser.name}'s Time Entries</h2>
+                  <p className="text-xs sm:text-sm text-gray-500 mt-1">
                     Hours (Selected Range): {selectedUser.dateRangeHours.toFixed(1)}h across {selectedUser.completedShifts} shifts
                   </p>
                 </div>
@@ -391,14 +391,15 @@ export default function HRPage() {
                     setSelectedUser(null);
                     setUserEntries([]);
                   }}
-                  className="text-gray-400 hover:text-gray-600"
+                  className="text-gray-400 hover:text-gray-600 active:text-gray-800 flex-shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center touch-manipulation"
+                  aria-label="Close modal"
                 >
-                  <span className="text-2xl">×</span>
+                  <span className="text-2xl sm:text-3xl">×</span>
                 </button>
               </div>
             </div>
 
-            <div className="p-6">
+            <div className="p-4 sm:p-6">
               {loadingEntries ? (
                 <div className="text-center py-8">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
@@ -407,20 +408,20 @@ export default function HRPage() {
               ) : userEntries.length === 0 ? (
                 <p className="text-center text-gray-500 py-8">No time entries found</p>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-3 sm:space-y-4">
                   {userEntries.map((entry) => (
-                    <div key={entry.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                      <div className="flex justify-between items-start mb-2">
-                        <div>
-                          <div className="font-medium text-gray-900">
+                    <div key={entry.id} className="bg-gray-50 rounded-lg p-3 sm:p-4 border border-gray-200">
+                      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 mb-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-sm sm:text-base text-gray-900">
                             {formatDate(entry.clockIn)}
                           </div>
-                          <div className="text-sm text-gray-600">
+                          <div className="text-xs sm:text-sm text-gray-600">
                             {formatTime(entry.clockIn)} - {entry.clockOut ? formatTime(entry.clockOut) : "In progress"}
                           </div>
                         </div>
-                        <div className="text-right">
-                          <div className="font-semibold text-blue-600">
+                        <div className="text-left sm:text-right">
+                          <div className="font-semibold text-sm sm:text-base text-blue-600">
                             {calculateDuration(entry)}
                           </div>
                         </div>
@@ -450,7 +451,7 @@ export default function HRPage() {
                           if (Array.isArray(images) && images.length > 0) {
                             return (
                               <div className="mt-2">
-                                <p className="text-xs text-gray-500 mb-1">
+                                <p className="text-xs text-gray-500 mb-1.5 font-medium">
                                   {images.length} photo(s)
                                 </p>
                                 <div className="flex gap-2 flex-wrap">
@@ -462,7 +463,8 @@ export default function HRPage() {
                                         setPhotoViewerIndex(idx);
                                         setShowPhotoViewer(true);
                                       }}
-                                      className="block w-16 h-16 rounded border border-gray-300 overflow-hidden hover:ring-2 hover:ring-blue-500 transition-all cursor-pointer"
+                                      className="block w-16 h-16 sm:w-20 sm:h-20 rounded-lg border-2 border-gray-300 overflow-hidden hover:ring-2 hover:ring-blue-500 active:ring-blue-600 transition-all cursor-pointer touch-manipulation shadow-sm"
+                                      aria-label={`View photo ${idx + 1}`}
                                     >
                                       <img
                                         src={imgPath}
@@ -486,14 +488,14 @@ export default function HRPage() {
               )}
             </div>
 
-            <div className="sticky bottom-0 bg-gray-50 border-t border-gray-200 px-6 py-4">
+            <div className="sticky bottom-0 bg-gray-50 border-t border-gray-200 px-4 sm:px-6 py-3 sm:py-4">
               <button
                 onClick={() => {
                   setShowEntriesModal(false);
                   setSelectedUser(null);
                   setUserEntries([]);
                 }}
-                className="w-full px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium"
+                className="w-full min-h-[44px] px-4 py-2.5 sm:py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 active:bg-gray-800 transition-colors font-medium touch-manipulation shadow-md"
               >
                 Close
               </button>
