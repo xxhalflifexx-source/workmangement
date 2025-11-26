@@ -163,21 +163,21 @@ export default function HRPage() {
   return (
     <main className="min-h-screen bg-gray-50">
       <header className="bg-white shadow-sm border-b">
-        <div className="max-w-full mx-auto px-24 py-4 flex justify-between items-center">
+        <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-24 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">HR Management</h1>
             <p className="text-sm text-gray-500">Employee time tracking and statistics</p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             <Link
               href="/handbook"
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium whitespace-nowrap"
             >
               📖 Employee Handbook
             </Link>
             <Link
               href="/dashboard"
-              className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
+              className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium whitespace-nowrap"
             >
               Back to Dashboard
             </Link>
@@ -185,7 +185,7 @@ export default function HRPage() {
         </div>
       </header>
 
-      <div className="max-w-full mx-auto px-24 py-8">
+      <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-24 py-6 sm:py-8">
         {error && (
           <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
             {error}
@@ -194,52 +194,37 @@ export default function HRPage() {
 
         {/* Date Range Filter */}
         <div className="bg-white rounded-lg shadow p-6 border border-gray-200 mb-8">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900 mb-1">Date Range Filter</h2>
+          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6 mb-6">
+            <div className="flex-shrink-0">
+              <h2 className="text-lg font-semibold text-gray-900 mb-2">Date Range Filter</h2>
               <p className="text-sm text-gray-500">Select a date range to calculate employee hours</p>
             </div>
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="flex-1">
-                <label className="block text-sm font-medium text-gray-700 mb-1">From Date (Start of Week)</label>
+            <div className="flex flex-col lg:flex-row gap-4 lg:items-end">
+              <div className="flex-1 min-w-0">
+                <label className="block text-sm font-medium text-gray-700 mb-2">From Date</label>
                 <input
                   type="date"
                   value={dateFrom}
                   onChange={(e) => {
-                    const newDateFrom = e.target.value;
-                    setDateFrom(newDateFrom);
-                    // Automatically adjust end date to maintain 7-day week
-                    if (newDateFrom) {
-                      const fromDate = new Date(newDateFrom);
-                      const toDate = new Date(fromDate);
-                      toDate.setDate(toDate.getDate() + 6); // Add 6 days to get end of week
-                      toDate.setHours(23, 59, 59, 999);
-                      setDateTo(toDate.toISOString().split('T')[0]);
-                    }
+                    setDateFrom(e.target.value);
                   }}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
-              <div className="flex-1">
-                <label className="block text-sm font-medium text-gray-700 mb-1">To Date (End of Week)</label>
+              <div className="flex-1 min-w-0">
+                <label className="block text-sm font-medium text-gray-700 mb-2">To Date</label>
                 <input
                   type="date"
                   value={dateTo}
                   onChange={(e) => {
-                    const newDateTo = e.target.value;
-                    setDateTo(newDateTo);
-                    // Automatically adjust start date to maintain 7-day week in Central Time
-                    if (newDateTo) {
-                      const toDate = nowInCentral().date(parseInt(newDateTo.split('-')[2])).month(parseInt(newDateTo.split('-')[1]) - 1).year(parseInt(newDateTo.split('-')[0]));
-                      const fromDate = toDate.subtract(6, 'day');
-                      setDateFrom(fromDate.format('YYYY-MM-DD'));
-                    }
+                    setDateTo(e.target.value);
                   }}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
               <div className="flex items-end">
                 <button
+                  type="button"
                   onClick={() => {
                     const now = nowInCentral();
                     const saturday = getSaturdayOfWeek(now);
@@ -247,7 +232,7 @@ export default function HRPage() {
                     setDateFrom(saturday.format('YYYY-MM-DD'));
                     setDateTo(friday.format('YYYY-MM-DD'));
                   }}
-                  className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium whitespace-nowrap"
+                  className="w-full lg:w-auto px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium whitespace-nowrap"
                 >
                   This Week (Sat-Fri)
                 </button>
@@ -315,19 +300,19 @@ export default function HRPage() {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Employee
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Role
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Hours (Selected Range)
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Shifts
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
@@ -335,41 +320,41 @@ export default function HRPage() {
               <tbody className="bg-white divide-y divide-gray-200">
                 {users.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
+                    <td colSpan={5} className="px-4 sm:px-6 py-8 text-center text-gray-500">
                       No employees found
                     </td>
                   </tr>
                 ) : (
                   users.map((user) => (
                     <tr key={user.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
+                      <td className="px-4 sm:px-6 py-4">
+                        <div className="flex items-center min-w-0">
                           <div className="flex-shrink-0 h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
                             <span className="text-blue-600 font-medium text-sm">
                               {(user.name || "U").charAt(0).toUpperCase()}
                             </span>
                           </div>
-                          <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900">{user.name || "Unknown"}</div>
-                            <div className="text-sm text-gray-500">{user.email}</div>
+                          <div className="ml-3 min-w-0">
+                            <div className="text-sm font-medium text-gray-900 truncate">{user.name || "Unknown"}</div>
+                            <div className="text-sm text-gray-500 truncate">{user.email}</div>
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
                         <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getRoleBadgeColor(user.role)}`}>
                           {user.role}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium text-gray-900">
+                      <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-right text-sm font-medium text-gray-900">
                         {user.dateRangeHours.toFixed(1)}h
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-600">
+                      <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-right text-sm text-gray-600">
                         {user.completedShifts}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <button
                           onClick={() => handleViewEntries(user)}
-                          className="text-blue-600 hover:text-blue-900"
+                          className="text-blue-600 hover:text-blue-900 font-medium"
                         >
                           View Details
                         </button>
