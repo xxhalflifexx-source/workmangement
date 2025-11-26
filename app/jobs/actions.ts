@@ -214,7 +214,7 @@ export async function getJobs() {
   const jobs = await prisma.job.findMany({
     where: whereClause,
     include: {
-      assignee: { select: { name: true, email: true } },
+      assignee: { select: { name: true, email: true, id: true } },
       creator: { select: { name: true } },
       customer: { select: { id: true, name: true, phone: true, email: true, company: true } },
       activities: {
@@ -227,6 +227,21 @@ export async function getJobs() {
           createdAt: true,
         },
         orderBy: { createdAt: "desc" },
+      },
+      timeEntries: {
+        select: {
+          id: true,
+          clockIn: true,
+          clockOut: true,
+          durationHours: true,
+          user: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+        orderBy: { clockIn: "desc" },
       },
     },
     orderBy: { createdAt: "desc" },

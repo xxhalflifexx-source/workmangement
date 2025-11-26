@@ -8,7 +8,10 @@ import { createQuotation, updateQuotation, getQuotationsByJobId, getQuotation } 
 import { generateQuotationPDF, QuotationPDFData } from "@/lib/quotation-pdf-generator";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
+import { useSearchParams, useRouter } from "next/navigation";
 import PhotoViewerModal from "../qc/PhotoViewerModal";
+import JobFilters from "./JobFilters";
+import JobRow from "./JobRow";
 import { formatDateShort, formatDateTime, formatDateInput, todayCentralISO, nowInCentral, centralToUTC } from "@/lib/date-utils";
 
 interface Job {
@@ -77,6 +80,8 @@ export default function JobsPage() {
   const { data: session } = useSession();
   const userRole = (session?.user as any)?.role;
   const canManage = userRole === "MANAGER" || userRole === "ADMIN";
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [jobs, setJobs] = useState<Job[]>([]);
   const [users, setUsers] = useState<User[]>([]);
@@ -87,7 +92,8 @@ export default function JobsPage() {
   
   const [showModal, setShowModal] = useState(false);
   const [editingJob, setEditingJob] = useState<Job | null>(null);
-  const [filterStatus, setFilterStatus] = useState("ALL");
+  const [searchQuery, setSearchQuery] = useState(searchParams.get("q") || "");
+  const [filterStatus, setFilterStatus] = useState(searchParams.get("status") || "ALL");
   const [filterPriority, setFilterPriority] = useState("ALL");
   
   const [showCustomerForm, setShowCustomerForm] = useState(false);
@@ -1015,9 +1021,58 @@ export default function JobsPage() {
     }
   };
 
+  // Get filter values from URL params
+  const statusFilter = searchParams.get("status") || "ALL";
+  const customerFilter = searchParams.get("customer") || "";
+  const workerFilter = searchParams.get("worker") || "";
+  const dateFrom = searchParams.get("dateFrom") || "";
+  const dateTo = searchParams.get("dateTo") || "";
+  const search = searchParams.get("q") || "";
+
   const filteredJobs = jobs.filter((job) => {
-    if (filterStatus !== "ALL" && job.status !== filterStatus) return false;
+    // Search filter
+    if (search) {
+      const searchLower = search.toLowerCase();
+      const matchesSearch =
+        job.title.toLowerCase().includes(searchLower) ||
+        job.description?.toLowerCase().includes(searchLower) ||
+        job.customer?.name.toLowerCase().includes(searchLower) ||
+        job.id.toLowerCase().includes(searchLower);
+      if (!matchesSearch) return false;
+    }
+
+    // Status filter
+    if (statusFilter !== "ALL" && job.status !== statusFilter) return false;
+
+    // Priority filter (keep for backward compatibility)
     if (filterPriority !== "ALL" && job.priority !== filterPriority) return false;
+
+    // Customer filter
+    if (customerFilter && job.customer?.id !== customerFilter) return false;
+
+    // Worker filter
+    if (workerFilter) {
+      const matchesWorker =
+        job.assignee?.id === workerFilter ||
+        (job as any).timeEntries?.some((te: any) => te.user?.id === workerFilter);
+      if (!matchesWorker) return false;
+    }
+
+    // Date filters
+    if (dateFrom || dateTo) {
+      const jobDate = new Date(job.createdAt);
+      if (dateFrom) {
+        const fromDate = new Date(dateFrom);
+        fromDate.setHours(0, 0, 0, 0);
+        if (jobDate < fromDate) return false;
+      }
+      if (dateTo) {
+        const toDate = new Date(dateTo);
+        toDate.setHours(23, 59, 59, 999);
+        if (jobDate > toDate) return false;
+      }
+    }
+
     return true;
   });
 
@@ -1057,72 +1112,135 @@ export default function JobsPage() {
           </div>
         )}
 
-        {/* Controls */}
-        <div className="mb-6 flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
-          <div className="flex gap-3">
-            <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+        {/* Search Bar */}
+        <form
+          className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-6"
+          action="/jobs"
+          method="GET"
+        >
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              name="q"
+              defaultValue={search}
+              placeholder="Search by job title, description, customer, or job number..."
+              className="border border-gray-300 rounded-lg px-3 py-2 text-sm flex-1 min-w-[200px]"
+            />
+            <button
+              type="submit"
+              className="px-3 py-2 rounded-lg bg-gray-100 text-xs font-medium text-gray-700 border border-gray-300 hover:bg-gray-200"
             >
-              <option value="ALL">All Status</option>
-              <option value="NOT_STARTED">Not Started</option>
-              <option value="IN_PROGRESS">In Progress</option>
-              <option value="AWAITING_QC">Submit to QC</option>
-              <option value="REWORK">Rework</option>
-              <option value="COMPLETED">Completed</option>
-              <option value="CANCELLED">Cancelled</option>
-            </select>
-
-            <select
-              value={filterPriority}
-              onChange={(e) => setFilterPriority(e.target.value)}
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
-            >
-              <option value="ALL">All Priority</option>
-              <option value="URGENT">Urgent</option>
-              <option value="HIGH">High</option>
-              <option value="MEDIUM">Medium</option>
-              <option value="LOW">Low</option>
-            </select>
+              Search
+            </button>
           </div>
-
+          {/* preserve filters when searching */}
+          {statusFilter && statusFilter !== "ALL" && (
+            <input type="hidden" name="status" value={statusFilter} />
+          )}
+          {customerFilter && <input type="hidden" name="customer" value={customerFilter} />}
+          {workerFilter && <input type="hidden" name="worker" value={workerFilter} />}
+          {dateFrom && <input type="hidden" name="dateFrom" value={dateFrom} />}
+          {dateTo && <input type="hidden" name="dateTo" value={dateTo} />}
           {canManage && (
             <button
+              type="button"
               onClick={openCreateModal}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+              className="w-full md:w-auto min-h-[44px] bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium"
             >
               + Create Job
             </button>
           )}
-        </div>
+        </form>
 
-        {/* Jobs Grid */}
+        {/* Filters */}
+        {canManage && (
+          <JobFilters customers={customers} users={users} />
+        )}
+
+        {/* Jobs Table */}
         {loading ? (
           <div className="text-center py-12">
             <div className="text-gray-500">Loading jobs...</div>
           </div>
         ) : filteredJobs.length === 0 ? (
-          <div className="bg-white rounded-xl shadow p-12 text-center">
-            <div className="text-6xl mb-4">📋</div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">No jobs found</h3>
-            <p className="text-gray-600 mb-6">
+          <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-8 text-center text-gray-600">
+            <p className="text-lg font-medium mb-2">No jobs found</p>
+            <p className="text-sm">
               {jobs.length === 0
                 ? canManage
                   ? "Create your first job to get started"
                   : "No jobs assigned to you yet"
-                : "Try adjusting your filters"}
+                : "Try adjusting your filters or search query"}
             </p>
             {canManage && jobs.length === 0 && (
               <button
                 onClick={openCreateModal}
-                className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                className="mt-4 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium"
               >
                 Create First Job
               </button>
             )}
           </div>
         ) : (
+          <div className="bg-white rounded-xl shadow border border-gray-200 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Job Number
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Job Title
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Client
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Assigned Workers
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Start Date
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Deadline
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Photo Thumbnail
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Details
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {filteredJobs.map((job) => (
+                    <JobRow
+                      key={job.id}
+                      job={job}
+                      canManage={canManage}
+                      onEdit={openEditModal}
+                      onDelete={handleDelete}
+                      onViewPhotos={(photos, index) => {
+                        setPhotoViewerPhotos(photos);
+                        setPhotoViewerIndex(index);
+                        setShowPhotoViewer(true);
+                      }}
+                      getAllJobPhotos={getAllJobPhotos}
+                      jobExistingPhotos={jobExistingPhotos[job.id] || []}
+                    />
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+        
+        {/* Keep the old card grid code for reference but commented out - will be removed after testing */}
+        {false && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredJobs.map((job) => (
               <div
