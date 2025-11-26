@@ -92,7 +92,7 @@ interface MaterialRequest {
 }
 
 function JobsPageContent() {
-  const { data: session } = useSession();
+  const { data: session, status: sessionStatus } = useSession();
   const userRole = (session?.user as any)?.role;
   const canManage = userRole === "MANAGER" || userRole === "ADMIN";
   const router = useRouter();
@@ -107,9 +107,12 @@ function JobsPageContent() {
   
   const [showModal, setShowModal] = useState(false);
   const [editingJob, setEditingJob] = useState<Job | null>(null);
-  const [searchQuery, setSearchQuery] = useState(searchParams.get("q") || "");
-  const [filterStatus, setFilterStatus] = useState(searchParams.get("status") || "ALL");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterStatus, setFilterStatus] = useState("ALL");
   const [filterPriority, setFilterPriority] = useState("ALL");
+  
+  // Initialize search params after component mounts
+  const [searchInitialized, setSearchInitialized] = useState(false);
   
   const [showCustomerForm, setShowCustomerForm] = useState(false);
   const [newCustomerName, setNewCustomerName] = useState("");
@@ -179,10 +182,112 @@ function JobsPageContent() {
   const [showSavedQuotations, setShowSavedQuotations] = useState(false);
   const quotationRef = useRef<HTMLDivElement>(null);
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const hasLoadedDataRef = useRef(false);
 
+  // Initialize search params from URL
   useEffect(() => {
-    loadData();
-  }, []);
+    if (searchParams && !searchInitialized) {
+      setSearchQuery(searchParams.get("q") || "");
+      setFilterStatus(searchParams.get("status") || "ALL");
+      setSearchInitialized(true);
+    }
+  }, [searchParams, searchInitialized]);
+
+  // Load data when session is ready
+  useEffect(() => {
+    if (sessionStatus === "loading") {
+      return; // Wait for session to load
+    }
+    
+    if (!session?.user) {
+      setLoading(false);
+      setError("Please log in to view jobs");
+      hasLoadedDataRef.current = false; // Reset so it can load when user logs in
+      return;
+    }
+
+    // Only load data once on initial mount when session is ready
+    if (hasLoadedDataRef.current) {
+      return;
+    }
+
+    hasLoadedDataRef.current = true;
+
+    // Calculate canManage based on current session
+    const currentCanManage = (session?.user as any)?.role === "MANAGER" || (session?.user as any)?.role === "ADMIN";
+    
+    // Load data once session is ready
+    const fetchData = async () => {
+      setLoading(true);
+      setError(undefined);
+      try {
+        console.log("Loading jobs data...");
+        const [jobsRes, usersRes, customersRes] = await Promise.all([
+          getJobs(),
+          currentCanManage ? getAllUsers() : Promise.resolve({ ok: true, users: [] }),
+          currentCanManage ? getAllCustomers() : Promise.resolve({ ok: true, customers: [] }),
+        ]);
+
+        if (jobsRes.ok) {
+          const jobsData = jobsRes.jobs as any;
+          console.log(`Loaded ${jobsData.length} jobs`);
+          setJobs(jobsData);
+
+          // Extract photos from activities for each job
+          const photosMap: Record<string, Array<{ id: string; url: string; activityId: string }>> = {};
+          jobsData.forEach((job: any) => {
+            if (job.activities) {
+              const jobPhotos: Array<{ id: string; url: string; activityId: string }> = [];
+              job.activities.forEach((activity: any) => {
+                if (activity.images) {
+                  try {
+                    const parsed = JSON.parse(activity.images);
+                    if (Array.isArray(parsed)) {
+                      parsed.forEach((url: string) => {
+                        jobPhotos.push({
+                          id: `${activity.id}-${url}`,
+                          url,
+                          activityId: activity.id,
+                        });
+                      });
+                    }
+                  } catch {
+                    if (typeof activity.images === "string") {
+                      jobPhotos.push({
+                        id: `${activity.id}-${activity.images}`,
+                        url: activity.images,
+                        activityId: activity.id,
+                      });
+                    }
+                  }
+                }
+              });
+              photosMap[job.id] = jobPhotos;
+            }
+          });
+          setJobExistingPhotos(photosMap);
+        } else {
+          console.error("Failed to load jobs:", jobsRes.error);
+          setError(jobsRes.error || "Failed to load jobs");
+        }
+
+        if (usersRes.ok) {
+          setUsers(usersRes.users as any);
+        }
+
+        if (customersRes.ok) {
+          setCustomers(customersRes.customers as any);
+        }
+      } catch (err) {
+        console.error("Error loading jobs data:", err);
+        setError("Failed to load jobs. Please try refreshing the page.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [sessionStatus, session]);
 
   // When editing a job, pre-fill estimated duration controls based on stored estimatedHours
   useEffect(() => {
@@ -215,61 +320,75 @@ function JobsPageContent() {
   }, [editingJob]);
 
   const loadData = async () => {
+    // Calculate canManage from current session state
+    const currentCanManage = (session?.user as any)?.role === "MANAGER" || (session?.user as any)?.role === "ADMIN";
+    
     setLoading(true);
-    const [jobsRes, usersRes, customersRes] = await Promise.all([
-      getJobs(),
-      canManage ? getAllUsers() : Promise.resolve({ ok: true, users: [] }),
-      canManage ? getAllCustomers() : Promise.resolve({ ok: true, customers: [] }),
-    ]);
+    setError(undefined);
+    try {
+      console.log("Reloading jobs data...");
+      const [jobsRes, usersRes, customersRes] = await Promise.all([
+        getJobs(),
+        currentCanManage ? getAllUsers() : Promise.resolve({ ok: true, users: [] }),
+        currentCanManage ? getAllCustomers() : Promise.resolve({ ok: true, customers: [] }),
+      ]);
 
-    if (jobsRes.ok) {
-      const jobsData = jobsRes.jobs as any;
-      setJobs(jobsData);
+      if (jobsRes.ok) {
+        const jobsData = jobsRes.jobs as any;
+        console.log(`Reloaded ${jobsData.length} jobs`);
+        setJobs(jobsData);
 
-      // Extract photos from activities for each job
-      const photosMap: Record<string, Array<{ id: string; url: string; activityId: string }>> = {};
-      jobsData.forEach((job: any) => {
-        if (job.activities) {
-          const jobPhotos: Array<{ id: string; url: string; activityId: string }> = [];
-          job.activities.forEach((activity: any) => {
-            if (activity.images) {
-              try {
-                const parsed = JSON.parse(activity.images);
-                if (Array.isArray(parsed)) {
-                  parsed.forEach((url: string) => {
+        // Extract photos from activities for each job
+        const photosMap: Record<string, Array<{ id: string; url: string; activityId: string }>> = {};
+        jobsData.forEach((job: any) => {
+          if (job.activities) {
+            const jobPhotos: Array<{ id: string; url: string; activityId: string }> = [];
+            job.activities.forEach((activity: any) => {
+              if (activity.images) {
+                try {
+                  const parsed = JSON.parse(activity.images);
+                  if (Array.isArray(parsed)) {
+                    parsed.forEach((url: string) => {
+                      jobPhotos.push({
+                        id: `${activity.id}-${url}`,
+                        url,
+                        activityId: activity.id,
+                      });
+                    });
+                  }
+                } catch {
+                  if (typeof activity.images === "string") {
                     jobPhotos.push({
-                      id: `${activity.id}-${url}`,
-                      url,
+                      id: `${activity.id}-${activity.images}`,
+                      url: activity.images,
                       activityId: activity.id,
                     });
-                  });
-                }
-              } catch {
-                if (typeof activity.images === "string") {
-                  jobPhotos.push({
-                    id: `${activity.id}-${activity.images}`,
-                    url: activity.images,
-                    activityId: activity.id,
-                  });
+                  }
                 }
               }
-            }
-          });
-          photosMap[job.id] = jobPhotos;
-        }
-      });
-      setJobExistingPhotos(photosMap);
-    }
+            });
+            photosMap[job.id] = jobPhotos;
+          }
+        });
+        setJobExistingPhotos(photosMap);
+      } else {
+        console.error("Failed to reload jobs:", jobsRes.error);
+        setError(jobsRes.error || "Failed to load jobs");
+      }
 
-    if (usersRes.ok) {
-      setUsers(usersRes.users as any);
-    }
+      if (usersRes.ok) {
+        setUsers(usersRes.users as any);
+      }
 
-    if (customersRes.ok) {
-      setCustomers(customersRes.customers as any);
+      if (customersRes.ok) {
+        setCustomers(customersRes.customers as any);
+      }
+    } catch (err) {
+      console.error("Error loading jobs data:", err);
+      setError("Failed to load jobs. Please try refreshing the page.");
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -1036,13 +1155,13 @@ function JobsPageContent() {
     }
   };
 
-  // Get filter values from URL params
-  const statusFilter = searchParams.get("status") || "ALL";
-  const customerFilter = searchParams.get("customer") || "";
-  const workerFilter = searchParams.get("worker") || "";
-  const dateFrom = searchParams.get("dateFrom") || "";
-  const dateTo = searchParams.get("dateTo") || "";
-  const search = searchParams.get("q") || "";
+  // Get filter values from URL params (with fallback to state)
+  const statusFilter = searchParams?.get("status") || filterStatus || "ALL";
+  const customerFilter = searchParams?.get("customer") || "";
+  const workerFilter = searchParams?.get("worker") || "";
+  const dateFrom = searchParams?.get("dateFrom") || "";
+  const dateTo = searchParams?.get("dateTo") || "";
+  const search = searchParams?.get("q") || searchQuery || "";
 
   const filteredJobs = jobs.filter((job) => {
     // Search filter
