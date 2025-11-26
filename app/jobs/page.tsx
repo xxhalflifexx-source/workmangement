@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef, Suspense } from "react";
+import { useEffect, useState, useRef, Suspense, useMemo, useCallback } from "react";
 import { getJobs, getAllUsers, createJob, updateJob, deleteJob, getJobActivities, addJobActivity, getAllCustomers, createCustomer, saveJobPhotos, submitJobPhotosToQC, getJobPhotos, removeJobPhoto as removeJobPhotoFromDB } from "./actions";
 import { createMaterialRequest, getJobMaterialRequests } from "../material-requests/actions";
 import { getCompanySettingsForInvoice } from "./invoice-actions";
@@ -105,14 +105,36 @@ function JobsPageContent() {
   const [error, setError] = useState<string | undefined>();
   const [success, setSuccess] = useState<string | undefined>();
   
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState(20);
+  const [totalCount, setTotalCount] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  
+  // Filter state
   const [showModal, setShowModal] = useState(false);
   const [editingJob, setEditingJob] = useState<Job | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState("ALL");
   const [filterPriority, setFilterPriority] = useState("ALL");
+  const [filterCustomer, setFilterCustomer] = useState("");
+  const [filterWorker, setFilterWorker] = useState("");
+  const [filterDateFrom, setFilterDateFrom] = useState("");
+  const [filterDateTo, setFilterDateTo] = useState("");
   
   // Initialize search params after component mounts
   const [searchInitialized, setSearchInitialized] = useState(false);
+  
+  // Debounce search query
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+      setCurrentPage(1); // Reset to first page on search
+    }, 300); // 300ms debounce
+    
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
   
   const [showCustomerForm, setShowCustomerForm] = useState(false);
   const [newCustomerName, setNewCustomerName] = useState("");
@@ -250,12 +272,9 @@ function JobsPageContent() {
     }
   }, [editingJob]);
 
-  const loadData = async () => {
-    console.log("[loadData] Function called");
-    
+  const loadData = useCallback(async (page: number = currentPage) => {
     // Ensure we have a session before loading
     if (!session?.user) {
-      console.warn("[loadData] No session or user, aborting");
       setLoading(false);
       setError("Please log in to view jobs");
       return;
@@ -264,107 +283,120 @@ function JobsPageContent() {
     // Calculate canManage from current session state
     const currentCanManage = (session?.user as any)?.role === "MANAGER" || (session?.user as any)?.role === "ADMIN";
     
-    console.log("[loadData] Starting data fetch", {
-      userId: (session?.user as any)?.id,
-      role: (session?.user as any)?.role,
-      canManage: currentCanManage,
-    });
-    
     setLoading(true);
     setError(undefined);
     
     try {
-      console.log("[loadData] Calling getJobs()...");
       const startTime = Date.now();
       
+      // Build filter parameters
+      const filterParams: any = {
+        page,
+        pageSize,
+      };
+      
+      if (debouncedSearchQuery) {
+        filterParams.search = debouncedSearchQuery;
+      }
+      
+      if (filterStatus && filterStatus !== "ALL") {
+        filterParams.status = filterStatus;
+      }
+      
+      if (filterCustomer) {
+        filterParams.customerId = filterCustomer;
+      }
+      
+      if (filterWorker) {
+        filterParams.workerId = filterWorker;
+      }
+      
+      if (filterDateFrom) {
+        filterParams.dateFrom = filterDateFrom;
+      }
+      
+      if (filterDateTo) {
+        filterParams.dateTo = filterDateTo;
+      }
+      
       const [jobsRes, usersRes, customersRes] = await Promise.all([
-        getJobs(),
+        getJobs(filterParams),
         currentCanManage ? getAllUsers() : Promise.resolve({ ok: true, users: [] }),
         currentCanManage ? getAllCustomers() : Promise.resolve({ ok: true, customers: [] }),
       ]);
 
       const duration = Date.now() - startTime;
       console.log(`[loadData] API calls completed in ${duration}ms`);
-      console.log("[loadData] Jobs response:", {
-        ok: jobsRes.ok,
-        error: jobsRes.error,
-        hasJobs: !!jobsRes.jobs,
-        count: jobsRes.ok ? (jobsRes.jobs as any)?.length : 0,
-      });
 
       if (jobsRes.ok) {
         const jobsData = jobsRes.jobs as any;
-        console.log(`[loadData] Successfully received ${jobsData?.length || 0} jobs`);
-        console.log("[loadData] Jobs data sample:", jobsData?.[0] ? {
-          id: jobsData[0].id,
-          title: jobsData[0].title,
-          status: jobsData[0].status,
-          hasAssignee: !!jobsData[0].assignee,
-          hasCustomer: !!jobsData[0].customer,
-        } : "No jobs");
+        const pagination = (jobsRes as any).pagination;
         
         setJobs(jobsData || []);
-        console.log("[loadData] Jobs state updated, current jobs count:", jobsData?.length || 0);
+        if (pagination) {
+          setTotalCount(pagination.totalCount || 0);
+          setTotalPages(pagination.totalPages || 0);
+        }
 
-        // Extract photos from activities for each job
-        const photosMap: Record<string, Array<{ id: string; url: string; activityId: string }>> = {};
-        (jobsData || []).forEach((job: any) => {
-          if (job.activities) {
-            const jobPhotos: Array<{ id: string; url: string; activityId: string }> = [];
-            job.activities.forEach((activity: any) => {
-              if (activity.images) {
-                try {
-                  const parsed = JSON.parse(activity.images);
-                  if (Array.isArray(parsed)) {
-                    parsed.forEach((url: string) => {
+        // Extract photos from activities for each job (async, non-blocking)
+        setTimeout(() => {
+          const photosMap: Record<string, Array<{ id: string; url: string; activityId: string }>> = {};
+          (jobsData || []).forEach((job: any) => {
+            if (job.activities) {
+              const jobPhotos: Array<{ id: string; url: string; activityId: string }> = [];
+              job.activities.forEach((activity: any) => {
+                if (activity.images) {
+                  try {
+                    const parsed = JSON.parse(activity.images);
+                    if (Array.isArray(parsed)) {
+                      parsed.forEach((url: string) => {
+                        jobPhotos.push({
+                          id: `${activity.id}-${url}`,
+                          url,
+                          activityId: activity.id,
+                        });
+                      });
+                    }
+                  } catch {
+                    if (typeof activity.images === "string") {
                       jobPhotos.push({
-                        id: `${activity.id}-${url}`,
-                        url,
+                        id: `${activity.id}-${activity.images}`,
+                        url: activity.images,
                         activityId: activity.id,
                       });
-                    });
-                  }
-                } catch {
-                  if (typeof activity.images === "string") {
-                    jobPhotos.push({
-                      id: `${activity.id}-${activity.images}`,
-                      url: activity.images,
-                      activityId: activity.id,
-                    });
+                    }
                   }
                 }
-              }
-            });
-            photosMap[job.id] = jobPhotos;
-          }
-        });
-        setJobExistingPhotos(photosMap);
-        console.log("[loadData] Photos map created with", Object.keys(photosMap).length, "jobs with photos");
+              });
+              photosMap[job.id] = jobPhotos;
+            }
+          });
+          setJobExistingPhotos(photosMap);
+        }, 0);
       } else {
-        console.error("[loadData] Failed to load jobs:", jobsRes.error);
         setError(jobsRes.error || "Failed to load jobs");
-        setJobs([]); // Clear jobs on error
+        setJobs([]);
+        setTotalCount(0);
+        setTotalPages(0);
       }
 
       if (usersRes.ok) {
         setUsers(usersRes.users as any || []);
-        console.log("[loadData] Users loaded:", (usersRes.users as any)?.length || 0);
       }
 
       if (customersRes.ok) {
         setCustomers(customersRes.customers as any || []);
-        console.log("[loadData] Customers loaded:", (customersRes.customers as any)?.length || 0);
       }
     } catch (err: any) {
       console.error("[loadData] Exception caught:", err);
-      console.error("[loadData] Error stack:", err?.stack);
       setError(err?.message || "Failed to load jobs. Please try refreshing the page.");
-      setJobs([]); // Clear jobs on error
+      setJobs([]);
+      setTotalCount(0);
+      setTotalPages(0);
     } finally {
       setLoading(false);
-      console.log("[loadData] Loading complete, loading state set to false");
     }
-  };
+  }, [session, currentPage, pageSize, debouncedSearchQuery, filterStatus, filterCustomer, filterWorker, filterDateFrom, filterDateTo]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -1130,60 +1162,9 @@ function JobsPageContent() {
     }
   };
 
-  // Get filter values from URL params (with fallback to state)
-  const statusFilter = searchParams?.get("status") || filterStatus || "ALL";
-  const customerFilter = searchParams?.get("customer") || "";
-  const workerFilter = searchParams?.get("worker") || "";
-  const dateFrom = searchParams?.get("dateFrom") || "";
-  const dateTo = searchParams?.get("dateTo") || "";
-  const search = searchParams?.get("q") || searchQuery || "";
-
-  const filteredJobs = jobs.filter((job) => {
-    // Search filter
-    if (search) {
-      const searchLower = search.toLowerCase();
-      const matchesSearch =
-        job.title.toLowerCase().includes(searchLower) ||
-        job.description?.toLowerCase().includes(searchLower) ||
-        job.customer?.name.toLowerCase().includes(searchLower) ||
-        job.id.toLowerCase().includes(searchLower);
-      if (!matchesSearch) return false;
-    }
-
-    // Status filter
-    if (statusFilter !== "ALL" && job.status !== statusFilter) return false;
-
-    // Priority filter (keep for backward compatibility)
-    if (filterPriority !== "ALL" && job.priority !== filterPriority) return false;
-
-    // Customer filter
-    if (customerFilter && job.customer?.id !== customerFilter) return false;
-
-    // Worker filter
-    if (workerFilter) {
-      const matchesWorker =
-        job.assignee?.id === workerFilter ||
-        (job as any).timeEntries?.some((te: any) => te.user?.id === workerFilter);
-      if (!matchesWorker) return false;
-    }
-
-    // Date filters
-    if (dateFrom || dateTo) {
-      const jobDate = new Date(job.createdAt);
-      if (dateFrom) {
-        const fromDate = new Date(dateFrom);
-        fromDate.setHours(0, 0, 0, 0);
-        if (jobDate < fromDate) return false;
-      }
-      if (dateTo) {
-        const toDate = new Date(dateTo);
-        toDate.setHours(23, 59, 59, 999);
-        if (jobDate > toDate) return false;
-      }
-    }
-
-    return true;
-  });
+  // Jobs are already filtered on the backend, so we just use them directly
+  // No need for client-side filtering since pagination is server-side
+  const filteredJobs = useMemo(() => jobs, [jobs]);
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "No due date";
@@ -1222,34 +1203,16 @@ function JobsPageContent() {
         )}
 
         {/* Search Bar */}
-        <form
-          className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-6"
-          action="/jobs"
-          method="GET"
-        >
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-6">
           <div className="flex items-center gap-2">
             <input
               type="text"
-              name="q"
-              defaultValue={search}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search by job title, description, customer, or job number..."
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm flex-1 min-w-[200px]"
+              className="border border-gray-300 rounded-lg px-3 py-2 text-sm flex-1 min-w-[200px] min-h-[44px]"
             />
-            <button
-              type="submit"
-              className="px-3 py-2 rounded-lg bg-gray-100 text-xs font-medium text-gray-700 border border-gray-300 hover:bg-gray-200"
-            >
-              Search
-            </button>
           </div>
-          {/* preserve filters when searching */}
-          {statusFilter && statusFilter !== "ALL" && (
-            <input type="hidden" name="status" value={statusFilter} />
-          )}
-          {customerFilter && <input type="hidden" name="customer" value={customerFilter} />}
-          {workerFilter && <input type="hidden" name="worker" value={workerFilter} />}
-          {dateFrom && <input type="hidden" name="dateFrom" value={dateFrom} />}
-          {dateTo && <input type="hidden" name="dateTo" value={dateTo} />}
           {canManage && (
             <button
               type="button"
@@ -1259,11 +1222,24 @@ function JobsPageContent() {
               + Create Job
             </button>
           )}
-        </form>
+        </div>
 
         {/* Filters */}
         {canManage && (
-          <JobFilters customers={customers} users={users} />
+          <JobFilters 
+            customers={customers} 
+            users={users}
+            statusFilter={filterStatus}
+            customerFilter={filterCustomer}
+            workerFilter={filterWorker}
+            dateFrom={filterDateFrom}
+            dateTo={filterDateTo}
+            onStatusChange={setFilterStatus}
+            onCustomerChange={setFilterCustomer}
+            onWorkerChange={setFilterWorker}
+            onDateFromChange={setFilterDateFrom}
+            onDateToChange={setFilterDateTo}
+          />
         )}
 
         {/* Debug Info (Development Only) */}
@@ -1273,10 +1249,12 @@ function JobsPageContent() {
             <p>Loading: {loading ? "Yes" : "No"}</p>
             <p>Error: {error || "None"}</p>
             <p>Jobs in state: {jobs.length}</p>
-            <p>Filtered jobs: {filteredJobs.length}</p>
+            <p>Current page: {currentPage} / {totalPages}</p>
+            <p>Total count: {totalCount}</p>
+            <p>Page size: {pageSize}</p>
+            <p>Search query: {searchQuery || "(empty)"}</p>
+            <p>Debounced search: {debouncedSearchQuery || "(empty)"}</p>
             <p>Session status: {sessionStatus}</p>
-            <p>Has session: {session ? "Yes" : "No"}</p>
-            <p>Has user: {session?.user ? "Yes" : "No"}</p>
             {session?.user && (
               <p>User role: {(session.user as any)?.role}</p>
             )}
@@ -1400,6 +1378,70 @@ function JobsPageContent() {
                 </tbody>
               </table>
             </div>
+            
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="bg-gray-50 px-6 py-4 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="text-sm text-gray-700">
+                  Showing {((currentPage - 1) * pageSize) + 1} to {Math.min(currentPage * pageSize, totalCount)} of {totalCount} jobs
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      const newPage = Math.max(1, currentPage - 1);
+                      setCurrentPage(newPage);
+                      loadData(newPage);
+                    }}
+                    disabled={currentPage === 1 || loading}
+                    className="px-3 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
+                  >
+                    Previous
+                  </button>
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      let pageNum;
+                      if (totalPages <= 5) {
+                        pageNum = i + 1;
+                      } else if (currentPage <= 3) {
+                        pageNum = i + 1;
+                      } else if (currentPage >= totalPages - 2) {
+                        pageNum = totalPages - 4 + i;
+                      } else {
+                        pageNum = currentPage - 2 + i;
+                      }
+                      return (
+                        <button
+                          key={pageNum}
+                          onClick={() => {
+                            setCurrentPage(pageNum);
+                            loadData(pageNum);
+                          }}
+                          disabled={loading}
+                          className={`px-3 py-2 text-sm border rounded-lg min-h-[44px] ${
+                            currentPage === pageNum
+                              ? "bg-blue-600 text-white border-blue-600"
+                              : "border-gray-300 hover:bg-gray-50"
+                          } disabled:opacity-50 disabled:cursor-not-allowed`}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <button
+                    onClick={() => {
+                      const newPage = Math.min(totalPages, currentPage + 1);
+                      setCurrentPage(newPage);
+                      loadData(newPage);
+                    }}
+                    disabled={currentPage === totalPages || loading}
+                    className="px-3 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

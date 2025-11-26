@@ -6,71 +6,69 @@ import { useState, useEffect } from "react";
 interface JobFiltersProps {
   customers: Array<{ id: string; name: string }>;
   users: Array<{ id: string; name: string | null }>;
+  statusFilter?: string;
+  customerFilter?: string;
+  workerFilter?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  onStatusChange?: (value: string) => void;
+  onCustomerChange?: (value: string) => void;
+  onWorkerChange?: (value: string) => void;
+  onDateFromChange?: (value: string) => void;
+  onDateToChange?: (value: string) => void;
 }
 
-export default function JobFilters({ customers, users }: JobFiltersProps) {
+export default function JobFilters({ 
+  customers, 
+  users,
+  statusFilter: externalStatusFilter,
+  customerFilter: externalCustomerFilter,
+  workerFilter: externalWorkerFilter,
+  dateFrom: externalDateFrom,
+  dateTo: externalDateTo,
+  onStatusChange,
+  onCustomerChange,
+  onWorkerChange,
+  onDateFromChange,
+  onDateToChange,
+}: JobFiltersProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [statusFilter, setStatusFilter] = useState(
+  
+  // Use external state if provided, otherwise use internal state
+  const [internalStatusFilter, setInternalStatusFilter] = useState(
     searchParams.get("status") || "ALL"
   );
-  const [customerFilter, setCustomerFilter] = useState(
+  const [internalCustomerFilter, setInternalCustomerFilter] = useState(
     searchParams.get("customer") || ""
   );
-  const [workerFilter, setWorkerFilter] = useState(
+  const [internalWorkerFilter, setInternalWorkerFilter] = useState(
     searchParams.get("worker") || ""
   );
-  const [dateFrom, setDateFrom] = useState(
+  const [internalDateFrom, setInternalDateFrom] = useState(
     searchParams.get("dateFrom") || ""
   );
-  const [dateTo, setDateTo] = useState(searchParams.get("dateTo") || "");
-
-  const applyFilters = () => {
-    const params = new URLSearchParams();
-    const search = searchParams.get("q");
-    if (search) params.set("q", search);
-    if (statusFilter && statusFilter !== "ALL") params.set("status", statusFilter);
-    if (customerFilter) params.set("customer", customerFilter);
-    if (workerFilter) params.set("worker", workerFilter);
-    if (dateFrom) params.set("dateFrom", dateFrom);
-    if (dateTo) params.set("dateTo", dateTo);
-
-    router.push(`/jobs?${params.toString()}`);
-  };
+  const [internalDateTo, setInternalDateTo] = useState(searchParams.get("dateTo") || "");
+  
+  const statusFilter = externalStatusFilter !== undefined ? externalStatusFilter : internalStatusFilter;
+  const customerFilter = externalCustomerFilter !== undefined ? externalCustomerFilter : internalCustomerFilter;
+  const workerFilter = externalWorkerFilter !== undefined ? externalWorkerFilter : internalWorkerFilter;
+  const dateFrom = externalDateFrom !== undefined ? externalDateFrom : internalDateFrom;
+  const dateTo = externalDateTo !== undefined ? externalDateTo : internalDateTo;
+  
+  const setStatusFilter = onStatusChange || setInternalStatusFilter;
+  const setCustomerFilter = onCustomerChange || setInternalCustomerFilter;
+  const setWorkerFilter = onWorkerChange || setInternalWorkerFilter;
+  const setDateFrom = onDateFromChange || setInternalDateFrom;
+  const setDateTo = onDateToChange || setInternalDateTo;
 
   const clearFilters = () => {
-    const params = new URLSearchParams();
-    const search = searchParams.get("q");
-    if (search) params.set("q", search);
     setStatusFilter("ALL");
     setCustomerFilter("");
     setWorkerFilter("");
     setDateFrom("");
     setDateTo("");
-    router.push(`/jobs?${params.toString()}`);
   };
-
-  // Auto-apply filters when they change (debounced)
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      const params = new URLSearchParams();
-      const search = searchParams.get("q");
-      if (search) params.set("q", search);
-      if (statusFilter && statusFilter !== "ALL") params.set("status", statusFilter);
-      if (customerFilter) params.set("customer", customerFilter);
-      if (workerFilter) params.set("worker", workerFilter);
-      if (dateFrom) params.set("dateFrom", dateFrom);
-      if (dateTo) params.set("dateTo", dateTo);
-
-      const newUrl = `/jobs?${params.toString()}`;
-      if (window.location.search !== `?${params.toString()}`) {
-        router.push(newUrl);
-      }
-    }, 500);
-
-    return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [statusFilter, customerFilter, workerFilter, dateFrom, dateTo]);
 
   return (
     <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-4 mb-6">

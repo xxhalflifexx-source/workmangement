@@ -194,43 +194,109 @@ export async function deleteJob(jobId: string) {
   return { ok: true };
 }
 
-export async function getJobs() {
-  console.log("[getJobs] Server action called");
-  
+interface GetJobsParams {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  status?: string;
+  customerId?: string;
+  workerId?: string;
+  dateFrom?: string;
+  dateTo?: string;
+}
+
+export async function getJobs(params: GetJobsParams = {}) {
+  const {
+    page = 1,
+    pageSize = 20,
+    search,
+    status,
+    customerId,
+    workerId,
+    dateFrom,
+    dateTo,
+  } = params;
+
   const session = await getServerSession(authOptions);
-  console.log("[getJobs] Session check:", {
-    hasSession: !!session,
-    hasUser: !!session?.user,
-    userId: (session?.user as any)?.id,
-    userRole: (session?.user as any)?.role,
-  });
   
   if (!session?.user) {
-    console.warn("[getJobs] Not authenticated");
     return { ok: false, error: "Not authenticated" };
   }
 
   const userId = (session.user as any).id;
   const userRole = (session.user as any).role;
 
-  // Admins and managers see all jobs
-  // Employees see only their assigned jobs (assignedTo must equal their userId)
-  const whereClause =
+  // Base where clause for permissions
+  const baseWhere: any =
       userRole === "ADMIN" || userRole === "MANAGER"
       ? {} // Admins/managers see all jobs
       : { assignedTo: userId }; // Employees only see jobs assigned to them
 
-  console.log("[getJobs] Query whereClause:", JSON.stringify(whereClause));
-  console.log("[getJobs] User role:", userRole, "Will see:", userRole === "ADMIN" || userRole === "MANAGER" ? "all jobs" : "assigned jobs only");
+  // Build filter conditions
+  const whereClause: any = { ...baseWhere };
+
+  // Status filter
+  if (status && status !== "ALL") {
+    whereClause.status = status;
+  }
+
+  // Customer filter
+  if (customerId) {
+    whereClause.customerId = customerId;
+  }
+
+  // Worker filter (assigned to worker OR has time entries from worker)
+  if (workerId) {
+    whereClause.OR = [
+      { assignedTo: workerId },
+      { timeEntries: { some: { userId: workerId } } },
+    ];
+  }
+
+  // Date range filter
+  if (dateFrom || dateTo) {
+    whereClause.createdAt = {};
+    if (dateFrom) {
+      whereClause.createdAt.gte = new Date(dateFrom);
+    }
+    if (dateTo) {
+      const toDate = new Date(dateTo);
+      toDate.setHours(23, 59, 59, 999);
+      whereClause.createdAt.lte = toDate;
+    }
+  }
+
+  // Search filter (title, description, customer name, or job ID)
+  if (search) {
+    whereClause.OR = [
+      ...(whereClause.OR || []),
+      { title: { contains: search, mode: "insensitive" } },
+      { description: { contains: search, mode: "insensitive" } },
+      { id: { contains: search, mode: "insensitive" } },
+      { customer: { name: { contains: search, mode: "insensitive" } } },
+    ];
+  }
 
   try {
     const startTime = Date.now();
+    
+    // Get total count for pagination
+    const totalCount = await prisma.job.count({ where: whereClause });
+    
+    // Calculate pagination
+    const skip = (page - 1) * pageSize;
+    const take = pageSize;
+
+    // Fetch jobs with pagination
     const jobs = await prisma.job.findMany({
       where: whereClause,
+      skip,
+      take,
       include: {
         assignee: { select: { name: true, email: true, id: true } },
         creator: { select: { name: true } },
         customer: { select: { id: true, name: true, phone: true, email: true, company: true } },
+        // Only fetch activities with images for photo thumbnails (limit to 5 most recent)
         activities: {
           where: {
             images: { not: null },
@@ -241,7 +307,9 @@ export async function getJobs() {
             createdAt: true,
           },
           orderBy: { createdAt: "desc" },
+          take: 5, // Limit to 5 most recent activities with images
         },
+        // Only fetch recent time entries (limit to 10)
         timeEntries: {
           select: {
             id: true,
@@ -256,35 +324,28 @@ export async function getJobs() {
             },
           },
           orderBy: { clockIn: "desc" },
+          take: 10, // Limit to 10 most recent time entries
         },
       },
       orderBy: { createdAt: "desc" },
     });
 
     const duration = Date.now() - startTime;
-    console.log(`[getJobs] Database query completed in ${duration}ms`);
-    console.log(`[getJobs] Found ${jobs.length} jobs`);
-    
-    if (jobs.length > 0) {
-      console.log("[getJobs] Sample job:", {
-        id: jobs[0].id,
-        title: jobs[0].title,
-        status: jobs[0].status,
-        assignedTo: jobs[0].assignedTo,
-        hasAssignee: !!jobs[0].assignee,
-        hasCustomer: !!jobs[0].customer,
-      });
-    }
+    const totalPages = Math.ceil(totalCount / pageSize);
 
-    return { ok: true, jobs };
+    return {
+      ok: true,
+      jobs,
+      pagination: {
+        page,
+        pageSize,
+        totalCount,
+        totalPages,
+        hasMore: page < totalPages,
+      },
+    };
   } catch (error: any) {
     console.error("[getJobs] Database error:", error);
-    console.error("[getJobs] Error stack:", error?.stack);
-    console.error("[getJobs] Error details:", {
-      message: error?.message,
-      code: error?.code,
-      meta: error?.meta,
-    });
     return { ok: false, error: error?.message || "Failed to fetch jobs" };
   }
 }
