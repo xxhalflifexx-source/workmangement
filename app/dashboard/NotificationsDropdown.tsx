@@ -51,8 +51,8 @@ export default function NotificationsDropdown({
     setLoading(true);
     try {
       const res = await getNotifications();
-      if (res.ok) {
-        setNotifications(res.notifications as Notification[]);
+      if (res.ok && res.notifications) {
+        setNotifications(res.notifications);
         setUnreadCount(res.unreadCount || 0);
       }
     } catch (error) {

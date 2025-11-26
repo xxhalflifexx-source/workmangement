@@ -24,9 +24,16 @@ export async function getNotifications() {
       where: { userId, isRead: false },
     });
 
+    // Convert Date objects to ISO strings for JSON serialization
+    const serializedNotifications = notifications.map((n) => ({
+      ...n,
+      createdAt: n.createdAt.toISOString(),
+      readAt: n.readAt ? n.readAt.toISOString() : null,
+    }));
+
     return {
       ok: true,
-      notifications,
+      notifications: serializedNotifications,
       unreadCount,
     };
   } catch (error: any) {

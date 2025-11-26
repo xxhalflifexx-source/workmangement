@@ -17,7 +17,7 @@ export default async function Dashboard() {
 
   // Load notifications
   const notificationsRes = await getNotifications();
-  const notifications = notificationsRes.ok ? (notificationsRes.notifications || []) : [];
+  const notifications = notificationsRes.ok && notificationsRes.notifications ? notificationsRes.notifications : [];
   const unreadCount = notificationsRes.ok ? (notificationsRes.unreadCount || 0) : 0;
 
   return (
