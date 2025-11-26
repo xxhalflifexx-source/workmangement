@@ -98,7 +98,6 @@ export default function JobRow({
 
   // Get all photos for this job
   const allPhotos = getAllJobPhotos(job);
-  const thumbnailPhotos = allPhotos.slice(0, 5);
 
   // Calculate total hours
   const totalHours = job.timeEntries
@@ -152,39 +151,13 @@ export default function JobRow({
         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
           {deadline}
         </td>
-        <td className="px-6 py-4 whitespace-nowrap">
-          {thumbnailPhotos.length > 0 ? (
-            <div className="flex gap-1 items-center">
-              {thumbnailPhotos.map((photo, idx) => (
-                <img
-                  key={idx}
-                  src={photo}
-                  alt={`Photo ${idx + 1}`}
-                  className="h-10 w-10 object-cover rounded border border-gray-200 cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setPhotoViewerIndex(idx);
-                    setShowPhotoViewer(true);
-                  }}
-                />
-              ))}
-              {allPhotos.length > 5 && (
-                <span className="text-xs text-gray-500 ml-1">
-                  +{allPhotos.length - 5}
-                </span>
-              )}
-            </div>
-          ) : (
-            <span className="text-xs text-gray-400">No photos</span>
-          )}
-        </td>
         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
           {isExpanded ? "▼" : "▶"}
         </td>
       </tr>
       {isExpanded && (
         <tr>
-          <td colSpan={9} className="px-6 py-6 bg-gray-50">
+          <td colSpan={8} className="px-6 py-6 bg-gray-50">
             <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-6 space-y-4">
               <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
                 <div>
