@@ -216,31 +216,29 @@ function JobsPageContent() {
 
   // Load data when session is ready
   useEffect(() => {
-    console.log("[JobsPage] useEffect triggered", { sessionStatus, hasSession: !!session, hasUser: !!session?.user });
-    
-    // Don't load if session is still loading
     if (sessionStatus === "loading") {
-      console.log("[JobsPage] Session still loading, waiting...");
       return;
     }
     
-    // Only load if we have a session (authenticated)
     if (!session?.user) {
-      console.log("[JobsPage] No session or user, showing error");
       setLoading(false);
       setError("Please log in to view jobs");
       return;
     }
     
-    console.log("[JobsPage] Session ready, loading data...", {
-      userId: (session.user as any)?.id,
-      role: (session.user as any)?.role,
-    });
-    
     // Load data once session is ready
     loadData();
+  }, [sessionStatus, session, loadData]);
+  
+  // Reload data when filters change (reset to page 1)
+  useEffect(() => {
+    if (sessionStatus === "loading" || !session?.user) return;
+    
+    // Reset to first page and reload when filters change
+    setCurrentPage(1);
+    loadData(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sessionStatus, session]);
+  }, [filterStatus, filterCustomer, filterWorker, filterDateFrom, filterDateTo, debouncedSearchQuery]);
 
   // When editing a job, pre-fill estimated duration controls based on stored estimatedHours
   useEffect(() => {
@@ -272,7 +270,8 @@ function JobsPageContent() {
     }
   }, [editingJob]);
 
-  const loadData = useCallback(async (page: number = currentPage) => {
+  const loadData = useCallback(async (page?: number) => {
+    const targetPage = page !== undefined ? page : currentPage;
     // Ensure we have a session before loading
     if (!session?.user) {
       setLoading(false);
@@ -291,7 +290,7 @@ function JobsPageContent() {
       
       // Build filter parameters
       const filterParams: any = {
-        page,
+        page: targetPage,
         pageSize,
       };
       
@@ -336,6 +335,10 @@ function JobsPageContent() {
         if (pagination) {
           setTotalCount(pagination.totalCount || 0);
           setTotalPages(pagination.totalPages || 0);
+          // Update current page if it was explicitly provided
+          if (page !== undefined) {
+            setCurrentPage(targetPage);
+          }
         }
 
         // Extract photos from activities for each job (async, non-blocking)
