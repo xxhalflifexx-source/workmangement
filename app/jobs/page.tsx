@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, Suspense } from "react";
 import { getJobs, getAllUsers, createJob, updateJob, deleteJob, getJobActivities, addJobActivity, getAllCustomers, createCustomer, saveJobPhotos, submitJobPhotosToQC, getJobPhotos, removeJobPhoto as removeJobPhotoFromDB } from "./actions";
 import { createMaterialRequest, getJobMaterialRequests } from "../material-requests/actions";
 import { getCompanySettingsForInvoice } from "./invoice-actions";
@@ -91,7 +91,7 @@ interface MaterialRequest {
   };
 }
 
-export default function JobsPage() {
+function JobsPageContent() {
   const { data: session } = useSession();
   const userRole = (session?.user as any)?.role;
   const canManage = userRole === "MANAGER" || userRole === "ADMIN";
@@ -2739,6 +2739,21 @@ export default function JobsPage() {
         />
       )}
     </main>
+  );
+}
+
+export default function JobsPage() {
+  return (
+    <Suspense fallback={
+      <main className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </main>
+    }>
+      <JobsPageContent />
+    </Suspense>
   );
 }
 
