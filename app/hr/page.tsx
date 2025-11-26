@@ -5,6 +5,7 @@ import { getAllUsersStats, getUserTimeEntries } from "./actions";
 import Link from "next/link";
 import { nowInCentral, formatDateShort, formatDateTime, formatDateInput, startOfDayCentral, endOfDayCentral } from "@/lib/date-utils";
 import dayjs from "dayjs";
+import PhotoViewerModal from "../qc/PhotoViewerModal";
 
 interface TimeEntry {
   id: string;
@@ -12,6 +13,7 @@ interface TimeEntry {
   clockOut: string | null;
   clockInNotes: string | null;
   notes: string | null;
+  images: string | null;
   job: { id: string; title: string } | null;
 }
 
@@ -37,6 +39,9 @@ export default function HRPage() {
   const [userEntries, setUserEntries] = useState<TimeEntry[]>([]);
   const [loadingEntries, setLoadingEntries] = useState(false);
   const [showEntriesModal, setShowEntriesModal] = useState(false);
+  const [showPhotoViewer, setShowPhotoViewer] = useState(false);
+  const [photoViewerPhotos, setPhotoViewerPhotos] = useState<string[]>([]);
+  const [photoViewerIndex, setPhotoViewerIndex] = useState(0);
   
   // Helper function to get Saturday of current week in Central Time
   // Week runs Saturday (day 6) to Friday (day 5)
@@ -439,6 +444,42 @@ export default function HRPage() {
                           <p className="mt-1 text-gray-700">{entry.notes}</p>
                         </div>
                       )}
+                      {entry.images && (() => {
+                        try {
+                          const images = JSON.parse(entry.images);
+                          if (Array.isArray(images) && images.length > 0) {
+                            return (
+                              <div className="mt-2">
+                                <p className="text-xs text-gray-500 mb-1">
+                                  {images.length} photo(s)
+                                </p>
+                                <div className="flex gap-2 flex-wrap">
+                                  {images.map((imgPath: string, idx: number) => (
+                                    <button
+                                      key={idx}
+                                      onClick={() => {
+                                        setPhotoViewerPhotos(images);
+                                        setPhotoViewerIndex(idx);
+                                        setShowPhotoViewer(true);
+                                      }}
+                                      className="block w-16 h-16 rounded border border-gray-300 overflow-hidden hover:ring-2 hover:ring-blue-500 transition-all cursor-pointer"
+                                    >
+                                      <img
+                                        src={imgPath}
+                                        alt={`Photo ${idx + 1}`}
+                                        className="w-full h-full object-cover"
+                                      />
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          }
+                        } catch (e) {
+                          return null;
+                        }
+                        return null;
+                      })()}
                     </div>
                   ))}
                 </div>
@@ -459,6 +500,15 @@ export default function HRPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Photo Viewer Modal */}
+      {showPhotoViewer && (
+        <PhotoViewerModal
+          photos={photoViewerPhotos}
+          initialIndex={photoViewerIndex}
+          onClose={() => setShowPhotoViewer(false)}
+        />
       )}
     </main>
   );

@@ -85,7 +85,7 @@ export async function clockIn(jobId?: string, notes?: string) {
   return { ok: true, entry };
 }
 
-export async function clockOut(notes?: string) {
+export async function clockOut(formData: FormData) {
   const session = await getServerSession(authOptions);
   
   if (!session?.user) {
@@ -93,6 +93,8 @@ export async function clockOut(notes?: string) {
   }
 
   const userId = (session.user as any).id;
+  const notes = formData.get("notes")?.toString() || undefined;
+  const imagePathsJson = formData.get("imagePaths")?.toString();
 
   // Find active entry
   const activeEntry = await prisma.timeEntry.findFirst({
@@ -112,6 +114,16 @@ export async function clockOut(notes?: string) {
   const durationHours =
     (now.getTime() - activeEntry.clockIn.getTime()) / (1000 * 60 * 60);
 
+  // Parse image paths if provided
+  let imagePaths: string[] = [];
+  if (imagePathsJson) {
+    try {
+      imagePaths = JSON.parse(imagePathsJson);
+    } catch (error) {
+      console.error("Failed to parse image paths:", error);
+    }
+  }
+
   // Update with clock out time and computed duration
   const entry = await prisma.timeEntry.update({
     where: { id: activeEntry.id },
@@ -119,11 +131,13 @@ export async function clockOut(notes?: string) {
       clockOut: now,
       durationHours,
       notes: notes || null,
+      // Store images in TimeEntry if no jobId (for non-job clock-ins)
+      images: !activeEntry.jobId && imagePaths.length > 0 ? JSON.stringify(imagePaths) : activeEntry.images,
     },
   });
 
-  // Create JobActivity if this was linked to a job and has notes
-  if (activeEntry.jobId && notes) {
+  // If clocked in with a job, create JobActivity with photos
+  if (activeEntry.jobId) {
     try {
       await prisma.jobActivity.create({
         data: {
@@ -132,6 +146,8 @@ export async function clockOut(notes?: string) {
           type: "TIME_ENTRY",
           timeEntryId: entry.id,
           notes: notes || null,
+          // Store images in JobActivity for job-related clock-outs
+          images: imagePaths.length > 0 ? JSON.stringify(imagePaths) : null,
         },
       });
     } catch (error) {

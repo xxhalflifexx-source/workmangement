@@ -47,6 +47,11 @@ export default function TimeClockPage() {
   const [clockInDescription, setClockInDescription] = useState("");
   const [descriptionError, setDescriptionError] = useState<string | undefined>();
   const [showClockOutConfirm, setShowClockOutConfirm] = useState(false);
+  const [clockOutPhotos, setClockOutPhotos] = useState<File[]>([]);
+  const [uploadingPhotos, setUploadingPhotos] = useState(false);
+  const [showPhotoViewer, setShowPhotoViewer] = useState(false);
+  const [photoViewerPhotos, setPhotoViewerPhotos] = useState<string[]>([]);
+  const [photoViewerIndex, setPhotoViewerIndex] = useState(0);
   const [currentTime, setCurrentTime] = useState("");
   const [currentDate, setCurrentDate] = useState("");
 
@@ -181,32 +186,85 @@ export default function TimeClockPage() {
   };
 
   const handleClockOutConfirm = async () => {
-    setShowClockOutConfirm(false);
     setLoading(true);
+    setUploadingPhotos(true);
     setError(undefined);
     setSuccess(undefined);
 
-      try {
-      const res = await clockOut(notes);
+    try {
+      // Upload photos first if any
+      let imagePaths: string[] = [];
+      if (clockOutPhotos.length > 0) {
+        const uploadFormData = new FormData();
+        clockOutPhotos.forEach((file) => {
+          uploadFormData.append("files", file);
+        });
 
-    if (!res.ok) {
+        const uploadRes = await fetch("/api/upload", {
+          method: "POST",
+          body: uploadFormData,
+        });
+
+        if (!uploadRes.ok) {
+          const errorData = await uploadRes.json().catch(() => ({}));
+          setError(errorData.error || "Failed to upload photos. Please try again.");
+          setLoading(false);
+          setUploadingPhotos(false);
+          return;
+        }
+
+        const uploadData = await uploadRes.json();
+        imagePaths = uploadData.paths || [];
+      }
+
+      // Clock out with notes and photos
+      const formData = new FormData();
+      formData.append("notes", notes);
+      if (imagePaths.length > 0) {
+        formData.append("imagePaths", JSON.stringify(imagePaths));
+      }
+
+      const res = await clockOut(formData);
+
+      if (!res.ok) {
         setError(res.error || "Failed to clock out");
-      return;
-    }
+        return;
+      }
 
-    setSuccess("Clocked out successfully!");
-    setNotes("");
+      setSuccess("Clocked out successfully!");
+      setNotes("");
+      setClockOutPhotos([]);
+      setShowClockOutConfirm(false);
       await loadData();
     } catch (err: any) {
       console.error("Clock out error:", err);
       setError(err?.message || "Something went wrong while clocking out.");
     } finally {
-    setLoading(false);
+      setLoading(false);
+      setUploadingPhotos(false);
     }
   };
 
   const handleClockOutCancel = () => {
     setShowClockOutConfirm(false);
+    setClockOutPhotos([]);
+  };
+
+  const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const files = Array.from(e.target.files);
+      setClockOutPhotos((prev) => [...prev, ...files]);
+    }
+  };
+
+  const removePhoto = (index: number) => {
+    setClockOutPhotos((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const openPhotoViewer = (photos: string[], index: number) => {
+    setPhotoViewerPhotos(photos);
+    setPhotoViewerIndex(index);
+    setShowPhotoViewer(true);
   };
 
 
@@ -525,19 +583,17 @@ export default function TimeClockPage() {
                                 </p>
                                 <div className="flex gap-2 flex-wrap">
                                   {images.map((imgPath: string, idx: number) => (
-                                    <a
+                                    <button
                                       key={idx}
-                                      href={imgPath}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="block w-16 h-16 rounded border border-gray-300 overflow-hidden hover:ring-2 hover:ring-blue-500 transition-all"
+                                      onClick={() => openPhotoViewer(images, idx)}
+                                      className="block w-16 h-16 rounded border border-gray-300 overflow-hidden hover:ring-2 hover:ring-blue-500 transition-all cursor-pointer"
                                     >
                                       <img
                                         src={imgPath}
                                         alt={`Photo ${idx + 1}`}
                                         className="w-full h-full object-cover"
                                       />
-                                    </a>
+                                    </button>
                                   ))}
                                 </div>
                               </div>
@@ -616,8 +672,8 @@ export default function TimeClockPage() {
 
       {/* Clock Out Confirmation Modal */}
       {showClockOutConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl p-4 sm:p-6 max-w-md w-full">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <div className="bg-white rounded-xl shadow-2xl p-4 sm:p-6 max-w-md w-full my-4">
             <div className="text-center mb-6">
               <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
                 <svg
@@ -633,33 +689,111 @@ export default function TimeClockPage() {
                     d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
                   />
                 </svg>
-                </div>
+              </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
                 Confirm Clock Out
               </h3>
               <p className="text-sm text-gray-600">
-                Are you sure you want to clock out?
+                {currentEntry?.job 
+                  ? `Clock out from "${currentEntry.job.title}"?`
+                  : "Are you sure you want to clock out?"}
               </p>
+            </div>
+
+            <div className="space-y-4 mb-6">
+              {/* Notes */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Notes (Optional)
+                </label>
+                <textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Add notes about your shift..."
+                  className="w-full min-h-[44px] border border-gray-300 rounded-lg p-3 text-sm resize-none"
+                  rows={3}
+                />
+              </div>
+
+              {/* Photo Upload */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Photos (Optional)
+                </label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handlePhotoSelect}
+                  className="hidden"
+                  id="clock-out-photos"
+                />
+                <label
+                  htmlFor="clock-out-photos"
+                  className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors min-h-[44px]"
+                >
+                  <span>📷</span>
+                  Choose Photos
+                </label>
+
+                {clockOutPhotos.length > 0 && (
+                  <div className="mt-3 space-y-2">
+                    <p className="text-xs text-gray-600">
+                      {clockOutPhotos.length} photo(s) selected
+                    </p>
+                    <div className="grid grid-cols-3 gap-2">
+                      {clockOutPhotos.map((file, index) => (
+                        <div
+                          key={index}
+                          className="relative bg-gray-100 border border-gray-200 rounded p-2"
+                        >
+                          <img
+                            src={URL.createObjectURL(file)}
+                            alt={`Preview ${index + 1}`}
+                            className="w-full h-20 object-cover rounded"
+                          />
+                          <button
+                            onClick={() => removePhoto(index)}
+                            type="button"
+                            className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ))}
+                    </div>
                   </div>
+                )}
+              </div>
+            </div>
 
             <div className="flex flex-col sm:flex-row gap-3">
-                  <button
+              <button
                 onClick={handleClockOutCancel}
                 disabled={loading}
                 className="flex-1 min-h-[44px] px-4 py-2 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors disabled:bg-gray-100 disabled:cursor-not-allowed"
-                  >
-                    Cancel
-                  </button>
-                  <button
+              >
+                Cancel
+              </button>
+              <button
                 onClick={handleClockOutConfirm}
-                disabled={loading}
+                disabled={loading || uploadingPhotos}
                 className="flex-1 min-h-[44px] px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
-                  >
-                {loading ? "Processing..." : "Yes, Clock Out"}
-                  </button>
+              >
+                {uploadingPhotos ? "Uploading..." : loading ? "Processing..." : "Yes, Clock Out"}
+              </button>
             </div>
           </div>
         </div>
+      )}
+
+      {/* Photo Viewer Modal */}
+      {showPhotoViewer && (
+        <PhotoViewerModal
+          photos={photoViewerPhotos}
+          initialIndex={photoViewerIndex}
+          onClose={() => setShowPhotoViewer(false)}
+        />
       )}
 
     </main>

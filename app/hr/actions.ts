@@ -211,6 +211,7 @@ export async function getUserTimeEntries(userId: string) {
           clockOut: true,
           clockInNotes: true,
           notes: true,
+          images: true,
           job: {
             select: {
               id: true,
@@ -233,6 +234,7 @@ export async function getUserTimeEntries(userId: string) {
             clockIn: true,
             clockOut: true,
             notes: true,
+            images: true,
             job: {
               select: {
                 id: true,
