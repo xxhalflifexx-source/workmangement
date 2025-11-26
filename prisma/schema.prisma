@@ -41,6 +41,7 @@ model User {
   reworkResponsibleFor  ReworkEntry[]          @relation("ReworkResponsible")
   /// Rework entries created/logged by this user (QC/admin)
   reworkCreated         ReworkEntry[]          @relation("ReworkCreatedBy")
+  notifications         Notification[]
 }
 
 model Account {
@@ -347,5 +348,21 @@ model QuotationLine {
   rate        Float      @default(0)
   amount      Float      @default(0)
   quotation   Quotation  @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  message   String?
+  type      String   @default("INFO") // INFO, WARNING, SUCCESS, ERROR, JOB_UPDATE
+  isRead    Boolean  @default(false)
+  linkUrl   String?  // Optional link to navigate when clicked
+  createdAt DateTime @default(now())
+  readAt    DateTime?
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@index([userId, createdAt])
 }
 

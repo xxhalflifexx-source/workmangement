@@ -1,9 +1,10 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authOptions";
 import Link from "next/link";
-import { getJobAlertsForCurrentUser } from "../jobs/actions";
 import { formatDateShort } from "@/lib/date-utils";
 import UserMenu from "./UserMenu";
+import NotificationsDropdown from "./NotificationsDropdown";
+import { getNotifications } from "./notifications-actions";
 
 export default async function Dashboard() {
   const session = await getServerSession(authOptions);
@@ -14,8 +15,10 @@ export default async function Dashboard() {
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
 
-  const alertsRes = await getJobAlertsForCurrentUser();
-  const alerts = alertsRes.ok ? alertsRes.jobs : [];
+  // Load notifications
+  const notificationsRes = await getNotifications();
+  const notifications = notificationsRes.ok ? (notificationsRes.notifications || []) : [];
+  const unreadCount = notificationsRes.ok ? (notificationsRes.unreadCount || 0) : 0;
 
   return (
     <main className="min-h-screen bg-gray-50">
@@ -26,7 +29,13 @@ export default async function Dashboard() {
             <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Employee Portal</h1>
             <p className="text-xs sm:text-sm text-gray-500">Welcome back, {user?.name}</p>
           </div>
-          <UserMenu userName={user?.name} userEmail={user?.email} />
+          <div className="flex items-center gap-2">
+            <NotificationsDropdown 
+              initialNotifications={notifications as any}
+              initialUnreadCount={unreadCount}
+            />
+            <UserMenu userName={user?.name} userEmail={user?.email} />
+          </div>
         </div>
       </header>
 
@@ -190,14 +199,13 @@ export default async function Dashboard() {
           )}
         </div>
 
-        {/* Info + Job Alerts Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-          <div className="bg-white rounded-lg shadow p-4 sm:p-6 border border-gray-200 lg:col-span-2">
+        {/* Quick Info Section */}
+        <div className="bg-white rounded-lg shadow p-4 sm:p-6 border border-gray-200">
           <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">📢 Quick Info</h3>
           <div className="space-y-3 text-sm text-gray-600">
             <p>
-                • <span className="font-medium">Your Role:</span>{" "}
-                <span className="text-blue-600 font-semibold">{role}</span>
+              • <span className="font-medium">Your Role:</span>{" "}
+              <span className="text-blue-600 font-semibold">{role}</span>
             </p>
             <p>
               • <span className="font-medium">Access Level:</span>{" "}
@@ -211,46 +219,6 @@ export default async function Dashboard() {
               • <span className="font-medium">Account Status:</span>{" "}
               <span className="text-green-600 font-medium">✓ Active & Verified</span>
             </p>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow p-4 sm:p-6 border border-gray-200">
-            <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3">🔔 Job Updates</h3>
-            {alerts.length === 0 ? (
-              <p className="text-sm text-gray-500">
-                No recent updates on your assigned jobs. You&apos;ll see rework and QC status changes
-                here.
-              </p>
-            ) : (
-              <ul className="space-y-2 text-sm">
-                {alerts.map((job: any) => (
-                  <li
-                    key={job.id}
-                    className="flex items-start justify-between gap-2 border border-gray-100 rounded-lg px-3 py-2 bg-gray-50"
-                  >
-                    <div>
-                      <p className="font-medium text-gray-900">{job.title}</p>
-                      <p className="text-xs text-gray-500">
-                        {job.customer?.name ? `Customer: ${job.customer.name} • ` : ""}
-                        Updated:{" "}
-                        {formatDateShort(job.updatedAt)}
-                      </p>
-                    </div>
-                    <span
-                      className={`px-2 py-0.5 rounded-full text-[11px] font-semibold ${
-                        job.status === "REWORK"
-                          ? "bg-orange-100 text-orange-800"
-                          : job.status === "AWAITING_QC"
-                          ? "bg-purple-100 text-purple-800"
-                          : "bg-green-100 text-green-800"
-                      }`}
-                    >
-                      {job.status === "AWAITING_QC" ? "Submit to QC" : job.status}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
           </div>
         </div>
       </div>
