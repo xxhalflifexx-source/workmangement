@@ -265,31 +265,6 @@ export default function JobRow({
                 </div>
               </div>
 
-              {/* Photos Gallery */}
-              {allPhotos.length > 0 && (
-                <div className="border-t border-gray-100 pt-4">
-                  <h3 className="text-sm font-semibold text-gray-900 mb-2">
-                    Job Photos
-                  </h3>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    {allPhotos.map((photo, idx) => (
-                      <div key={idx} className="relative group">
-                        <img
-                          src={photo}
-                          alt={`Job Photo ${idx + 1}`}
-                          className="w-full h-32 object-cover rounded-lg border border-gray-200 cursor-pointer hover:opacity-80 transition-opacity"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setPhotoViewerIndex(idx);
-                            setShowPhotoViewer(true);
-                          }}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
               {/* Time Entries */}
               {job.timeEntries && job.timeEntries.length > 0 && (
                 <div className="border-t border-gray-100 pt-4">
