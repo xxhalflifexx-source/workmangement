@@ -251,29 +251,29 @@ export default function TimeClockPage() {
   return (
     <main className="min-h-screen bg-gray-50">
       <header className="bg-white shadow-sm border-b">
-        <div className="max-w-full mx-auto px-24 py-4 flex justify-between items-center">
-          <div className="flex items-center gap-6">
+        <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-24 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 w-full sm:w-auto">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Time Clock</h1>
-              <p className="text-sm text-gray-500">Track your work hours</p>
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Time Clock</h1>
+              <p className="text-xs sm:text-sm text-gray-500">Track your work hours</p>
             </div>
-            <div className="hidden sm:block border-l border-gray-300 pl-6">
-              <div className="text-sm text-gray-500">{currentDate || "Loading..."}</div>
-              <div className="text-xl font-bold text-gray-900 font-mono">
+            <div className="sm:border-l sm:border-gray-300 sm:pl-6 w-full sm:w-auto">
+              <div className="text-xs sm:text-sm text-gray-500">{currentDate || "Loading..."}</div>
+              <div className="text-lg sm:text-xl font-bold text-gray-900 font-mono">
                 {currentTime || "Loading..."}
               </div>
             </div>
           </div>
           <Link
             href="/dashboard"
-            className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
+            className="w-full sm:w-auto min-h-[44px] flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
           >
             Back to Dashboard
           </Link>
         </div>
       </header>
 
-      <div className="max-w-full mx-auto px-24 py-8">
+      <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-24 py-6 sm:py-8">
         {error && (
           <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
             {error}
@@ -286,16 +286,16 @@ export default function TimeClockPage() {
         )}
 
         {assignedJobs.length > 0 && (
-          <div className="mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-6 shadow-md">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-gray-900">
+          <div className="mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-4 sm:p-6 shadow-md">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-4">
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900">
                 Your Assigned Jobs
               </h2>
-              <span className="text-sm bg-blue-600 text-white px-3 py-1 rounded-full font-medium">
+              <span className="text-xs sm:text-sm bg-blue-600 text-white px-3 py-1 rounded-full font-medium">
                 {assignedJobs.length} active
               </span>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {assignedJobs.map((job) => (
                 <div
                   key={job.id}
@@ -353,9 +353,9 @@ export default function TimeClockPage() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
           <div className="lg:col-span-2">
-            <div className="bg-white rounded-xl shadow-lg p-8 border border-gray-200">
+            <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 lg:p-8 border border-gray-200">
               <div className="text-center mb-8">
                 <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium mb-4 ${
                   isClockedIn ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700"
@@ -366,7 +366,7 @@ export default function TimeClockPage() {
 
                 {isClockedIn && elapsedTime && (
                   <div className="mb-6">
-                    <div className="text-6xl font-bold text-gray-900 font-mono tracking-tight">
+                    <div className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 font-mono tracking-tight">
                       {elapsedTime}
                     </div>
                     <p className="text-gray-500 text-sm mt-2">
@@ -409,7 +409,7 @@ export default function TimeClockPage() {
                             }
                           }
                         }}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-700"
+                        className="w-full min-h-[44px] border border-gray-300 rounded-lg px-3 py-2 text-gray-700 text-sm sm:text-base"
                       >
                         <option value="">No specific job</option>
                         {availableJobs.map((job) => (
@@ -436,7 +436,7 @@ export default function TimeClockPage() {
                         }
                       }}
                       placeholder={selectedJobId ? "Add a description (optional)" : "Please provide a description of what you'll be working on"}
-                      className={`w-full border rounded-lg px-3 py-2 text-sm resize-none ${
+                      className={`w-full min-h-[44px] border rounded-lg px-3 py-2 text-sm resize-none ${
                         descriptionError 
                           ? "border-red-300 bg-red-50" 
                           : "border-gray-300"
@@ -457,7 +457,7 @@ export default function TimeClockPage() {
                   <button
                     onClick={handleClockIn}
                     disabled={loading}
-                    className="w-full bg-green-600 text-white py-4 rounded-xl font-semibold text-lg hover:bg-green-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed shadow-lg"
+                    className="w-full min-h-[44px] bg-green-600 text-white py-3 sm:py-4 rounded-xl font-semibold text-base sm:text-lg hover:bg-green-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed shadow-lg"
                   >
                     {loading ? "Processing..." : "Clock In"}
                   </button>
@@ -470,14 +470,14 @@ export default function TimeClockPage() {
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
                     placeholder="Add notes about your shift (optional)"
-                    className="w-full border border-gray-300 rounded-lg p-3 text-sm resize-none"
+                    className="w-full min-h-[44px] border border-gray-300 rounded-lg p-3 text-sm resize-none"
                     rows={3}
                   />
 
                   <button
                     onClick={handleClockOutClick}
                     disabled={loading}
-                    className="w-full bg-red-600 text-white py-4 rounded-xl font-semibold text-lg hover:bg-red-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed shadow-lg"
+                    className="w-full min-h-[44px] bg-red-600 text-white py-3 sm:py-4 rounded-xl font-semibold text-base sm:text-lg hover:bg-red-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed shadow-lg"
                   >
                     {loading ? "Processing..." : "Clock Out"}
                   </button>
@@ -485,8 +485,8 @@ export default function TimeClockPage() {
               )}
             </div>
 
-            <div className="mt-6 bg-white rounded-xl shadow p-6 border border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Today's Entries</h3>
+            <div className="mt-6 bg-white rounded-xl shadow p-4 sm:p-6 border border-gray-200">
+              <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Today's Entries</h3>
               {todayEntries.length === 0 ? (
                 <p className="text-gray-500 text-sm text-center py-4">No entries for today yet</p>
               ) : (
@@ -556,16 +556,16 @@ export default function TimeClockPage() {
           </div>
 
           <div className="space-y-6">
-            <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl shadow-lg p-6 text-white">
-              <div className="text-sm font-medium text-blue-100 mb-2">Today's Total</div>
-              <div className="text-4xl font-bold mb-1">{calculateTodayTotal()}</div>
+            <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl shadow-lg p-4 sm:p-6 text-white">
+              <div className="text-xs sm:text-sm font-medium text-blue-100 mb-2">Today's Total</div>
+              <div className="text-3xl sm:text-4xl font-bold mb-1">{calculateTodayTotal()}</div>
               <div className="text-sm text-blue-100">
                 {todayEntries.filter(e => e.clockOut).length} completed shifts
               </div>
             </div>
 
-            <div className="bg-white rounded-xl shadow p-6 border border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Stats</h3>
+            <div className="bg-white rounded-xl shadow p-4 sm:p-6 border border-gray-200">
+              <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Quick Stats</h3>
               <ul className="space-y-2 text-sm text-gray-700">
                 <li className="flex justify-between">
                   <span>Total Shifts Today:</span>
@@ -584,8 +584,8 @@ export default function TimeClockPage() {
               </ul>
             </div>
 
-            <div className="bg-white rounded-xl shadow p-6 border border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent History</h3>
+            <div className="bg-white rounded-xl shadow p-4 sm:p-6 border border-gray-200">
+              <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Recent History</h3>
               {recentEntries.length === 0 ? (
                 <p className="text-gray-500 text-sm text-center py-4">No recent entries</p>
               ) : (
@@ -616,8 +616,8 @@ export default function TimeClockPage() {
 
       {/* Clock Out Confirmation Modal */}
       {showClockOutConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full mx-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl p-4 sm:p-6 max-w-md w-full">
             <div className="text-center mb-6">
               <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
                 <svg
@@ -642,18 +642,18 @@ export default function TimeClockPage() {
               </p>
                   </div>
 
-            <div className="flex gap-3">
+            <div className="flex flex-col sm:flex-row gap-3">
                   <button
                 onClick={handleClockOutCancel}
                 disabled={loading}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors disabled:bg-gray-100 disabled:cursor-not-allowed"
+                className="flex-1 min-h-[44px] px-4 py-2 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors disabled:bg-gray-100 disabled:cursor-not-allowed"
                   >
                     Cancel
                   </button>
                   <button
                 onClick={handleClockOutConfirm}
                 disabled={loading}
-                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+                className="flex-1 min-h-[44px] px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
                   >
                 {loading ? "Processing..." : "Yes, Clock Out"}
                   </button>

@@ -320,21 +320,21 @@ export default function AdminPage() {
   return (
     <main className="min-h-screen bg-gray-50">
       <header className="bg-white shadow-sm border-b">
-        <div className="max-w-full mx-auto px-24 py-4 flex justify-between items-center">
+        <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-24 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">⚙️ Administrative Panel</h1>
-            <p className="text-sm text-gray-500">System configuration and user management</p>
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">⚙️ Administrative Panel</h1>
+            <p className="text-xs sm:text-sm text-gray-500">System configuration and user management</p>
           </div>
           <Link
             href="/dashboard"
-            className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
+            className="w-full sm:w-auto min-h-[44px] flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
           >
             Back to Dashboard
           </Link>
         </div>
       </header>
 
-      <div className="max-w-full mx-auto px-24 py-8">
+      <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-24 py-6 sm:py-8">
         {/* Status Messages */}
         {error && (
           <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
