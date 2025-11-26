@@ -211,43 +211,48 @@ export async function getJobs() {
       ? {} // Admins/managers see all jobs
       : { assignedTo: userId }; // Employees only see jobs assigned to them
 
-  const jobs = await prisma.job.findMany({
-    where: whereClause,
-    include: {
-      assignee: { select: { name: true, email: true, id: true } },
-      creator: { select: { name: true } },
-      customer: { select: { id: true, name: true, phone: true, email: true, company: true } },
-      activities: {
-        where: {
-          images: { not: null },
+  try {
+    const jobs = await prisma.job.findMany({
+      where: whereClause,
+      include: {
+        assignee: { select: { name: true, email: true, id: true } },
+        creator: { select: { name: true } },
+        customer: { select: { id: true, name: true, phone: true, email: true, company: true } },
+        activities: {
+          where: {
+            images: { not: null },
+          },
+          select: {
+            id: true,
+            images: true,
+            createdAt: true,
+          },
+          orderBy: { createdAt: "desc" },
         },
-        select: {
-          id: true,
-          images: true,
-          createdAt: true,
-        },
-        orderBy: { createdAt: "desc" },
-      },
-      timeEntries: {
-        select: {
-          id: true,
-          clockIn: true,
-          clockOut: true,
-          durationHours: true,
-          user: {
-            select: {
-              id: true,
-              name: true,
+        timeEntries: {
+          select: {
+            id: true,
+            clockIn: true,
+            clockOut: true,
+            durationHours: true,
+            user: {
+              select: {
+                id: true,
+                name: true,
+              },
             },
           },
+          orderBy: { clockIn: "desc" },
         },
-        orderBy: { clockIn: "desc" },
       },
-    },
-    orderBy: { createdAt: "desc" },
-  });
+      orderBy: { createdAt: "desc" },
+    });
 
-  return { ok: true, jobs };
+    return { ok: true, jobs };
+  } catch (error: any) {
+    console.error("Error fetching jobs:", error);
+    return { ok: false, error: error?.message || "Failed to fetch jobs" };
+  }
 }
 
 /**

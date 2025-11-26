@@ -199,9 +199,17 @@ function JobsPageContent() {
       return;
     }
     
-    // Load data once session is ready (authenticated or unauthenticated)
+    // Only load if we have a session (authenticated)
+    if (!session?.user) {
+      setLoading(false);
+      setError("Please log in to view jobs");
+      return;
+    }
+    
+    // Load data once session is ready
     loadData();
-  }, [sessionStatus]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionStatus, session]);
 
   // When editing a job, pre-fill estimated duration controls based on stored estimatedHours
   useEffect(() => {
@@ -234,27 +242,42 @@ function JobsPageContent() {
   }, [editingJob]);
 
   const loadData = async () => {
+    // Ensure we have a session before loading
+    if (!session?.user) {
+      setLoading(false);
+      setError("Please log in to view jobs");
+      return;
+    }
+
     // Calculate canManage from current session state
     const currentCanManage = (session?.user as any)?.role === "MANAGER" || (session?.user as any)?.role === "ADMIN";
     
     setLoading(true);
     setError(undefined);
+    
     try {
-      console.log("Reloading jobs data...");
+      console.log("Loading jobs data...", { 
+        userId: (session?.user as any)?.id, 
+        role: (session?.user as any)?.role,
+        hasSession: !!session?.user 
+      });
+      
       const [jobsRes, usersRes, customersRes] = await Promise.all([
         getJobs(),
         currentCanManage ? getAllUsers() : Promise.resolve({ ok: true, users: [] }),
         currentCanManage ? getAllCustomers() : Promise.resolve({ ok: true, customers: [] }),
       ]);
 
+      console.log("Jobs response:", { ok: jobsRes.ok, error: jobsRes.error, count: jobsRes.ok ? (jobsRes.jobs as any)?.length : 0 });
+
       if (jobsRes.ok) {
         const jobsData = jobsRes.jobs as any;
-        console.log(`Reloaded ${jobsData.length} jobs`);
-        setJobs(jobsData);
+        console.log(`Successfully loaded ${jobsData.length} jobs`);
+        setJobs(jobsData || []);
 
         // Extract photos from activities for each job
         const photosMap: Record<string, Array<{ id: string; url: string; activityId: string }>> = {};
-        jobsData.forEach((job: any) => {
+        (jobsData || []).forEach((job: any) => {
           if (job.activities) {
             const jobPhotos: Array<{ id: string; url: string; activityId: string }> = [];
             job.activities.forEach((activity: any) => {
@@ -286,20 +309,22 @@ function JobsPageContent() {
         });
         setJobExistingPhotos(photosMap);
       } else {
-        console.error("Failed to reload jobs:", jobsRes.error);
+        console.error("Failed to load jobs:", jobsRes.error);
         setError(jobsRes.error || "Failed to load jobs");
+        setJobs([]); // Clear jobs on error
       }
 
       if (usersRes.ok) {
-        setUsers(usersRes.users as any);
+        setUsers(usersRes.users as any || []);
       }
 
       if (customersRes.ok) {
-        setCustomers(customersRes.customers as any);
+        setCustomers(customersRes.customers as any || []);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error loading jobs data:", err);
-      setError("Failed to load jobs. Please try refreshing the page.");
+      setError(err?.message || "Failed to load jobs. Please try refreshing the page.");
+      setJobs([]); // Clear jobs on error
     } finally {
       setLoading(false);
     }
@@ -1208,7 +1233,19 @@ function JobsPageContent() {
         {/* Jobs Table */}
         {loading ? (
           <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
             <div className="text-gray-500">Loading jobs...</div>
+          </div>
+        ) : error ? (
+          <div className="bg-red-50 border border-red-200 rounded-xl shadow-sm p-8 text-center">
+            <p className="text-lg font-medium text-red-800 mb-2">Error Loading Jobs</p>
+            <p className="text-sm text-red-600 mb-4">{error}</p>
+            <button
+              onClick={() => loadData()}
+              className="bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition-colors font-medium"
+            >
+              Retry
+            </button>
           </div>
         ) : filteredJobs.length === 0 ? (
           <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-8 text-center text-gray-600">
