@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { clockIn, clockOut, getCurrentStatus, getTodayEntries, getRecentEntries, getAvailableJobs, getAssignedJobs } from "./actions";
 import Link from "next/link";
 import { nowInCentral, formatCentralTime, formatDateShort } from "@/lib/date-utils";
+import PhotoViewerModal from "../qc/PhotoViewerModal";
 
 interface TimeEntry {
   id: string;
