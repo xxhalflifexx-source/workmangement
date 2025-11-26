@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { getAllUsersStats, getUserTimeEntries } from "./actions";
 import Link from "next/link";
 import { nowInCentral, formatDateShort, formatDateTime, formatDateInput, startOfDayCentral, endOfDayCentral } from "@/lib/date-utils";
@@ -31,6 +31,7 @@ interface UserStats {
 export default function HRPage() {
   const [users, setUsers] = useState<UserStats[]>([]);
   const [loading, setLoading] = useState(true);
+  const [filterLoading, setFilterLoading] = useState(false); // Separate loading state for filter updates
   const [error, setError] = useState<string | undefined>();
   const [selectedUser, setSelectedUser] = useState<UserStats | null>(null);
   const [userEntries, setUserEntries] = useState<TimeEntry[]>([]);
@@ -64,24 +65,42 @@ export default function HRPage() {
     return friday.format('YYYY-MM-DD');
   });
 
+  // Track if this is the initial load using a ref (doesn't trigger re-renders)
+  const isInitialLoadRef = useRef(true);
+
   useEffect(() => {
     loadData();
   }, [dateFrom, dateTo]);
 
   const loadData = async () => {
-    setLoading(true);
+    // Use filterLoading for subsequent updates, full loading only for initial load
+    const isInitial = isInitialLoadRef.current;
+    if (isInitial) {
+      setLoading(true);
+      isInitialLoadRef.current = false; // Mark as no longer initial load
+    } else {
+      setFilterLoading(true);
+    }
     setError(undefined);
 
     const res = await getAllUsersStats(dateFrom || undefined, dateTo || undefined);
 
     if (!res.ok) {
       setError(res.error);
-      setLoading(false);
+      if (isInitial) {
+        setLoading(false);
+      } else {
+        setFilterLoading(false);
+      }
       return;
     }
 
     setUsers(res.users as any);
-    setLoading(false);
+    if (isInitial) {
+      setLoading(false);
+    } else {
+      setFilterLoading(false);
+    }
   };
 
   const handleViewEntries = async (user: UserStats) => {
@@ -241,18 +260,32 @@ export default function HRPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
             <div className="text-sm font-medium text-gray-500 mb-1">Total Employees</div>
-            <div className="text-3xl font-bold text-gray-900">{users.length}</div>
+            <div className="text-3xl font-bold text-gray-900">
+              {filterLoading ? (
+                <span className="text-gray-400">...</span>
+              ) : (
+                users.length
+              )}
+            </div>
           </div>
           <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
             <div className="text-sm font-medium text-gray-500 mb-1">Hours (Selected Range)</div>
             <div className="text-3xl font-bold text-blue-600">
-              {users.reduce((sum, user) => sum + user.dateRangeHours, 0).toFixed(1)}h
+              {filterLoading ? (
+                <span className="text-gray-400">...</span>
+              ) : (
+                `${users.reduce((sum, user) => sum + user.dateRangeHours, 0).toFixed(1)}h`
+              )}
             </div>
           </div>
           <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
             <div className="text-sm font-medium text-gray-500 mb-1">Completed Shifts</div>
             <div className="text-3xl font-bold text-green-600">
-              {users.reduce((sum, user) => sum + user.completedShifts, 0)}
+              {filterLoading ? (
+                <span className="text-gray-400">...</span>
+              ) : (
+                users.reduce((sum, user) => sum + user.completedShifts, 0)
+              )}
             </div>
           </div>
         </div>
@@ -260,9 +293,25 @@ export default function HRPage() {
         {/* Employee List */}
         <div className="bg-white rounded-xl shadow border border-gray-200">
           <div className="px-6 py-4 border-b border-gray-200">
-            <h2 className="text-xl font-semibold text-gray-900">Employee Time Records</h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-semibold text-gray-900">Employee Time Records</h2>
+              {filterLoading && (
+                <div className="flex items-center gap-2 text-sm text-gray-500">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                  <span>Updating...</span>
+                </div>
+              )}
+            </div>
           </div>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto relative">
+            {filterLoading && (
+              <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10">
+                <div className="flex items-center gap-2 text-gray-600">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                  <span className="text-sm">Loading data...</span>
+                </div>
+              </div>
+            )}
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
