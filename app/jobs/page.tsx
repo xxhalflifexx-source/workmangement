@@ -214,62 +214,7 @@ function JobsPageContent() {
     }
   }, [searchParams, searchInitialized]);
 
-  // Load data when session is ready
-  useEffect(() => {
-    if (sessionStatus === "loading") {
-      return;
-    }
-    
-    if (!session?.user) {
-      setLoading(false);
-      setError("Please log in to view jobs");
-      return;
-    }
-    
-    // Load data once session is ready
-    loadData();
-  }, [sessionStatus, session, loadData]);
-  
-  // Reload data when filters change (reset to page 1)
-  useEffect(() => {
-    if (sessionStatus === "loading" || !session?.user) return;
-    
-    // Reset to first page and reload when filters change
-    setCurrentPage(1);
-    loadData(1);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filterStatus, filterCustomer, filterWorker, filterDateFrom, filterDateTo, debouncedSearchQuery]);
-
-  // When editing a job, pre-fill estimated duration controls based on stored estimatedHours
-  useEffect(() => {
-    if (!editingJob || editingJob.estimatedHours == null) {
-      setEstimatedDurationValue("");
-      setEstimatedDurationUnit("HOURS");
-      return;
-    }
-
-    const hours = editingJob.estimatedHours;
-
-    // Prefer the largest whole unit that divides evenly, otherwise fall back to hours
-    const HOURS_PER_DAY = 8;
-    const HOURS_PER_WEEK = HOURS_PER_DAY * 5;
-    const HOURS_PER_MONTH = HOURS_PER_WEEK * 4;
-
-    if (hours % HOURS_PER_MONTH === 0) {
-      setEstimatedDurationValue(String(hours / HOURS_PER_MONTH));
-      setEstimatedDurationUnit("MONTHS");
-    } else if (hours % HOURS_PER_WEEK === 0) {
-      setEstimatedDurationValue(String(hours / HOURS_PER_WEEK));
-      setEstimatedDurationUnit("WEEKS");
-    } else if (hours % HOURS_PER_DAY === 0) {
-      setEstimatedDurationValue(String(hours / HOURS_PER_DAY));
-      setEstimatedDurationUnit("DAYS");
-    } else {
-      setEstimatedDurationValue(String(hours));
-      setEstimatedDurationUnit("HOURS");
-    }
-  }, [editingJob]);
-
+  // Define loadData function first (before useEffect hooks that use it)
   const loadData = useCallback(async (page?: number) => {
     const targetPage = page !== undefined ? page : currentPage;
     // Ensure we have a session before loading
@@ -400,6 +345,62 @@ function JobsPageContent() {
       setLoading(false);
     }
   }, [session, currentPage, pageSize, debouncedSearchQuery, filterStatus, filterCustomer, filterWorker, filterDateFrom, filterDateTo]);
+
+  // Load data when session is ready
+  useEffect(() => {
+    if (sessionStatus === "loading") {
+      return;
+    }
+    
+    if (!session?.user) {
+      setLoading(false);
+      setError("Please log in to view jobs");
+      return;
+    }
+    
+    // Load data once session is ready
+    loadData();
+  }, [sessionStatus, session, loadData]);
+  
+  // Reload data when filters change (reset to page 1)
+  useEffect(() => {
+    if (sessionStatus === "loading" || !session?.user) return;
+    
+    // Reset to first page and reload when filters change
+    setCurrentPage(1);
+    loadData(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filterStatus, filterCustomer, filterWorker, filterDateFrom, filterDateTo, debouncedSearchQuery]);
+
+  // When editing a job, pre-fill estimated duration controls based on stored estimatedHours
+  useEffect(() => {
+    if (!editingJob || editingJob.estimatedHours == null) {
+      setEstimatedDurationValue("");
+      setEstimatedDurationUnit("HOURS");
+      return;
+    }
+
+    const hours = editingJob.estimatedHours;
+
+    // Prefer the largest whole unit that divides evenly, otherwise fall back to hours
+    const HOURS_PER_DAY = 8;
+    const HOURS_PER_WEEK = HOURS_PER_DAY * 5;
+    const HOURS_PER_MONTH = HOURS_PER_WEEK * 4;
+
+    if (hours % HOURS_PER_MONTH === 0) {
+      setEstimatedDurationValue(String(hours / HOURS_PER_MONTH));
+      setEstimatedDurationUnit("MONTHS");
+    } else if (hours % HOURS_PER_WEEK === 0) {
+      setEstimatedDurationValue(String(hours / HOURS_PER_WEEK));
+      setEstimatedDurationUnit("WEEKS");
+    } else if (hours % HOURS_PER_DAY === 0) {
+      setEstimatedDurationValue(String(hours / HOURS_PER_DAY));
+      setEstimatedDurationUnit("DAYS");
+    } else {
+      setEstimatedDurationValue(String(hours));
+      setEstimatedDurationUnit("HOURS");
+    }
+  }, [editingJob]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
