@@ -3,6 +3,7 @@ import { authOptions } from "@/lib/authOptions";
 import Link from "next/link";
 import { getJobAlertsForCurrentUser } from "../jobs/actions";
 import { formatDateShort } from "@/lib/date-utils";
+import UserMenu from "./UserMenu";
 
 export default async function Dashboard() {
   const session = await getServerSession(authOptions);
@@ -25,14 +26,7 @@ export default async function Dashboard() {
             <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Employee Portal</h1>
             <p className="text-xs sm:text-sm text-gray-500">Welcome back, {user?.name}</p>
           </div>
-          <form action="/api/auth/signout" method="POST">
-            <button
-              type="submit"
-              className="w-full sm:w-auto min-h-[44px] px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
-            >
-              Sign Out
-            </button>
-          </form>
+          <UserMenu userName={user?.name} userEmail={user?.email} />
         </div>
       </header>
 
