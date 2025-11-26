@@ -195,9 +195,18 @@ export async function deleteJob(jobId: string) {
 }
 
 export async function getJobs() {
+  console.log("[getJobs] Server action called");
+  
   const session = await getServerSession(authOptions);
+  console.log("[getJobs] Session check:", {
+    hasSession: !!session,
+    hasUser: !!session?.user,
+    userId: (session?.user as any)?.id,
+    userRole: (session?.user as any)?.role,
+  });
   
   if (!session?.user) {
+    console.warn("[getJobs] Not authenticated");
     return { ok: false, error: "Not authenticated" };
   }
 
@@ -211,7 +220,11 @@ export async function getJobs() {
       ? {} // Admins/managers see all jobs
       : { assignedTo: userId }; // Employees only see jobs assigned to them
 
+  console.log("[getJobs] Query whereClause:", JSON.stringify(whereClause));
+  console.log("[getJobs] User role:", userRole, "Will see:", userRole === "ADMIN" || userRole === "MANAGER" ? "all jobs" : "assigned jobs only");
+
   try {
+    const startTime = Date.now();
     const jobs = await prisma.job.findMany({
       where: whereClause,
       include: {
@@ -248,9 +261,30 @@ export async function getJobs() {
       orderBy: { createdAt: "desc" },
     });
 
+    const duration = Date.now() - startTime;
+    console.log(`[getJobs] Database query completed in ${duration}ms`);
+    console.log(`[getJobs] Found ${jobs.length} jobs`);
+    
+    if (jobs.length > 0) {
+      console.log("[getJobs] Sample job:", {
+        id: jobs[0].id,
+        title: jobs[0].title,
+        status: jobs[0].status,
+        assignedTo: jobs[0].assignedTo,
+        hasAssignee: !!jobs[0].assignee,
+        hasCustomer: !!jobs[0].customer,
+      });
+    }
+
     return { ok: true, jobs };
   } catch (error: any) {
-    console.error("Error fetching jobs:", error);
+    console.error("[getJobs] Database error:", error);
+    console.error("[getJobs] Error stack:", error?.stack);
+    console.error("[getJobs] Error details:", {
+      message: error?.message,
+      code: error?.code,
+      meta: error?.meta,
+    });
     return { ok: false, error: error?.message || "Failed to fetch jobs" };
   }
 }

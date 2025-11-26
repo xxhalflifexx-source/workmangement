@@ -194,17 +194,26 @@ function JobsPageContent() {
 
   // Load data when session is ready
   useEffect(() => {
+    console.log("[JobsPage] useEffect triggered", { sessionStatus, hasSession: !!session, hasUser: !!session?.user });
+    
     // Don't load if session is still loading
     if (sessionStatus === "loading") {
+      console.log("[JobsPage] Session still loading, waiting...");
       return;
     }
     
     // Only load if we have a session (authenticated)
     if (!session?.user) {
+      console.log("[JobsPage] No session or user, showing error");
       setLoading(false);
       setError("Please log in to view jobs");
       return;
     }
+    
+    console.log("[JobsPage] Session ready, loading data...", {
+      userId: (session.user as any)?.id,
+      role: (session.user as any)?.role,
+    });
     
     // Load data once session is ready
     loadData();
@@ -242,8 +251,11 @@ function JobsPageContent() {
   }, [editingJob]);
 
   const loadData = async () => {
+    console.log("[loadData] Function called");
+    
     // Ensure we have a session before loading
     if (!session?.user) {
+      console.warn("[loadData] No session or user, aborting");
       setLoading(false);
       setError("Please log in to view jobs");
       return;
@@ -252,15 +264,18 @@ function JobsPageContent() {
     // Calculate canManage from current session state
     const currentCanManage = (session?.user as any)?.role === "MANAGER" || (session?.user as any)?.role === "ADMIN";
     
+    console.log("[loadData] Starting data fetch", {
+      userId: (session?.user as any)?.id,
+      role: (session?.user as any)?.role,
+      canManage: currentCanManage,
+    });
+    
     setLoading(true);
     setError(undefined);
     
     try {
-      console.log("Loading jobs data...", { 
-        userId: (session?.user as any)?.id, 
-        role: (session?.user as any)?.role,
-        hasSession: !!session?.user 
-      });
+      console.log("[loadData] Calling getJobs()...");
+      const startTime = Date.now();
       
       const [jobsRes, usersRes, customersRes] = await Promise.all([
         getJobs(),
@@ -268,12 +283,28 @@ function JobsPageContent() {
         currentCanManage ? getAllCustomers() : Promise.resolve({ ok: true, customers: [] }),
       ]);
 
-      console.log("Jobs response:", { ok: jobsRes.ok, error: jobsRes.error, count: jobsRes.ok ? (jobsRes.jobs as any)?.length : 0 });
+      const duration = Date.now() - startTime;
+      console.log(`[loadData] API calls completed in ${duration}ms`);
+      console.log("[loadData] Jobs response:", {
+        ok: jobsRes.ok,
+        error: jobsRes.error,
+        hasJobs: !!jobsRes.jobs,
+        count: jobsRes.ok ? (jobsRes.jobs as any)?.length : 0,
+      });
 
       if (jobsRes.ok) {
         const jobsData = jobsRes.jobs as any;
-        console.log(`Successfully loaded ${jobsData.length} jobs`);
+        console.log(`[loadData] Successfully received ${jobsData?.length || 0} jobs`);
+        console.log("[loadData] Jobs data sample:", jobsData?.[0] ? {
+          id: jobsData[0].id,
+          title: jobsData[0].title,
+          status: jobsData[0].status,
+          hasAssignee: !!jobsData[0].assignee,
+          hasCustomer: !!jobsData[0].customer,
+        } : "No jobs");
+        
         setJobs(jobsData || []);
+        console.log("[loadData] Jobs state updated, current jobs count:", jobsData?.length || 0);
 
         // Extract photos from activities for each job
         const photosMap: Record<string, Array<{ id: string; url: string; activityId: string }>> = {};
@@ -308,25 +339,30 @@ function JobsPageContent() {
           }
         });
         setJobExistingPhotos(photosMap);
+        console.log("[loadData] Photos map created with", Object.keys(photosMap).length, "jobs with photos");
       } else {
-        console.error("Failed to load jobs:", jobsRes.error);
+        console.error("[loadData] Failed to load jobs:", jobsRes.error);
         setError(jobsRes.error || "Failed to load jobs");
         setJobs([]); // Clear jobs on error
       }
 
       if (usersRes.ok) {
         setUsers(usersRes.users as any || []);
+        console.log("[loadData] Users loaded:", (usersRes.users as any)?.length || 0);
       }
 
       if (customersRes.ok) {
         setCustomers(customersRes.customers as any || []);
+        console.log("[loadData] Customers loaded:", (customersRes.customers as any)?.length || 0);
       }
     } catch (err: any) {
-      console.error("Error loading jobs data:", err);
+      console.error("[loadData] Exception caught:", err);
+      console.error("[loadData] Error stack:", err?.stack);
       setError(err?.message || "Failed to load jobs. Please try refreshing the page.");
       setJobs([]); // Clear jobs on error
     } finally {
       setLoading(false);
+      console.log("[loadData] Loading complete, loading state set to false");
     }
   };
 
@@ -1230,6 +1266,23 @@ function JobsPageContent() {
           <JobFilters customers={customers} users={users} />
         )}
 
+        {/* Debug Info (Development Only) */}
+        {process.env.NODE_ENV === "development" && (
+          <div className="mb-4 p-4 bg-gray-100 border border-gray-300 rounded-lg text-xs">
+            <p><strong>Debug Info:</strong></p>
+            <p>Loading: {loading ? "Yes" : "No"}</p>
+            <p>Error: {error || "None"}</p>
+            <p>Jobs in state: {jobs.length}</p>
+            <p>Filtered jobs: {filteredJobs.length}</p>
+            <p>Session status: {sessionStatus}</p>
+            <p>Has session: {session ? "Yes" : "No"}</p>
+            <p>Has user: {session?.user ? "Yes" : "No"}</p>
+            {session?.user && (
+              <p>User role: {(session.user as any)?.role}</p>
+            )}
+          </div>
+        )}
+
         {/* Jobs Table */}
         {loading ? (
           <div className="text-center py-12">
@@ -1302,34 +1355,48 @@ function JobsPageContent() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredJobs.map((job) => (
-                    <JobRow
-                      key={job.id}
-                      job={job}
-                      canManage={canManage}
-                      onEdit={openEditModal}
-                      onDelete={handleDelete}
-                      onViewPhotos={(photos, index) => {
-                        setPhotoViewerPhotos(photos);
-                        setPhotoViewerIndex(index);
-                        setShowPhotoViewer(true);
-                      }}
-                      getAllJobPhotos={getAllJobPhotos}
-                      jobExistingPhotos={jobExistingPhotos[job.id] || []}
-                      onActivity={openActivityModal}
-                      onMaterial={openMaterialModal}
-                      onQuotation={openQuotationModal}
-                      onPhotoSelect={handleJobPhotoSelect}
-                      onSavePhotos={handleSavePhotos}
-                      onSubmitToQC={handleSubmitToQC}
-                      onRemovePhoto={handleRemovePhoto}
-                      onRemovePhotoFile={removeJobPhoto}
-                      jobPhotoFiles={jobPhotoFiles}
-                      savingPhotos={savingPhotos}
-                      removingPhotos={removingPhotos}
-                      openPhotoViewer={openPhotoViewer}
-                    />
-                  ))}
+                  {filteredJobs.length > 0 ? (
+                    filteredJobs.map((job) => {
+                      if (!job || !job.id) {
+                        console.warn("[JobsPage] Invalid job in filteredJobs:", job);
+                        return null;
+                      }
+                      return (
+                        <JobRow
+                          key={job.id}
+                          job={job}
+                          canManage={canManage}
+                          onEdit={openEditModal}
+                          onDelete={handleDelete}
+                          onViewPhotos={(photos, index) => {
+                            setPhotoViewerPhotos(photos);
+                            setPhotoViewerIndex(index);
+                            setShowPhotoViewer(true);
+                          }}
+                          getAllJobPhotos={getAllJobPhotos}
+                          jobExistingPhotos={jobExistingPhotos[job.id] || []}
+                          onActivity={openActivityModal}
+                          onMaterial={openMaterialModal}
+                          onQuotation={openQuotationModal}
+                          onPhotoSelect={handleJobPhotoSelect}
+                          onSavePhotos={handleSavePhotos}
+                          onSubmitToQC={handleSubmitToQC}
+                          onRemovePhoto={handleRemovePhoto}
+                          onRemovePhotoFile={removeJobPhoto}
+                          jobPhotoFiles={jobPhotoFiles}
+                          savingPhotos={savingPhotos}
+                          removingPhotos={removingPhotos}
+                          openPhotoViewer={openPhotoViewer}
+                        />
+                      );
+                    })
+                  ) : (
+                    <tr>
+                      <td colSpan={9} className="px-6 py-4 text-center text-gray-500">
+                        No jobs to display
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
