@@ -183,6 +183,7 @@ function JobsPageContent() {
   const quotationRef = useRef<HTMLDivElement>(null);
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const hasLoadedDataRef = useRef(false);
+  const loadTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Initialize search params from URL
   useEffect(() => {
@@ -193,100 +194,125 @@ function JobsPageContent() {
     }
   }, [searchParams, searchInitialized]);
 
-  // Load data when session is ready
+  // Load data - try immediately and retry if session not ready
   useEffect(() => {
-    if (sessionStatus === "loading") {
-      return; // Wait for session to load
-    }
-    
-    if (!session?.user) {
-      setLoading(false);
-      setError("Please log in to view jobs");
-      hasLoadedDataRef.current = false; // Reset so it can load when user logs in
-      return;
-    }
+    const attemptLoad = () => {
+      // Prevent duplicate loads
+      if (hasLoadedDataRef.current) {
+        return;
+      }
 
-    // Only load data once on initial mount when session is ready
-    if (hasLoadedDataRef.current) {
-      return;
-    }
+      // If session is still loading, wait and retry
+      if (sessionStatus === "loading") {
+        if (loadTimeoutRef.current) {
+          clearTimeout(loadTimeoutRef.current);
+        }
+        loadTimeoutRef.current = setTimeout(() => {
+          attemptLoad();
+        }, 200);
+        return;
+      }
 
-    hasLoadedDataRef.current = true;
+      // If unauthenticated, show error
+      if (sessionStatus === "unauthenticated" || !session?.user) {
+        setLoading(false);
+        setError("Please log in to view jobs");
+        return;
+      }
 
-    // Calculate canManage based on current session
-    const currentCanManage = (session?.user as any)?.role === "MANAGER" || (session?.user as any)?.role === "ADMIN";
-    
-    // Load data once session is ready
-    const fetchData = async () => {
+      // Mark as loading to prevent duplicates
+      hasLoadedDataRef.current = true;
+      if (loadTimeoutRef.current) {
+        clearTimeout(loadTimeoutRef.current);
+      }
+
+      // Calculate canManage based on current session
+      const currentCanManage = (session?.user as any)?.role === "MANAGER" || (session?.user as any)?.role === "ADMIN";
+      
       setLoading(true);
       setError(undefined);
-      try {
-        console.log("Loading jobs data...");
-        const [jobsRes, usersRes, customersRes] = await Promise.all([
-          getJobs(),
-          currentCanManage ? getAllUsers() : Promise.resolve({ ok: true, users: [] }),
-          currentCanManage ? getAllCustomers() : Promise.resolve({ ok: true, customers: [] }),
-        ]);
+      
+      const fetchData = async () => {
+        try {
+          console.log("Loading jobs data...", { sessionStatus, hasUser: !!session?.user, role: (session?.user as any)?.role });
+          const [jobsRes, usersRes, customersRes] = await Promise.all([
+            getJobs(),
+            currentCanManage ? getAllUsers() : Promise.resolve({ ok: true, users: [] }),
+            currentCanManage ? getAllCustomers() : Promise.resolve({ ok: true, customers: [] }),
+          ]);
 
-        if (jobsRes.ok) {
-          const jobsData = jobsRes.jobs as any;
-          console.log(`Loaded ${jobsData.length} jobs`);
-          setJobs(jobsData);
+          if (jobsRes.ok) {
+            const jobsData = jobsRes.jobs as any;
+            console.log(`Successfully loaded ${jobsData.length} jobs`);
+            setJobs(jobsData);
 
-          // Extract photos from activities for each job
-          const photosMap: Record<string, Array<{ id: string; url: string; activityId: string }>> = {};
-          jobsData.forEach((job: any) => {
-            if (job.activities) {
-              const jobPhotos: Array<{ id: string; url: string; activityId: string }> = [];
-              job.activities.forEach((activity: any) => {
-                if (activity.images) {
-                  try {
-                    const parsed = JSON.parse(activity.images);
-                    if (Array.isArray(parsed)) {
-                      parsed.forEach((url: string) => {
+            // Extract photos from activities for each job
+            const photosMap: Record<string, Array<{ id: string; url: string; activityId: string }>> = {};
+            jobsData.forEach((job: any) => {
+              if (job.activities) {
+                const jobPhotos: Array<{ id: string; url: string; activityId: string }> = [];
+                job.activities.forEach((activity: any) => {
+                  if (activity.images) {
+                    try {
+                      const parsed = JSON.parse(activity.images);
+                      if (Array.isArray(parsed)) {
+                        parsed.forEach((url: string) => {
+                          jobPhotos.push({
+                            id: `${activity.id}-${url}`,
+                            url,
+                            activityId: activity.id,
+                          });
+                        });
+                      }
+                    } catch {
+                      if (typeof activity.images === "string") {
                         jobPhotos.push({
-                          id: `${activity.id}-${url}`,
-                          url,
+                          id: `${activity.id}-${activity.images}`,
+                          url: activity.images,
                           activityId: activity.id,
                         });
-                      });
-                    }
-                  } catch {
-                    if (typeof activity.images === "string") {
-                      jobPhotos.push({
-                        id: `${activity.id}-${activity.images}`,
-                        url: activity.images,
-                        activityId: activity.id,
-                      });
+                      }
                     }
                   }
-                }
-              });
-              photosMap[job.id] = jobPhotos;
-            }
-          });
-          setJobExistingPhotos(photosMap);
-        } else {
-          console.error("Failed to load jobs:", jobsRes.error);
-          setError(jobsRes.error || "Failed to load jobs");
-        }
+                });
+                photosMap[job.id] = jobPhotos;
+              }
+            });
+            setJobExistingPhotos(photosMap);
+          } else {
+            console.error("Failed to load jobs:", jobsRes.error);
+            setError(jobsRes.error || "Failed to load jobs");
+            hasLoadedDataRef.current = false; // Allow retry on error
+          }
 
-        if (usersRes.ok) {
-          setUsers(usersRes.users as any);
-        }
+          if (usersRes.ok) {
+            setUsers(usersRes.users as any);
+          }
 
-        if (customersRes.ok) {
-          setCustomers(customersRes.customers as any);
+          if (customersRes.ok) {
+            setCustomers(customersRes.customers as any);
+          }
+        } catch (err) {
+          console.error("Error loading jobs data:", err);
+          setError("Failed to load jobs. Please try refreshing the page.");
+          hasLoadedDataRef.current = false; // Allow retry on error
+        } finally {
+          setLoading(false);
         }
-      } catch (err) {
-        console.error("Error loading jobs data:", err);
-        setError("Failed to load jobs. Please try refreshing the page.");
-      } finally {
-        setLoading(false);
-      }
+      };
+
+      fetchData();
     };
 
-    fetchData();
+    // Start loading attempt
+    attemptLoad();
+
+    // Cleanup timeout on unmount
+    return () => {
+      if (loadTimeoutRef.current) {
+        clearTimeout(loadTimeoutRef.current);
+      }
+    };
   }, [sessionStatus, session]);
 
   // When editing a job, pre-fill estimated duration controls based on stored estimatedHours
