@@ -12,7 +12,11 @@ const credentialsSchema = z.object({
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
-  session: { strategy: "jwt" },
+  session: { 
+    strategy: "jwt",
+    maxAge: 30 * 24 * 60 * 60, // 30 days
+    updateAge: 24 * 60 * 60, // 24 hours - update session once per day
+  },
   providers: [
     Credentials({
       name: "credentials",
@@ -71,10 +75,15 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger }) {
       if (user) {
         token.id = (user as any).id;
         token.role = (user as any).role;
+      }
+      // Refresh token on session update
+      if (trigger === "update") {
+        // Token will be refreshed
+        return { ...token };
       }
       return token;
     },
@@ -85,6 +94,9 @@ export const authOptions: NextAuthOptions = {
       }
       return session;
     },
+  },
+  jwt: {
+    maxAge: 30 * 24 * 60 * 60, // 30 days - same as session maxAge
   },
   pages: {
     signIn: "/login",

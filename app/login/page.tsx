@@ -3,6 +3,7 @@
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { broadcastSessionEvent } from "@/lib/session-sync";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -63,6 +64,9 @@ export default function LoginPage() {
                 setError("Invalid credentials");
                 return;
               }
+              
+              // Broadcast sign in to other tabs
+              broadcastSessionEvent("signin");
               
               router.replace("/dashboard");
             }}

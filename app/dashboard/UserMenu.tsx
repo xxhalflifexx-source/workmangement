@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useSession, signOut } from "next-auth/react";
 import ChangePasswordModal from "./ChangePasswordModal";
+import { broadcastSessionEvent } from "@/lib/session-sync";
 
 interface UserMenuProps {
   userName: string | null | undefined;
@@ -32,6 +33,9 @@ export default function UserMenu({ userName, userEmail }: UserMenuProps) {
   }, [showDropdown]);
 
   const handleSignOut = async () => {
+    // Broadcast sign out to other tabs
+    broadcastSessionEvent("signout");
+    
     await signOut({ callbackUrl: "/login" });
   };
 
