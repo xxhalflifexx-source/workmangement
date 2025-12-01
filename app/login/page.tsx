@@ -19,65 +19,88 @@ export default function LoginPage() {
   );
 
   return (
-    <main className="mx-auto max-w-sm p-6">
-      <h1 className="text-2xl font-bold mb-4">Sign in</h1>
-      {success && (
-        <div className="mb-4 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded text-sm">
-          ✅ {success}
-        </div>
-      )}
-      <form
-        onSubmit={async (e) => {
-          e.preventDefault();
-          const formData = new FormData(e.currentTarget as HTMLFormElement);
-          const email = formData.get("email") as string;
-          const password = formData.get("password") as string;
-          
-          const res = await signIn("credentials", {
-            email,
-            password,
-            redirect: false,
-          });
-          
-          if (res?.error) {
-            setError("Invalid credentials");
-            return;
-          }
-          
-          router.replace("/dashboard");
+    <div className="min-h-screen flex items-center justify-center relative bg-gray-100">
+      {/* Background Image with Overlay */}
+      <div 
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        style={{
+          backgroundImage: "url('/login-background.jpg')", // Change this to your image path
         }}
-        className="space-y-3"
       >
-        <input
-          name="email"
-          type="email"
-          placeholder="Email"
-          className="border p-2 w-full rounded"
-          required
-        />
-        <input
-          name="password"
-          type="password"
-          placeholder="Password"
-          className="border p-2 w-full rounded"
-          required
-        />
-        {error && <p className="text-red-600 text-sm">{error}</p>}
-        <div className="text-right">
-          <a href="/forgot-password" className="text-sm text-blue-600 hover:underline">
-            Forgot password?
-          </a>
+        {/* Low-opacity overlay */}
+        <div className="absolute inset-0 bg-black bg-opacity-40"></div>
+      </div>
+
+      {/* Login Card */}
+      <div className="relative z-10 w-full max-w-sm mx-4">
+        <div className="bg-white/95 backdrop-blur-sm rounded-xl shadow-2xl p-8 border border-white/20">
+          <h1 className="text-3xl font-bold mb-6 text-center text-gray-900">Sign in</h1>
+          {success && (
+            <div className="mb-4 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded text-sm">
+              ✅ {success}
+            </div>
+          )}
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              const formData = new FormData(e.currentTarget as HTMLFormElement);
+              const email = formData.get("email") as string;
+              const password = formData.get("password") as string;
+              
+              const res = await signIn("credentials", {
+                email,
+                password,
+                redirect: false,
+              });
+              
+              if (res?.error) {
+                setError("Invalid credentials");
+                return;
+              }
+              
+              router.replace("/dashboard");
+            }}
+            className="space-y-4"
+          >
+            <div>
+              <input
+                name="email"
+                type="email"
+                placeholder="Email"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                required
+              />
+            </div>
+            <div>
+              <input
+                name="password"
+                type="password"
+                placeholder="Password"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                required
+              />
+            </div>
+            {error && <p className="text-red-600 text-sm">{error}</p>}
+            <div className="text-right">
+              <a href="/forgot-password" className="text-sm text-blue-600 hover:underline">
+                Forgot password?
+              </a>
+            </div>
+            <button 
+              type="submit"
+              className="w-full px-4 py-3 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors shadow-md"
+            >
+              Sign In
+            </button>
+          </form>
+          <p className="mt-6 text-sm text-center text-gray-600">
+            No account?{" "}
+            <a className="underline text-blue-600 hover:text-blue-700" href="/register">
+              Register
+            </a>
+          </p>
         </div>
-        <button className="border px-4 py-2 w-full rounded bg-blue-600 text-white hover:bg-blue-700">
-          Sign In
-        </button>
-      </form>
-      <p className="mt-3 text-sm text-center">
-        No account?{" "}
-        <a className="underline text-blue-600" href="/register">
-          Register
-        </a>
-      </p>
-    </main>
+      </div>
+    </div>
   );
 }
