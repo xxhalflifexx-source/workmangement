@@ -65,9 +65,15 @@ export default function LoginPage() {
                 return;
               }
               
+              // Get user info from session to store indicator
+              // Note: We can't get the full session immediately, but NextAuth will set the cookie
+              // The session indicator will be set by the SessionInitializer component
+              
               // Broadcast sign in to other tabs
+              // This will trigger session restoration in other tabs
               broadcastSessionEvent("signin");
               
+              // Navigate to dashboard
               router.replace("/dashboard");
             }}
             className="space-y-4"
