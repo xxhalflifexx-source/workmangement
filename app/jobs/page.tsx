@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef, Suspense, useMemo, useCallback } from "react";
-import { getJobs, getAllUsers, createJob, updateJob, deleteJob, getJobActivities, addJobActivity, getAllCustomers, createCustomer, saveJobPhotos, submitJobPhotosToQC, getJobPhotos, removeJobPhoto as removeJobPhotoFromDB } from "./actions";
+import { getJobs, getAllUsers, createJob, updateJob, deleteJob, getJobActivities, addJobActivity, getAllCustomers, createCustomer, updateCustomer, saveJobPhotos, submitJobPhotosToQC, getJobPhotos, removeJobPhoto as removeJobPhotoFromDB } from "./actions";
 import { createMaterialRequest, getJobMaterialRequests } from "../material-requests/actions";
 import { getCompanySettingsForInvoice } from "./invoice-actions";
 import { createQuotation, updateQuotation, getQuotationsByJobId, getQuotation } from "../quotations/actions";
@@ -141,6 +141,15 @@ function JobsPageContent() {
   const [newCustomerPhone, setNewCustomerPhone] = useState("");
   const [newCustomerEmail, setNewCustomerEmail] = useState("");
   const [newCustomerCompany, setNewCustomerCompany] = useState("");
+  
+  // Editable customer fields for editing existing customers
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string>("");
+  const [editableCustomerName, setEditableCustomerName] = useState("");
+  const [editableCustomerPhone, setEditableCustomerPhone] = useState("");
+  const [editableCustomerEmail, setEditableCustomerEmail] = useState("");
+  const [editableCustomerCompany, setEditableCustomerCompany] = useState("");
+  const [showCustomerUpdateConfirm, setShowCustomerUpdateConfirm] = useState(false);
+  const [pendingCustomerUpdate, setPendingCustomerUpdate] = useState<{customerId: string, formData: FormData} | null>(null);
   
   const [showActivityModal, setShowActivityModal] = useState(false);
   const [selectedJobForActivity, setSelectedJobForActivity] = useState<Job | null>(null);
@@ -441,6 +450,45 @@ function JobsPageContent() {
       }
     }
 
+    // Ensure customerId is set in formData if a customer is selected
+    if (selectedCustomerId) {
+      formData.set("customerId", selectedCustomerId);
+    }
+
+    // Handle customer update if editing existing customer
+    if (selectedCustomerId && canManage) {
+      const customer = customers.find(c => c.id === selectedCustomerId);
+      if (customer) {
+        // Check if customer fields have been modified
+        const hasChanges = 
+          editableCustomerName !== customer.name ||
+          editableCustomerPhone !== (customer.phone || "") ||
+          editableCustomerEmail !== (customer.email || "") ||
+          editableCustomerCompany !== (customer.company || "");
+
+        if (hasChanges) {
+          // Validate customer name
+          if (!editableCustomerName || editableCustomerName.trim() === "") {
+            setError("Customer name is required");
+            return;
+          }
+
+          // Prepare customer update form data
+          const customerFormData = new FormData();
+          customerFormData.append("name", editableCustomerName.trim());
+          customerFormData.append("phone", editableCustomerPhone.trim());
+          customerFormData.append("email", editableCustomerEmail.trim());
+          customerFormData.append("company", editableCustomerCompany.trim());
+
+          // Show confirmation modal
+          setPendingCustomerUpdate({ customerId: selectedCustomerId, formData: customerFormData });
+          setShowCustomerUpdateConfirm(true);
+          return; // Wait for confirmation before proceeding
+        }
+      }
+    }
+
+    // Proceed with job creation/update
     const res = editingJob
       ? await updateJob(editingJob.id, formData)
       : await createJob(formData);
@@ -453,6 +501,77 @@ function JobsPageContent() {
     setSuccess(editingJob ? "Job updated successfully!" : "Job created successfully!");
     setShowModal(false);
     setEditingJob(null);
+    // Reset customer fields
+    setSelectedCustomerId("");
+    setEditableCustomerName("");
+    setEditableCustomerPhone("");
+    setEditableCustomerEmail("");
+    setEditableCustomerCompany("");
+    loadData();
+  };
+
+  const handleJobSubmitAfterCustomerUpdate = async () => {
+    // This is called after customer update is confirmed
+    const form = document.querySelector('form[data-job-form]') as HTMLFormElement;
+    if (!form) return;
+
+    const formData = new FormData(form);
+    
+    // Ensure customerId is set
+    if (selectedCustomerId) {
+      formData.set("customerId", selectedCustomerId);
+    }
+    
+    // Convert estimated duration
+    const rawDuration = formData.get("estimatedDurationValue") as string;
+    const rawUnit = (formData.get("estimatedDurationUnit") as string) || "HOURS";
+
+    if (rawDuration) {
+      const value = parseFloat(rawDuration);
+      if (!Number.isNaN(value) && value > 0) {
+        const HOURS_PER_DAY = 8;
+        const HOURS_PER_WEEK = HOURS_PER_DAY * 5;
+        const HOURS_PER_MONTH = HOURS_PER_WEEK * 4;
+
+        let hours = value;
+        switch (rawUnit) {
+          case "DAYS":
+            hours = value * HOURS_PER_DAY;
+            break;
+          case "WEEKS":
+            hours = value * HOURS_PER_WEEK;
+            break;
+          case "MONTHS":
+            hours = value * HOURS_PER_MONTH;
+            break;
+          case "HOURS":
+          default:
+            hours = value;
+            break;
+        }
+
+        formData.set("estimatedHours", hours.toString());
+      }
+    }
+
+    const res = editingJob
+      ? await updateJob(editingJob.id, formData)
+      : await createJob(formData);
+
+    if (!res.ok) {
+      setError(res.error);
+      return;
+    }
+
+    setSuccess(editingJob ? "Job updated successfully!" : "Job created successfully!");
+    setShowModal(false);
+    setEditingJob(null);
+    // Reset customer fields
+    setSelectedCustomerId("");
+    setEditableCustomerName("");
+    setEditableCustomerPhone("");
+    setEditableCustomerEmail("");
+    setEditableCustomerCompany("");
     loadData();
   };
 
@@ -477,6 +596,12 @@ function JobsPageContent() {
       return;
     }
     setEditingJob(null);
+    // Reset customer fields
+    setSelectedCustomerId("");
+    setEditableCustomerName("");
+    setEditableCustomerPhone("");
+    setEditableCustomerEmail("");
+    setEditableCustomerCompany("");
     setShowModal(true);
   };
 
@@ -492,6 +617,20 @@ function JobsPageContent() {
       return;
     }
     setEditingJob(job);
+    // Populate customer fields if job has a customer
+    if (job.customer) {
+      setSelectedCustomerId(job.customer.id);
+      setEditableCustomerName(job.customer.name || "");
+      setEditableCustomerPhone(job.customer.phone || "");
+      setEditableCustomerEmail(job.customer.email || "");
+      setEditableCustomerCompany(job.customer.company || "");
+    } else {
+      setSelectedCustomerId("");
+      setEditableCustomerName("");
+      setEditableCustomerPhone("");
+      setEditableCustomerEmail("");
+      setEditableCustomerCompany("");
+    }
     setShowModal(true);
   };
 
@@ -843,6 +982,46 @@ function JobsPageContent() {
       setSuccess("Customer created successfully!");
     } else {
       setError(res.error);
+    }
+  };
+
+  const handleCustomerSelect = (customerId: string) => {
+    setSelectedCustomerId(customerId);
+    if (customerId) {
+      const customer = customers.find(c => c.id === customerId);
+      if (customer) {
+        setEditableCustomerName(customer.name || "");
+        setEditableCustomerPhone(customer.phone || "");
+        setEditableCustomerEmail(customer.email || "");
+        setEditableCustomerCompany(customer.company || "");
+      }
+    } else {
+      setEditableCustomerName("");
+      setEditableCustomerPhone("");
+      setEditableCustomerEmail("");
+      setEditableCustomerCompany("");
+    }
+  };
+
+  const handleCustomerUpdateConfirm = async () => {
+    if (!pendingCustomerUpdate) return;
+    
+    setError(undefined);
+    const res = await updateCustomer(pendingCustomerUpdate.customerId, pendingCustomerUpdate.formData);
+    
+    if (res.ok && res.customer) {
+      // Update customers list
+      setCustomers(customers.map(c => c.id === res.customer?.id ? res.customer as any : c));
+      setSuccess("Customer updated successfully!");
+      setShowCustomerUpdateConfirm(false);
+      setPendingCustomerUpdate(null);
+      
+      // Continue with job submission
+      await handleJobSubmitAfterCustomerUpdate();
+    } else {
+      setError(res.error || "Failed to update customer");
+      setShowCustomerUpdateConfirm(false);
+      setPendingCustomerUpdate(null);
     }
   };
 
@@ -1467,7 +1646,7 @@ function JobsPageContent() {
                 const isLocked = !!(editingJob && (editingJob.status === "AWAITING_QC" || editingJob.status === "COMPLETED"));
                 const isEmployee = !canManage;
                 return (
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleSubmit} className="space-y-4" data-job-form>
                     {isEmployee && (
                       <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
                         <p className="text-sm text-red-800 font-medium">
@@ -1618,19 +1797,67 @@ function JobsPageContent() {
                           </button>
                         </div>
                       ) : (
-                        <select
-                          name="customerId"
-                          defaultValue={editingJob?.customer?.id || ""}
-                          disabled={isLocked || isEmployee}
-                          className="w-full border border-gray-300 rounded-lg px-3 py-2 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                        >
-                          <option value="">No Customer</option>
-                          {customers.map((customer) => (
-                            <option key={customer.id} value={customer.id}>
-                              {customer.name} {customer.company && `(${customer.company})`}
-                            </option>
-                          ))}
-                        </select>
+                        <div className="space-y-3">
+                          <select
+                            name="customerId"
+                            value={selectedCustomerId}
+                            onChange={(e) => {
+                              handleCustomerSelect(e.target.value);
+                              // Also update the form field
+                              e.currentTarget.value = e.target.value;
+                            }}
+                            disabled={isLocked || isEmployee}
+                            className="w-full border border-gray-300 rounded-lg px-3 py-2 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                          >
+                            <option value="">No Customer</option>
+                            {customers.map((customer) => (
+                              <option key={customer.id} value={customer.id}>
+                                {customer.name} {customer.company && `(${customer.company})`}
+                              </option>
+                            ))}
+                          </select>
+                          
+                          {/* Editable Customer Fields - Only show if customer is selected and user can manage */}
+                          {selectedCustomerId && canManage && (
+                            <div className="border-2 border-blue-200 rounded-lg p-3 bg-blue-50 space-y-2">
+                              <p className="text-xs font-medium text-blue-900 mb-2">
+                                ✏️ Edit Customer Information
+                              </p>
+                              <input
+                                type="text"
+                                value={editableCustomerName}
+                                onChange={(e) => setEditableCustomerName(e.target.value)}
+                                placeholder="Customer name *"
+                                className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                required
+                              />
+                              <input
+                                type="tel"
+                                value={editableCustomerPhone}
+                                onChange={(e) => setEditableCustomerPhone(e.target.value)}
+                                placeholder="Phone"
+                                className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              />
+                              <input
+                                type="email"
+                                value={editableCustomerEmail}
+                                onChange={(e) => setEditableCustomerEmail(e.target.value)}
+                                placeholder="Email"
+                                className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              />
+                              <input
+                                type="text"
+                                value={editableCustomerCompany}
+                                onChange={(e) => setEditableCustomerCompany(e.target.value)}
+                                placeholder="Company / Address"
+                                className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              />
+                              <p className="text-xs text-blue-700">
+                                Changes will be saved when you update the job.
+                              </p>
+                            </div>
+                          )}
+                        </div>
                       )}
                     </div>
                   </>
@@ -1776,6 +2003,55 @@ function JobsPageContent() {
               </form>
                 );
               })()}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Customer Update Confirmation Modal */}
+      {showCustomerUpdateConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[60]">
+          <div className="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full">
+            <div className="text-center mb-6">
+              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100 mb-4">
+                <svg
+                  className="h-6 w-6 text-yellow-600"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                  />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                Update Customer Information?
+              </h3>
+              <p className="text-sm text-gray-600">
+                You are updating this customer's information. This will affect all jobs associated with this customer. Proceed?
+              </p>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-3">
+              <button
+                onClick={() => {
+                  setShowCustomerUpdateConfirm(false);
+                  setPendingCustomerUpdate(null);
+                }}
+                className="flex-1 min-h-[44px] px-4 py-2 border-2 border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 active:bg-gray-100 transition-colors touch-manipulation"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCustomerUpdateConfirm}
+                className="flex-1 min-h-[44px] px-4 py-2 bg-yellow-600 text-white rounded-lg font-medium hover:bg-yellow-700 active:bg-yellow-800 transition-colors touch-manipulation shadow-md"
+              >
+                Yes, Update Customer
+              </button>
             </div>
           </div>
         </div>

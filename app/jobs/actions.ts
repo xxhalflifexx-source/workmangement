@@ -1175,3 +1175,53 @@ export async function createCustomer(formData: FormData) {
   }
 }
 
+export async function updateCustomer(customerId: string, formData: FormData) {
+  const session = await getServerSession(authOptions);
+  
+  if (!session?.user) {
+    return { ok: false, error: "Not authenticated" };
+  }
+
+  const userRole = (session.user as any).role;
+
+  // Only managers and admins can update customers
+  if (userRole !== "MANAGER" && userRole !== "ADMIN") {
+    return { ok: false, error: "Unauthorized: Only managers and admins can update customers" };
+  }
+
+  const name = formData.get("name") as string;
+  const phone = formData.get("phone") as string;
+  const email = formData.get("email") as string;
+  const company = formData.get("company") as string;
+
+  if (!name || name.trim() === "") {
+    return { ok: false, error: "Customer name is required" };
+  }
+
+  try {
+    // Check if customer exists
+    const existingCustomer = await prisma.customer.findUnique({
+      where: { id: customerId },
+    });
+
+    if (!existingCustomer) {
+      return { ok: false, error: "Customer not found" };
+    }
+
+    const customer = await prisma.customer.update({
+      where: { id: customerId },
+      data: {
+        name: name.trim(),
+        phone: phone?.trim() || null,
+        email: email?.trim() || null,
+        company: company?.trim() || null,
+      },
+    });
+
+    return { ok: true, customer };
+  } catch (error) {
+    console.error("Update customer error:", error);
+    return { ok: false, error: "Failed to update customer" };
+  }
+}
+
