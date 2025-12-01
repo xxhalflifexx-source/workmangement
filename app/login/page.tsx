@@ -19,8 +19,8 @@ export default function LoginPage() {
   );
 
   return (
-    <div className="min-h-screen flex items-center justify-center relative bg-gray-100">
-      {/* Background Image with Overlay */}
+    <div className="min-h-screen flex items-center justify-center relative">
+      {/* Background Image with Overlay - Falls back to gradient if image not found */}
       <div 
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{
@@ -30,6 +30,9 @@ export default function LoginPage() {
         {/* Low-opacity overlay */}
         <div className="absolute inset-0 bg-black bg-opacity-40"></div>
       </div>
+      
+      {/* Gradient Fallback Background (shows if image doesn't load) */}
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-blue-500 to-indigo-600"></div>
 
       {/* Login Card */}
       <div className="relative z-10 w-full max-w-sm mx-4">
