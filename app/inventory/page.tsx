@@ -52,6 +52,7 @@ interface MaterialRequest {
   description: string | null;
   priority: string;
   status: string;
+  amount: number | null;
   requestedDate: string;
   fulfilledDate: string | null;
   dateDelivered: string | null;
@@ -232,11 +233,21 @@ export default function InventoryPage() {
     setLoadingRequests(false);
   };
 
-  const handleUpdateRequestStatus = async (requestId: string, status: string) => {
+  const handleUpdateRequestStatus = async (requestId: string, status: string, amount?: number | null) => {
     setError(undefined);
+    
+    // Check if amount is required (for APPROVED or FULFILLED status)
+    if ((status === "APPROVED" || status === "FULFILLED") && (!amount || amount <= 0)) {
+      setError("Amount is required before updating status to APPROVED or FULFILLED");
+      return;
+    }
+    
     try {
       const formData = new FormData();
       formData.append("status", status);
+      if (amount !== undefined && amount !== null) {
+        formData.append("amount", amount.toString());
+      }
       const res = await updateMaterialRequest(requestId, formData);
       if (!res.ok) {
         console.error("[Inventory] handleUpdateRequestStatus error:", res.error, "requestId:", requestId, "status:", status);
@@ -244,7 +255,7 @@ export default function InventoryPage() {
         return;
       }
       // Update local state
-      setMaterialRequests((prev) => prev.map((r) => (r.id === requestId ? { ...r, status, fulfilledDate: status === "FULFILLED" ? centralToUTC(nowInCentral().toDate()).toISOString() : r.fulfilledDate } : r)));
+      setMaterialRequests((prev) => prev.map((r) => (r.id === requestId ? { ...r, status, amount: amount || r.amount, fulfilledDate: status === "FULFILLED" ? centralToUTC(nowInCentral().toDate()).toISOString() : r.fulfilledDate } : r)));
       setSuccess(`Request ${status.toLowerCase()} successfully`);
     } catch (e: any) {
       console.error("[Inventory] handleUpdateRequestStatus exception:", e, "requestId:", requestId, "status:", status);
@@ -540,7 +551,7 @@ export default function InventoryPage() {
   };
 
   const exportRequestsToCSV = () => {
-    const headers = ["Job No.", "Employee", "Item", "Qty Requested", "Availability", "Action", "Status", "Date Requested", "Date Approved", "Date Delivered", "Notes"];
+    const headers = ["Job No.", "Employee", "Item", "Qty Requested", "Availability", "Action", "Amount", "Status", "Order Status", "Date Requested", "Date Approved", "Date Delivered", "Notes"];
     const rows = sortedRequests.map((req) => {
       const currentStock = getCurrentStock(req.itemName);
       const recommendedAction = getRecommendedAction(req);
@@ -548,6 +559,7 @@ export default function InventoryPage() {
       const availability = inventoryItem ? (currentStock >= req.quantity ? "Available" : "Unavailable") : "Unavailable";
       const dateApproved = req.status === "APPROVED" || req.status === "FULFILLED" ? (req.fulfilledDate ? formatDate(req.fulfilledDate) : "") : "";
       const orderStatus = req.orderStatus === "TO_ORDER" ? "To Order" : req.orderStatus === "ORDERED" ? "Ordered" : req.orderStatus === "RECEIVED" ? "Received" : "";
+      const statusDisplay = req.status === "APPROVED" ? "Approved" : req.status === "REJECTED" ? "Rejected" : req.status === "FULFILLED" ? "Fulfilled" : req.status === "ON_HOLD" ? "On Hold" : "Pending";
       return [
         req.job ? req.job.id.substring(0, 8).toUpperCase() : "",
         req.user.name || req.user.email || "",
@@ -555,6 +567,8 @@ export default function InventoryPage() {
         `${req.quantity} ${req.unit}`,
         availability,
         recommendedAction === "APPROVE" ? "Approve" : recommendedAction === "PARTIAL" ? "Partial" : recommendedAction === "REJECTED" ? "Rejected" : "Pending",
+        req.amount ? formatCurrency(req.amount) : "",
+        statusDisplay,
         orderStatus,
         formatDate(req.requestedDate),
         dateApproved,
@@ -1020,14 +1034,14 @@ export default function InventoryPage() {
                 </div>
               </div>
 
-              <div className="flex flex-wrap gap-3">
+              <div className="flex flex-col sm:flex-row gap-3">
                 <select
                   value={filterRequestStatus}
                   onChange={(e) => {
                     setFilterRequestStatus(e.target.value);
                     setRequestCurrentPage(1);
                   }}
-                  className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                  className="border border-gray-300 rounded-lg px-3 py-2.5 sm:py-2 text-sm min-h-[44px] flex-1 sm:flex-initial min-w-[150px]"
                 >
                   <option value="ALL">All Status</option>
                   <option value="PENDING">Pending</option>
@@ -1043,18 +1057,22 @@ export default function InventoryPage() {
                     setFilterRequester(e.target.value);
                     setRequestCurrentPage(1);
                   }}
-                  className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                  className="border border-gray-300 rounded-lg px-3 py-2.5 sm:py-2 text-sm min-h-[44px] flex-1 sm:flex-initial min-w-[150px]"
                 >
                   <option value="ALL">All Employees</option>
                   {materialRequests
                     .map((r) => r.user.email)
                     .filter((email): email is string => email !== null && email !== undefined)
                     .filter((email, index, self) => index === self.indexOf(email))
-                    .map((email) => (
-                      <option key={email} value={email}>
-                        {materialRequests.find((r) => r.user.email === email)?.user.name || email}
-                      </option>
-                    ))}
+                    .sort()
+                    .map((email) => {
+                      const user = materialRequests.find((r) => r.user.email === email)?.user;
+                      return (
+                        <option key={email} value={email}>
+                          {user?.name || email}
+                        </option>
+                      );
+                    })}
                 </select>
               </div>
             </div>
@@ -1121,7 +1139,9 @@ export default function InventoryPage() {
                         </th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Availability</th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Action</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Amount</th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Status</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Order Status</th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                           <button
                             onClick={() => {
@@ -1274,6 +1294,108 @@ export default function InventoryPage() {
                                   "bg-yellow-100 text-yellow-700"
                                 }`}>
                                   {recommendedAction === "APPROVE" ? "Approve" : recommendedAction === "PARTIAL" ? "Partial" : recommendedAction === "REJECTED" ? "Rejected" : "Pending"}
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-4 py-3 text-sm">
+                              {canManage ? (
+                                <input
+                                  type="number"
+                                  min="0"
+                                  step="0.01"
+                                  value={req.amount || ""}
+                                  onChange={async (e) => {
+                                    const newAmount = e.target.value === "" ? null : parseFloat(e.target.value);
+                                    if (newAmount !== null && (isNaN(newAmount) || newAmount < 0)) {
+                                      setError("Amount must be a valid number greater than or equal to 0");
+                                      e.target.value = req.amount?.toString() || "";
+                                      return;
+                                    }
+                                    try {
+                                      const form = new FormData();
+                                      form.append("status", req.status);
+                                      if (newAmount !== null) {
+                                        form.append("amount", newAmount.toString());
+                                      } else {
+                                        form.append("amount", "");
+                                      }
+                                      const res = await updateMaterialRequest(req.id, form);
+                                      if (!res.ok) {
+                                        console.error("[Inventory] Amount update error:", res.error, "requestId:", req.id);
+                                        setError(res.error);
+                                        e.target.value = req.amount?.toString() || "";
+                                      } else {
+                                        loadMaterialRequests();
+                                      }
+                                    } catch (err: any) {
+                                      console.error("[Inventory] Amount update exception:", err, "requestId:", req.id);
+                                      setError("Failed to update amount");
+                                      e.target.value = req.amount?.toString() || "";
+                                    }
+                                  }}
+                                  onBlur={(e) => {
+                                    const value = e.target.value;
+                                    if (value === "") {
+                                      e.target.value = "";
+                                    } else {
+                                      const numValue = parseFloat(value);
+                                      if (isNaN(numValue) || numValue < 0) {
+                                        e.target.value = req.amount?.toString() || "";
+                                      } else {
+                                        e.target.value = numValue.toFixed(2);
+                                      }
+                                    }
+                                  }}
+                                  placeholder="0.00"
+                                  className="w-24 px-2 py-1 border border-gray-300 rounded text-sm text-center min-h-[44px]"
+                                />
+                              ) : (
+                                <span className="text-sm text-gray-900">
+                                  {req.amount ? formatCurrency(req.amount) : "—"}
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-4 py-3 text-sm">
+                              {canManage ? (
+                                <select
+                                  value={req.status}
+                                  onChange={async (e) => {
+                                    const newStatus = e.target.value;
+                                    // Check if amount is required for APPROVED or FULFILLED
+                                    if ((newStatus === "APPROVED" || newStatus === "FULFILLED") && (!req.amount || req.amount <= 0)) {
+                                      setError("Amount is required before updating status to APPROVED or FULFILLED");
+                                      e.target.value = req.status;
+                                      return;
+                                    }
+                                    await handleUpdateRequestStatus(req.id, newStatus, req.amount || undefined);
+                                  }}
+                                  className={`text-xs font-medium px-2 py-1 rounded border min-h-[44px] ${
+                                    req.status === "APPROVED" ? "bg-green-100 text-green-700 border-green-300" :
+                                    req.status === "REJECTED" ? "bg-red-100 text-red-700 border-red-300" :
+                                    req.status === "FULFILLED" ? "bg-blue-100 text-blue-700 border-blue-300" :
+                                    req.status === "ON_HOLD" ? "bg-yellow-100 text-yellow-700 border-yellow-300" :
+                                    "bg-gray-100 text-gray-700 border-gray-300"
+                                  }`}
+                                >
+                                  <option value="PENDING">Pending</option>
+                                  <option value="APPROVED">Approved</option>
+                                  <option value="REJECTED">Rejected</option>
+                                  <option value="FULFILLED">Fulfilled</option>
+                                  <option value="ON_HOLD">On Hold</option>
+                                </select>
+                              ) : (
+                                <span className={`px-2 py-1 rounded text-xs font-medium ${
+                                  req.status === "APPROVED" ? "bg-green-100 text-green-700" :
+                                  req.status === "REJECTED" ? "bg-red-100 text-red-700" :
+                                  req.status === "FULFILLED" ? "bg-blue-100 text-blue-700" :
+                                  req.status === "ON_HOLD" ? "bg-yellow-100 text-yellow-700" :
+                                  "bg-gray-100 text-gray-700"
+                                }`}>
+                                  {req.status === "APPROVED" ? "Approved" :
+                                   req.status === "REJECTED" ? "Rejected" :
+                                   req.status === "FULFILLED" ? "Fulfilled" :
+                                   req.status === "ON_HOLD" ? "On Hold" :
+                                   "Pending"}
                                 </span>
                               )}
                             </td>

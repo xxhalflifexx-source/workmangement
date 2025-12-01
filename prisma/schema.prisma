@@ -189,6 +189,7 @@ model MaterialRequest {
   description       String?
   priority          String    @default("MEDIUM") // LOW, MEDIUM, HIGH, URGENT
   status            String    @default("PENDING") // PENDING, APPROVED, REJECTED, FULFILLED, ON_HOLD
+  amount            Float? // Cost/amount for the material request - required before status update
   requestedDate     DateTime  @default(now())
   fulfilledDate     DateTime?
   dateDelivered     DateTime?

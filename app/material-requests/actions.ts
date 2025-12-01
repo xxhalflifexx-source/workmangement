@@ -25,6 +25,7 @@ const updateRequestSchema = z.object({
   status: z.enum(["PENDING", "APPROVED", "REJECTED", "FULFILLED", "ON_HOLD"]),
   notes: z.string().optional(),
   quantity: z.number().int().min(1, "Quantity must be at least 1").max(9, "Quantity must be a single digit (1-9)").optional(),
+  amount: z.number().min(0, "Amount must be 0 or greater").optional(),
   recommendedAction: z.enum(["PENDING", "APPROVE", "PARTIAL", "REJECTED"]).optional(),
   orderStatus: z.enum(["TO_ORDER", "ORDERED", "RECEIVED"]).optional(),
 });
@@ -200,6 +201,7 @@ export async function getMaterialRequests() {
         description: true,
         priority: true,
         status: true,
+        amount: true,
         requestedDate: true,
         fulfilledDate: true,
         dateDelivered: true,
@@ -253,6 +255,7 @@ export async function getMaterialRequests() {
           dateDelivered: null,
           orderStatus: null,
           recommendedAction: null,
+          amount: null,
         }));
 
         console.log("[MaterialRequest] Fallback query success:", requestsWithDefaults.length, "requests");
@@ -363,12 +366,16 @@ export async function updateMaterialRequest(requestId: string, formData: FormDat
   const rawQuantity = formData.get("quantity") as string | null;
   const quantity = rawQuantity != null && rawQuantity !== "" ? Number(rawQuantity) : undefined;
 
+  // Get amount
+  const rawAmount = formData.get("amount") as string | null;
+  const amount = rawAmount != null && rawAmount !== "" ? parseFloat(rawAmount) : undefined;
+
   // Get recommendedAction and orderStatus for checking if we're only updating manual fields
   const recommendedActionRaw = formData.get("recommendedAction") as string | null;
   const recommendedAction = recommendedActionRaw && recommendedActionRaw !== "" ? recommendedActionRaw : null;
   const orderStatusRaw = formData.get("orderStatus") as string | null;
   const orderStatus = orderStatusRaw && orderStatusRaw !== "" ? orderStatusRaw : null;
-  const isOnlyUpdatingManualFields = (recommendedAction || orderStatus) && !formData.get("notes") && quantity === undefined;
+  const isOnlyUpdatingManualFields = (recommendedAction || orderStatus) && !formData.get("notes") && quantity === undefined && amount === undefined;
 
   // Fetch existing request first to get current status and job relation
   const existing = await prisma.materialRequest.findUnique({
@@ -399,6 +406,7 @@ export async function updateMaterialRequest(requestId: string, formData: FormDat
     status: statusValue,
     notes: notesForValidation,
     quantity: quantity,
+    amount: amount,
     recommendedAction: recommendedActionForValidation,
     orderStatus: orderStatusForValidation,
   };
@@ -410,10 +418,8 @@ export async function updateMaterialRequest(requestId: string, formData: FormDat
   }
 
   try {
-    // Parse optional amount for creating JobExpense when approving
-    const rawAmount = formData.get("amount") as string | null;
-    const amount = rawAmount != null && rawAmount !== "" ? parseFloat(rawAmount) : undefined;
-    if (rawAmount && (amount == null || isNaN(amount))) {
+    // Validate amount if provided
+    if (amount !== undefined && (amount == null || isNaN(amount) || amount < 0)) {
       return { ok: false, error: "Invalid amount" };
     }
 
@@ -438,6 +444,11 @@ export async function updateMaterialRequest(requestId: string, formData: FormDat
     // Update quantity if provided
     if (parsed.data.quantity !== undefined) {
       updateData.quantity = parsed.data.quantity;
+    }
+
+    // Update amount if provided
+    if (parsed.data.amount !== undefined) {
+      updateData.amount = parsed.data.amount || null;
     }
 
     // Update recommended action if provided (admin/manager only)
@@ -485,7 +496,9 @@ export async function updateMaterialRequest(requestId: string, formData: FormDat
 
     // On approval, export to financials by creating a JobExpense if amount provided
     // ONLY create JobExpense if status ACTUALLY CHANGED to APPROVED (not when only updating Recommended Action)
-    if (statusChanged && newStatus === "APPROVED" && amount && amount > 0) {
+    // Use amount from parsed data if available, otherwise fall back to formData
+    const expenseAmount = parsed.data.amount !== undefined ? parsed.data.amount : amount;
+    if (statusChanged && newStatus === "APPROVED" && expenseAmount && expenseAmount > 0) {
       try {
         await prisma.jobExpense.create({
           data: {
@@ -493,7 +506,7 @@ export async function updateMaterialRequest(requestId: string, formData: FormDat
             userId: (session.user as any).id,
             category: "Materials",
             description: request.itemName,
-            amount,
+            amount: expenseAmount,
             quantity: request.quantity,
             unit: request.unit,
             notes: request.description || null,
