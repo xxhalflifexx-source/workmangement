@@ -173,16 +173,16 @@ export default function HRPage() {
             <h1 className="text-2xl font-bold text-gray-900">HR Management</h1>
             <p className="text-sm text-gray-500">Employee time tracking and statistics</p>
           </div>
-          <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
             <Link
               href="/handbook"
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium whitespace-nowrap"
+              className="w-full sm:w-auto px-4 py-2.5 sm:py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium whitespace-nowrap min-h-[44px] flex items-center justify-center"
             >
               📖 Employee Handbook
             </Link>
             <Link
               href="/dashboard"
-              className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium whitespace-nowrap"
+              className="w-full sm:w-auto px-4 py-2.5 sm:py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium whitespace-nowrap min-h-[44px] flex items-center justify-center"
             >
               Back to Dashboard
             </Link>
@@ -213,7 +213,7 @@ export default function HRPage() {
                   onChange={(e) => {
                     setDateFrom(e.target.value);
                   }}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2.5 sm:py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-h-[44px]"
                 />
               </div>
               <div className="flex-1 min-w-0">
@@ -224,10 +224,10 @@ export default function HRPage() {
                   onChange={(e) => {
                     setDateTo(e.target.value);
                   }}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2.5 sm:py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-h-[44px]"
                 />
               </div>
-              <div className="flex items-end">
+              <div className="flex items-end w-full lg:w-auto">
                 <button
                   type="button"
                   onClick={() => {
@@ -237,7 +237,7 @@ export default function HRPage() {
                     setDateFrom(saturday.format('YYYY-MM-DD'));
                     setDateTo(friday.format('YYYY-MM-DD'));
                   }}
-                  className="w-full lg:w-auto px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium whitespace-nowrap"
+                  className="w-full lg:w-auto px-4 py-2.5 sm:py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium whitespace-nowrap min-h-[44px]"
                 >
                   This Week (Sat-Fri)
                 </button>
@@ -359,7 +359,7 @@ export default function HRPage() {
                       <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <button
                           onClick={() => handleViewEntries(user)}
-                          className="text-blue-600 hover:text-blue-900 font-medium"
+                          className="px-3 py-2 sm:px-2 sm:py-1 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-lg font-medium transition-colors min-h-[44px] sm:min-h-0"
                         >
                           View Details
                         </button>

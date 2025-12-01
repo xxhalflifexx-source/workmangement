@@ -157,8 +157,8 @@ export default function JobRow({
       </tr>
       {isExpanded && (
         <tr>
-          <td colSpan={8} className="px-6 py-6 bg-gray-50">
-            <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-6 space-y-4">
+          <td colSpan={8} className="px-3 sm:px-6 py-4 sm:py-6 bg-gray-50">
+            <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-4 sm:p-6 space-y-4">
               <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
                 <div>
                   <div className="flex items-center gap-3 mb-1">
@@ -381,7 +381,7 @@ export default function JobRow({
                       <label
                         htmlFor={`photo-upload-${job.id}`}
                         onClick={(e) => e.stopPropagation()}
-                        className="cursor-pointer inline-flex items-center gap-2 px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                        className="cursor-pointer inline-flex items-center gap-2 px-4 py-3 sm:py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors min-h-[44px]"
                       >
                         <span>📷</span>
                         Choose Photos
@@ -424,7 +424,7 @@ export default function JobRow({
                         </div>
                       )}
 
-                      <div className="flex gap-2 mt-3">
+                      <div className="flex flex-col sm:flex-row gap-2 mt-3">
                         {(jobPhotoFiles[job.id] || []).length > 0 && onSavePhotos && (
                           <button
                             onClick={(e) => {
@@ -432,7 +432,7 @@ export default function JobRow({
                               onSavePhotos(job.id);
                             }}
                             disabled={savingPhotos[job.id]}
-                            className="flex-1 px-3 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:bg-gray-300 disabled:cursor-not-allowed"
+                            className="flex-1 px-4 py-3 sm:py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:bg-gray-300 disabled:cursor-not-allowed min-h-[44px]"
                           >
                             {savingPhotos[job.id] ? "Saving..." : "Save Photos"}
                           </button>
@@ -444,7 +444,7 @@ export default function JobRow({
                               onSubmitToQC(job.id);
                             }}
                             disabled={savingPhotos[job.id]}
-                            className={`px-3 py-2 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium disabled:bg-gray-300 disabled:cursor-not-allowed ${
+                            className={`px-4 py-3 sm:py-2 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium disabled:bg-gray-300 disabled:cursor-not-allowed min-h-[44px] ${
                               (jobPhotoFiles[job.id] || []).length > 0 ? "flex-1" : "w-full"
                             }`}
                           >
@@ -466,7 +466,7 @@ export default function JobRow({
                       onActivity(job);
                     }}
                     disabled={job.status === "AWAITING_QC" || job.status === "COMPLETED"}
-                    className="px-3 py-2 text-sm border border-blue-300 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors font-medium disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
+                    className="px-4 py-3 sm:py-2 text-sm border border-blue-300 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors font-medium disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed min-h-[44px] flex-1 sm:flex-initial"
                     title={job.status === "AWAITING_QC" || job.status === "COMPLETED" ? "Job is locked - submitted to QC" : "View notes, photos, and updates for this job"}
                   >
                     📝 Activity
@@ -479,7 +479,7 @@ export default function JobRow({
                       onMaterial(job);
                     }}
                     disabled={job.status === "AWAITING_QC" || job.status === "COMPLETED"}
-                    className="px-3 py-2 text-sm border border-green-300 text-green-600 rounded-lg hover:bg-green-50 transition-colors font-medium disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
+                    className="px-4 py-3 sm:py-2 text-sm border border-green-300 text-green-600 rounded-lg hover:bg-green-50 transition-colors font-medium disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed min-h-[44px] flex-1 sm:flex-initial"
                     title={job.status === "AWAITING_QC" || job.status === "COMPLETED" ? "Job is locked - submitted to QC" : "View and request materials for this job"}
                   >
                     📦 Materials
@@ -491,7 +491,7 @@ export default function JobRow({
                       e.stopPropagation();
                       onQuotation(job);
                     }}
-                    className="px-3 py-2 text-sm border border-green-300 text-green-600 rounded-lg hover:bg-green-50 transition-colors font-medium"
+                    className="px-4 py-3 sm:py-2 text-sm border border-green-300 text-green-600 rounded-lg hover:bg-green-50 transition-colors font-medium min-h-[44px] flex-1 sm:flex-initial"
                     title="Create quotation for this job"
                   >
                     💰 Create Quotation
@@ -505,7 +505,7 @@ export default function JobRow({
                         onEdit(job);
                       }}
                       disabled={job.status === "AWAITING_QC" || job.status === "COMPLETED"}
-                      className="px-3 py-2 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
+                      className="px-4 py-3 sm:py-2 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed min-h-[44px] flex-1 sm:flex-initial"
                       title={job.status === "AWAITING_QC" || job.status === "COMPLETED" ? "Job is locked - submitted to QC" : "Edit job"}
                     >
                       ✏️ Edit
@@ -517,7 +517,7 @@ export default function JobRow({
                           onDelete(job.id);
                         }
                       }}
-                      className="px-3 py-2 text-sm border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition-colors font-medium"
+                      className="px-4 py-3 sm:py-2 text-sm border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition-colors font-medium min-h-[44px] flex-1 sm:flex-initial"
                     >
                       🗑️ Delete
                     </button>

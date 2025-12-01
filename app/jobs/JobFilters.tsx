@@ -71,16 +71,16 @@ export default function JobFilters({
   };
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-4 mb-6">
-      <div className="flex flex-col md:flex-row md:items-end gap-4">
-        <div className="flex-1">
-          <label className="block text-xs font-medium text-gray-700 mb-1">
+    <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-4 sm:p-6 mb-6">
+      <div className="flex flex-col md:flex-row md:items-end gap-3 sm:gap-4">
+        <div className="flex-1 min-w-0">
+          <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5">
             Status
           </label>
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2.5 sm:py-2 text-sm min-h-[44px]"
           >
             <option value="ALL">All</option>
             <option value="NOT_STARTED">Not Started</option>
@@ -92,14 +92,14 @@ export default function JobFilters({
           </select>
         </div>
 
-        <div className="flex-1">
-          <label className="block text-xs font-medium text-gray-700 mb-1">
+        <div className="flex-1 min-w-0">
+          <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5">
             Client
           </label>
           <select
             value={customerFilter}
             onChange={(e) => setCustomerFilter(e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2.5 sm:py-2 text-sm min-h-[44px]"
           >
             <option value="">All Clients</option>
             {customers.map((customer) => (
@@ -110,14 +110,14 @@ export default function JobFilters({
           </select>
         </div>
 
-        <div className="flex-1">
-          <label className="block text-xs font-medium text-gray-700 mb-1">
+        <div className="flex-1 min-w-0">
+          <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5">
             Assigned Worker
           </label>
           <select
             value={workerFilter}
             onChange={(e) => setWorkerFilter(e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2.5 sm:py-2 text-sm min-h-[44px]"
           >
             <option value="">All Workers</option>
             {users.map((user) => (
@@ -128,35 +128,35 @@ export default function JobFilters({
           </select>
         </div>
 
-        <div className="flex-1">
-          <label className="block text-xs font-medium text-gray-700 mb-1">
+        <div className="flex-1 min-w-0">
+          <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5">
             Date From
           </label>
           <input
             type="date"
             value={dateFrom}
             onChange={(e) => setDateFrom(e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2.5 sm:py-2 text-sm min-h-[44px]"
           />
         </div>
 
-        <div className="flex-1">
-          <label className="block text-xs font-medium text-gray-700 mb-1">
+        <div className="flex-1 min-w-0">
+          <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5">
             Date To
           </label>
           <input
             type="date"
             value={dateTo}
             onChange={(e) => setDateTo(e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2.5 sm:py-2 text-sm min-h-[44px]"
           />
         </div>
 
-        <div>
+        <div className="w-full md:w-auto">
           <button
             type="button"
             onClick={clearFilters}
-            className="px-4 py-2 rounded-lg bg-gray-100 text-sm font-medium text-gray-700 border border-gray-300 hover:bg-gray-200 transition-colors"
+            className="w-full md:w-auto px-4 py-2.5 sm:py-2 rounded-lg bg-gray-100 text-sm font-medium text-gray-700 border border-gray-300 hover:bg-gray-200 transition-colors min-h-[44px]"
           >
             Clear Filters
           </button>
