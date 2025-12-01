@@ -5,7 +5,6 @@ import { formatDateShort } from "@/lib/date-utils";
 import UserMenu from "./UserMenu";
 import NotificationsDropdown from "./NotificationsDropdown";
 import { getNotifications } from "./notifications-actions";
-import DashboardLinks from "./DashboardLinks";
 
 export default async function Dashboard() {
   const session = await getServerSession(authOptions);

@@ -1,0 +1,6 @@
+Copy and paste this command into your terminal:
+
+npx prisma migrate dev --name add_user_access_overrides
+
+Then press Enter and wait for "Migration applied successfully"
+

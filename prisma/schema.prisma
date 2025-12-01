@@ -9,40 +9,39 @@ generator client {
 }
 
 model User {
-  id                    String                 @id @default(cuid())
-  name                  String?
-  email                 String?                @unique
-  phone                 String?
-  passwordHash          String?
-  role                  String                 @default("EMPLOYEE")
-  gender                String?
-  birthDate             DateTime?
-  status                String                 @default("APPROVED") // PENDING, APPROVED, REJECTED
-  hourlyRate            Float?                 // Labor cost per hour
-  isVerified            Boolean                @default(false)
-  verificationCode      String?
-  codeExpiresAt         DateTime?
-  resetToken            String?
-  resetTokenExpiresAt   DateTime?
-  createdAt             DateTime               @default(now())
-  updatedAt             DateTime               @updatedAt
-  accounts              Account[]
-  sessions              Session[]
-  timeEntries           TimeEntry[]
-  assignedJobs          Job[]                  @relation("AssignedJobs")
-  createdJobs           Job[]                  @relation("CreatedJobs")
-  jobActivities         JobActivity[]
-  inventoryAdjustments  InventoryAdjustment[]
-  materialRequests      MaterialRequest[]
-  jobExpenses           JobExpense[]
+  id                   String                @id @default(cuid())
+  name                 String?
+  email                String?               @unique
+  phone                String?
+  passwordHash         String?
+  role                 String                @default("EMPLOYEE")
+  gender               String?
+  birthDate            DateTime?
+  status               String                @default("APPROVED") // PENDING, APPROVED, REJECTED
+  hourlyRate           Float? // Labor cost per hour
+  isVerified           Boolean               @default(false)
+  verificationCode     String?
+  codeExpiresAt        DateTime?
+  resetToken           String?
+  resetTokenExpiresAt  DateTime?
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  accounts             Account[]
+  sessions             Session[]
+  timeEntries          TimeEntry[]
+  assignedJobs         Job[]                 @relation("AssignedJobs")
+  createdJobs          Job[]                 @relation("CreatedJobs")
+  jobActivities        JobActivity[]
+  inventoryAdjustments InventoryAdjustment[]
+  materialRequests     MaterialRequest[]
+  jobExpenses          JobExpense[]
   /// QC inspections performed by this manager/admin
-  qcRecords             QCRecord[]
+  qcRecords            QCRecord[]
   /// Rework entries where this user was identified as responsible
-  reworkResponsibleFor  ReworkEntry[]          @relation("ReworkResponsible")
+  reworkResponsibleFor ReworkEntry[]         @relation("ReworkResponsible")
   /// Rework entries created/logged by this user (QC/admin)
-  reworkCreated         ReworkEntry[]          @relation("ReworkCreatedBy")
-  notifications         Notification[]
-  accessOverrides       UserAccessOverride[]
+  reworkCreated        ReworkEntry[]         @relation("ReworkCreatedBy")
+  notifications        Notification[]
 }
 
 model Account {
@@ -77,11 +76,11 @@ model TimeEntry {
   jobId         String?
   clockIn       DateTime
   clockOut      DateTime?
-  durationHours Float?    // Computed on clock out for efficiency metrics
+  durationHours Float? // Computed on clock out for efficiency metrics
   isRework      Boolean   @default(false)
-  clockInNotes  String?   // Description entered at Clock In
-  notes         String?   // Description entered at Clock Out
-  images        String?   // JSON array of image paths
+  clockInNotes  String? // Description entered at Clock In
+  notes         String? // Description entered at Clock Out
+  images        String? // JSON array of image paths
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -89,15 +88,15 @@ model TimeEntry {
 }
 
 model Customer {
-  id        String   @id @default(cuid())
-  name      String
-  phone     String?
-  email     String?
-  company   String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  jobs      Job[]
-  invoices  Invoice[]
+  id         String      @id @default(cuid())
+  name       String
+  phone      String?
+  email      String?
+  company    String?
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  jobs       Job[]
+  invoices   Invoice[]
   quotations Quotation[]
 }
 
@@ -118,9 +117,9 @@ model Job {
   createdBy        String
   customerId       String?
   pricingType      String            @default("FIXED") // FIXED or T&M (Time & Materials)
-  estimatedPrice   Float?            // Quoted/estimated price
-  finalPrice       Float?            // Final agreed price
-  estimatedHours   Float?            // Planned hours for efficiency calculations
+  estimatedPrice   Float? // Quoted/estimated price
+  finalPrice       Float? // Final agreed price
+  estimatedHours   Float? // Planned hours for efficiency calculations
   dueDate          DateTime?
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
@@ -138,66 +137,66 @@ model Job {
 }
 
 model JobActivity {
-  id          String    @id @default(cuid())
+  id          String   @id @default(cuid())
   jobId       String
   userId      String
-  type        String    // "TIME_ENTRY" or "UPDATE"
-  timeEntryId String?   // Link to time entry if type is TIME_ENTRY
+  type        String // "TIME_ENTRY" or "UPDATE"
+  timeEntryId String? // Link to time entry if type is TIME_ENTRY
   notes       String?
-  images      String?   // JSON array of image paths
-  createdAt   DateTime  @default(now())
-  job         Job       @relation(fields: [jobId], references: [id], onDelete: Cascade)
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  images      String? // JSON array of image paths
+  createdAt   DateTime @default(now())
+  job         Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model InventoryItem {
-  id                   String                 @id @default(cuid())
-  name                 String
-  sku                  String?                @unique
-  description          String?
-  category             String?
-  quantity             Int                    @default(0)
-  unit                 String                 @default("pcs") // pcs, kg, lbs, etc.
-  minStockLevel        Int                    @default(0)
-  location             String?
-  supplier             String?
-  costPerUnit          Float?
-  createdAt            DateTime               @default(now())
-  updatedAt            DateTime               @updatedAt
-  adjustments          InventoryAdjustment[]
+  id            String                @id @default(cuid())
+  name          String
+  sku           String?               @unique
+  description   String?
+  category      String?
+  quantity      Int                   @default(0)
+  unit          String                @default("pcs") // pcs, kg, lbs, etc.
+  minStockLevel Int                   @default(0)
+  location      String?
+  supplier      String?
+  costPerUnit   Float?
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+  adjustments   InventoryAdjustment[]
 }
 
 model InventoryAdjustment {
-  id              String         @id @default(cuid())
-  itemId          String
-  userId          String
-  quantityChange  Int            // Positive for additions, negative for reductions
-  reason          String?
-  notes           String?
-  createdAt       DateTime       @default(now())
-  item            InventoryItem  @relation(fields: [itemId], references: [id], onDelete: Cascade)
-  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id             String        @id @default(cuid())
+  itemId         String
+  userId         String
+  quantityChange Int // Positive for additions, negative for reductions
+  reason         String?
+  notes          String?
+  createdAt      DateTime      @default(now())
+  item           InventoryItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model MaterialRequest {
-  id              String         @id @default(cuid())
-  requestNumber   String?        @unique // Auto-generated: MR0001, MR0002, etc.
-  jobId           String?
-  userId          String
-  itemName        String
-  quantity        Int
-  unit            String
-  description     String?
-  priority        String         @default("MEDIUM") // LOW, MEDIUM, HIGH, URGENT
-  status          String         @default("PENDING") // PENDING, APPROVED, REJECTED, FULFILLED, ON_HOLD
-  requestedDate   DateTime       @default(now())
-  fulfilledDate   DateTime?
-  dateDelivered   DateTime?
-  notes           String?
-  recommendedAction String?     // APPROVE, PARTIAL, REJECTED - set by admin/manager
-  orderStatus     String?        // TO_ORDER, ORDERED, RECEIVED - set by admin/manager
-  job             Job?           @relation(fields: [jobId], references: [id], onDelete: SetNull)
-  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                String    @id @default(cuid())
+  requestNumber     String?   @unique // Auto-generated: MR0001, MR0002, etc.
+  jobId             String?
+  userId            String
+  itemName          String
+  quantity          Int
+  unit              String
+  description       String?
+  priority          String    @default("MEDIUM") // LOW, MEDIUM, HIGH, URGENT
+  status            String    @default("PENDING") // PENDING, APPROVED, REJECTED, FULFILLED, ON_HOLD
+  requestedDate     DateTime  @default(now())
+  fulfilledDate     DateTime?
+  dateDelivered     DateTime?
+  notes             String?
+  recommendedAction String? // APPROVE, PARTIAL, REJECTED - set by admin/manager
+  orderStatus       String? // TO_ORDER, ORDERED, RECEIVED - set by admin/manager
+  job               Job?      @relation(fields: [jobId], references: [id], onDelete: SetNull)
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model CompanySettings {
@@ -217,13 +216,13 @@ model CompanySettings {
 model JobExpense {
   id          String   @id @default(cuid())
   jobId       String
-  userId      String   // Who recorded the expense
-  category    String   // Materials, Equipment, Subcontractor, Other
+  userId      String // Who recorded the expense
+  category    String // Materials, Equipment, Subcontractor, Other
   description String
   amount      Float
   quantity    Float    @default(1)
-  unit        String?  // pcs, hours, lbs, etc.
-  receiptUrl  String?  // Path to receipt image
+  unit        String? // pcs, hours, lbs, etc.
+  receiptUrl  String? // Path to receipt image
   notes       String?
   expenseDate DateTime @default(now())
   createdAt   DateTime @default(now())
@@ -234,20 +233,20 @@ model JobExpense {
 /// Quality Control record for a job.
 /// QC is always performed by a manager or admin.
 model QCRecord {
-  id         String   @id @default(cuid())
-  jobId      String
-  qcUserId   String
+  id        String   @id @default(cuid())
+  jobId     String
+  qcUserId  String
   /// PASS | FAIL | MINOR_ISSUES
-  qcStatus   String
+  qcStatus  String
   /// 1.0 for PASS, 0.5 for MINOR_ISSUES, 0.0 for FAIL
-  qcScore    Float
-  notes      String?
+  qcScore   Float
+  notes     String?
   /// JSON array of photo URLs, consistent with other image fields
-  photos     String?
-  createdAt  DateTime @default(now())
+  photos    String?
+  createdAt DateTime @default(now())
 
-  job        Job     @relation(fields: [jobId], references: [id], onDelete: Cascade)
-  qcUser     User    @relation(fields: [qcUserId], references: [id], onDelete: Cascade)
+  job    Job  @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  qcUser User @relation(fields: [qcUserId], references: [id], onDelete: Cascade)
 }
 
 /// Rework entry created when a job fails QC.
@@ -260,47 +259,46 @@ model ReworkEntry {
   reason            String
   createdAt         DateTime @default(now())
 
-  job               Job     @relation(fields: [jobId], references: [id], onDelete: Cascade)
-  responsibleUser   User?   @relation("ReworkResponsible", fields: [responsibleUserId], references: [id], onDelete: SetNull)
-  createdBy         User    @relation("ReworkCreatedBy", fields: [createdByUserId], references: [id], onDelete: Cascade)
+  job             Job   @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  responsibleUser User? @relation("ReworkResponsible", fields: [responsibleUserId], references: [id], onDelete: SetNull)
+  createdBy       User  @relation("ReworkCreatedBy", fields: [createdByUserId], references: [id], onDelete: Cascade)
 }
 
-
 model Invoice {
-  id             String       @id @default(cuid())
-  invoiceNumber  String?      @unique // Auto-generated: INV-250001, INV-250002, etc.
+  id             String        @id @default(cuid())
+  invoiceNumber  String?       @unique // Auto-generated: INV-250001, INV-250002, etc.
   jobId          String?
   customerId     String?
   customerName   String?
   customerEmail  String?
-  status         String       @default("DRAFT") // DRAFT, SENT, PAID, OVERDUE, VOID
-  issueDate      DateTime     @default(now())
+  status         String        @default("DRAFT") // DRAFT, SENT, PAID, OVERDUE, VOID
+  issueDate      DateTime      @default(now())
   dueDate        DateTime?
-  sentDate       DateTime?    // When invoice was sent to customer
-  releaseDate    DateTime?    // When invoice was released/approved
-  collectionDate DateTime?    // When payment was collected
-  creditDate     DateTime?    // Credit memo date if applicable
-  total          Float        @default(0)
-  balance        Float        @default(0)
+  sentDate       DateTime? // When invoice was sent to customer
+  releaseDate    DateTime? // When invoice was released/approved
+  collectionDate DateTime? // When payment was collected
+  creditDate     DateTime? // Credit memo date if applicable
+  total          Float         @default(0)
+  balance        Float         @default(0)
   notes          String?
-  remarks        String?      // Admin notes/remarks
-  pdfFiles       String?      // JSON array of PDF file URLs
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-  job            Job?         @relation(fields: [jobId], references: [id], onDelete: SetNull)
-  customer       Customer?    @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  remarks        String? // Admin notes/remarks
+  pdfFiles       String? // JSON array of PDF file URLs
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  job            Job?          @relation(fields: [jobId], references: [id], onDelete: SetNull)
+  customer       Customer?     @relation(fields: [customerId], references: [id], onDelete: SetNull)
   lines          InvoiceLine[]
   payments       Payment[]
 }
 
 model InvoiceLine {
-  id          String   @id @default(cuid())
+  id          String  @id @default(cuid())
   invoiceId   String
   description String
-  quantity    Float    @default(1)
-  rate        Float    @default(0)
-  amount      Float    @default(0)
-  invoice     Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  quantity    Float   @default(1)
+  rate        Float   @default(0)
+  amount      Float   @default(0)
+  invoice     Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
 }
 
 model Payment {
@@ -315,70 +313,54 @@ model Payment {
 }
 
 model Quotation {
-  id                String            @id @default(cuid())
-  quotationNumber   String?           @unique // Auto-generated: QUO-2025-0001, etc.
-  jobId             String?
-  customerId        String?
-  customerName      String?
-  customerEmail     String?
-  customerAddress   String?
-  customerPhone     String?
-  status            String            @default("DRAFT") // DRAFT, SENT, ACCEPTED, REJECTED, EXPIRED
-  issueDate         DateTime          @default(now())
-  validUntil        DateTime?
-  total             Float             @default(0)
-  notes             String?
-  paymentBank       String?
-  paymentAccountName String?
+  id                   String          @id @default(cuid())
+  quotationNumber      String?         @unique // Auto-generated: QUO-2025-0001, etc.
+  jobId                String?
+  customerId           String?
+  customerName         String?
+  customerEmail        String?
+  customerAddress      String?
+  customerPhone        String?
+  status               String          @default("DRAFT") // DRAFT, SENT, ACCEPTED, REJECTED, EXPIRED
+  issueDate            DateTime        @default(now())
+  validUntil           DateTime?
+  total                Float           @default(0)
+  notes                String?
+  paymentBank          String?
+  paymentAccountName   String?
   paymentAccountNumber String?
-  preparedByName    String?
-  preparedByTitle    String?
-  shippingFee       Float             @default(0)
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
-  job               Job?              @relation(fields: [jobId], references: [id], onDelete: SetNull)
-  customer          Customer?         @relation(fields: [customerId], references: [id], onDelete: SetNull)
-  lines             QuotationLine[]
+  preparedByName       String?
+  preparedByTitle      String?
+  shippingFee          Float           @default(0)
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+  job                  Job?            @relation(fields: [jobId], references: [id], onDelete: SetNull)
+  customer             Customer?       @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  lines                QuotationLine[]
 }
 
 model QuotationLine {
-  id          String     @id @default(cuid())
+  id          String    @id @default(cuid())
   quotationId String
   description String
-  quantity    Float      @default(1)
-  rate        Float      @default(0)
-  amount      Float      @default(0)
-  quotation   Quotation  @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+  quantity    Float     @default(1)
+  rate        Float     @default(0)
+  amount      Float     @default(0)
+  quotation   Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
 }
 
 model Notification {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   userId    String
   title     String
   message   String?
-  type      String   @default("INFO") // INFO, WARNING, SUCCESS, ERROR, JOB_UPDATE
-  isRead    Boolean  @default(false)
-  linkUrl   String?  // Optional link to navigate when clicked
-  createdAt DateTime @default(now())
+  type      String    @default("INFO") // INFO, WARNING, SUCCESS, ERROR, JOB_UPDATE
+  isRead    Boolean   @default(false)
+  linkUrl   String? // Optional link to navigate when clicked
+  createdAt DateTime  @default(now())
   readAt    DateTime?
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, isRead])
   @@index([userId, createdAt])
 }
-
-model UserAccessOverride {
-  id            String   @id @default(cuid())
-  userId        String
-  componentName String   // e.g., "jobs", "qc", "finance", "hr", "inventory", "materials", "time-clock"
-  access        String   @default("allowed") // "allowed" or "not_allowed"
-  notes         String?
-  updatedAt     DateTime @updatedAt
-  createdAt     DateTime @default(now())
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, componentName])
-  @@index([userId])
-  @@index([componentName])
-}
-
