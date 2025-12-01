@@ -5,6 +5,7 @@ import { formatDateShort } from "@/lib/date-utils";
 import UserMenu from "./UserMenu";
 import NotificationsDropdown from "./NotificationsDropdown";
 import { getNotifications } from "./notifications-actions";
+import DashboardLinks from "./DashboardLinks";
 
 export default async function Dashboard() {
   const session = await getServerSession(authOptions);
@@ -65,139 +66,8 @@ export default async function Dashboard() {
           </div>
         </div>
 
-        {/* Quick Actions Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
-          {/* Time Clock Card */}
-          <Link
-            href="/time-clock"
-            className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow p-4 sm:p-6 border border-gray-200 hover:border-blue-300 min-h-[44px] flex flex-col"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center text-2xl">
-                ⏰
-              </div>
-              <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                Quick Access
-              </span>
-            </div>
-            <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">Time Clock</h3>
-            <p className="text-gray-600 text-xs sm:text-sm">Clock in/out and view your hours</p>
-          </Link>
-
-          {/* Jobs Card */}
-          <Link
-            href="/jobs"
-            className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow p-4 sm:p-6 border border-gray-200 hover:border-blue-300 min-h-[44px] flex flex-col"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center text-2xl">
-                📋
-              </div>
-              <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                Active
-              </span>
-            </div>
-            <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">Jobs</h3>
-            <p className="text-gray-600 text-xs sm:text-sm">View and manage your assigned jobs</p>
-          </Link>
-
-          {/* Inventory Card */}
-          <Link
-            href="/inventory"
-            className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow p-4 sm:p-6 border border-gray-200 hover:border-blue-300 min-h-[44px] flex flex-col"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center text-2xl">
-                📦
-              </div>
-              <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                Updated
-              </span>
-            </div>
-            <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">Inventory</h3>
-            <p className="text-gray-600 text-xs sm:text-sm">Check inventory and supplies</p>
-          </Link>
-
-          {/* Manager/Admin Only Cards */}
-          {(role === "MANAGER" || role === "ADMIN") && (
-            <Link
-              href="/hr"
-              className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow p-4 sm:p-6 border border-gray-200 hover:border-yellow-300 min-h-[44px] flex flex-col"
-            >
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center text-2xl">
-                  👥
-                </div>
-                <span className="text-xs text-yellow-600 bg-yellow-100 px-2 py-1 rounded font-medium">
-                  Manager
-                </span>
-              </div>
-              <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">HR</h3>
-              <p className="text-gray-600 text-xs sm:text-sm">Manage team and HR tasks</p>
-            </Link>
-          )}
-
-          {/* QC Dashboard Card - Manager/Admin only */}
-          {(role === "MANAGER" || role === "ADMIN") && (
-            <Link
-              href="/qc"
-              className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow p-4 sm:p-6 border border-gray-200 hover:border-indigo-300 min-h-[44px] flex flex-col"
-            >
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center text-2xl">
-                  ✅
-                </div>
-                <span className="text-xs text-indigo-600 bg-indigo-100 px-2 py-1 rounded font-medium">
-                  QC
-                </span>
-              </div>
-              <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">Quality Control</h3>
-              <p className="text-gray-600 text-xs sm:text-sm">
-                Review completed jobs, pass or fail work, and send items back for rework.
-              </p>
-            </Link>
-          )}
-
-          {/* Finance Card - Manager/Admin only */}
-          {(role === "MANAGER" || role === "ADMIN") && (
-            <Link
-              href="/finance"
-              className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow p-4 sm:p-6 border border-gray-200 hover:border-green-300 min-h-[44px] flex flex-col"
-            >
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center text-2xl">
-                  💰
-                </div>
-                <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded font-medium">
-                  Finance
-                </span>
-              </div>
-              <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">Finance</h3>
-              <p className="text-gray-600 text-xs sm:text-sm">
-                Track invoices, payments, and financial records.
-              </p>
-            </Link>
-          )}
-
-          {/* Admin / Manager Card */}
-          {(role === "ADMIN" || role === "MANAGER") && (
-            <Link
-              href="/admin"
-              className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow p-4 sm:p-6 border border-gray-200 hover:border-red-300 min-h-[44px] flex flex-col"
-            >
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center text-2xl">
-                  ⚙️
-                </div>
-                <span className="text-xs text-red-600 bg-red-100 px-2 py-1 rounded font-medium">
-                  Admin / Manager
-                </span>
-              </div>
-              <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">Administrative</h3>
-              <p className="text-gray-600 text-xs sm:text-sm">User management and company settings</p>
-            </Link>
-          )}
-        </div>
+        {/* Quick Actions Grid - Access-controlled */}
+        <DashboardLinks />
 
         {/* Quick Info Section */}
         <div className="bg-white rounded-lg shadow p-4 sm:p-6 border border-gray-200">

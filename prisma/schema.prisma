@@ -42,6 +42,7 @@ model User {
   /// Rework entries created/logged by this user (QC/admin)
   reworkCreated         ReworkEntry[]          @relation("ReworkCreatedBy")
   notifications         Notification[]
+  accessOverrides       UserAccessOverride[]
 }
 
 model Account {
@@ -364,5 +365,20 @@ model Notification {
 
   @@index([userId, isRead])
   @@index([userId, createdAt])
+}
+
+model UserAccessOverride {
+  id            String   @id @default(cuid())
+  userId        String
+  componentName String   // e.g., "jobs", "qc", "finance", "hr", "inventory", "materials", "time-clock"
+  access        String   @default("allowed") // "allowed" or "not_allowed"
+  notes         String?
+  updatedAt     DateTime @updatedAt
+  createdAt     DateTime @default(now())
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, componentName])
+  @@index([userId])
+  @@index([componentName])
 }
 
