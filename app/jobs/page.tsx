@@ -1373,9 +1373,9 @@ function JobsPageContent() {
         if (quotationsRes.ok) {
           setSavedQuotations(quotationsRes.quotations || []);
         }
-    } else {
+      } else {
         setError(res.error || "Failed to save quotation");
-    }
+      }
     } catch (err: any) {
       setError(err?.message || "Failed to save quotation");
     } finally {
@@ -1416,7 +1416,7 @@ function JobsPageContent() {
       paymentAccountNumber: quotationPaymentAccountNumber || undefined,
       preparedByName: quotationPreparedByName || undefined,
       preparedByTitle: quotationPreparedByTitle || undefined,
-  };
+    };
 
     const pdf = generateQuotationPDF(pdfData);
     const jobTitle = selectedJobForQuotation.title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
