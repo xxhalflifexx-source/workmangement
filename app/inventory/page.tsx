@@ -118,7 +118,9 @@ export default function InventoryPage() {
   const [filterRequestStatus, setFilterRequestStatus] = useState("ALL");
   const [filterRequestJob, setFilterRequestJob] = useState("ALL");
   const [filterRequester, setFilterRequester] = useState("ALL");
-  const [requestSortField, setRequestSortField] = useState<"requestNumber" | "requestedDate" | "itemName" | "quantity">("requestedDate");
+  const [filterItem, setFilterItem] = useState("ALL");
+  const [filterAction, setFilterAction] = useState("ALL");
+  const [requestSortField, setRequestSortField] = useState<"requestNumber" | "requestedDate" | "itemName" | "quantity" | "fulfilledDate">("requestedDate");
   const [requestSortDirection, setRequestSortDirection] = useState<"asc" | "desc">("desc");
   const [requestCurrentPage, setRequestCurrentPage] = useState(1);
   const requestsPerPage = 20;
@@ -481,8 +483,10 @@ export default function InventoryPage() {
     const matchesStatus = filterRequestStatus === "ALL" || req.status === filterRequestStatus;
     const matchesJob = filterRequestJob === "ALL" || (filterRequestJob === "NO_JOB" && !req.job) || req.job?.id === filterRequestJob;
     const matchesRequester = filterRequester === "ALL" || req.user.email === filterRequester;
+    const matchesItem = filterItem === "ALL" || req.itemName.toLowerCase() === filterItem.toLowerCase();
+    const matchesAction = filterAction === "ALL" || (req.recommendedAction || "PENDING") === filterAction;
 
-    return matchesSearch && matchesStatus && matchesJob && matchesRequester;
+    return matchesSearch && matchesStatus && matchesJob && matchesRequester && matchesItem && matchesAction;
   });
 
   // Sort material requests
@@ -505,6 +509,10 @@ export default function InventoryPage() {
         aVal = a.quantity;
         bVal = b.quantity;
         break;
+      case "fulfilledDate":
+        aVal = a.fulfilledDate ? new Date(a.fulfilledDate).getTime() : 0;
+        bVal = b.fulfilledDate ? new Date(b.fulfilledDate).getTime() : 0;
+        break;
       default:
         return 0;
     }
@@ -523,6 +531,7 @@ export default function InventoryPage() {
   // Get unique values for filters
   const uniqueJobs = Array.from(new Set(materialRequests.map((r) => r.job?.id).filter(Boolean)));
   const uniqueRequesters = Array.from(new Set(materialRequests.map((r) => r.user.email).filter(Boolean)));
+  const uniqueItems = Array.from(new Set(materialRequests.map((r) => r.itemName))).sort();
 
   // Export functions
   const exportInventoryToCSV = () => {
@@ -551,15 +560,14 @@ export default function InventoryPage() {
   };
 
   const exportRequestsToCSV = () => {
-    const headers = ["Job No.", "Employee", "Item", "Qty Requested", "Availability", "Action", "Amount", "Status", "Order Status", "Date Requested", "Date Approved", "Date Delivered", "Notes"];
+    const headers = ["Job No.", "Employee", "Item", "Qty Requested", "Availability", "Action", "Amount", "Order Status", "Date Requested", "Date Approved", "Notes"];
     const rows = sortedRequests.map((req) => {
       const currentStock = getCurrentStock(req.itemName);
       const recommendedAction = getRecommendedAction(req);
       const inventoryItem = items.find((item) => item.name.toLowerCase() === req.itemName.toLowerCase());
       const availability = inventoryItem ? (currentStock >= req.quantity ? "Available" : "Unavailable") : "Unavailable";
-      const dateApproved = req.status === "APPROVED" || req.status === "FULFILLED" ? (req.fulfilledDate ? formatDate(req.fulfilledDate) : "") : "";
+      const dateApproved = req.fulfilledDate ? formatDate(req.fulfilledDate) : "";
       const orderStatus = req.orderStatus === "TO_ORDER" ? "To Order" : req.orderStatus === "ORDERED" ? "Ordered" : req.orderStatus === "RECEIVED" ? "Received" : "";
-      const statusDisplay = req.status === "APPROVED" ? "Approved" : req.status === "REJECTED" ? "Rejected" : req.status === "FULFILLED" ? "Fulfilled" : req.status === "ON_HOLD" ? "On Hold" : "Pending";
       return [
         req.job ? req.job.id.substring(0, 8).toUpperCase() : "",
         req.user.name || req.user.email || "",
@@ -568,11 +576,9 @@ export default function InventoryPage() {
         availability,
         recommendedAction === "APPROVE" ? "Approve" : recommendedAction === "PARTIAL" ? "Partial" : recommendedAction === "REJECTED" ? "Rejected" : "Pending",
         req.amount ? formatCurrency(req.amount) : "",
-        statusDisplay,
         orderStatus,
         formatDate(req.requestedDate),
         dateApproved,
-        req.dateDelivered ? formatDate(req.dateDelivered) : "",
         req.notes || "",
       ];
     });
@@ -1034,30 +1040,15 @@ export default function InventoryPage() {
                 </div>
               </div>
 
-              <div className="flex flex-col sm:flex-row gap-3">
-                <select
-                  value={filterRequestStatus}
-                  onChange={(e) => {
-                    setFilterRequestStatus(e.target.value);
-                    setRequestCurrentPage(1);
-                  }}
-                  className="border border-gray-300 rounded-lg px-3 py-2.5 sm:py-2 text-sm min-h-[44px] flex-1 sm:flex-initial min-w-[150px]"
-                >
-                  <option value="ALL">All Status</option>
-                  <option value="PENDING">Pending</option>
-                  <option value="APPROVED">Approved</option>
-                  <option value="ON_HOLD">On Hold</option>
-                  <option value="REJECTED">Denied</option>
-                  <option value="FULFILLED">Fulfilled</option>
-                </select>
-
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                {/* Employee Filter - aligned to Employee column */}
                 <select
                   value={filterRequester}
                   onChange={(e) => {
                     setFilterRequester(e.target.value);
                     setRequestCurrentPage(1);
                   }}
-                  className="border border-gray-300 rounded-lg px-3 py-2.5 sm:py-2 text-sm min-h-[44px] flex-1 sm:flex-initial min-w-[150px]"
+                  className="border border-gray-300 rounded-lg px-3 py-2.5 sm:py-2 text-sm min-h-[44px]"
                 >
                   <option value="ALL">All Employees</option>
                   {materialRequests
@@ -1073,6 +1064,55 @@ export default function InventoryPage() {
                         </option>
                       );
                     })}
+                </select>
+
+                {/* Item Filter - aligned to Item column */}
+                <select
+                  value={filterItem}
+                  onChange={(e) => {
+                    setFilterItem(e.target.value);
+                    setRequestCurrentPage(1);
+                  }}
+                  className="border border-gray-300 rounded-lg px-3 py-2.5 sm:py-2 text-sm min-h-[44px]"
+                >
+                  <option value="ALL">All Items</option>
+                  {uniqueItems.map((item) => (
+                    <option key={item} value={item}>
+                      {item}
+                    </option>
+                  ))}
+                </select>
+
+                {/* Action Filter - aligned to Action column */}
+                <select
+                  value={filterAction}
+                  onChange={(e) => {
+                    setFilterAction(e.target.value);
+                    setRequestCurrentPage(1);
+                  }}
+                  className="border border-gray-300 rounded-lg px-3 py-2.5 sm:py-2 text-sm min-h-[44px]"
+                >
+                  <option value="ALL">All Actions</option>
+                  <option value="PENDING">Pending</option>
+                  <option value="APPROVE">Approve</option>
+                  <option value="PARTIAL">Partial</option>
+                  <option value="REJECTED">Rejected</option>
+                </select>
+
+                {/* Status Filter */}
+                <select
+                  value={filterRequestStatus}
+                  onChange={(e) => {
+                    setFilterRequestStatus(e.target.value);
+                    setRequestCurrentPage(1);
+                  }}
+                  className="border border-gray-300 rounded-lg px-3 py-2.5 sm:py-2 text-sm min-h-[44px]"
+                >
+                  <option value="ALL">All Status</option>
+                  <option value="PENDING">Pending</option>
+                  <option value="APPROVED">Approved</option>
+                  <option value="ON_HOLD">On Hold</option>
+                  <option value="REJECTED">Rejected</option>
                 </select>
               </div>
             </div>
@@ -1140,7 +1180,6 @@ export default function InventoryPage() {
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Availability</th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Action</th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Amount</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Status</th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Order Status</th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                           <button
@@ -1154,8 +1193,18 @@ export default function InventoryPage() {
                             {requestSortField === "requestedDate" && (requestSortDirection === "asc" ? "↑" : "↓")}
                           </button>
                         </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Date Approved</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Date Delivered</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                          <button
+                            onClick={() => {
+                              setRequestSortField("fulfilledDate");
+                              setRequestSortDirection(requestSortField === "fulfilledDate" && requestSortDirection === "asc" ? "desc" : "asc");
+                            }}
+                            className="flex items-center gap-1 hover:text-gray-700"
+                          >
+                            Date Approved
+                            {requestSortField === "fulfilledDate" && (requestSortDirection === "asc" ? "↑" : "↓")}
+                          </button>
+                        </th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Notes</th>
                       </tr>
                     </thead>
@@ -1260,6 +1309,10 @@ export default function InventoryPage() {
                                       // Keep current status - Recommended Action is independent and does NOT change status
                                       form.append("status", req.status);
                                       form.append("recommendedAction", newValue);
+                                      // Update approved date when action is set to APPROVE
+                                      if (newValue === "APPROVE") {
+                                        form.append("fulfilledDate", new Date().toISOString());
+                                      }
                                       const res = await updateMaterialRequest(req.id, form);
                                       if (!res.ok) {
                                         console.error("[Inventory] Recommended Action update error:", res.error, "requestId:", req.id, "newValue:", newValue);
@@ -1358,50 +1411,6 @@ export default function InventoryPage() {
                             <td className="px-4 py-3 text-sm">
                               {canManage ? (
                                 <select
-                                  value={req.status}
-                                  onChange={async (e) => {
-                                    const newStatus = e.target.value;
-                                    // Check if amount is required for APPROVED or FULFILLED
-                                    if ((newStatus === "APPROVED" || newStatus === "FULFILLED") && (!req.amount || req.amount <= 0)) {
-                                      setError("Amount is required before updating status to APPROVED or FULFILLED");
-                                      e.target.value = req.status;
-                                      return;
-                                    }
-                                    await handleUpdateRequestStatus(req.id, newStatus, req.amount || undefined);
-                                  }}
-                                  className={`text-xs font-medium px-2 py-1 rounded border min-h-[44px] ${
-                                    req.status === "APPROVED" ? "bg-green-100 text-green-700 border-green-300" :
-                                    req.status === "REJECTED" ? "bg-red-100 text-red-700 border-red-300" :
-                                    req.status === "FULFILLED" ? "bg-blue-100 text-blue-700 border-blue-300" :
-                                    req.status === "ON_HOLD" ? "bg-yellow-100 text-yellow-700 border-yellow-300" :
-                                    "bg-gray-100 text-gray-700 border-gray-300"
-                                  }`}
-                                >
-                                  <option value="PENDING">Pending</option>
-                                  <option value="APPROVED">Approved</option>
-                                  <option value="REJECTED">Rejected</option>
-                                  <option value="FULFILLED">Fulfilled</option>
-                                  <option value="ON_HOLD">On Hold</option>
-                                </select>
-                              ) : (
-                                <span className={`px-2 py-1 rounded text-xs font-medium ${
-                                  req.status === "APPROVED" ? "bg-green-100 text-green-700" :
-                                  req.status === "REJECTED" ? "bg-red-100 text-red-700" :
-                                  req.status === "FULFILLED" ? "bg-blue-100 text-blue-700" :
-                                  req.status === "ON_HOLD" ? "bg-yellow-100 text-yellow-700" :
-                                  "bg-gray-100 text-gray-700"
-                                }`}>
-                                  {req.status === "APPROVED" ? "Approved" :
-                                   req.status === "REJECTED" ? "Rejected" :
-                                   req.status === "FULFILLED" ? "Fulfilled" :
-                                   req.status === "ON_HOLD" ? "On Hold" :
-                                   "Pending"}
-                                </span>
-                              )}
-                            </td>
-                            <td className="px-4 py-3 text-sm">
-                              {canManage ? (
-                                <select
                                   value={req.orderStatus || ""}
                                   onChange={async (e) => {
                                     const newValue = e.target.value;
@@ -1458,10 +1467,7 @@ export default function InventoryPage() {
                               {formatDate(req.requestedDate)}
                             </td>
                             <td className="px-4 py-3 text-sm text-gray-600">
-                              {req.status === "APPROVED" || req.status === "FULFILLED" ? (req.fulfilledDate ? formatDate(req.fulfilledDate) : "—") : "—"}
-                            </td>
-                            <td className="px-4 py-3 text-sm text-gray-600">
-                              {req.dateDelivered ? formatDate(req.dateDelivered) : "—"}
+                              {req.fulfilledDate ? formatDate(req.fulfilledDate) : "—"}
                             </td>
                             <td className="px-4 py-3 text-sm text-gray-600 max-w-xs">
                               {canManage ? (

@@ -471,9 +471,15 @@ export async function updateMaterialRequest(requestId: string, formData: FormDat
       updateData.dateDelivered = new Date(dateDelivered);
     }
 
-    // Only set fulfilled date if status is ACTUALLY CHANGING to APPROVED or FULFILLED
-    // Do NOT set this when only updating Recommended Action
-    if (statusChanged) {
+    // Set fulfilled date (approved date) when:
+    // 1. Status changes to APPROVED or FULFILLED
+    // 2. Action (recommendedAction) is set to APPROVE
+    const fulfilledDateRaw = formData.get("fulfilledDate") as string | null;
+    if (fulfilledDateRaw) {
+      // If fulfilledDate is explicitly provided (e.g., from Action update), use it
+      updateData.fulfilledDate = new Date(fulfilledDateRaw);
+    } else if (statusChanged) {
+      // If status changed, set fulfilled date accordingly
       if (newStatus === "APPROVED") {
         // Set approval date if not already set
         if (!existing?.fulfilledDate) {
@@ -483,6 +489,9 @@ export async function updateMaterialRequest(requestId: string, formData: FormDat
         // Always set fulfillment date when status changes to FULFILLED
         updateData.fulfilledDate = centralToUTC(nowInCentral().toDate());
       }
+    } else if (parsed.data.recommendedAction === "APPROVE" && !existing?.fulfilledDate) {
+      // If Action is set to APPROVE and there's no existing fulfilledDate, set it
+      updateData.fulfilledDate = centralToUTC(nowInCentral().toDate());
     }
 
     const request = await prisma.materialRequest.update({
