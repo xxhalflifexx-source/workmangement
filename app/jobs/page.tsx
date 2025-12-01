@@ -1672,6 +1672,7 @@ function JobsPageContent() {
                   )}
                 </tbody>
               </table>
+              </div>
             </div>
             
             {/* Pagination */}
