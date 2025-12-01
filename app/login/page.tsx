@@ -24,7 +24,7 @@ export default function LoginPage() {
       <div 
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{
-          backgroundImage: "url('/login-background.jpg')", // Change this to your image path
+          backgroundImage: "url('/login-background.jpg.jpeg')",
         }}
       >
         {/* Low-opacity overlay */}
