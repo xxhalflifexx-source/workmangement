@@ -20,19 +20,22 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center relative">
-      {/* Background Image with Overlay - Falls back to gradient if image not found */}
-      <div 
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{
-          backgroundImage: "url('/login-background.jpg.jpeg')",
-        }}
-      >
-        {/* Low-opacity overlay */}
-        <div className="absolute inset-0 bg-black bg-opacity-40"></div>
-      </div>
-      
-      {/* Gradient Fallback Background (shows if image doesn't load) */}
+      {/* Gradient Fallback Background (base layer) */}
       <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-blue-500 to-indigo-600"></div>
+      
+      {/* Background Image */}
+      <img 
+        src="/login-background.jpg.jpeg"
+        alt=""
+        className="absolute inset-0 w-full h-full object-cover z-[1]"
+        onError={(e) => {
+          // Hide image if it fails to load, gradient will show
+          (e.target as HTMLImageElement).style.display = 'none';
+        }}
+      />
+      
+      {/* Low-opacity overlay */}
+      <div className="absolute inset-0 bg-black bg-opacity-40 z-[2]"></div>
 
       {/* Login Card */}
       <div className="relative z-10 w-full max-w-sm mx-4">
