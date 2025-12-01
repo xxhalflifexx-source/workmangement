@@ -1353,49 +1353,51 @@ export default function InventoryPage() {
                             <td className="px-4 py-3 text-sm">
                               {canManage ? (
                                 <input
+                                  key={`amount-${req.id}-${req.amount}`}
                                   type="number"
                                   min="0"
                                   step="0.01"
-                                  value={req.amount || ""}
-                                  onChange={async (e) => {
-                                    const newAmount = e.target.value === "" ? null : parseFloat(e.target.value);
-                                    if (newAmount !== null && (isNaN(newAmount) || newAmount < 0)) {
-                                      setError("Amount must be a valid number greater than or equal to 0");
-                                      e.target.value = req.amount?.toString() || "";
-                                      return;
-                                    }
-                                    try {
-                                      const form = new FormData();
-                                      form.append("status", req.status);
-                                      if (newAmount !== null) {
-                                        form.append("amount", newAmount.toString());
-                                      } else {
-                                        form.append("amount", "");
-                                      }
-                                      const res = await updateMaterialRequest(req.id, form);
-                                      if (!res.ok) {
-                                        console.error("[Inventory] Amount update error:", res.error, "requestId:", req.id);
-                                        setError(res.error);
-                                        e.target.value = req.amount?.toString() || "";
-                                      } else {
-                                        loadMaterialRequests();
-                                      }
-                                    } catch (err: any) {
-                                      console.error("[Inventory] Amount update exception:", err, "requestId:", req.id);
-                                      setError("Failed to update amount");
-                                      e.target.value = req.amount?.toString() || "";
-                                    }
-                                  }}
-                                  onBlur={(e) => {
-                                    const value = e.target.value;
+                                  defaultValue={req.amount || ""}
+                                  onBlur={async (e) => {
+                                    const value = e.target.value.trim();
+                                    let numValue: number | null = null;
+                                    
+                                    // Format and validate the value
                                     if (value === "") {
-                                      e.target.value = "";
+                                      numValue = null;
                                     } else {
-                                      const numValue = parseFloat(value);
+                                      numValue = parseFloat(value);
                                       if (isNaN(numValue) || numValue < 0) {
+                                        setError("Amount must be a valid number greater than or equal to 0");
                                         e.target.value = req.amount?.toString() || "";
-                                      } else {
-                                        e.target.value = numValue.toFixed(2);
+                                        return;
+                                      }
+                                      // Format to 2 decimal places
+                                      e.target.value = numValue.toFixed(2);
+                                    }
+                                    
+                                    // Only save if the value actually changed
+                                    if (numValue !== req.amount) {
+                                      try {
+                                        const form = new FormData();
+                                        form.append("status", req.status);
+                                        if (numValue !== null) {
+                                          form.append("amount", numValue.toString());
+                                        } else {
+                                          form.append("amount", "");
+                                        }
+                                        const res = await updateMaterialRequest(req.id, form);
+                                        if (!res.ok) {
+                                          console.error("[Inventory] Amount update error:", res.error, "requestId:", req.id);
+                                          setError(res.error);
+                                          e.target.value = req.amount?.toString() || "";
+                                        } else {
+                                          loadMaterialRequests();
+                                        }
+                                      } catch (err: any) {
+                                        console.error("[Inventory] Amount update exception:", err, "requestId:", req.id);
+                                        setError("Failed to update amount");
+                                        e.target.value = req.amount?.toString() || "";
                                       }
                                     }
                                   }}
