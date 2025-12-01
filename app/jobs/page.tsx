@@ -105,36 +105,128 @@ function JobsPageContent() {
   const [error, setError] = useState<string | undefined>();
   const [success, setSuccess] = useState<string | undefined>();
   
-  // Pagination state
-  const [currentPage, setCurrentPage] = useState(1);
+  // Track initial load and prevent unnecessary reloads on tab switch
+  const hasInitiallyLoaded = useRef(false);
+  const lastSessionId = useRef<string | null>(null);
+  
+  // Pagination state - load from localStorage if available
+  const [currentPage, setCurrentPage] = useState(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("jobs_currentPage");
+      return saved ? parseInt(saved, 10) : 1;
+    }
+    return 1;
+  });
   const [pageSize] = useState(20);
   const [totalCount, setTotalCount] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   
-  // Filter state
+  // Filter state - load from localStorage if available
   const [showModal, setShowModal] = useState(false);
   const [editingJob, setEditingJob] = useState<Job | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("jobs_searchQuery");
+      return saved || "";
+    }
+    return "";
+  });
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
-  const [filterStatus, setFilterStatus] = useState("ALL");
+  const [filterStatus, setFilterStatus] = useState(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("jobs_filterStatus");
+      return saved || "ALL";
+    }
+    return "ALL";
+  });
   const [filterPriority, setFilterPriority] = useState("ALL");
-  const [filterCustomer, setFilterCustomer] = useState("");
-  const [filterWorker, setFilterWorker] = useState("");
-  const [filterDateFrom, setFilterDateFrom] = useState("");
-  const [filterDateTo, setFilterDateTo] = useState("");
+  const [filterCustomer, setFilterCustomer] = useState(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("jobs_filterCustomer");
+      return saved || "";
+    }
+    return "";
+  });
+  const [filterWorker, setFilterWorker] = useState(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("jobs_filterWorker");
+      return saved || "";
+    }
+    return "";
+  });
+  const [filterDateFrom, setFilterDateFrom] = useState(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("jobs_filterDateFrom");
+      return saved || "";
+    }
+    return "";
+  });
+  const [filterDateTo, setFilterDateTo] = useState(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("jobs_filterDateTo");
+      return saved || "";
+    }
+    return "";
+  });
   
   // Initialize search params after component mounts
   const [searchInitialized, setSearchInitialized] = useState(false);
   
-  // Debounce search query
+  // Track if filters have been applied to prevent unnecessary reloads
+  const filtersInitialized = useRef(false);
+  
+  // Debounce search query and save to localStorage
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearchQuery(searchQuery);
+      if (typeof window !== "undefined") {
+        localStorage.setItem("jobs_searchQuery", searchQuery);
+      }
       setCurrentPage(1); // Reset to first page on search
+      if (typeof window !== "undefined") {
+        localStorage.setItem("jobs_currentPage", "1");
+      }
     }, 300); // 300ms debounce
     
     return () => clearTimeout(timer);
   }, [searchQuery]);
+  
+  // Save filter changes to localStorage
+  useEffect(() => {
+    if (typeof window !== "undefined" && filtersInitialized.current) {
+      localStorage.setItem("jobs_filterStatus", filterStatus);
+    }
+  }, [filterStatus]);
+  
+  useEffect(() => {
+    if (typeof window !== "undefined" && filtersInitialized.current) {
+      localStorage.setItem("jobs_filterCustomer", filterCustomer);
+    }
+  }, [filterCustomer]);
+  
+  useEffect(() => {
+    if (typeof window !== "undefined" && filtersInitialized.current) {
+      localStorage.setItem("jobs_filterWorker", filterWorker);
+    }
+  }, [filterWorker]);
+  
+  useEffect(() => {
+    if (typeof window !== "undefined" && filtersInitialized.current) {
+      localStorage.setItem("jobs_filterDateFrom", filterDateFrom);
+    }
+  }, [filterDateFrom]);
+  
+  useEffect(() => {
+    if (typeof window !== "undefined" && filtersInitialized.current) {
+      localStorage.setItem("jobs_filterDateTo", filterDateTo);
+    }
+  }, [filterDateTo]);
+  
+  useEffect(() => {
+    if (typeof window !== "undefined" && filtersInitialized.current) {
+      localStorage.setItem("jobs_currentPage", currentPage.toString());
+    }
+  }, [currentPage]);
   
   const [showCustomerForm, setShowCustomerForm] = useState(false);
   const [newCustomerName, setNewCustomerName] = useState("");
@@ -355,7 +447,7 @@ function JobsPageContent() {
     }
   }, [session, currentPage, pageSize, debouncedSearchQuery, filterStatus, filterCustomer, filterWorker, filterDateFrom, filterDateTo]);
 
-  // Load data when session is ready
+  // Load data when session is ready (only on initial load or actual session change)
   useEffect(() => {
     if (sessionStatus === "loading") {
       return;
@@ -364,19 +456,41 @@ function JobsPageContent() {
     if (!session?.user) {
       setLoading(false);
       setError("Please log in to view jobs");
+      hasInitiallyLoaded.current = false;
+      lastSessionId.current = null;
       return;
     }
     
-    // Load data once session is ready
-    loadData();
-  }, [sessionStatus, session, loadData]);
+    const currentSessionId = (session.user as any)?.id;
+    
+    // Only reload if:
+    // 1. This is the initial load (hasInitiallyLoaded is false)
+    // 2. The session user ID actually changed (different user logged in)
+    // Don't reload if just re-validating the same session
+    if (!hasInitiallyLoaded.current || lastSessionId.current !== currentSessionId) {
+      hasInitiallyLoaded.current = true;
+      lastSessionId.current = currentSessionId;
+      filtersInitialized.current = false; // Reset filter initialization on new session
+      loadData();
+    }
+  }, [sessionStatus, session?.user, loadData]);
   
   // Reload data when filters change (reset to page 1)
+  // Only reload if filters have been initialized (not on initial mount)
   useEffect(() => {
-    if (sessionStatus === "loading" || !session?.user) return;
+    if (sessionStatus === "loading" || !session?.user || !hasInitiallyLoaded.current) return;
+    
+    // Mark filters as initialized after first load
+    if (!filtersInitialized.current) {
+      filtersInitialized.current = true;
+      return;
+    }
     
     // Reset to first page and reload when filters change
     setCurrentPage(1);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("jobs_currentPage", "1");
+    }
     loadData(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filterStatus, filterCustomer, filterWorker, filterDateFrom, filterDateTo, debouncedSearchQuery]);
