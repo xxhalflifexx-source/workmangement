@@ -175,12 +175,6 @@ export default function HRPage() {
           </div>
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
             <Link
-              href="/handbook"
-              className="w-full sm:w-auto px-4 py-2.5 sm:py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium whitespace-nowrap min-h-[44px] flex items-center justify-center"
-            >
-              📖 Employee Handbook
-            </Link>
-            <Link
               href="/dashboard"
               className="w-full sm:w-auto px-4 py-2.5 sm:py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium whitespace-nowrap min-h-[44px] flex items-center justify-center"
             >

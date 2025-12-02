@@ -137,6 +137,16 @@ export default async function Dashboard() {
               <div className="text-xs text-gray-500 mt-1">System settings</div>
             </Link>
           )}
+
+          {/* Employee Handbook - Visible to all roles */}
+          <Link
+            href="/handbook"
+            className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 hover:shadow-md transition-all hover:border-blue-300 flex flex-col items-center justify-center text-center min-h-[100px] sm:min-h-[120px]"
+          >
+            <div className="text-3xl sm:text-4xl mb-2">📖</div>
+            <div className="font-semibold text-sm sm:text-base text-gray-900">Employee Handbook</div>
+            <div className="text-xs text-gray-500 mt-1">Company policies</div>
+          </Link>
         </div>
 
         {/* Quick Info Section */}

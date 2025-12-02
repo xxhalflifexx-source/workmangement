@@ -365,3 +365,13 @@ model Notification {
   @@index([userId, isRead])
   @@index([userId, createdAt])
 }
+
+model EmployeeHandbook {
+  id        String   @id @default(cuid())
+  content   String   @db.Text // HTML/rich text content of the handbook
+  updatedBy String? // User ID who last updated
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("EmployeeHandbook")
+}
