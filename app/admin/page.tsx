@@ -8,7 +8,6 @@ import {
   updateUserHourlyRate,
   getCompanySettings,
   updateCompanySettings,
-  getFinancialSummary,
   updateUserProfileDetails,
   resetUserPasswordByAdmin,
 } from "./actions";
@@ -51,7 +50,7 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | undefined>();
   const [success, setSuccess] = useState<string | undefined>();
-  const [activeTab, setActiveTab] = useState<"users" | "settings" | "financials" | "registration-codes">("users");
+  const [activeTab, setActiveTab] = useState<"users" | "settings" | "registration-codes">("users");
   
   const { data: session } = useSession();
   const userRole = (session?.user as any)?.role;
@@ -59,13 +58,6 @@ export default function AdminPage() {
   const isAdmin = userRole === "ADMIN";
   const canManageRoles = userRole === "ADMIN" || userRole === "MANAGER";
 
-  const [finStart, setFinStart] = useState<string>(() => {
-    const start = nowInCentral().startOf('year');
-    return start.format('YYYY-MM-DD');
-  });
-  const [finEnd, setFinEnd] = useState<string>(todayCentralISO());
-  const [finLoading, setFinLoading] = useState(false);
-  const [finSummary, setFinSummary] = useState<any>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
   const [showRoleChangeConfirm, setShowRoleChangeConfirm] = useState<{ userId: string; newRole: string; userName: string; currentRole: string } | null>(null);
   const [userSearch, setUserSearch] = useState("");
@@ -207,18 +199,6 @@ export default function AdminPage() {
     }
   };
 
-  const loadFinancials = async () => {
-    setFinLoading(true);
-    setError(undefined);
-    const res = await getFinancialSummary(finStart, finEnd);
-    if (!res.ok) {
-      setError(res.error);
-      setFinSummary(null);
-    } else {
-      setFinSummary(res.summary);
-    }
-    setFinLoading(false);
-  };
 
   const getRoleBadgeColor = (role: string) => {
     switch (role) {
@@ -370,16 +350,6 @@ export default function AdminPage() {
                 }`}
               >
                 🏢 <span className="ml-1 sm:ml-0">Company Settings</span>
-              </button>
-              <button
-                onClick={() => setActiveTab("financials")}
-                className={`py-3 sm:py-4 px-2 sm:px-1 border-b-2 font-medium text-xs sm:text-sm whitespace-nowrap min-h-[44px] flex items-center ${
-                  activeTab === "financials"
-                    ? "border-green-500 text-green-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                }`}
-              >
-                💹 <span className="ml-1 sm:ml-0">Financials</span>
               </button>
               {isAdmin && (
                 <button
@@ -917,71 +887,6 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* Financials Tab */}
-        {activeTab === "financials" && (
-          <div className="bg-white rounded-xl shadow border border-gray-200">
-            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-              <div>
-                <h2 className="text-xl font-semibold text-gray-900">Company Financials</h2>
-                <p className="text-sm text-gray-500">Revenue, labor, expenses, profit, and bankroll</p>
-              </div>
-              <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
-                <input type="date" value={finStart} onChange={(e) => setFinStart(e.target.value)} className="border rounded-lg px-3 py-2.5 sm:py-1.5 text-sm min-h-[44px] flex-1" />
-                <span className="text-gray-500 text-center sm:text-left">to</span>
-                <input type="date" value={finEnd} onChange={(e) => setFinEnd(e.target.value)} className="border rounded-lg px-3 py-2.5 sm:py-1.5 text-sm min-h-[44px] flex-1" />
-                <button onClick={loadFinancials} className="px-4 py-2.5 sm:py-2 border rounded-lg text-sm hover:bg-gray-50 min-h-[44px]">Run</button>
-              </div>
-            </div>
-
-            {finLoading ? (
-              <div className="p-8 text-center text-gray-600">Calculating...</div>
-            ) : finSummary ? (
-              <div className="p-6 space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <div className="p-4 border rounded-lg bg-green-50">
-                    <div className="text-sm text-green-700">Revenue</div>
-                    <div className="text-2xl font-bold text-green-800">${finSummary.revenue.toFixed(2)}</div>
-                  </div>
-                  <div className="p-4 border rounded-lg bg-blue-50">
-                    <div className="text-sm text-blue-700">Labor Cost</div>
-                    <div className="text-2xl font-bold text-blue-800">${finSummary.labor.cost.toFixed(2)}</div>
-                    <div className="text-xs text-blue-700">{finSummary.labor.hours.toFixed(2)} hrs</div>
-                  </div>
-                  <div className="p-4 border rounded-lg bg-yellow-50">
-                    <div className="text-sm text-yellow-700">Expenses</div>
-                    <div className="text-2xl font-bold text-yellow-800">${finSummary.expenses.total.toFixed(2)}</div>
-                  </div>
-                  <div className="p-4 border rounded-lg bg-purple-50">
-                    <div className="text-sm text-purple-700">Profit</div>
-                    <div className={`text-2xl font-bold ${finSummary.profit >= 0 ? "text-purple-800" : "text-red-700"}`}>${finSummary.profit.toFixed(2)}</div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                  <div className="lg:col-span-2 p-4 border rounded-lg">
-                    <h3 className="font-semibold mb-3">Expenses by Category</h3>
-                    {Object.keys(finSummary.expenses.byCategory).length === 0 ? (
-                      <div className="text-sm text-gray-500">No expenses in this period.</div>
-                    ) : (
-                      <ul className="space-y-2 text-sm">
-                        {Object.entries(finSummary.expenses.byCategory).map(([cat, amt]: any) => (
-                          <li key={cat} className="flex justify-between"><span>{cat}</span><span className="font-medium">${(amt as number).toFixed(2)}</span></li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-                  <div className="p-4 border rounded-lg">
-                    <h3 className="font-semibold mb-3">Bankroll</h3>
-                    <div className="text-3xl font-bold">${finSummary.bankroll.toFixed(2)}</div>
-                    <p className="text-xs text-gray-500 mt-2">Calculated as profit for selected period. Add opening balance logic later if needed.</p>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="p-6 text-gray-600">Select a date range and click Run.</div>
-            )}
-          </div>
-        )}
 
         {/* Registration Codes Tab - Admin Only */}
         {activeTab === "registration-codes" && isAdmin && (
