@@ -1366,7 +1366,8 @@ export default function FinancePage() {
                   </table>
                 </div>
               </div>
-            )}
+          </div>
+        )}
 
         {/* Invoice Details Modal */}
         {showDetails && selectedInvoice && (
