@@ -1002,7 +1002,7 @@ export default function FinancePage() {
                 </p>
               </div>
             ) : (
-              /* Invoice Table */
+              // Invoice Table
               <div className="bg-white rounded-xl shadow border border-gray-200 overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="min-w-full divide-y divide-gray-200">
@@ -1314,6 +1314,7 @@ export default function FinancePage() {
                   </table>
                 </div>
               </div>
+            )}
           </div>
         </div>
 
