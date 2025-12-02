@@ -48,8 +48,8 @@ export default function FinancePage() {
   const [finLoading, setFinLoading] = useState(false);
   const [finSummary, setFinSummary] = useState<any>(null);
 
-	const [loading, setLoading] = useState(true);
-	const [error, setError] = useState<string | undefined>();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | undefined>();
   const [success, setSuccess] = useState<string | undefined>();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [filteredInvoices, setFilteredInvoices] = useState<Invoice[]>([]);
@@ -158,13 +158,13 @@ export default function FinancePage() {
       setInvoices([]);
       setFilteredInvoices([]);
     } finally {
-setLoading(false);
+      setLoading(false);
     }
-	};
+  };
 
-	useEffect(() => {
+  useEffect(() => {
     loadInvoices();
-	}, []);
+  }, []);
 
   // Apply filters and search
   useEffect(() => {
@@ -951,40 +951,40 @@ setLoading(false);
               )}
             </div>
 
-				{/* Filters */}
-        <div className="bg-white rounded-xl shadow border border-gray-200 p-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            {/* Search */}
-						<div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Search
-              </label>
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Invoice #, Job #, Customer..."
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-              />
-						</div>
+            {/* Filters */}
+            <div className="bg-white rounded-xl shadow border border-gray-200 p-6">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                {/* Search */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Search
+                  </label>
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Invoice #, Job #, Customer..."
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                  />
+                </div>
 
-            {/* Status Filter */}
-						<div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Status
-              </label>
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-              >
-                <option value="ALL">All Status</option>
-                <option value="PENDING">Pending</option>
-                <option value="PAID">Paid</option>
-                <option value="OVERDUE">Overdue</option>
-                <option value="CANCELLED">Cancelled</option>
-              </select>
-						</div>
+                {/* Status Filter */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Status
+                  </label>
+                  <select
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                  >
+                    <option value="ALL">All Status</option>
+                    <option value="PENDING">Pending</option>
+                    <option value="PAID">Paid</option>
+                    <option value="OVERDUE">Overdue</option>
+                    <option value="CANCELLED">Cancelled</option>
+                  </select>
+                </div>
 
             {/* Date From */}
             <div>
@@ -1010,57 +1010,57 @@ setLoading(false);
                 onChange={(e) => setDateTo(e.target.value)}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
               />
-					</div>
-				</div>
+                </div>
+              </div>
 
-          {/* Clear Filters */}
-          {(searchQuery || statusFilter !== "ALL" || dateFrom || dateTo) && (
-            <div className="mt-4">
-              <button
-                onClick={() => {
-                  setSearchQuery("");
-                  setStatusFilter("ALL");
-                  setDateFrom("");
-                  setDateTo("");
-                }}
-                className="text-sm text-blue-600 hover:text-blue-700 font-medium"
-              >
-                Clear Filters
-              </button>
+              {/* Clear Filters */}
+              {(searchQuery || statusFilter !== "ALL" || dateFrom || dateTo) && (
+                <div className="mt-4">
+                  <button
+                    onClick={() => {
+                      setSearchQuery("");
+                      setStatusFilter("ALL");
+                      setDateFrom("");
+                      setDateTo("");
+                    }}
+                    className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                  >
+                    Clear Filters
+                  </button>
+                </div>
+              )}
             </div>
-          )}
-        </div>
 
-        {/* Error Message */}
-				{error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-            {error}
-          </div>
-				)}
+            {/* Error Message */}
+            {error && (
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+                {error}
+              </div>
+            )}
 
-        {/* Loading State */}
-				{loading ? (
-          <div className="bg-white rounded-xl shadow border border-gray-200 p-12 text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading invoices...</p>
-          </div>
-        ) : filteredInvoices.length === 0 ? (
-          <div className="bg-white rounded-xl shadow border border-gray-200 p-12 text-center">
-            <p className="text-lg font-medium text-gray-900 mb-2">No invoices found</p>
-            <p className="text-sm text-gray-600">
-              {invoices.length === 0
-                ? "No invoices have been created yet."
-                : "Try adjusting your filters."}
-            </p>
-          </div>
-        ) : (
-          /* Invoice Table */
-          <div className="bg-white rounded-xl shadow border border-gray-200 overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th
+            {/* Loading State */}
+            {loading ? (
+              <div className="bg-white rounded-xl shadow border border-gray-200 p-12 text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                <p className="text-gray-600">Loading invoices...</p>
+              </div>
+            ) : filteredInvoices.length === 0 ? (
+              <div className="bg-white rounded-xl shadow border border-gray-200 p-12 text-center">
+                <p className="text-lg font-medium text-gray-900 mb-2">No invoices found</p>
+                <p className="text-sm text-gray-600">
+                  {invoices.length === 0
+                    ? "No invoices have been created yet."
+                    : "Try adjusting your filters."}
+                </p>
+              </div>
+            ) : (
+              /* Invoice Table */
+              <div className="bg-white rounded-xl shadow border border-gray-200 overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th
                       className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                       onClick={() => handleSort("invoiceNumber")}
                     >
@@ -1358,15 +1358,15 @@ setLoading(false);
                               </button>
                             </>
                           )}
-							</div>
+                        </div>
                       </td>
                     </tr>
                   ))}
                 </tbody>
-              </table>
-							</div>
-							</div>
-        )}
+                  </table>
+                </div>
+              </div>
+            )}
 
         {/* Invoice Details Modal */}
         {showDetails && selectedInvoice && (
@@ -1379,7 +1379,7 @@ setLoading(false);
                     <p className="text-sm text-gray-500 mt-1">
                       {selectedInvoice.invoiceNumber || "No Invoice Number"}
                     </p>
-							</div>
+                  </div>
                   <button
                     onClick={() => {
                       setShowDetails(false);
@@ -1389,7 +1389,7 @@ setLoading(false);
                   >
                     ✕
                   </button>
-						</div>
+                </div>
 
                 {/* Invoice Info */}
                 <div className="grid grid-cols-2 gap-6 mb-6">
@@ -1401,7 +1401,7 @@ setLoading(false);
                       <div className="flex justify-between">
                         <span className="text-gray-600">Invoice Number:</span>
                         <span className="font-medium">{selectedInvoice.invoiceNumber || "—"}</span>
-											</div>
+                      </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600">Status:</span>
                         <span>{getStatusBadge(selectedInvoice)}</span>
