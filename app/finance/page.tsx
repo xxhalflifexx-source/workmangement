@@ -48,18 +48,6 @@ export default function FinancePage() {
   const [finLoading, setFinLoading] = useState(false);
   const [finSummary, setFinSummary] = useState<any>(null);
 
-  // Wait for session to load
-  if (sessionStatus === "loading") {
-    return (
-      <main className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
-        </div>
-      </main>
-    );
-  }
-
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | undefined>();
   const [success, setSuccess] = useState<string | undefined>();
@@ -130,6 +118,18 @@ export default function FinancePage() {
   const [pendingStatus, setPendingStatus] = useState("");
   const [showEditConfirm, setShowEditConfirm] = useState(false);
   const [pendingEditData, setPendingEditData] = useState<any>(null);
+
+  // Wait for session to load
+  if (sessionStatus === "loading") {
+    return (
+      <main className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </main>
+    );
+  }
 
   const loadInvoices = async () => {
     setLoading(true);
@@ -862,22 +862,22 @@ setLoading(false);
     );
   }
 
-	return (
-		<main className="min-h-screen bg-gray-50">
-			<header className="bg-white shadow-sm border-b">
+  return (
+    <main className="min-h-screen bg-gray-50">
+      <header className="bg-white shadow-sm border-b">
         <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-24 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-					<div>
+          <div>
             <h1 className="text-xl sm:text-2xl font-bold text-gray-900">💰 Finance</h1>
             <p className="text-xs sm:text-sm text-gray-500">Manage invoices and view financial summaries</p>
-					</div>
+          </div>
           <Link
             href="/dashboard"
             className="w-full sm:w-auto min-h-[44px] flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
           >
             Back to Dashboard
-					</Link>
-				</div>
-			</header>
+          </Link>
+        </div>
+      </header>
 
       <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-24 py-6 sm:py-8">
         {/* Success/Error Messages */}
