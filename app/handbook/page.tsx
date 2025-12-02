@@ -4,192 +4,7 @@ import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { getHandbookContent, saveHandbookContent } from "./actions";
-
-// Default handbook content (used if no content in database)
-const DEFAULT_HANDBOOK_CONTENT = `
-<div class="space-y-6 sm:space-y-8">
-  <section id="welcome" class="bg-white rounded-xl shadow p-6 border border-gray-200">
-    <h3 class="text-2xl font-bold text-gray-900 mb-4">1. Welcome & Mission Statement</h3>
-    <div class="prose max-w-none text-gray-700 space-y-3">
-      <p>Welcome to our company! We're thrilled to have you as part of our team. Our mission is to deliver exceptional service while maintaining a positive, supportive work environment for all employees.</p>
-      <p class="font-semibold">Our Core Values:</p>
-      <ul class="list-disc list-inside space-y-1">
-        <li>Integrity and honesty in all interactions</li>
-        <li>Excellence in craftsmanship and service</li>
-        <li>Respect for all team members and clients</li>
-        <li>Continuous learning and improvement</li>
-        <li>Safety above all else</li>
-      </ul>
-    </div>
-  </section>
-
-  <section id="code-of-conduct" class="bg-white rounded-xl shadow p-6 border border-gray-200">
-    <h3 class="text-2xl font-bold text-gray-900 mb-4">2. Code of Conduct</h3>
-    <div class="prose max-w-none text-gray-700 space-y-3">
-      <p>All employees are expected to:</p>
-      <ul class="list-disc list-inside space-y-1">
-        <li>Treat colleagues, clients, and vendors with respect</li>
-        <li>Maintain professional behavior at all times</li>
-        <li>Follow all company policies and procedures</li>
-        <li>Report any concerns or violations to management</li>
-        <li>Maintain confidentiality of company and client information</li>
-      </ul>
-      <div class="mt-4 p-4 bg-yellow-50 border-l-4 border-yellow-400 text-yellow-800">
-        <p class="font-semibold">⚠️ Note:</p>
-        <p>Violations of our code of conduct may result in disciplinary action, up to and including termination.</p>
-      </div>
-    </div>
-  </section>
-
-  <section id="work-hours" class="bg-white rounded-xl shadow p-6 border border-gray-200">
-    <h3 class="text-2xl font-bold text-gray-900 mb-4">3. Work Hours & Attendance</h3>
-    <div class="prose max-w-none text-gray-700 space-y-3">
-      <p><strong>Standard Work Week:</strong> Monday - Friday, 8:00 AM - 5:00 PM</p>
-      <p><strong>Break Policy:</strong></p>
-      <ul class="list-disc list-inside space-y-1">
-        <li>30-minute unpaid lunch break (for shifts over 6 hours)</li>
-        <li>Two 15-minute paid breaks (one morning, one afternoon)</li>
-      </ul>
-      <p><strong>Attendance:</strong></p>
-      <ul class="list-disc list-inside space-y-1">
-        <li>Punctuality is expected for all shifts</li>
-        <li>Notify your supervisor immediately if you will be late or absent</li>
-        <li>Excessive tardiness or absences may result in disciplinary action</li>
-      </ul>
-    </div>
-  </section>
-
-  <section id="time-tracking" class="bg-white rounded-xl shadow p-6 border border-gray-200">
-    <h3 class="text-2xl font-bold text-gray-900 mb-4">4. Time Tracking System</h3>
-    <div class="prose max-w-none text-gray-700 space-y-3">
-      <p>We use a digital time clock system to track work hours:</p>
-      <ul class="list-disc list-inside space-y-1">
-        <li><strong>Clock In:</strong> When you arrive and are ready to begin work</li>
-        <li><strong>Clock Out:</strong> When you leave for the day or for breaks</li>
-        <li><strong>Job Assignment:</strong> Select the job you're working on when clocking in</li>
-        <li><strong>Notes:</strong> Add notes about your work, progress, or issues</li>
-        <li><strong>Photos:</strong> Upload photos of completed work or problems encountered</li>
-      </ul>
-      <div class="mt-4 p-4 bg-blue-50 border-l-4 border-blue-400 text-blue-800">
-        <p class="font-semibold">💡 Tip:</p>
-        <p>Access the time clock from your dashboard. Make sure to clock in/out accurately - your hours are automatically calculated!</p>
-      </div>
-    </div>
-  </section>
-
-  <section id="pto" class="bg-white rounded-xl shadow p-6 border border-gray-200">
-    <h3 class="text-2xl font-bold text-gray-900 mb-4">5. Paid Time Off (PTO)</h3>
-    <div class="prose max-w-none text-gray-700 space-y-3">
-      <p><strong>Accrual:</strong></p>
-      <ul class="list-disc list-inside space-y-1">
-        <li>0-1 year: 10 days per year</li>
-        <li>1-5 years: 15 days per year</li>
-        <li>5+ years: 20 days per year</li>
-      </ul>
-      <p><strong>Requesting PTO:</strong></p>
-      <ul class="list-disc list-inside space-y-1">
-        <li>Submit requests at least 2 weeks in advance when possible</li>
-        <li>Requests are subject to manager approval based on staffing needs</li>
-        <li>PTO must be used within the calendar year (no rollover)</li>
-      </ul>
-    </div>
-  </section>
-
-  <section id="benefits" class="bg-white rounded-xl shadow p-6 border border-gray-200">
-    <h3 class="text-2xl font-bold text-gray-900 mb-4">6. Benefits</h3>
-    <div class="prose max-w-none text-gray-700 space-y-3">
-      <p>Full-time employees are eligible for:</p>
-      <ul class="list-disc list-inside space-y-1">
-        <li>Health insurance (medical, dental, vision)</li>
-        <li>401(k) retirement plan with company match</li>
-        <li>Paid holidays (8 per year)</li>
-        <li>Paid time off (see PTO section)</li>
-        <li>Professional development opportunities</li>
-        <li>Safety equipment and gear provided</li>
-      </ul>
-      <p class="italic">Benefits eligibility begins after 90 days of employment.</p>
-    </div>
-  </section>
-
-  <section id="safety" class="bg-white rounded-xl shadow p-6 border border-gray-200">
-    <h3 class="text-2xl font-bold text-gray-900 mb-4">7. Safety Policies</h3>
-    <div class="prose max-w-none text-gray-700 space-y-3">
-      <p class="font-semibold text-red-600">⚠️ Safety is our #1 priority!</p>
-      <p><strong>Required Safety Practices:</strong></p>
-      <ul class="list-disc list-inside space-y-1">
-        <li>Always wear required Personal Protective Equipment (PPE)</li>
-        <li>Follow all OSHA guidelines and company safety procedures</li>
-        <li>Report all injuries, no matter how minor, immediately</li>
-        <li>Report unsafe conditions or hazards to your supervisor</li>
-        <li>Never operate equipment you're not trained or authorized to use</li>
-        <li>Keep work areas clean and organized</li>
-      </ul>
-      <div class="mt-4 p-4 bg-red-50 border-l-4 border-red-400 text-red-800">
-        <p class="font-semibold">🚨 Emergency Contact:</p>
-        <p>In case of emergency, call 911 first, then notify your supervisor immediately.</p>
-      </div>
-    </div>
-  </section>
-
-  <section id="technology" class="bg-white rounded-xl shadow p-6 border border-gray-200">
-    <h3 class="text-2xl font-bold text-gray-900 mb-4">8. Technology & Equipment</h3>
-    <div class="prose max-w-none text-gray-700 space-y-3">
-      <p><strong>Company Portal Access:</strong></p>
-      <ul class="list-disc list-inside space-y-1">
-        <li>You have been provided login credentials for our employee portal</li>
-        <li>Do not share your password with anyone</li>
-        <li>Log out when using shared computers</li>
-      </ul>
-      <p><strong>Equipment:</strong></p>
-      <ul class="list-disc list-inside space-y-1">
-        <li>Company-provided tools and equipment must be maintained properly</li>
-        <li>Report any damaged or malfunctioning equipment immediately</li>
-        <li>Personal use of company equipment is not permitted</li>
-      </ul>
-    </div>
-  </section>
-
-  <section id="communication" class="bg-white rounded-xl shadow p-6 border border-gray-200">
-    <h3 class="text-2xl font-bold text-gray-900 mb-4">9. Communication Guidelines</h3>
-    <div class="prose max-w-none text-gray-700 space-y-3">
-      <p><strong>Internal Communication:</strong></p>
-      <ul class="list-disc list-inside space-y-1">
-        <li>Check the employee portal daily for updates and announcements</li>
-        <li>Respond to manager communications promptly</li>
-        <li>Use the job management system to update job status and notes</li>
-        <li>Material requests can be submitted through the time clock or job pages</li>
-      </ul>
-      <p><strong>Client Communication:</strong></p>
-      <ul class="list-disc list-inside space-y-1">
-        <li>Always be professional and courteous with clients</li>
-        <li>Direct any client concerns or complaints to your supervisor</li>
-        <li>Do not discuss pricing or make commitments without manager approval</li>
-      </ul>
-    </div>
-  </section>
-
-  <section id="contact" class="bg-white rounded-xl shadow p-6 border border-gray-200">
-    <h3 class="text-2xl font-bold text-gray-900 mb-4">10. Contact Information</h3>
-    <div class="prose max-w-none text-gray-700 space-y-3">
-      <p><strong>HR Department:</strong></p>
-      <ul class="list-disc list-inside space-y-1">
-        <li>Email: hr@company.com</li>
-        <li>Phone: (555) 123-4567</li>
-      </ul>
-      <p><strong>Emergency Contacts:</strong></p>
-      <ul class="list-disc list-inside space-y-1">
-        <li>Emergency: 911</li>
-        <li>Supervisor On-Call: (555) 987-6543</li>
-      </ul>
-      <p><strong>IT Support:</strong></p>
-      <ul class="list-disc list-inside space-y-1">
-        <li>Email: support@company.com</li>
-        <li>For portal login issues or technical problems</li>
-      </ul>
-    </div>
-  </section>
-</div>
-`;
+import RichTextEditor from "@/components/RichTextEditor";
 
 export default function HandbookPage() {
   const { data: session } = useSession();
@@ -211,10 +26,10 @@ export default function HandbookPage() {
     setError(undefined);
     const res = await getHandbookContent();
     if (res.ok) {
-      setContent(res.content || DEFAULT_HANDBOOK_CONTENT);
+      setContent(res.content || "");
     } else {
       setError(res.error);
-      setContent(DEFAULT_HANDBOOK_CONTENT);
+      setContent("");
     }
     setLoading(false);
   };
@@ -321,34 +136,43 @@ export default function HandbookPage() {
           </div>
         )}
 
-        {/* Welcome Section */}
-        <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl shadow-lg p-6 sm:p-8 mb-6 sm:mb-8 text-white">
-          <h2 className="text-2xl sm:text-3xl font-bold mb-4">Welcome to Our Team! 👋</h2>
-          <p className="text-blue-100 text-sm sm:text-base lg:text-lg">
-            This handbook is designed to help you understand our company culture, policies, and procedures. 
-            Please read through it carefully and refer back as needed.
-          </p>
-        </div>
+        {/* Welcome Section - Only show when not editing */}
+        {!isEditing && (
+          <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl shadow-lg p-6 sm:p-8 mb-6 sm:mb-8 text-white">
+            <h2 className="text-2xl sm:text-3xl font-bold mb-4">Welcome to Our Team! 👋</h2>
+            <p className="text-blue-100 text-sm sm:text-base lg:text-lg">
+              This handbook is designed to help you understand our company culture, policies, and procedures. 
+              Please read through it carefully and refer back as needed.
+            </p>
+          </div>
+        )}
 
         {/* Content Editor or Viewer */}
         {isEditing ? (
           <div className="bg-white rounded-xl shadow border border-gray-200 p-4 sm:p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Edit Handbook Content</h3>
             <p className="text-sm text-gray-600 mb-4">
-              You can use HTML tags for formatting. Common tags: &lt;p&gt;, &lt;h3&gt;, &lt;ul&gt;, &lt;li&gt;, &lt;strong&gt;, &lt;em&gt;
+              Use the toolbar above to format your content. You can add headings, lists, links, images, and more.
             </p>
-            <textarea
+            <RichTextEditor
               value={content}
-              onChange={(e) => setContent(e.target.value)}
-              className="w-full h-[600px] border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="Enter handbook content (HTML supported)..."
+              onChange={setContent}
+              placeholder="Start editing the employee handbook content..."
             />
+            <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-sm text-blue-800">
+                <strong>💡 Tip:</strong> Use headings (H1, H2, H3) to organize sections. Use lists for bullet points and numbered items. 
+                You can add links, images, and format text using the toolbar.
+              </p>
+            </div>
           </div>
         ) : (
-          <div 
-            className="space-y-6 sm:space-y-8"
-            dangerouslySetInnerHTML={{ __html: content }}
-          />
+          <div className="bg-white rounded-xl shadow border border-gray-200 p-6 sm:p-8">
+            <div 
+              className="prose prose-lg max-w-none prose-headings:font-bold prose-headings:text-gray-900 prose-p:text-gray-700 prose-p:leading-relaxed prose-ul:list-disc prose-ol:list-decimal prose-li:my-2 prose-strong:text-gray-900 prose-a:text-blue-600 prose-a:no-underline hover:prose-a:underline prose-blockquote:border-l-blue-500 prose-blockquote:bg-blue-50 prose-blockquote:py-2 prose-blockquote:px-4 prose-blockquote:rounded"
+              dangerouslySetInnerHTML={{ __html: content }}
+            />
+          </div>
         )}
 
         {/* Acknowledgment Section */}
