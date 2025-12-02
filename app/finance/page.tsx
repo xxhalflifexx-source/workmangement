@@ -2347,63 +2347,62 @@ export default function FinancePage() {
         )}
       </div>
 
-        {/* Status Change Confirmation Modal */}
-        {showStatusConfirm && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
-              <h3 className="text-xl font-bold text-gray-900 mb-4">Confirm Status Change</h3>
-              <p className="text-gray-600 mb-6">
-                Are you sure you want to update this invoice status to <strong>{pendingStatus}</strong>?
-              </p>
-              <div className="flex justify-end gap-3">
-                <button
-                  onClick={() => {
-                    setShowStatusConfirm(false);
-                    setPendingStatus("");
-                  }}
-                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={confirmStatusChange}
-                  disabled={savingInvoice}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
-                >
-                  {savingInvoice ? "Updating..." : "Confirm"}
-                </button>
-              </div>
+      {/* Status Change Confirmation Modal */}
+      {showStatusConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+            <h3 className="text-xl font-bold text-gray-900 mb-4">Confirm Status Change</h3>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to update this invoice status to <strong>{pendingStatus}</strong>?
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  setShowStatusConfirm(false);
+                  setPendingStatus("");
+                }}
+                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmStatusChange}
+                disabled={savingInvoice}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+              >
+                {savingInvoice ? "Updating..." : "Confirm"}
+              </button>
             </div>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* Edit Invoice Confirmation Modal */}
-        {showEditConfirm && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
-              <h3 className="text-xl font-bold text-gray-900 mb-4">Confirm Invoice Update</h3>
-              <p className="text-gray-600 mb-6">
-                Are you sure you want to update this invoice?
-              </p>
-              <div className="flex justify-end gap-3">
-                <button
-                  onClick={cancelEditInvoice}
-                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={confirmEditInvoice}
-                  disabled={savingInvoice}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
-                >
-                  {savingInvoice ? "Updating..." : "Confirm"}
-                </button>
-              </div>
+      {/* Edit Invoice Confirmation Modal */}
+      {showEditConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+            <h3 className="text-xl font-bold text-gray-900 mb-4">Confirm Invoice Update</h3>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to update this invoice?
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={cancelEditInvoice}
+                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmEditInvoice}
+                disabled={savingInvoice}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+              >
+                {savingInvoice ? "Updating..." : "Confirm"}
+              </button>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </main>
   );
 }
