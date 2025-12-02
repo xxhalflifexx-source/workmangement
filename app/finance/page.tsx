@@ -7,7 +7,7 @@ import { listInvoices, updateInvoicePDFs, createInvoice, updateInvoice, updateIn
 import { getJobForInvoice, getCompanySettingsForInvoice } from "../jobs/invoice-actions";
 import { generateInvoicePDF, InvoicePDFData } from "@/lib/pdf-generator";
 import { formatDateShort, formatDateTime, formatDateInput, todayCentralISO, nowInCentral, utcToCentral, centralToUTC } from "@/lib/date-utils";
-import { getFinancialSummary } from "../admin/actions";
+import { getFinancialSummary } from "./actions";
 
 interface Invoice {
   id: string;
@@ -271,6 +271,14 @@ export default function FinancePage() {
 
     setFilteredInvoices(filtered);
   }, [invoices, searchQuery, statusFilter, dateFrom, dateTo, sortField, sortDirection]);
+
+  useEffect(() => {
+    if (activeTab === "financials") {
+      loadFinancials();
+    } else if (activeTab === "invoices") {
+      loadInvoices();
+    }
+  }, [activeTab, finStart, finEnd]);
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
