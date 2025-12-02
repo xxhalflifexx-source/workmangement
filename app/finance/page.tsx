@@ -2264,9 +2264,6 @@ export default function FinancePage() {
           </div>
         )}
 
-          </div>
-        )}
-
         {/* Financials Tab */}
         {activeTab === "financials" && (
           <div className="bg-white rounded-xl shadow border border-gray-200">
