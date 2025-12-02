@@ -363,6 +363,14 @@ export default function FinancePage() {
     setFinLoading(false);
   };
 
+  // Load financials when tab changes or date range changes
+  useEffect(() => {
+    if (activeTab === "financials") {
+      loadFinancials();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, finStart, finEnd]);
+
   const loadUninvoicedJobs = async () => {
     setLoadingJobs(true);
     setError(undefined);
