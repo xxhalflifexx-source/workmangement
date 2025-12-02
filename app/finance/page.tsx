@@ -368,7 +368,6 @@ export default function FinancePage() {
     if (activeTab === "financials") {
       loadFinancials();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, finStart, finEnd]);
 
   const loadUninvoicedJobs = async () => {
