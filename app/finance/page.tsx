@@ -272,14 +272,6 @@ export default function FinancePage() {
     setFilteredInvoices(filtered);
   }, [invoices, searchQuery, statusFilter, dateFrom, dateTo, sortField, sortDirection]);
 
-  useEffect(() => {
-    if (activeTab === "financials") {
-      loadFinancials();
-    } else if (activeTab === "invoices") {
-      loadInvoices();
-    }
-  }, [activeTab, finStart, finEnd]);
-
   const handleSort = (field: SortField) => {
     if (sortField === field) {
       setSortDirection(sortDirection === "asc" ? "desc" : "asc");
