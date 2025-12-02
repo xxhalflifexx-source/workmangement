@@ -189,6 +189,19 @@ export async function saveHandbookContent(content: string) {
   }
 
   try {
+    // Clean up the content - remove any wrapper divs that Quill might add
+    // Quill sometimes wraps content in <p><br></p> or adds extra whitespace
+    let cleanedContent = content.trim();
+    
+    // Remove empty paragraphs that Quill might add
+    cleanedContent = cleanedContent.replace(/<p><br><\/p>/g, '');
+    cleanedContent = cleanedContent.replace(/<p>\s*<\/p>/g, '');
+    
+    // Ensure content is not empty
+    if (!cleanedContent || cleanedContent === '<p></p>' || cleanedContent === '<p><br></p>') {
+      return { ok: false, error: "Content cannot be empty" };
+    }
+
     // Check if handbook exists
     const existing = await prisma.employeeHandbook.findFirst({
       orderBy: { updatedAt: "desc" },
@@ -199,7 +212,7 @@ export async function saveHandbookContent(content: string) {
       await prisma.employeeHandbook.update({
         where: { id: existing.id },
         data: {
-          content,
+          content: cleanedContent,
           updatedBy: (session.user as any).id,
         },
       });
@@ -207,7 +220,7 @@ export async function saveHandbookContent(content: string) {
       // Create new handbook
       await prisma.employeeHandbook.create({
         data: {
-          content,
+          content: cleanedContent,
           updatedBy: (session.user as any).id,
         },
       });

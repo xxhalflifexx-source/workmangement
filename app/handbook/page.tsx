@@ -169,9 +169,185 @@ export default function HandbookPage() {
         ) : (
           <div className="bg-white rounded-xl shadow border border-gray-200 p-6 sm:p-8">
             <div 
-              className="prose prose-lg max-w-none prose-headings:font-bold prose-headings:text-gray-900 prose-p:text-gray-700 prose-p:leading-relaxed prose-ul:list-disc prose-ol:list-decimal prose-li:my-2 prose-strong:text-gray-900 prose-a:text-blue-600 prose-a:no-underline hover:prose-a:underline prose-blockquote:border-l-blue-500 prose-blockquote:bg-blue-50 prose-blockquote:py-2 prose-blockquote:px-4 prose-blockquote:rounded"
+              className="handbook-content"
               dangerouslySetInnerHTML={{ __html: content }}
             />
+            <style jsx global>{`
+              .handbook-content {
+                font-size: 16px;
+                line-height: 1.75;
+                color: #374151;
+              }
+              .handbook-content p {
+                margin-bottom: 1rem;
+                line-height: 1.75;
+              }
+              .handbook-content h1,
+              .handbook-content h2,
+              .handbook-content h3,
+              .handbook-content h4,
+              .handbook-content h5,
+              .handbook-content h6 {
+                font-weight: bold;
+                margin-top: 1.5rem;
+                margin-bottom: 0.75rem;
+                color: #111827;
+                line-height: 1.3;
+              }
+              .handbook-content h1 {
+                font-size: 2.25rem;
+              }
+              .handbook-content h2 {
+                font-size: 1.875rem;
+              }
+              .handbook-content h3 {
+                font-size: 1.5rem;
+              }
+              .handbook-content h4 {
+                font-size: 1.25rem;
+              }
+              .handbook-content h5 {
+                font-size: 1.125rem;
+              }
+              .handbook-content h6 {
+                font-size: 1rem;
+              }
+              .handbook-content ul,
+              .handbook-content ol {
+                margin-left: 1.5rem;
+                margin-bottom: 1rem;
+                padding-left: 1.5rem;
+              }
+              .handbook-content ul {
+                list-style-type: disc;
+              }
+              .handbook-content ol {
+                list-style-type: decimal;
+              }
+              .handbook-content li {
+                margin-bottom: 0.5rem;
+                line-height: 1.75;
+              }
+              .handbook-content ul ul,
+              .handbook-content ol ol,
+              .handbook-content ul ol,
+              .handbook-content ol ul {
+                margin-top: 0.5rem;
+                margin-bottom: 0.5rem;
+              }
+              .handbook-content strong,
+              .handbook-content b {
+                font-weight: 700;
+                color: #111827;
+              }
+              .handbook-content em,
+              .handbook-content i {
+                font-style: italic;
+              }
+              .handbook-content u {
+                text-decoration: underline;
+              }
+              .handbook-content s,
+              .handbook-content strike {
+                text-decoration: line-through;
+              }
+              .handbook-content a {
+                color: #2563eb;
+                text-decoration: none;
+              }
+              .handbook-content a:hover {
+                text-decoration: underline;
+              }
+              .handbook-content blockquote {
+                border-left: 4px solid #3b82f6;
+                padding-left: 1rem;
+                padding-top: 0.5rem;
+                padding-bottom: 0.5rem;
+                margin: 1rem 0;
+                background-color: #eff6ff;
+                border-radius: 0.25rem;
+                color: #1e40af;
+              }
+              .handbook-content blockquote p {
+                margin-bottom: 0.5rem;
+              }
+              .handbook-content blockquote p:last-child {
+                margin-bottom: 0;
+              }
+              .handbook-content img {
+                max-width: 100%;
+                height: auto;
+                border-radius: 0.5rem;
+                margin: 1rem 0;
+              }
+              .handbook-content code {
+                background-color: #f3f4f6;
+                padding: 0.125rem 0.375rem;
+                border-radius: 0.25rem;
+                font-family: monospace;
+                font-size: 0.875em;
+              }
+              .handbook-content pre {
+                background-color: #1f2937;
+                color: #f9fafb;
+                padding: 1rem;
+                border-radius: 0.5rem;
+                overflow-x: auto;
+                margin: 1rem 0;
+              }
+              .handbook-content pre code {
+                background-color: transparent;
+                padding: 0;
+                color: inherit;
+              }
+              /* Quill-specific classes */
+              .handbook-content .ql-align-center {
+                text-align: center;
+              }
+              .handbook-content .ql-align-right {
+                text-align: right;
+              }
+              .handbook-content .ql-align-justify {
+                text-align: justify;
+              }
+              .handbook-content .ql-indent-1 {
+                padding-left: 3em;
+              }
+              .handbook-content .ql-indent-2 {
+                padding-left: 6em;
+              }
+              .handbook-content .ql-indent-3 {
+                padding-left: 9em;
+              }
+              .handbook-content .ql-size-small {
+                font-size: 0.75em;
+              }
+              .handbook-content .ql-size-large {
+                font-size: 1.5em;
+              }
+              .handbook-content .ql-size-huge {
+                font-size: 2.5em;
+              }
+              /* Ensure proper spacing between elements */
+              .handbook-content > *:first-child {
+                margin-top: 0;
+              }
+              .handbook-content > *:last-child {
+                margin-bottom: 0;
+              }
+              /* Handle empty paragraphs */
+              .handbook-content p:empty {
+                height: 1rem;
+                margin: 0.5rem 0;
+              }
+              /* Ensure lists have proper spacing */
+              .handbook-content ul + p,
+              .handbook-content ol + p,
+              .handbook-content p + ul,
+              .handbook-content p + ol {
+                margin-top: 1rem;
+              }
+            `}</style>
           </div>
         )}
 
