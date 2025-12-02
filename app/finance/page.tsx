@@ -1061,98 +1061,98 @@ export default function FinancePage() {
                     <thead className="bg-gray-50">
                       <tr>
                         <th
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                      onClick={() => handleSort("invoiceNumber")}
-                    >
-                      <div className="flex items-center gap-2">
-                        Invoice Number
-                        {sortField === "invoiceNumber" && (
-                          <span>{sortDirection === "asc" ? "↑" : "↓"}</span>
-                        )}
-                      </div>
-                    </th>
-                    <th
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                      onClick={() => handleSort("job")}
-                    >
-                      <div className="flex items-center gap-2">
-                        Job #
-                        {sortField === "job" && (
-                          <span>{sortDirection === "asc" ? "↑" : "↓"}</span>
-                        )}
-                      </div>
-                    </th>
-                    <th
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Job Title
-                    </th>
-                    <th
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                      onClick={() => handleSort("customer")}
-                    >
-                      <div className="flex items-center gap-2">
-                        Client / Customer
-                        {sortField === "customer" && (
-                          <span>{sortDirection === "asc" ? "↑" : "↓"}</span>
-                        )}
-                      </div>
-                    </th>
-                    <th
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                      onClick={() => handleSort("total")}
-                    >
-                      <div className="flex items-center gap-2">
-                        Amount
-                        {sortField === "total" && (
-                          <span>{sortDirection === "asc" ? "↑" : "↓"}</span>
-                        )}
-                      </div>
-                    </th>
-                    <th
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                      onClick={() => handleSort("status")}
-                    >
-                      <div className="flex items-center gap-2">
-                        Status
-                        {sortField === "status" && (
-                          <span>{sortDirection === "asc" ? "↑" : "↓"}</span>
-                        )}
-                      </div>
-                    </th>
-                    <th
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                      onClick={() => handleSort("createdAt")}
-                    >
-                      <div className="flex items-center gap-2">
-                        Date Created
-                        {sortField === "createdAt" && (
-                          <span>{sortDirection === "asc" ? "↑" : "↓"}</span>
-                        )}
-                      </div>
-                    </th>
-                    <th
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                      onClick={() => handleSort("updatedAt")}
-                    >
-                      <div className="flex items-center gap-2">
-                        Updated At
-                        {sortField === "updatedAt" && (
-                          <span>{sortDirection === "asc" ? "↑" : "↓"}</span>
-                        )}
-                      </div>
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Remarks
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      PDF Files
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                          onClick={() => handleSort("invoiceNumber")}
+                        >
+                          <div className="flex items-center gap-2">
+                            Invoice Number
+                            {sortField === "invoiceNumber" && (
+                              <span>{sortDirection === "asc" ? "↑" : "↓"}</span>
+                            )}
+                          </div>
+                        </th>
+                        <th
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                          onClick={() => handleSort("job")}
+                        >
+                          <div className="flex items-center gap-2">
+                            Job #
+                            {sortField === "job" && (
+                              <span>{sortDirection === "asc" ? "↑" : "↓"}</span>
+                            )}
+                          </div>
+                        </th>
+                        <th
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                        >
+                          Job Title
+                        </th>
+                        <th
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                          onClick={() => handleSort("customer")}
+                        >
+                          <div className="flex items-center gap-2">
+                            Client / Customer
+                            {sortField === "customer" && (
+                              <span>{sortDirection === "asc" ? "↑" : "↓"}</span>
+                            )}
+                          </div>
+                        </th>
+                        <th
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                          onClick={() => handleSort("total")}
+                        >
+                          <div className="flex items-center gap-2">
+                            Amount
+                            {sortField === "total" && (
+                              <span>{sortDirection === "asc" ? "↑" : "↓"}</span>
+                            )}
+                          </div>
+                        </th>
+                        <th
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                          onClick={() => handleSort("status")}
+                        >
+                          <div className="flex items-center gap-2">
+                            Status
+                            {sortField === "status" && (
+                              <span>{sortDirection === "asc" ? "↑" : "↓"}</span>
+                            )}
+                          </div>
+                        </th>
+                        <th
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                          onClick={() => handleSort("createdAt")}
+                        >
+                          <div className="flex items-center gap-2">
+                            Date Created
+                            {sortField === "createdAt" && (
+                              <span>{sortDirection === "asc" ? "↑" : "↓"}</span>
+                            )}
+                          </div>
+                        </th>
+                        <th
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                          onClick={() => handleSort("updatedAt")}
+                        >
+                          <div className="flex items-center gap-2">
+                            Updated At
+                            {sortField === "updatedAt" && (
+                              <span>{sortDirection === "asc" ? "↑" : "↓"}</span>
+                            )}
+                          </div>
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Remarks
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          PDF Files
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {filteredInvoices.map((invoice) => (
                     <tr
