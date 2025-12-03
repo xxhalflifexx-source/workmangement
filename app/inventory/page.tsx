@@ -456,17 +456,6 @@ export default function InventoryPage() {
     currentPage * itemsPerPage
   );
 
-  // Get current stock for an item
-  const getCurrentStock = (itemName: string): number => {
-    const inventoryItem = items.find((item) => item.name.toLowerCase() === itemName.toLowerCase());
-    return inventoryItem ? inventoryItem.quantity : 0;
-  };
-
-  // Get recommended action (manual only, no auto-calculation)
-  const getRecommendedAction = (req: MaterialRequest): string => {
-    return req.recommendedAction || "PENDING"; // Return stored value or default to PENDING
-  };
-
   // Materials Requested tab: Filtering and sorting
   const filteredRequests = materialRequests.filter((req) => {
     const jobNumber = req.job ? req.job.id.substring(0, 8).toUpperCase() : "";
@@ -544,6 +533,17 @@ export default function InventoryPage() {
       style: "currency",
       currency: "USD",
     }).format(amount);
+  };
+
+  // Get current stock for an item
+  const getCurrentStock = (itemName: string): number => {
+    const inventoryItem = items.find((item) => item.name.toLowerCase() === itemName.toLowerCase());
+    return inventoryItem ? inventoryItem.quantity : 0;
+  };
+
+  // Get recommended action (manual only, no auto-calculation)
+  const getRecommendedAction = (req: MaterialRequest): string => {
+    return req.recommendedAction || "PENDING"; // Return stored value or default to PENDING
   };
 
   // Export functions

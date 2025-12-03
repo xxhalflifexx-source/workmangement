@@ -247,7 +247,6 @@ export default function AdminPage() {
     }
   };
 
-
   const getRoleBadgeColor = (role: string) => {
     switch (role) {
       case "ADMIN":
