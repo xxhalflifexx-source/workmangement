@@ -43,6 +43,10 @@ export default function HRPage() {
   const [photoViewerPhotos, setPhotoViewerPhotos] = useState<string[]>([]);
   const [photoViewerIndex, setPhotoViewerIndex] = useState(0);
   
+  // Search and filter state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [roleFilter, setRoleFilter] = useState("ALL");
+  
   // Helper function to get Saturday of current week in Central Time
   // Week runs Saturday (day 6) to Friday (day 5)
   const getSaturdayOfWeek = (date: dayjs.Dayjs): dayjs.Dayjs => {
@@ -153,6 +157,25 @@ export default function HRPage() {
         return "bg-gray-100 text-gray-700";
     }
   };
+
+  // Filter users based on search and role
+  const filteredUsers = users.filter((user) => {
+    // Search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      const matchesSearch = 
+        (user.name || "").toLowerCase().includes(query) ||
+        (user.email || "").toLowerCase().includes(query);
+      if (!matchesSearch) return false;
+    }
+
+    // Role filter
+    if (roleFilter !== "ALL") {
+      if (user.role !== roleFilter) return false;
+    }
+
+    return true;
+  });
 
   if (loading) {
     return (
@@ -274,11 +297,69 @@ export default function HRPage() {
           </div>
         </div>
 
+        {/* Search and Filter Bar */}
+        <div className="bg-white rounded-lg shadow p-6 border border-gray-200 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Search */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Search
+              </label>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search by name or email..."
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-h-[44px]"
+              />
+            </div>
+
+            {/* Role Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Role
+              </label>
+              <select
+                value={roleFilter}
+                onChange={(e) => setRoleFilter(e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-h-[44px]"
+              >
+                <option value="ALL">All Roles</option>
+                <option value="ADMIN">Admin</option>
+                <option value="MANAGER">Manager</option>
+                <option value="EMPLOYEE">Employee</option>
+              </select>
+            </div>
+
+            {/* Clear Filters */}
+            <div className="flex items-end">
+              {(searchQuery || roleFilter !== "ALL") && (
+                <button
+                  onClick={() => {
+                    setSearchQuery("");
+                    setRoleFilter("ALL");
+                  }}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium text-gray-700 min-h-[44px]"
+                >
+                  Clear Filters
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
         {/* Employee List */}
         <div className="bg-white rounded-xl shadow border border-gray-200">
           <div className="px-6 py-4 border-b border-gray-200">
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-gray-900">Employee Time Records</h2>
+              <h2 className="text-xl font-semibold text-gray-900">
+                Employee Time Records
+                {filteredUsers.length !== users.length && (
+                  <span className="ml-2 text-sm font-normal text-gray-500">
+                    ({filteredUsers.length} of {users.length})
+                  </span>
+                )}
+              </h2>
               {filterLoading && (
                 <div className="flex items-center gap-2 text-sm text-gray-500">
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
@@ -317,14 +398,16 @@ export default function HRPage() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {users.length === 0 ? (
+                {filteredUsers.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="px-4 sm:px-6 py-8 text-center text-gray-500">
-                      No employees found
+                      {users.length === 0 
+                        ? "No employees found" 
+                        : "No employees match your search criteria"}
                     </td>
                   </tr>
                 ) : (
-                  users.map((user) => (
+                  filteredUsers.map((user) => (
                     <tr key={user.id} className="hover:bg-gray-50">
                       <td className="px-4 sm:px-6 py-4">
                         <div className="flex items-center min-w-0">
