@@ -533,6 +533,19 @@ export default function InventoryPage() {
   const uniqueRequesters = Array.from(new Set(materialRequests.map((r) => r.user.email).filter(Boolean)));
   const uniqueItems = Array.from(new Set(materialRequests.map((r) => r.itemName))).sort();
 
+  // Helper functions (must be defined before export functions that use them)
+  const formatDate = (dateString: string) => {
+    return formatDateTime(dateString);
+  };
+
+  const formatCurrency = (amount: number | null) => {
+    if (!amount) return "N/A";
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+    }).format(amount);
+  };
+
   // Export functions
   const exportInventoryToCSV = () => {
     const headers = ["Item Name", "SKU", "Category", "Quantity", "Unit", "Location", "Status", "Last Updated"];
@@ -594,18 +607,6 @@ export default function InventoryPage() {
 
   const lowStockCount = items.filter((item) => item.quantity > 0 && item.quantity <= item.minStockLevel).length;
   const outOfStockCount = items.filter((item) => item.quantity === 0).length;
-
-  const formatDate = (dateString: string) => {
-    return formatDateTime(dateString);
-  };
-
-  const formatCurrency = (amount: number | null) => {
-    if (!amount) return "N/A";
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-    }).format(amount);
-  };
 
   return (
     <InventoryErrorBoundary>
