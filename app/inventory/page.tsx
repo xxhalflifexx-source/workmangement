@@ -370,7 +370,7 @@ export default function InventoryPage() {
   const openCreateModal = useCallback(() => {
     setEditingItem(null);
     setShowModal(true);
-  };
+  }, []);
 
   const openEditModal = useCallback((item: InventoryItem) => {
     setEditingItem(item);
