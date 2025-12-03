@@ -610,8 +610,8 @@ export default function InventoryPage() {
   return (
     <InventoryErrorBoundary>
       <main className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b">
+        {/* Header */}
+        <header className="bg-white shadow-sm border-b">
         <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-24 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Inventory Management</h1>
