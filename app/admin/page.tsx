@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
   getAllUsersForAdmin,
   deleteUser,
@@ -85,7 +85,7 @@ export default function AdminPage() {
   const [showRoleChangeConfirm, setShowRoleChangeConfirm] = useState<{ userId: string; newRole: string; userName: string; currentRole: string } | null>(null);
   const [userSearch, setUserSearch] = useState("");
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true);
     setError(undefined);
 
@@ -105,9 +105,9 @@ export default function AdminPage() {
     }
 
     setLoading(false);
-  };
+  }, []);
 
-  const loadAccessUsers = async () => {
+  const loadAccessUsers = useCallback(async () => {
     setAccessLoading(true);
     setError(undefined);
     const res = await getAllUsersWithPermissions();
@@ -125,18 +125,17 @@ export default function AdminPage() {
       setAccessPermissions(perms);
     }
     setAccessLoading(false);
-  };
+  }, []);
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [loadData]);
 
   useEffect(() => {
     if (activeTab === "user-access" && isAdmin) {
       loadAccessUsers();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, isAdmin]);
+  }, [activeTab, isAdmin, loadAccessUsers]);
 
   const handleDeleteUser = async (userId: string) => {
     setError(undefined);

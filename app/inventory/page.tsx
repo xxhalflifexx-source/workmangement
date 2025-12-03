@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
   getInventoryItems,
   createInventoryItem,
@@ -134,7 +134,7 @@ export default function InventoryPage() {
   const [submittingRequest, setSubmittingRequest] = useState(false);
   const [inventoryItemsForRequest, setInventoryItemsForRequest] = useState<InventoryItemForRequest[]>([]);
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
       setError(undefined);
@@ -156,9 +156,9 @@ export default function InventoryPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const loadMaterialRequests = async () => {
+  const loadMaterialRequests = useCallback(async () => {
     setLoadingRequests(true);
     try {
       const res = await getMaterialRequests();
@@ -173,7 +173,7 @@ export default function InventoryPage() {
       setError("Failed to load material requests");
     }
     setLoadingRequests(false);
-  };
+  }, []);
 
   useEffect(() => {
     // Global error handlers for better error tracking
@@ -216,8 +216,7 @@ export default function InventoryPage() {
       window.removeEventListener("error", handleError);
       window.removeEventListener("unhandledrejection", handleUnhandledRejection);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [loadData, loadMaterialRequests]);
 
   // Load inventory items when request form is opened
   useEffect(() => {
