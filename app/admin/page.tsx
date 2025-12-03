@@ -14,7 +14,7 @@ import {
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import RegistrationCodes from "../dashboard/RegistrationCodes";
-import { formatDateShort, formatDateInput, utcToCentral } from "@/lib/date-utils";
+import { formatDateShort, formatDateInput, todayCentralISO, nowInCentral, utcToCentral } from "@/lib/date-utils";
 
 interface User {
   id: string;
