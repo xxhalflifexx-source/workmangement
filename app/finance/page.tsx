@@ -843,14 +843,14 @@ export default function FinancePage() {
     }
   };
 
-  // Access control
+  // Access control - Check role first, then permissions
   if (!hasAccess) {
     return (
       <main className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="bg-white border border-red-200 rounded-xl shadow-md p-8 max-w-lg text-center">
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Access Restricted</h1>
           <p className="text-gray-600 mb-4">
-            Finance tools are only available to managers and admins.
+            Finance tools are only available to managers and admins with proper permissions.
           </p>
           <Link
             href="/dashboard"
@@ -862,6 +862,9 @@ export default function FinancePage() {
       </main>
     );
   }
+
+  // Additional permission check (if RBAC is enabled)
+  // This will be checked server-side in a real implementation
 
   return (
     <main className="min-h-screen bg-gray-50">

@@ -5,11 +5,17 @@ import { formatDateShort } from "@/lib/date-utils";
 import UserMenu from "./UserMenu";
 import NotificationsDropdown from "./NotificationsDropdown";
 import { getNotifications } from "./notifications-actions";
+import { getUserPermissionsForSession } from "../admin/user-access-actions";
+import { hasPermission, ModulePermission } from "@/lib/permissions";
 
 export default async function Dashboard() {
   const session = await getServerSession(authOptions);
   const user = session?.user;
   const role = (user as any)?.role || "EMPLOYEE";
+
+  // Get user permissions
+  const permissionsRes = await getUserPermissionsForSession();
+  const permissions = permissionsRes.ok ? permissionsRes.permissions : null;
 
   // Get current time for greeting
   const hour = new Date().getHours();
@@ -67,34 +73,44 @@ export default async function Dashboard() {
 
         {/* Quick Actions Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
-          <Link
-            href="/time-clock"
-            className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 hover:shadow-md transition-all hover:border-blue-300 flex flex-col items-center justify-center text-center min-h-[100px] sm:min-h-[120px]"
-          >
-            <div className="text-3xl sm:text-4xl mb-2">⏰</div>
-            <div className="font-semibold text-sm sm:text-base text-gray-900">Time Clock</div>
-            <div className="text-xs text-gray-500 mt-1">Clock in/out</div>
-          </Link>
+          {/* Time Clock - Check permission */}
+          {(role === "ADMIN" || (permissions && hasPermission(permissions, "timeClock"))) && (
+            <Link
+              href="/time-clock"
+              className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 hover:shadow-md transition-all hover:border-blue-300 flex flex-col items-center justify-center text-center min-h-[100px] sm:min-h-[120px]"
+            >
+              <div className="text-3xl sm:text-4xl mb-2">⏰</div>
+              <div className="font-semibold text-sm sm:text-base text-gray-900">Time Clock</div>
+              <div className="text-xs text-gray-500 mt-1">Clock in/out</div>
+            </Link>
+          )}
 
-          <Link
-            href="/jobs"
-            className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 hover:shadow-md transition-all hover:border-blue-300 flex flex-col items-center justify-center text-center min-h-[100px] sm:min-h-[120px]"
-          >
-            <div className="text-3xl sm:text-4xl mb-2">📋</div>
-            <div className="font-semibold text-sm sm:text-base text-gray-900">Job Management</div>
-            <div className="text-xs text-gray-500 mt-1">View & manage jobs</div>
-          </Link>
+          {/* Job Management - Check permission */}
+          {(role === "ADMIN" || (permissions && hasPermission(permissions, "jobManagement"))) && (
+            <Link
+              href="/jobs"
+              className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 hover:shadow-md transition-all hover:border-blue-300 flex flex-col items-center justify-center text-center min-h-[100px] sm:min-h-[120px]"
+            >
+              <div className="text-3xl sm:text-4xl mb-2">📋</div>
+              <div className="font-semibold text-sm sm:text-base text-gray-900">Job Management</div>
+              <div className="text-xs text-gray-500 mt-1">View & manage jobs</div>
+            </Link>
+          )}
 
-          <Link
-            href="/qc"
-            className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 hover:shadow-md transition-all hover:border-blue-300 flex flex-col items-center justify-center text-center min-h-[100px] sm:min-h-[120px]"
-          >
-            <div className="text-3xl sm:text-4xl mb-2">✅</div>
-            <div className="font-semibold text-sm sm:text-base text-gray-900">Quality Control</div>
-            <div className="text-xs text-gray-500 mt-1">Review photos</div>
-          </Link>
+          {/* Quality Control - Check permission */}
+          {(role === "ADMIN" || (permissions && hasPermission(permissions, "qualityControl"))) && (
+            <Link
+              href="/qc"
+              className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 hover:shadow-md transition-all hover:border-blue-300 flex flex-col items-center justify-center text-center min-h-[100px] sm:min-h-[120px]"
+            >
+              <div className="text-3xl sm:text-4xl mb-2">✅</div>
+              <div className="font-semibold text-sm sm:text-base text-gray-900">Quality Control</div>
+              <div className="text-xs text-gray-500 mt-1">Review photos</div>
+            </Link>
+          )}
 
-          {(role === "ADMIN" || role === "MANAGER") && (
+          {/* HR - Check permission */}
+          {(role === "ADMIN" || (permissions && hasPermission(permissions, "hr"))) && (
             <Link
               href="/hr"
               className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 hover:shadow-md transition-all hover:border-blue-300 flex flex-col items-center justify-center text-center min-h-[100px] sm:min-h-[120px]"
@@ -105,7 +121,8 @@ export default async function Dashboard() {
             </Link>
           )}
 
-          {(role === "ADMIN" || role === "MANAGER") && (
+          {/* Finance - Check permission */}
+          {(role === "ADMIN" || (permissions && hasPermission(permissions, "finance"))) && (
             <Link
               href="/finance"
               className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 hover:shadow-md transition-all hover:border-blue-300 flex flex-col items-center justify-center text-center min-h-[100px] sm:min-h-[120px]"
@@ -116,7 +133,8 @@ export default async function Dashboard() {
             </Link>
           )}
 
-          {(role === "ADMIN" || role === "MANAGER") && (
+          {/* Inventory - Check permission */}
+          {(role === "ADMIN" || (permissions && hasPermission(permissions, "inventory"))) && (
             <Link
               href="/inventory"
               className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 hover:shadow-md transition-all hover:border-blue-300 flex flex-col items-center justify-center text-center min-h-[100px] sm:min-h-[120px]"
@@ -127,7 +145,8 @@ export default async function Dashboard() {
             </Link>
           )}
 
-          {role === "ADMIN" && (
+          {/* Admin Panel - Check permission */}
+          {(role === "ADMIN" || (permissions && hasPermission(permissions, "adminPanel"))) && (
             <Link
               href="/admin"
               className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 hover:shadow-md transition-all hover:border-red-300 flex flex-col items-center justify-center text-center min-h-[100px] sm:min-h-[120px]"
@@ -138,15 +157,17 @@ export default async function Dashboard() {
             </Link>
           )}
 
-          {/* Employee Handbook - Visible to all roles */}
-          <Link
-            href="/handbook"
-            className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 hover:shadow-md transition-all hover:border-blue-300 flex flex-col items-center justify-center text-center min-h-[100px] sm:min-h-[120px]"
-          >
-            <div className="text-3xl sm:text-4xl mb-2">📖</div>
-            <div className="font-semibold text-sm sm:text-base text-gray-900">Employee Handbook</div>
-            <div className="text-xs text-gray-500 mt-1">Company policies</div>
-          </Link>
+          {/* Employee Handbook - Check permission */}
+          {(role === "ADMIN" || (permissions && hasPermission(permissions, "employeeHandbook"))) && (
+            <Link
+              href="/handbook"
+              className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 hover:shadow-md transition-all hover:border-blue-300 flex flex-col items-center justify-center text-center min-h-[100px] sm:min-h-[120px]"
+            >
+              <div className="text-3xl sm:text-4xl mb-2">📖</div>
+              <div className="font-semibold text-sm sm:text-base text-gray-900">Employee Handbook</div>
+              <div className="text-xs text-gray-500 mt-1">Company policies</div>
+            </Link>
+          )}
         </div>
 
         {/* Quick Info Section */}

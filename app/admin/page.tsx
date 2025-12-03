@@ -50,7 +50,7 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | undefined>();
   const [success, setSuccess] = useState<string | undefined>();
-  const [activeTab, setActiveTab] = useState<"users" | "settings" | "registration-codes">("users");
+  const [activeTab, setActiveTab] = useState<"users" | "settings" | "registration-codes" | "user-access">("users");
   
   const { data: session } = useSession();
   const userRole = (session?.user as any)?.role;
@@ -361,6 +361,18 @@ export default function AdminPage() {
                 >
                   🔑 <span className="ml-1 sm:ml-0">Registration Codes</span>
                 </button>
+              )}
+              {isAdmin && (
+                <Link
+                  href="/admin/user-access"
+                  className={`py-3 sm:py-4 px-2 sm:px-1 border-b-2 font-medium text-xs sm:text-sm whitespace-nowrap min-h-[44px] flex items-center ${
+                    activeTab === "user-access"
+                      ? "border-blue-500 text-blue-600"
+                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                  }`}
+                >
+                  🔐 <span className="ml-1 sm:ml-0">User Access Control</span>
+                </Link>
               )}
             </nav>
           </div>

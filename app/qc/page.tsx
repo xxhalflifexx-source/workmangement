@@ -4,6 +4,8 @@ import { authOptions } from "@/lib/authOptions";
 import Link from "next/link";
 import QCJobRow from "./QCJobRow";
 import QCFilters from "./QCFilters";
+import { checkModuleAccess } from "@/lib/user-access";
+import { redirect } from "next/navigation";
 
 export default async function QCPage({
   searchParams,
@@ -27,23 +29,20 @@ export default async function QCPage({
   const dateFrom = searchParams?.dateFrom || "";
   const dateTo = searchParams?.dateTo || "";
 
-  if (!session?.user || (role !== "ADMIN" && role !== "MANAGER")) {
-    return (
-      <main className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="bg-white border border-red-200 rounded-xl shadow-md p-8 max-w-lg text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Access Restricted</h1>
-          <p className="text-gray-600 mb-4">
-            Quality Control tools are only available to managers and admins.
-          </p>
-          <Link
-            href="/dashboard"
-            className="inline-flex items-center px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors"
-          >
-            Back to Dashboard
-          </Link>
-        </div>
-      </main>
-    );
+  // Check authentication
+  if (!session?.user) {
+    redirect("/login");
+  }
+
+  // Check role-based access (legacy check)
+  if (role !== "ADMIN" && role !== "MANAGER") {
+    redirect("/access-denied");
+  }
+
+  // Check permission-based access (RBAC)
+  const hasAccess = await checkModuleAccess("qualityControl");
+  if (!hasAccess) {
+    redirect("/access-denied");
   }
 
   const [jobsResult, workersResult] = await Promise.all([
