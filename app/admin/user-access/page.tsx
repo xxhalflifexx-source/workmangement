@@ -100,6 +100,8 @@ export default function UserAccessControlPage() {
     } else {
       setSuccess(`Permissions updated for ${users.find((u) => u.id === userId)?.name || "user"}`);
       setTimeout(() => setSuccess(undefined), 3000);
+      // Reload users to update the base permissions, which will disable the save button
+      await loadUsers();
     }
 
     setSaving((prev) => ({ ...prev, [userId]: false }));
