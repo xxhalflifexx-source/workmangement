@@ -60,10 +60,11 @@ export default function UserAccessControlPage() {
       setError(res.error);
       setUsers([]);
     } else {
-      setUsers(res.users as any);
+      const usersList = res.users || [];
+      setUsers(usersList as any);
       // Initialize permissions state
       const perms: Record<string, UserPermissions> = {};
-      res.users.forEach((user: any) => {
+      usersList.forEach((user: any) => {
         perms[user.id] = user.permissions;
       });
       setPermissions(perms);
