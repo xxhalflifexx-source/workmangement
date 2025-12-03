@@ -137,7 +137,7 @@ export default function AdminPage() {
     }
   }, [activeTab, isAdmin, loadAccessUsers]);
 
-  const handleDeleteUser = async (userId: string) => {
+  const handleDeleteUser = useCallback(async (userId: string) => {
     setError(undefined);
     setSuccess(undefined);
 
@@ -151,9 +151,9 @@ export default function AdminPage() {
     }
 
     setShowDeleteConfirm(null);
-  };
+  }, [users]);
 
-  const handleRoleChange = (userId: string, newRole: string) => {
+  const handleRoleChange = useCallback((userId: string, newRole: string) => {
     const user = users.find((u) => u.id === userId);
     if (!user) return;
     
@@ -167,9 +167,9 @@ export default function AdminPage() {
       userName: user.name || user.email || "Unknown User",
       currentRole: user.role,
     });
-  };
+  }, [users]);
 
-  const handleRoleChangeConfirm = async () => {
+  const handleRoleChangeConfirm = useCallback(async () => {
     if (!showRoleChangeConfirm) return;
     
     setError(undefined);
@@ -199,9 +199,9 @@ export default function AdminPage() {
     }
 
     setShowRoleChangeConfirm(null);
-  };
+  }, [showRoleChangeConfirm, users]);
 
-  const handleRoleChangeCancel = () => {
+  const handleRoleChangeCancel = useCallback(() => {
     if (!showRoleChangeConfirm) return;
     
     // Revert the dropdown to original role
@@ -214,9 +214,9 @@ export default function AdminPage() {
     );
     
     setShowRoleChangeConfirm(null);
-  };
+  }, [showRoleChangeConfirm, users]);
 
-  const handleHourlyRateChange = async (userId: string, hourlyRate: number) => {
+  const handleHourlyRateChange = useCallback(async (userId: string, hourlyRate: number) => {
     setError(undefined);
     setSuccess(undefined);
 
@@ -230,9 +230,9 @@ export default function AdminPage() {
         users.map((u) => (u.id === userId ? { ...u, hourlyRate } : u))
       );
     }
-  };
+  }, [users]);
 
-  const handleSettingsSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSettingsSubmit = useCallback(async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(undefined);
     setSuccess(undefined);
@@ -245,9 +245,9 @@ export default function AdminPage() {
     } else {
       setSuccess(res.message);
     }
-  };
+  }, []);
 
-  const getRoleBadgeColor = (role: string) => {
+  const getRoleBadgeColor = useCallback((role: string) => {
     switch (role) {
       case "ADMIN":
         return "bg-red-100 text-red-700";
@@ -256,13 +256,13 @@ export default function AdminPage() {
       default:
         return "bg-gray-100 text-gray-700";
     }
-  };
+  }, []);
 
-  const formatDate = (dateString: string) => {
+  const formatDate = useCallback((dateString: string) => {
     return formatDateShort(dateString);
-  };
+  }, []);
 
-  const handleGenderChange = async (userId: string, gender: string) => {
+  const handleGenderChange = useCallback(async (userId: string, gender: string) => {
     setError(undefined);
     setSuccess(undefined);
     const res = await updateUserProfileDetails(userId, gender, undefined);
@@ -274,9 +274,9 @@ export default function AdminPage() {
         users.map((u) => (u.id === userId ? { ...u, gender: gender || null } : u))
       );
     }
-  };
+  }, [users]);
 
-  const handleBirthDateChange = async (userId: string, birthDate: string) => {
+  const handleBirthDateChange = useCallback(async (userId: string, birthDate: string) => {
     setError(undefined);
     setSuccess(undefined);
     const res = await updateUserProfileDetails(userId, undefined, birthDate || undefined);
@@ -288,9 +288,9 @@ export default function AdminPage() {
         users.map((u) => (u.id === userId ? { ...u, birthDate: birthDate || null } : u))
       );
     }
-  };
+  }, [users]);
 
-  const handleStatusChange = async (userId: string, status: string) => {
+  const handleStatusChange = useCallback(async (userId: string, status: string) => {
     setError(undefined);
     setSuccess(undefined);
     const res = await updateUserProfileDetails(userId, undefined, undefined, status || undefined);
@@ -302,9 +302,9 @@ export default function AdminPage() {
         users.map((u) => (u.id === userId ? { ...u, status: status || null } : u))
       );
     }
-  };
+  }, [users]);
 
-  const handleResetPassword = async (userId: string) => {
+  const handleResetPassword = useCallback(async (userId: string) => {
     const confirmReset = window.confirm(
       "Reset this user's password and generate a new temporary password?"
     );
@@ -320,7 +320,7 @@ export default function AdminPage() {
         `Temporary password for ${res.email}: ${res.tempPassword}. Please send this to the employee securely.`
       );
     }
-  };
+  }, []);
 
   const filteredUsers = users.filter((u) => {
     const q = userSearch.trim().toLowerCase();

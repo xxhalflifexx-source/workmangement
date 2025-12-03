@@ -235,7 +235,7 @@ export default function InventoryPage() {
     }
   }, [showRequestForm]);
 
-  const handleUpdateRequestStatus = async (requestId: string, status: string, amount?: number | null) => {
+  const handleUpdateRequestStatus = useCallback(async (requestId: string, status: string, amount?: number | null) => {
     setError(undefined);
     
     // Check if amount is required (for APPROVED or FULFILLED status)
@@ -263,9 +263,9 @@ export default function InventoryPage() {
       console.error("[Inventory] handleUpdateRequestStatus exception:", e, "requestId:", requestId, "status:", status);
       setError("Failed to update request status");
     }
-  };
+  }, []);
 
-  const handleSubmitMaterialRequest = async () => {
+  const handleSubmitMaterialRequest = useCallback(async () => {
     try {
       if (!requestItemName || !requestQuantity || !requestUnit) {
         setError("Please fill in all required fields");
@@ -309,9 +309,9 @@ export default function InventoryPage() {
       setError(`Failed to submit material request: ${error?.message || "Unknown error"}`);
       setSubmittingRequest(false);
     }
-  };
+  }, [loadMaterialRequests]);
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = useCallback(async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(undefined);
     setSuccess(undefined);
@@ -331,9 +331,9 @@ export default function InventoryPage() {
     setShowModal(false);
     setEditingItem(null);
     loadData();
-  };
+  }, [editingItem, loadData]);
 
-  const handleDelete = async (itemId: string) => {
+  const handleDelete = useCallback(async (itemId: string) => {
     if (!confirm("Are you sure you want to delete this item? This will also delete all adjustment history.")) return;
 
     const res = await deleteInventoryItem(itemId);
@@ -345,9 +345,9 @@ export default function InventoryPage() {
 
     setSuccess("Item deleted successfully!");
     loadData();
-  };
+  }, [loadData]);
 
-  const handleAdjustSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleAdjustSubmit = useCallback(async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(undefined);
     setSuccess(undefined);
@@ -365,24 +365,24 @@ export default function InventoryPage() {
     setShowAdjustModal(false);
     setAdjustingItem(null);
     loadData();
-  };
+  }, [loadData]);
 
-  const openCreateModal = () => {
+  const openCreateModal = useCallback(() => {
     setEditingItem(null);
     setShowModal(true);
   };
 
-  const openEditModal = (item: InventoryItem) => {
+  const openEditModal = useCallback((item: InventoryItem) => {
     setEditingItem(item);
     setShowModal(true);
-  };
+  }, []);
 
-  const openAdjustModal = (item: InventoryItem) => {
+  const openAdjustModal = useCallback((item: InventoryItem) => {
     setAdjustingItem(item);
     setShowAdjustModal(true);
-  };
+  }, []);
 
-  const openHistoryModal = async (item: InventoryItem) => {
+  const openHistoryModal = useCallback(async (item: InventoryItem) => {
     setHistoryItem(item);
     setShowHistoryModal(true);
     setLoadingHistory(true);
@@ -392,13 +392,13 @@ export default function InventoryPage() {
       setAdjustments(res.adjustments as any);
     }
     setLoadingHistory(false);
-  };
+  }, []);
 
-  const getStockStatus = (item: InventoryItem) => {
+  const getStockStatus = useCallback((item: InventoryItem) => {
     if (item.quantity === 0) return { text: "Out of Stock", color: "bg-red-100 text-red-800", icon: "🚨" };
     if (item.quantity <= item.minStockLevel) return { text: "Low Stock", color: "bg-orange-100 text-orange-800", icon: "⚠️" };
     return { text: "In Stock", color: "bg-green-100 text-green-800", icon: "✓" };
-  };
+  }, []);
 
   const categories = Array.from(new Set(items.map((item) => item.category).filter(Boolean))) as string[];
 
