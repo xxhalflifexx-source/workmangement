@@ -15,6 +15,15 @@ import Link from "next/link";
 import { useSession } from "next-auth/react";
 import RegistrationCodes from "../dashboard/RegistrationCodes";
 import { formatDateShort, formatDateInput, todayCentralISO, nowInCentral, utcToCentral } from "@/lib/date-utils";
+import {
+  getAllUsersWithPermissions,
+  updateUserPermissions,
+} from "./user-access-actions";
+import {
+  UserPermissions,
+  DEFAULT_PERMISSIONS,
+} from "@/lib/permissions";
+import UserAccessControlContent from "./UserAccessControlContent";
 
 interface User {
   id: string;
@@ -44,6 +53,14 @@ interface CompanySettings {
   website: string;
 }
 
+interface UserWithPermissions {
+  id: string;
+  name: string | null;
+  email: string | null;
+  role: string;
+  permissions: UserPermissions;
+}
+
 export default function AdminPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [settings, setSettings] = useState<CompanySettings | null>(null);
@@ -51,6 +68,12 @@ export default function AdminPage() {
   const [error, setError] = useState<string | undefined>();
   const [success, setSuccess] = useState<string | undefined>();
   const [activeTab, setActiveTab] = useState<"users" | "settings" | "registration-codes" | "user-access">("users");
+  
+  // User Access Control state
+  const [accessUsers, setAccessUsers] = useState<UserWithPermissions[]>([]);
+  const [accessLoading, setAccessLoading] = useState(false);
+  const [accessSaving, setAccessSaving] = useState<Record<string, boolean>>({});
+  const [accessPermissions, setAccessPermissions] = useState<Record<string, UserPermissions>>({});
   
   const { data: session } = useSession();
   const userRole = (session?.user as any)?.role;
@@ -65,6 +88,12 @@ export default function AdminPage() {
   useEffect(() => {
     loadData();
   }, []);
+
+  useEffect(() => {
+    if (activeTab === "user-access" && isAdmin) {
+      loadAccessUsers();
+    }
+  }, [activeTab, isAdmin]);
 
   const loadData = async () => {
     setLoading(true);
@@ -86,6 +115,26 @@ export default function AdminPage() {
     }
 
     setLoading(false);
+  };
+
+  const loadAccessUsers = async () => {
+    setAccessLoading(true);
+    setError(undefined);
+    const res = await getAllUsersWithPermissions();
+    if (!res.ok) {
+      setError(res.error);
+      setAccessUsers([]);
+    } else {
+      const usersList = res.users || [];
+      setAccessUsers(usersList as any);
+      // Initialize permissions state
+      const perms: Record<string, UserPermissions> = {};
+      usersList.forEach((user: any) => {
+        perms[user.id] = user.permissions;
+      });
+      setAccessPermissions(perms);
+    }
+    setAccessLoading(false);
   };
 
   const handleDeleteUser = async (userId: string) => {
@@ -274,6 +323,26 @@ export default function AdminPage() {
     }
   };
 
+  const loadAccessUsers = async () => {
+    setAccessLoading(true);
+    setError(undefined);
+    const res = await getAllUsersWithPermissions();
+    if (!res.ok) {
+      setError(res.error);
+      setAccessUsers([]);
+    } else {
+      const usersList = res.users || [];
+      setAccessUsers(usersList as any);
+      // Initialize permissions state
+      const perms: Record<string, UserPermissions> = {};
+      usersList.forEach((user: any) => {
+        perms[user.id] = user.permissions;
+      });
+      setAccessPermissions(perms);
+    }
+    setAccessLoading(false);
+  };
+
   const filteredUsers = users.filter((u) => {
     const q = userSearch.trim().toLowerCase();
     if (!q) return true;
@@ -363,8 +432,8 @@ export default function AdminPage() {
                 </button>
               )}
               {isAdmin && (
-                <Link
-                  href="/admin/user-access"
+                <button
+                  onClick={() => setActiveTab("user-access")}
                   className={`py-3 sm:py-4 px-2 sm:px-1 border-b-2 font-medium text-xs sm:text-sm whitespace-nowrap min-h-[44px] flex items-center ${
                     activeTab === "user-access"
                       ? "border-blue-500 text-blue-600"
@@ -372,7 +441,7 @@ export default function AdminPage() {
                   }`}
                 >
                   🔐 <span className="ml-1 sm:ml-0">User Access Control</span>
-                </Link>
+                </button>
               )}
             </nav>
           </div>
@@ -921,6 +990,56 @@ export default function AdminPage() {
             <p className="text-gray-600">
               You do not have permission to view registration codes. Only administrators can access this section.
             </p>
+          </div>
+        )}
+
+        {/* User Access Control Tab */}
+        {activeTab === "user-access" && isAdmin && (
+          <div className="bg-white rounded-xl shadow border border-gray-200">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-900">User Access Control</h2>
+              <p className="text-sm text-gray-500 mt-1">
+                Manage module access permissions for employees. Toggle permissions and click "Save" to apply changes.
+              </p>
+            </div>
+            <UserAccessControlContent
+              users={accessUsers}
+              loading={accessLoading}
+              permissions={accessPermissions}
+              saving={accessSaving}
+              onLoad={loadAccessUsers}
+              onToggle={(userId, module) => {
+                setAccessPermissions((prev) => {
+                  const current = prev[userId] || DEFAULT_PERMISSIONS;
+                  return {
+                    ...prev,
+                    [userId]: {
+                      ...current,
+                      [module]: !current[module],
+                    },
+                  };
+                });
+              }}
+              onSave={async (userId) => {
+                setAccessSaving((prev) => ({ ...prev, [userId]: true }));
+                setError(undefined);
+                setSuccess(undefined);
+
+                const userPermissions = accessPermissions[userId] || DEFAULT_PERMISSIONS;
+                const res = await updateUserPermissions(userId, userPermissions);
+
+                if (!res.ok) {
+                  setError(res.error);
+                  await loadAccessUsers();
+                } else {
+                  setSuccess(`Permissions updated for ${accessUsers.find((u) => u.id === userId)?.name || "user"}`);
+                  setTimeout(() => setSuccess(undefined), 3000);
+                  await loadAccessUsers();
+                }
+
+                setAccessSaving((prev) => ({ ...prev, [userId]: false }));
+              }}
+            />
           </div>
         )}
 
