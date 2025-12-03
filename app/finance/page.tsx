@@ -1063,8 +1063,9 @@ export default function FinancePage() {
             ) : (
               // Invoice Table
               <div className="bg-white rounded-xl shadow border border-gray-200 overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
+                <div className="overflow-x-auto -mx-4 sm:mx-0">
+                  <div className="inline-block min-w-full align-middle px-4 sm:px-0">
+                    <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                       <tr>
                         <th
@@ -1371,6 +1372,7 @@ export default function FinancePage() {
                   ))}
                 </tbody>
                   </table>
+                  </div>
                 </div>
               </div>
             )}

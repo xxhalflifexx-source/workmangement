@@ -117,26 +117,26 @@ export default function JobRow({
         className="cursor-pointer hover:bg-gray-50 transition-colors"
         onClick={() => setIsExpanded(!isExpanded)}
       >
-        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-          {jobNumber}
+        <td className="px-6 py-4 text-sm font-medium text-gray-900">
+          <div className="truncate max-w-[100px]">{jobNumber}</div>
         </td>
         <td className="px-6 py-4 text-sm text-gray-900">
-          <div>
-            <div className="font-medium">{job.title}</div>
+          <div className="min-w-0">
+            <div className="font-medium truncate max-w-[200px]">{job.title}</div>
             {job.description && (
-              <div className="text-xs text-gray-500 mt-1 line-clamp-1">
+              <div className="text-xs text-gray-500 mt-1 line-clamp-1 truncate max-w-[200px]">
                 {job.description}
               </div>
             )}
           </div>
         </td>
-        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-          {job.customer?.name || "—"}
+        <td className="px-6 py-4 text-sm text-gray-600">
+          <div className="truncate max-w-[150px]">{job.customer?.name || "—"}</div>
         </td>
-        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-          {assignedWorkersDisplay}
+        <td className="px-6 py-4 text-sm text-gray-600">
+          <div className="truncate max-w-[150px]">{assignedWorkersDisplay}</div>
         </td>
-        <td className="px-6 py-4 whitespace-nowrap">
+        <td className="px-6 py-4">
           <span
             className={`px-2.5 py-1 rounded-full text-xs font-semibold ${getStatusColor(
               job.status
@@ -145,10 +145,10 @@ export default function JobRow({
             {statusDisplay}
           </span>
         </td>
-        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+        <td className="px-6 py-4 text-sm text-gray-600">
           {startDate}
         </td>
-        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+        <td className="px-6 py-4 text-sm text-gray-600">
           {deadline}
         </td>
         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">

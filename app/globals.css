@@ -5,3 +5,52 @@
 /* React Quill Editor Styles */
 @import 'react-quill/dist/quill.snow.css';
 
+/* Mobile Optimization - Prevent horizontal scrolling */
+@layer base {
+  html {
+    overflow-x: hidden;
+    -webkit-text-size-adjust: 100%;
+  }
+  
+  body {
+    overflow-x: hidden;
+    word-wrap: break-word;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  /* Ensure all images are responsive */
+  img {
+    max-width: 100%;
+    height: auto;
+  }
+  
+  /* Prevent text overflow on mobile */
+  * {
+    max-width: 100%;
+  }
+}
+
+/* Mobile-specific table optimizations */
+@layer utilities {
+  .mobile-table-wrapper {
+    @apply overflow-x-auto -mx-4 sm:mx-0;
+  }
+  
+  .mobile-table-wrapper > * {
+    @apply px-4 sm:px-0;
+  }
+  
+  /* Better text truncation */
+  .truncate-mobile {
+    @apply truncate;
+    word-break: break-word;
+    overflow-wrap: break-word;
+  }
+  
+  /* Touch-friendly elements */
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px];
+  }
+}
+

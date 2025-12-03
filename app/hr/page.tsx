@@ -416,9 +416,9 @@ export default function HRPage() {
                               {(user.name || "U").charAt(0).toUpperCase()}
                             </span>
                           </div>
-                          <div className="ml-3 min-w-0">
-                            <div className="text-sm font-medium text-gray-900 truncate">{user.name || "Unknown"}</div>
-                            <div className="text-sm text-gray-500 truncate">{user.email}</div>
+                          <div className="ml-3 min-w-0 flex-1">
+                            <div className="text-sm font-medium text-gray-900 truncate break-words">{user.name || "Unknown"}</div>
+                            <div className="text-sm text-gray-500 truncate break-all">{user.email}</div>
                           </div>
                         </div>
                       </td>

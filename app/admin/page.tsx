@@ -622,8 +622,9 @@ export default function AdminPage() {
             </div>
 
             {/* Desktop Table View */}
-            <div className="hidden md:block overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
+            <div className="hidden md:block overflow-x-auto -mx-4 sm:mx-0">
+              <div className="inline-block min-w-full align-middle px-4 sm:px-0">
+                <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -668,18 +669,18 @@ export default function AdminPage() {
                   ) : (
                   filteredUsers.map((user) => (
                       <tr key={user.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
+                        <td className="px-6 py-4">
+                          <div className="flex items-center min-w-0">
                             <div className="flex-shrink-0 h-10 w-10 rounded-full bg-red-100 flex items-center justify-center">
                               <span className="text-red-600 font-medium text-sm">
                                 {(user.name || "U").charAt(0).toUpperCase()}
                               </span>
                             </div>
-                            <div className="ml-4">
-                              <div className="text-sm font-medium text-gray-900">
+                            <div className="ml-4 min-w-0 flex-1">
+                              <div className="text-sm font-medium text-gray-900 truncate">
                                 {user.name || "Unknown"}
                               </div>
-                              <div className="text-sm text-gray-500">{user.email}</div>
+                              <div className="text-sm text-gray-500 truncate">{user.email}</div>
                             </div>
                           </div>
                         </td>

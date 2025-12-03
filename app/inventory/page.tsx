@@ -798,8 +798,9 @@ export default function InventoryPage() {
           </div>
         ) : (
           <div className="bg-white rounded-xl shadow overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
+            <div className="overflow-x-auto -mx-4 sm:mx-0">
+              <div className="inline-block min-w-full align-middle px-4 sm:px-0">
+                <table className="w-full">
                 <thead className="bg-gray-50 border-b">
                   <tr>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">
@@ -1518,6 +1519,7 @@ export default function InventoryPage() {
                   </table>
                 </div>
               </div>
+            </div>
             )}
 
             {/* Pagination */}
