@@ -22,28 +22,31 @@ export const authOptions: NextAuthOptions = {
       name: `next-auth.session-token`,
       options: {
         httpOnly: true, // Prevents JavaScript access - secure storage
-        sameSite: "lax", // CSRF protection
+        sameSite: "lax", // CSRF protection - works globally, allows top-level navigation
         path: "/",
         secure: process.env.NODE_ENV === "production", // HTTPS only in production
         maxAge: 30 * 24 * 60 * 60, // 30 days - matches session maxAge
+        // No domain restriction - works from any location worldwide
       },
     },
     callbackUrl: {
       name: `next-auth.callback-url`,
       options: {
         httpOnly: true,
-        sameSite: "lax",
+        sameSite: "lax", // Works globally
         path: "/",
         secure: process.env.NODE_ENV === "production",
+        // No domain restriction - works from any location worldwide
       },
     },
     csrfToken: {
       name: `next-auth.csrf-token`,
       options: {
         httpOnly: true,
-        sameSite: "lax",
+        sameSite: "lax", // Works globally
         path: "/",
         secure: process.env.NODE_ENV === "production",
+        // No domain restriction - works from any location worldwide
       },
     },
   },
