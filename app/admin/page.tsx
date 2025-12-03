@@ -323,26 +323,6 @@ export default function AdminPage() {
     }
   };
 
-  const loadAccessUsers = async () => {
-    setAccessLoading(true);
-    setError(undefined);
-    const res = await getAllUsersWithPermissions();
-    if (!res.ok) {
-      setError(res.error);
-      setAccessUsers([]);
-    } else {
-      const usersList = res.users || [];
-      setAccessUsers(usersList as any);
-      // Initialize permissions state
-      const perms: Record<string, UserPermissions> = {};
-      usersList.forEach((user: any) => {
-        perms[user.id] = user.permissions;
-      });
-      setAccessPermissions(perms);
-    }
-    setAccessLoading(false);
-  };
-
   const filteredUsers = users.filter((u) => {
     const q = userSearch.trim().toLowerCase();
     if (!q) return true;
