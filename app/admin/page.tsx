@@ -85,16 +85,6 @@ export default function AdminPage() {
   const [showRoleChangeConfirm, setShowRoleChangeConfirm] = useState<{ userId: string; newRole: string; userName: string; currentRole: string } | null>(null);
   const [userSearch, setUserSearch] = useState("");
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  useEffect(() => {
-    if (activeTab === "user-access" && isAdmin) {
-      loadAccessUsers();
-    }
-  }, [activeTab, isAdmin]);
-
   const loadData = async () => {
     setLoading(true);
     setError(undefined);
@@ -136,6 +126,17 @@ export default function AdminPage() {
     }
     setAccessLoading(false);
   };
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === "user-access" && isAdmin) {
+      loadAccessUsers();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, isAdmin]);
 
   const handleDeleteUser = async (userId: string) => {
     setError(undefined);

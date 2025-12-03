@@ -134,6 +134,47 @@ export default function InventoryPage() {
   const [submittingRequest, setSubmittingRequest] = useState(false);
   const [inventoryItemsForRequest, setInventoryItemsForRequest] = useState<InventoryItemForRequest[]>([]);
 
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      setError(undefined);
+      setSuccess(undefined);
+
+      console.log("[Inventory] Loading inventory items...");
+      const res = await getInventoryItems();
+
+      if (res.ok) {
+        console.log("[Inventory] Inventory items loaded:", res.items?.length || 0, "items");
+        setItems(res.items as any);
+      } else {
+        console.error("[Inventory] Failed to load inventory items:", res.error);
+        setError(res.error || "Failed to load inventory items");
+      }
+    } catch (error: any) {
+      console.error("[Inventory] Exception loading inventory items:", error);
+      setError(`Failed to load inventory items: ${error?.message || "Unknown error"}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadMaterialRequests = async () => {
+    setLoadingRequests(true);
+    try {
+      const res = await getMaterialRequests();
+      if (res.ok) {
+        setMaterialRequests(res.requests as any);
+      } else {
+        console.error("[Inventory] loadMaterialRequests error:", res.error);
+        setError(res.error);
+      }
+    } catch (e: any) {
+      console.error("[Inventory] loadMaterialRequests exception:", e);
+      setError("Failed to load material requests");
+    }
+    setLoadingRequests(false);
+  };
+
   useEffect(() => {
     // Global error handlers for better error tracking
     const handleError = (event: ErrorEvent) => {
@@ -175,6 +216,7 @@ export default function InventoryPage() {
       window.removeEventListener("error", handleError);
       window.removeEventListener("unhandledrejection", handleUnhandledRejection);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Load inventory items when request form is opened
@@ -193,47 +235,6 @@ export default function InventoryPage() {
       loadInventoryItems();
     }
   }, [showRequestForm]);
-
-  const loadData = async () => {
-    try {
-      setLoading(true);
-      setError(undefined);
-      setSuccess(undefined);
-
-      console.log("[Inventory] Loading inventory items...");
-      const res = await getInventoryItems();
-
-      if (res.ok) {
-        console.log("[Inventory] Inventory items loaded:", res.items?.length || 0, "items");
-        setItems(res.items as any);
-      } else {
-        console.error("[Inventory] Failed to load inventory items:", res.error);
-        setError(res.error || "Failed to load inventory items");
-      }
-    } catch (error: any) {
-      console.error("[Inventory] Exception loading inventory items:", error);
-      setError(`Failed to load inventory items: ${error?.message || "Unknown error"}`);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadMaterialRequests = async () => {
-    setLoadingRequests(true);
-    try {
-      const res = await getMaterialRequests();
-      if (res.ok) {
-        setMaterialRequests(res.requests as any);
-      } else {
-        console.error("[Inventory] loadMaterialRequests error:", res.error);
-        setError(res.error);
-      }
-    } catch (e: any) {
-      console.error("[Inventory] loadMaterialRequests exception:", e);
-      setError("Failed to load material requests");
-    }
-    setLoadingRequests(false);
-  };
 
   const handleUpdateRequestStatus = async (requestId: string, status: string, amount?: number | null) => {
     setError(undefined);
