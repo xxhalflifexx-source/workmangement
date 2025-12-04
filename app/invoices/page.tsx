@@ -401,44 +401,44 @@ export default function InvoicesPage() {
 							<button onClick={() => setShowCreate(false)} className="text-gray-500 hover:text-gray-700">✕</button>
 						</div>
 						<form onSubmit={handleCreate} className="space-y-4">
-							<div className="grid grid-cols-2 gap-4">
-								<input placeholder="Job ID (optional)" value={jobId} onChange={(e) => setJobId(e.target.value)} className="border rounded px-3 py-2" />
-								<select value={customerId} onChange={(e) => setCustomerId(e.target.value)} className="border rounded px-3 py-2">
+							<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+								<input placeholder="Job ID (optional)" value={jobId} onChange={(e) => setJobId(e.target.value)} className="border rounded px-3 py-2 min-h-[44px]" />
+								<select value={customerId} onChange={(e) => setCustomerId(e.target.value)} className="border rounded px-3 py-2 min-h-[44px]">
 									<option value="">Select Customer</option>
 									{customers.map((cust) => (
 										<option key={cust.id} value={cust.id}>{cust.name}</option>
 									))}
 								</select>
 							</div>
-							<div className="grid grid-cols-2 gap-4">
+							<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 								<div>
 									<label className="block text-xs text-gray-600 mb-1">Issue Date</label>
-									<input type="date" value={issueDate} onChange={(e) => setIssueDate(e.target.value)} className="border rounded px-3 py-2 w-full" />
+									<input type="date" value={issueDate} onChange={(e) => setIssueDate(e.target.value)} className="border rounded px-3 py-2 w-full min-h-[44px]" />
 								</div>
 								<div>
 									<label className="block text-xs text-gray-600 mb-1">Due Date</label>
-									<input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className="border rounded px-3 py-2 w-full" />
+									<input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className="border rounded px-3 py-2 w-full min-h-[44px]" />
 								</div>
 							</div>
 							<div>
-								<textarea placeholder="Notes" value={notes} onChange={(e) => setNotes(e.target.value)} className="border rounded px-3 py-2 w-full" rows={2} />
+								<textarea placeholder="Notes" value={notes} onChange={(e) => setNotes(e.target.value)} className="border rounded px-3 py-2 w-full min-h-[44px]" rows={2} />
 							</div>
 							<div>
 								<h4 className="font-semibold mb-2">Line Items</h4>
 								<div className="space-y-2">
 									{lines.map((ln, i) => (
-										<div key={i} className="grid grid-cols-6 gap-2">
+										<div key={i} className="grid grid-cols-1 sm:grid-cols-6 gap-2">
 											<input placeholder="Description" value={ln.description} onChange={(e) => {
 												const c = [...lines]; c[i].description = e.target.value; setLines(c);
-											}} className="col-span-3 border rounded px-2 py-1" />
+											}} className="sm:col-span-3 border rounded px-2 py-1 min-h-[44px]" />
 											<input type="number" step="0.01" placeholder="Qty" value={ln.quantity} onChange={(e) => {
 												const c = [...lines]; c[i].quantity = parseFloat(e.target.value) || 0; c[i].amount = c[i].quantity * c[i].rate; setLines(c);
-											}} className="border rounded px-2 py-1" />
+											}} className="border rounded px-2 py-1 min-h-[44px]" />
 											<input type="number" step="0.01" placeholder="Rate" value={ln.rate} onChange={(e) => {
 												const c = [...lines]; c[i].rate = parseFloat(e.target.value) || 0; c[i].amount = c[i].quantity * c[i].rate; setLines(c);
-											}} className="border rounded px-2 py-1" />
-											<div className="text-right flex items-center justify-end font-medium">${(ln.amount || (ln.quantity * ln.rate)).toFixed(2)}</div>
-											<button type="button" onClick={() => setLines(lines.filter((_, idx) => idx !== i))} className="text-red-600 text-sm">✕</button>
+											}} className="border rounded px-2 py-1 min-h-[44px]" />
+											<div className="text-right flex items-center justify-end font-medium sm:col-span-1">${(ln.amount || (ln.quantity * ln.rate)).toFixed(2)}</div>
+											<button type="button" onClick={() => setLines(lines.filter((_, idx) => idx !== i))} className="text-red-600 text-sm min-h-[44px] min-w-[44px]">✕</button>
 										</div>
 									))}
 									<button type="button" onClick={() => setLines([...lines, { description: "", quantity: 1, rate: 0, amount: 0 }])} className="mt-2 px-3 py-1.5 border rounded text-sm">+ Add Line</button>
@@ -469,16 +469,16 @@ export default function InvoicesPage() {
 							<input type="hidden" name="invoiceId" value={showPay} />
 							<div>
 								<label className="block text-xs text-gray-600 mb-1">Amount</label>
-								<input name="amount" type="number" step="0.01" min="0.01" required className="border rounded px-3 py-2 w-full" />
+								<input name="amount" type="number" step="0.01" min="0.01" required className="border rounded px-3 py-2 w-full min-h-[44px]" />
 							</div>
-							<div className="grid grid-cols-2 gap-4">
+							<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 								<div>
 									<label className="block text-xs text-gray-600 mb-1">Method</label>
-									<input name="method" placeholder="Cash, Card, ACH" className="border rounded px-3 py-2 w-full" />
+									<input name="method" placeholder="Cash, Card, ACH" className="border rounded px-3 py-2 w-full min-h-[44px]" />
 								</div>
 								<div>
 									<label className="block text-xs text-gray-600 mb-1">Date</label>
-									<input name="paymentDate" type="date" defaultValue={todayCentralISO()} className="border rounded px-3 py-2 w-full" />
+									<input name="paymentDate" type="date" defaultValue={todayCentralISO()} className="border rounded px-3 py-2 w-full min-h-[44px]" />
 								</div>
 							</div>
 							<div>
