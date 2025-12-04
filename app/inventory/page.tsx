@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import {
   getInventoryItems,
   createInventoryItem,
@@ -403,26 +403,29 @@ export default function InventoryPage() {
   const categories = Array.from(new Set(items.map((item) => item.category).filter(Boolean))) as string[];
 
   // Inventory tab: Filtering and sorting
-  const filteredItems = items.filter((item) => {
-    const matchesSearch =
-      searchTerm === "" ||
-      item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.sku?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.description?.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredItems = useMemo(() => {
+    return items.filter((item) => {
+      const matchesSearch =
+        searchTerm === "" ||
+        item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.sku?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.description?.toLowerCase().includes(searchTerm.toLowerCase());
 
-    const matchesCategory = filterCategory === "ALL" || item.category === filterCategory;
+      const matchesCategory = filterCategory === "ALL" || item.category === filterCategory;
 
-    const stockStatus = getStockStatus(item);
-    const matchesStockStatus =
-      filterStockStatus === "ALL" ||
-      (filterStockStatus === "LOW" && (item.quantity === 0 || item.quantity <= item.minStockLevel)) ||
-      (filterStockStatus === "IN_STOCK" && item.quantity > item.minStockLevel);
+      const stockStatus = getStockStatus(item);
+      const matchesStockStatus =
+        filterStockStatus === "ALL" ||
+        (filterStockStatus === "LOW" && (item.quantity === 0 || item.quantity <= item.minStockLevel)) ||
+        (filterStockStatus === "IN_STOCK" && item.quantity > item.minStockLevel);
 
-    return matchesSearch && matchesCategory && matchesStockStatus;
-  });
+      return matchesSearch && matchesCategory && matchesStockStatus;
+    });
+  }, [items, searchTerm, filterCategory, filterStockStatus, getStockStatus]);
 
   // Sort inventory items
-  const sortedItems = [...filteredItems].sort((a, b) => {
+  const sortedItems = useMemo(() => {
+    return [...filteredItems].sort((a, b) => {
     let aVal: any, bVal: any;
     switch (sortField) {
       case "name":
@@ -447,39 +450,45 @@ export default function InventoryPage() {
     if (aVal < bVal) return sortDirection === "asc" ? -1 : 1;
     if (aVal > bVal) return sortDirection === "asc" ? 1 : -1;
     return 0;
-  });
+    });
+  }, [filteredItems, sortField, sortDirection]);
 
   // Paginate inventory items
   const totalInventoryPages = Math.ceil(sortedItems.length / itemsPerPage);
-  const paginatedItems = sortedItems.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  const paginatedItems = useMemo(() => {
+    return sortedItems.slice(
+      (currentPage - 1) * itemsPerPage,
+      currentPage * itemsPerPage
+    );
+  }, [sortedItems, currentPage, itemsPerPage]);
 
   // Materials Requested tab: Filtering and sorting
-  const filteredRequests = materialRequests.filter((req) => {
-    const jobNumber = req.job ? req.job.id.substring(0, 8).toUpperCase() : "";
-    const matchesSearch =
-      requestSearchTerm === "" ||
-      (req.requestNumber || "").toLowerCase().includes(requestSearchTerm.toLowerCase()) ||
-      jobNumber.toLowerCase().includes(requestSearchTerm.toLowerCase()) ||
-      req.itemName.toLowerCase().includes(requestSearchTerm.toLowerCase()) ||
-      req.description?.toLowerCase().includes(requestSearchTerm.toLowerCase()) ||
-      (req.job?.title || "").toLowerCase().includes(requestSearchTerm.toLowerCase()) ||
-      (req.user.name || req.user.email || "").toLowerCase().includes(requestSearchTerm.toLowerCase()) ||
-      req.status.toLowerCase().includes(requestSearchTerm.toLowerCase());
+  const filteredRequests = useMemo(() => {
+    return materialRequests.filter((req) => {
+      const jobNumber = req.job ? req.job.id.substring(0, 8).toUpperCase() : "";
+      const matchesSearch =
+        requestSearchTerm === "" ||
+        (req.requestNumber || "").toLowerCase().includes(requestSearchTerm.toLowerCase()) ||
+        jobNumber.toLowerCase().includes(requestSearchTerm.toLowerCase()) ||
+        req.itemName.toLowerCase().includes(requestSearchTerm.toLowerCase()) ||
+        req.description?.toLowerCase().includes(requestSearchTerm.toLowerCase()) ||
+        (req.job?.title || "").toLowerCase().includes(requestSearchTerm.toLowerCase()) ||
+        (req.user.name || req.user.email || "").toLowerCase().includes(requestSearchTerm.toLowerCase()) ||
+        req.status.toLowerCase().includes(requestSearchTerm.toLowerCase());
 
-    const matchesStatus = filterRequestStatus === "ALL" || req.status === filterRequestStatus;
-    const matchesJob = filterRequestJob === "ALL" || (filterRequestJob === "NO_JOB" && !req.job) || req.job?.id === filterRequestJob;
-    const matchesRequester = filterRequester === "ALL" || req.user.email === filterRequester;
-    const matchesItem = filterItem === "ALL" || req.itemName.toLowerCase() === filterItem.toLowerCase();
-    const matchesAction = filterAction === "ALL" || (req.recommendedAction || "PENDING") === filterAction;
+      const matchesStatus = filterRequestStatus === "ALL" || req.status === filterRequestStatus;
+      const matchesJob = filterRequestJob === "ALL" || (filterRequestJob === "NO_JOB" && !req.job) || req.job?.id === filterRequestJob;
+      const matchesRequester = filterRequester === "ALL" || req.user.email === filterRequester;
+      const matchesItem = filterItem === "ALL" || req.itemName.toLowerCase() === filterItem.toLowerCase();
+      const matchesAction = filterAction === "ALL" || (req.recommendedAction || "PENDING") === filterAction;
 
-    return matchesSearch && matchesStatus && matchesJob && matchesRequester && matchesItem && matchesAction;
-  });
+      return matchesSearch && matchesStatus && matchesJob && matchesRequester && matchesItem && matchesAction;
+    });
+  }, [materialRequests, requestSearchTerm, filterRequestStatus, filterRequestJob, filterRequester, filterItem, filterAction]);
 
   // Sort material requests
-  const sortedRequests = [...filteredRequests].sort((a, b) => {
+  const sortedRequests = useMemo(() => {
+    return [...filteredRequests].sort((a, b) => {
     let aVal: any, bVal: any;
     switch (requestSortField) {
       case "requestNumber":
@@ -508,14 +517,17 @@ export default function InventoryPage() {
     if (aVal < bVal) return requestSortDirection === "asc" ? -1 : 1;
     if (aVal > bVal) return requestSortDirection === "asc" ? 1 : -1;
     return 0;
-  });
+    });
+  }, [filteredRequests, requestSortField, requestSortDirection]);
 
   // Paginate material requests
   const totalRequestPages = Math.ceil(sortedRequests.length / requestsPerPage);
-  const paginatedRequests = sortedRequests.slice(
-    (requestCurrentPage - 1) * requestsPerPage,
-    requestCurrentPage * requestsPerPage
-  );
+  const paginatedRequests = useMemo(() => {
+    return sortedRequests.slice(
+      (requestCurrentPage - 1) * requestsPerPage,
+      requestCurrentPage * requestsPerPage
+    );
+  }, [sortedRequests, requestCurrentPage, requestsPerPage]);
 
   // Get unique values for filters
   const uniqueJobs = Array.from(new Set(materialRequests.map((r) => r.job?.id).filter(Boolean)));
