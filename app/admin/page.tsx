@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import {
   getAllUsersForAdmin,
   deleteUser,
@@ -322,15 +322,17 @@ export default function AdminPage() {
     }
   }, []);
 
-  const filteredUsers = users.filter((u) => {
-    const q = userSearch.trim().toLowerCase();
-    if (!q) return true;
-    return (
-      (u.name || "").toLowerCase().includes(q) ||
-      (u.email || "").toLowerCase().includes(q) ||
-      u.role.toLowerCase().includes(q)
-    );
-  });
+  const filteredUsers = useMemo(() => {
+    return users.filter((u) => {
+      const q = userSearch.trim().toLowerCase();
+      if (!q) return true;
+      return (
+        (u.name || "").toLowerCase().includes(q) ||
+        (u.email || "").toLowerCase().includes(q) ||
+        u.role.toLowerCase().includes(q)
+      );
+    });
+  }, [users, userSearch]);
 
   if (loading) {
     return (
