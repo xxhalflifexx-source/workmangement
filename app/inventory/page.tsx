@@ -76,7 +76,7 @@ interface InventoryItemForRequest {
   minStockLevel: number;
 }
 
-export default function InventoryPage(): JSX.Element {
+export default function InventoryPage() {
   const { data: session } = useSession();
   const userRole = (session?.user as any)?.role;
   const canManage = userRole === "MANAGER" || userRole === "ADMIN";
