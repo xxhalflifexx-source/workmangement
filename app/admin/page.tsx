@@ -822,6 +822,7 @@ export default function AdminPage() {
                   )}
                 </tbody>
               </table>
+              </div>
             </div>
 
             <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
