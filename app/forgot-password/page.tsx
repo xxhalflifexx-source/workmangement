@@ -40,14 +40,14 @@ export default function ForgotPasswordPage() {
           name="email"
           type="email"
           placeholder="Email"
-          className="border p-2 w-full rounded"
+          className="border p-2 w-full rounded min-h-[44px]"
           required
         />
         {error && <p className="text-red-600 text-sm">{error}</p>}
         <button 
           type="submit"
           disabled={loading}
-          className="border px-4 py-2 w-full rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="border px-4 py-2 w-full rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
         >
           {loading ? "Sending..." : "Send Reset Link"}
         </button>

@@ -1608,9 +1608,9 @@ export default function InventoryPage(): JSX.Element {
 
       {/* Material Request Submission Modal (Employees) */}
       {showRequestForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full">
-            <div className="p-6">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full my-4 max-h-[calc(100vh-2rem)] overflow-y-auto">
+            <div className="p-4 sm:p-6">
               <h2 className="text-2xl font-bold text-gray-900 mb-6">Submit Material Request</h2>
 
               <form onSubmit={(e) => { e.preventDefault(); handleSubmitMaterialRequest(); }} className="space-y-4">
@@ -1746,9 +1746,9 @@ export default function InventoryPage(): JSX.Element {
 
       {/* Create/Edit Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
+          <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full my-4 max-h-[calc(100vh-2rem)] overflow-y-auto">
+            <div className="p-4 sm:p-6">
               <h2 className="text-2xl font-bold text-gray-900 mb-6">
                 {editingItem ? "Edit Item" : "Add New Item"}
               </h2>
@@ -1919,9 +1919,9 @@ export default function InventoryPage(): JSX.Element {
 
       {/* Adjust Quantity Modal */}
       {showAdjustModal && adjustingItem && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full">
-            <div className="p-6">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full my-4 max-h-[calc(100vh-2rem)] overflow-y-auto">
+            <div className="p-4 sm:p-6">
               <h2 className="text-2xl font-bold text-gray-900 mb-2">Adjust Inventory</h2>
               <p className="text-sm text-gray-600 mb-6">
                 Current stock: <span className="font-bold">{adjustingItem.quantity} {adjustingItem.unit}</span>
@@ -2004,7 +2004,7 @@ export default function InventoryPage(): JSX.Element {
       {/* History Modal */}
       {showHistoryModal && historyItem && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl my-4 max-h-[calc(100vh-2rem)] overflow-y-auto">
             {/* Header */}
             <div className="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center z-10">
               <div>

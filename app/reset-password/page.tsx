@@ -54,7 +54,7 @@ function ResetPasswordForm() {
         </p>
         <a
           href="/forgot-password"
-          className="block text-center border px-4 py-2 w-full rounded bg-blue-600 text-white hover:bg-blue-700"
+          className="block text-center border px-4 py-2 w-full rounded bg-blue-600 text-white hover:bg-blue-700 min-h-[44px] flex items-center justify-center"
         >
           Request New Reset Link
         </a>
@@ -117,7 +117,7 @@ function ResetPasswordForm() {
             name="password"
             type="password"
             placeholder="New Password (min 6 chars)"
-            className="border p-2 w-full rounded"
+            className="border p-2 w-full rounded min-h-[44px]"
             required
             minLength={6}
           />
@@ -125,7 +125,7 @@ function ResetPasswordForm() {
             name="confirmPassword"
             type="password"
             placeholder="Confirm New Password"
-            className="border p-2 w-full rounded"
+            className="border p-2 w-full rounded min-h-[44px]"
             required
             minLength={6}
           />
@@ -133,7 +133,7 @@ function ResetPasswordForm() {
           <button 
             type="submit"
             disabled={loading}
-            className="border px-4 py-2 w-full rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="border px-4 py-2 w-full rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
           >
             {loading ? "Resetting..." : "Reset Password"}
           </button>

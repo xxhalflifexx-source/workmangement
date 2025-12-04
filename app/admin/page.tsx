@@ -1030,7 +1030,7 @@ export default function AdminPage() {
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-4 sm:p-6 my-auto">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-4 sm:p-6 my-4 max-h-[calc(100vh-2rem)] overflow-y-auto">
             <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-4">⚠️ Confirm Delete</h3>
             <p className="text-sm sm:text-base text-gray-600 mb-6">
               Are you sure you want to delete this user? This will permanently remove:
@@ -1063,7 +1063,7 @@ export default function AdminPage() {
       {/* Role Change Confirmation Modal */}
       {showRoleChangeConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-4 sm:p-6 my-auto">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-4 sm:p-6 my-4 max-h-[calc(100vh-2rem)] overflow-y-auto">
             <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-4">⚠️ Confirm Role Change</h3>
             <p className="text-sm sm:text-base text-gray-600 mb-4">
               {showRoleChangeConfirm.userId === currentUserId

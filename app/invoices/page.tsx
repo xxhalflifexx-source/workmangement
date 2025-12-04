@@ -394,8 +394,8 @@ export default function InvoicesPage() {
 
 			{/* Create Invoice Modal */}
 			{showCreate && (
-				<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-					<div className="bg-white rounded-xl shadow-xl max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto">
+				<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
+					<div className="bg-white rounded-xl shadow-xl max-w-2xl w-full my-4 max-h-[calc(100vh-2rem)] overflow-y-auto p-4 sm:p-6">
 						<div className="flex items-center justify-between mb-4">
 							<h3 className="text-xl font-bold text-gray-900">New Invoice</h3>
 							<button onClick={() => setShowCreate(false)} className="text-gray-500 hover:text-gray-700">✕</button>
@@ -459,8 +459,8 @@ export default function InvoicesPage() {
 
 			{/* Record Payment Modal */}
 			{showPay && (
-				<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-					<div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+				<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
+					<div className="bg-white rounded-xl shadow-xl max-w-md w-full my-4 max-h-[calc(100vh-2rem)] overflow-y-auto p-4 sm:p-6">
 						<div className="flex items-center justify-between mb-4">
 							<h3 className="text-xl font-bold text-gray-900">Record Payment</h3>
 							<button onClick={() => setShowPay(null)} className="text-gray-500 hover:text-gray-700">✕</button>

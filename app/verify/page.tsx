@@ -61,7 +61,7 @@ function VerifyContent() {
           <p className="text-gray-600 text-sm">
             We sent a 6-digit code to
           </p>
-          <p className="font-semibold text-blue-600">{email}</p>
+          <p className="font-semibold text-blue-600 break-all">{email}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -74,7 +74,7 @@ function VerifyContent() {
               value={code}
               onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
               placeholder="000000"
-              className="border p-3 w-full rounded text-center text-2xl font-mono tracking-widest"
+              className="border p-3 w-full rounded text-center text-2xl font-mono tracking-widest min-h-[44px]"
               maxLength={6}
               required
               autoFocus
@@ -99,7 +99,7 @@ function VerifyContent() {
           <button
             type="submit"
             disabled={loading || code.length !== 6}
-            className="w-full bg-blue-600 text-white py-3 rounded font-semibold hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+            className="w-full bg-blue-600 text-white py-3 rounded font-semibold hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed min-h-[44px]"
           >
             {loading ? "Verifying..." : "Verify Email"}
           </button>
@@ -112,7 +112,7 @@ function VerifyContent() {
           <button
             onClick={handleResend}
             disabled={resending}
-            className="text-blue-600 text-sm hover:underline disabled:text-gray-400 disabled:cursor-not-allowed"
+            className="text-blue-600 text-sm hover:underline disabled:text-gray-400 disabled:cursor-not-allowed min-h-[44px] px-2"
           >
             {resending ? "Sending..." : "Resend Code"}
           </button>
