@@ -4,6 +4,7 @@ import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { broadcastSessionEvent } from "@/lib/session-sync";
+import LoginLoadingOverlay from "./LoginLoadingOverlay";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -11,6 +12,7 @@ export default function LoginPage() {
   const verified = searchParams?.get("verified");
   const passwordReset = searchParams?.get("passwordReset");
   const [error, setError] = useState<string | undefined>();
+  const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(
     verified === "true" 
       ? "Email verified! You can now sign in." 
@@ -21,6 +23,9 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center relative">
+      {/* Login Loading Overlay */}
+      <LoginLoadingOverlay show={loading} />
+      
       {/* Gradient Fallback Background (base layer) */}
       <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-blue-500 to-indigo-600"></div>
       
@@ -50,31 +55,47 @@ export default function LoginPage() {
           <form
             onSubmit={async (e) => {
               e.preventDefault();
-              const formData = new FormData(e.currentTarget as HTMLFormElement);
-              const email = formData.get("email") as string;
-              const password = formData.get("password") as string;
               
-              const res = await signIn("credentials", {
-                email,
-                password,
-                redirect: false,
-              });
+              // Prevent double submission
+              if (loading) return;
               
-              if (res?.error) {
-                setError("Invalid credentials");
-                return;
+              setLoading(true);
+              setError(undefined);
+              
+              try {
+                const formData = new FormData(e.currentTarget as HTMLFormElement);
+                const email = formData.get("email") as string;
+                const password = formData.get("password") as string;
+                
+                const res = await signIn("credentials", {
+                  email,
+                  password,
+                  redirect: false,
+                });
+                
+                if (res?.error) {
+                  setError("Invalid credentials");
+                  setLoading(false);
+                  return;
+                }
+                
+                // Get user info from session to store indicator
+                // Note: We can't get the full session immediately, but NextAuth will set the cookie
+                // The session indicator will be set by the SessionInitializer component
+                
+                // Broadcast sign in to other tabs
+                // This will trigger session restoration in other tabs
+                broadcastSessionEvent("signin");
+                
+                // Small delay to show the loading screen before redirect
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                // Navigate to dashboard
+                router.replace("/dashboard");
+              } catch (err) {
+                setError("An error occurred. Please try again.");
+                setLoading(false);
               }
-              
-              // Get user info from session to store indicator
-              // Note: We can't get the full session immediately, but NextAuth will set the cookie
-              // The session indicator will be set by the SessionInitializer component
-              
-              // Broadcast sign in to other tabs
-              // This will trigger session restoration in other tabs
-              broadcastSessionEvent("signin");
-              
-              // Navigate to dashboard
-              router.replace("/dashboard");
             }}
             className="space-y-4"
           >
@@ -83,7 +104,8 @@ export default function LoginPage() {
                 name="email"
                 type="email"
                 placeholder="Email"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all min-h-[44px]"
+                disabled={loading}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all min-h-[44px] disabled:opacity-50 disabled:cursor-not-allowed"
                 required
               />
             </div>
@@ -92,7 +114,8 @@ export default function LoginPage() {
                 name="password"
                 type="password"
                 placeholder="Password"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all min-h-[44px]"
+                disabled={loading}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all min-h-[44px] disabled:opacity-50 disabled:cursor-not-allowed"
                 required
               />
             </div>
@@ -104,9 +127,10 @@ export default function LoginPage() {
             </div>
             <button 
               type="submit"
-              className="w-full px-4 py-3 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors shadow-md min-h-[44px]"
+              disabled={loading}
+              className="w-full px-4 py-3 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors shadow-md min-h-[44px] disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Sign In
+              {loading ? "Signing in..." : "Sign In"}
             </button>
           </form>
           <p className="mt-6 text-sm text-center text-gray-600">
