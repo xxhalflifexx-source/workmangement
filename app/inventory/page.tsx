@@ -626,7 +626,6 @@ export default function InventoryPage() {
     return items.filter((item) => item.quantity === 0).length;
   }, [items]);
 
-  // Loading state check
   if (loading) {
     return (
       <main className="min-h-screen bg-gray-50 flex items-center justify-center">
