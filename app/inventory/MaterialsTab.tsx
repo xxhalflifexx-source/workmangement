@@ -578,6 +578,7 @@ export default function MaterialsTab({
                 })}
               </tbody>
             </table>
+            </div>
           </div>
         </div>
       )}
