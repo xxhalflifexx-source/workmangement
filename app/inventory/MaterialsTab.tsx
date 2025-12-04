@@ -98,7 +98,7 @@ export default function MaterialsTab({
             {userRole === "EMPLOYEE" && (
               <button
                 onClick={() => setShowRequestForm(true)}
-                className="flex-1 sm:flex-none px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium whitespace-nowrap min-h-[44px] min-w-[44px]"
+                className="flex-1 sm:flex-none px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 hover:shadow-md active:scale-95 font-medium whitespace-nowrap min-h-[44px] min-w-[44px]"
               >
                 + Submit Request
               </button>
@@ -287,7 +287,7 @@ export default function MaterialsTab({
                   const recommendedAction = getRecommendedAction(req);
                   const inventoryItem = items.find((item) => item.name.toLowerCase() === req.itemName.toLowerCase());
                   return (
-                    <tr key={req.id} className="hover:bg-gray-50">
+                        <tr key={req.id} className="hover:bg-gray-50 transition-colors duration-200">
                       <td className="px-2 sm:px-4 py-3 text-sm text-gray-900 font-mono font-semibold min-w-[80px] sm:min-w-0">
                         {req.job ? req.job.id.substring(0, 8).toUpperCase() : "—"}
                       </td>

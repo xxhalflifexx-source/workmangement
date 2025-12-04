@@ -44,9 +44,9 @@ export default async function Dashboard() {
       </header>
 
       {/* Main Content */}
-      <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-24 py-6 sm:py-8 relative z-0">
+      <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-24 py-6 sm:py-8 relative z-0 page-transition">
         {/* Welcome Message */}
-        <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl shadow-lg p-4 sm:p-6 lg:p-8 mb-6 sm:mb-8 text-white relative z-0">
+        <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl shadow-lg p-4 sm:p-6 lg:p-8 mb-6 sm:mb-8 text-white relative z-0 transition-all duration-300 hover:shadow-xl">
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1 min-w-0">
               <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-2 break-words">
@@ -75,7 +75,7 @@ export default async function Dashboard() {
           {(role === "ADMIN" || (permissions && hasPermission(permissions, "timeClock"))) && (
             <Link
               href="/time-clock"
-              className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 hover:shadow-md transition-all hover:border-blue-300 flex flex-col items-center justify-center text-center min-h-[100px] sm:min-h-[120px]"
+              className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 hover:shadow-lg transition-all duration-300 hover:border-blue-300 hover:-translate-y-1 active:scale-95 flex flex-col items-center justify-center text-center min-h-[100px] sm:min-h-[120px]"
             >
               <div className="text-3xl sm:text-4xl mb-2">⏰</div>
               <div className="font-semibold text-sm sm:text-base text-gray-900">Time Clock</div>
@@ -87,7 +87,7 @@ export default async function Dashboard() {
           {(role === "ADMIN" || (permissions && hasPermission(permissions, "jobManagement"))) && (
             <Link
               href="/jobs"
-              className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 hover:shadow-md transition-all hover:border-blue-300 flex flex-col items-center justify-center text-center min-h-[100px] sm:min-h-[120px]"
+              className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 hover:shadow-lg transition-all duration-300 hover:border-blue-300 hover:-translate-y-1 active:scale-95 flex flex-col items-center justify-center text-center min-h-[100px] sm:min-h-[120px]"
             >
               <div className="text-3xl sm:text-4xl mb-2">📋</div>
               <div className="font-semibold text-sm sm:text-base text-gray-900">Job Management</div>
@@ -99,7 +99,7 @@ export default async function Dashboard() {
           {(role === "ADMIN" || (permissions && hasPermission(permissions, "qualityControl"))) && (
             <Link
               href="/qc"
-              className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 hover:shadow-md transition-all hover:border-blue-300 flex flex-col items-center justify-center text-center min-h-[100px] sm:min-h-[120px]"
+              className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 hover:shadow-lg transition-all duration-300 hover:border-blue-300 hover:-translate-y-1 active:scale-95 flex flex-col items-center justify-center text-center min-h-[100px] sm:min-h-[120px]"
             >
               <div className="text-3xl sm:text-4xl mb-2">✅</div>
               <div className="font-semibold text-sm sm:text-base text-gray-900">Quality Control</div>
@@ -111,7 +111,7 @@ export default async function Dashboard() {
           {(role === "ADMIN" || (permissions && hasPermission(permissions, "hr"))) && (
             <Link
               href="/hr"
-              className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 hover:shadow-md transition-all hover:border-blue-300 flex flex-col items-center justify-center text-center min-h-[100px] sm:min-h-[120px]"
+              className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 hover:shadow-lg transition-all duration-300 hover:border-blue-300 hover:-translate-y-1 active:scale-95 flex flex-col items-center justify-center text-center min-h-[100px] sm:min-h-[120px]"
             >
               <div className="text-3xl sm:text-4xl mb-2">👥</div>
               <div className="font-semibold text-sm sm:text-base text-gray-900">HR</div>
@@ -123,7 +123,7 @@ export default async function Dashboard() {
           {(role === "ADMIN" || (permissions && hasPermission(permissions, "finance"))) && (
             <Link
               href="/finance"
-              className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 hover:shadow-md transition-all hover:border-blue-300 flex flex-col items-center justify-center text-center min-h-[100px] sm:min-h-[120px]"
+              className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 hover:shadow-lg transition-all duration-300 hover:border-blue-300 hover:-translate-y-1 active:scale-95 flex flex-col items-center justify-center text-center min-h-[100px] sm:min-h-[120px]"
             >
               <div className="text-3xl sm:text-4xl mb-2">💰</div>
               <div className="font-semibold text-sm sm:text-base text-gray-900">Finance</div>
@@ -135,7 +135,7 @@ export default async function Dashboard() {
           {(role === "ADMIN" || (permissions && hasPermission(permissions, "inventory"))) && (
             <Link
               href="/inventory"
-              className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 hover:shadow-md transition-all hover:border-blue-300 flex flex-col items-center justify-center text-center min-h-[100px] sm:min-h-[120px]"
+              className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 hover:shadow-lg transition-all duration-300 hover:border-blue-300 hover:-translate-y-1 active:scale-95 flex flex-col items-center justify-center text-center min-h-[100px] sm:min-h-[120px]"
             >
               <div className="text-3xl sm:text-4xl mb-2">📦</div>
               <div className="font-semibold text-sm sm:text-base text-gray-900">Inventory</div>
@@ -147,7 +147,7 @@ export default async function Dashboard() {
           {(role === "ADMIN" || (permissions && hasPermission(permissions, "adminPanel"))) && (
             <Link
               href="/admin"
-              className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 hover:shadow-md transition-all hover:border-red-300 flex flex-col items-center justify-center text-center min-h-[100px] sm:min-h-[120px]"
+              className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 hover:shadow-lg transition-all duration-300 hover:border-red-300 hover:-translate-y-1 active:scale-95 flex flex-col items-center justify-center text-center min-h-[100px] sm:min-h-[120px]"
             >
               <div className="text-3xl sm:text-4xl mb-2">⚙️</div>
               <div className="font-semibold text-sm sm:text-base text-gray-900">Admin Panel</div>
@@ -159,7 +159,7 @@ export default async function Dashboard() {
           {(role === "ADMIN" || (permissions && hasPermission(permissions, "employeeHandbook"))) && (
             <Link
               href="/handbook"
-              className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 hover:shadow-md transition-all hover:border-blue-300 flex flex-col items-center justify-center text-center min-h-[100px] sm:min-h-[120px]"
+              className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 hover:shadow-lg transition-all duration-300 hover:border-blue-300 hover:-translate-y-1 active:scale-95 flex flex-col items-center justify-center text-center min-h-[100px] sm:min-h-[120px]"
             >
               <div className="text-3xl sm:text-4xl mb-2">📖</div>
               <div className="font-semibold text-sm sm:text-base text-gray-900">Employee Handbook</div>

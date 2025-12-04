@@ -10,6 +10,7 @@
   html {
     overflow-x: hidden;
     -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
   }
   
   body {
@@ -23,11 +24,22 @@
   img {
     max-width: 100%;
     height: auto;
+    transition: opacity 0.3s ease-in-out;
   }
   
   /* Prevent text overflow on mobile */
   * {
     max-width: 100%;
+  }
+  
+  /* Smooth transitions for common interactive elements */
+  button, a, input, select, textarea {
+    transition: all 0.2s ease-in-out;
+  }
+  
+  /* Smooth transitions for cards and containers */
+  [class*="rounded"], [class*="shadow"] {
+    transition: all 0.3s ease-in-out;
   }
 }
 
@@ -57,14 +69,176 @@
   .animate-fade-in-out {
     animation: fadeInOut 3s ease-in-out infinite;
   }
+  
+  /* Smooth page transitions */
+  .page-transition {
+    animation: fadeInUp 0.4s ease-out;
+  }
+  
+  /* Modal animations */
+  .modal-enter {
+    animation: modalFadeIn 0.3s ease-out;
+  }
+  
+  .modal-exit {
+    animation: modalFadeOut 0.2s ease-in;
+  }
+  
+  /* Dropdown animations */
+  .dropdown-enter {
+    animation: slideDown 0.2s ease-out;
+  }
+  
+  .dropdown-exit {
+    animation: slideUp 0.15s ease-in;
+  }
+  
+  /* Card hover effects */
+  .card-hover {
+    transition: all 0.3s ease-in-out;
+  }
+  
+  .card-hover:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  }
+  
+  /* Button press effect */
+  .button-press:active {
+    transform: scale(0.98);
+  }
+  
+  /* Smooth input focus */
+  .input-focus:focus {
+    transition: all 0.2s ease-in-out;
+  }
+  
+  /* Table row hover */
+  .table-row-hover {
+    transition: background-color 0.2s ease-in-out;
+  }
+  
+  /* Smooth opacity transitions */
+  .fade-in {
+    animation: fadeIn 0.3s ease-in;
+  }
+  
+  .fade-out {
+    animation: fadeOut 0.2s ease-out;
+  }
+  
+  /* Smooth scale transitions */
+  .scale-in {
+    animation: scaleIn 0.2s ease-out;
+  }
+  
+  .scale-out {
+    animation: scaleOut 0.15s ease-in;
+  }
 }
 
+/* Keyframe Animations */
 @keyframes fadeInOut {
   0%, 100% {
     opacity: 0.2;
   }
   50% {
     opacity: 0.5;
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes modalFadeOut {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes scaleOut {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.9);
   }
 }
 

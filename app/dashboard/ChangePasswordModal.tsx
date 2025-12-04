@@ -64,14 +64,14 @@ export default function ChangePasswordModal({ onClose }: ChangePasswordModalProp
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
-      <div className="bg-white rounded-xl shadow-xl max-w-md w-full my-4 max-h-[calc(100vh-2rem)] overflow-y-auto">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto animate-fade-in">
+      <div className="bg-white rounded-xl shadow-xl max-w-md w-full my-4 max-h-[calc(100vh-2rem)] overflow-y-auto modal-enter">
         <div className="p-4 sm:p-6">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold text-gray-900">Change Password</h2>
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 transition-colors"
+              className="text-gray-400 hover:text-gray-600 transition-all duration-200 hover:scale-110 active:scale-95"
               aria-label="Close"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

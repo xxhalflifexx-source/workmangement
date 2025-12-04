@@ -81,7 +81,7 @@ export default function UserMenu({ userName, userEmail, hideWhenNotificationsOpe
               onClick={() => setShowDropdown(false)}
             />
             {/* Dropdown - Use fixed positioning on mobile to avoid overlap issues */}
-            <div className="fixed sm:absolute right-4 sm:right-0 top-[72px] sm:top-auto sm:mt-2 left-4 sm:left-auto w-[calc(100vw-2rem)] sm:w-48 max-w-[280px] sm:max-w-[calc(100vw-1rem)] max-h-[calc(100vh-88px)] sm:max-h-none bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-[50] sm:z-[1000]">
+            <div className="fixed sm:absolute right-4 sm:right-0 top-[72px] sm:top-auto sm:mt-2 left-4 sm:left-auto w-[calc(100vw-2rem)] sm:w-48 max-w-[280px] sm:max-w-[calc(100vw-1rem)] max-h-[calc(100vh-88px)] sm:max-h-none bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-[50] sm:z-[1000] dropdown-enter">
               <div className="px-4 py-2 border-b border-gray-100">
                 <p className="text-sm font-semibold text-gray-900 break-words">{userName || "User"}</p>
                 <p className="text-xs text-gray-500 break-all mt-1">{userEmail}</p>

@@ -93,7 +93,7 @@ export default function InventoryTab({
             {canManage && (
               <button
                 onClick={openCreateModal}
-                className="flex-1 sm:flex-none bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium whitespace-nowrap min-h-[44px] min-w-[44px]"
+                className="flex-1 sm:flex-none bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-all duration-200 hover:shadow-md active:scale-95 font-medium whitespace-nowrap min-h-[44px] min-w-[44px]"
               >
                 + Add Item
               </button>
@@ -233,7 +233,7 @@ export default function InventoryTab({
                   {paginatedItems.map((item) => {
                     const stockStatus = getStockStatus(item);
                     return (
-                      <tr key={item.id} className="hover:bg-gray-50">
+                          <tr key={item.id} className="hover:bg-gray-50 transition-colors duration-200">
                         <td className="px-2 sm:px-4 py-3 text-sm text-gray-900 min-w-[120px] sm:min-w-0">
                           <div className="font-medium break-words">{item.name}</div>
                           {item.sku && (
