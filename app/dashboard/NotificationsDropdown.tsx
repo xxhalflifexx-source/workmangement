@@ -18,11 +18,15 @@ interface Notification {
 interface NotificationsDropdownProps {
   initialNotifications?: Notification[];
   initialUnreadCount?: number;
+  onUserMenuClose?: () => void;
+  onOpenChange?: (open: boolean) => void;
 }
 
 export default function NotificationsDropdown({ 
   initialNotifications = [], 
-  initialUnreadCount = 0 
+  initialUnreadCount = 0,
+  onUserMenuClose,
+  onOpenChange
 }: NotificationsDropdownProps) {
   const [notifications, setNotifications] = useState<Notification[]>(initialNotifications);
   const [unreadCount, setUnreadCount] = useState(initialUnreadCount);
@@ -67,6 +71,9 @@ export default function NotificationsDropdown({
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setShowDropdown(false);
+        if (onOpenChange) {
+          onOpenChange(false);
+        }
       }
     };
 
@@ -77,7 +84,7 @@ export default function NotificationsDropdown({
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [showDropdown]);
+  }, [showDropdown, onOpenChange]);
 
   const handleNotificationClick = async (notification: Notification) => {
     if (!notification.isRead) {
@@ -93,6 +100,9 @@ export default function NotificationsDropdown({
     if (notification.linkUrl) {
       router.push(notification.linkUrl);
       setShowDropdown(false);
+      if (onOpenChange) {
+        onOpenChange(false);
+      }
     }
   };
 
@@ -141,7 +151,16 @@ export default function NotificationsDropdown({
   return (
     <div className="relative z-30" ref={dropdownRef}>
       <button
-        onClick={() => setShowDropdown(!showDropdown)}
+        onClick={() => {
+          const newState = !showDropdown;
+          setShowDropdown(newState);
+          if (onOpenChange) {
+            onOpenChange(newState);
+          }
+          if (newState && onUserMenuClose) {
+            onUserMenuClose();
+          }
+        }}
         className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors text-gray-700 min-h-[44px] min-w-[44px] flex items-center justify-center"
         aria-label="Notifications"
       >
@@ -170,7 +189,12 @@ export default function NotificationsDropdown({
           {/* Backdrop for mobile */}
           <div 
             className="fixed inset-0 bg-black/20 z-[40] sm:hidden"
-            onClick={() => setShowDropdown(false)}
+            onClick={() => {
+              setShowDropdown(false);
+              if (onOpenChange) {
+                onOpenChange(false);
+              }
+            }}
           />
           {/* Dropdown - Use fixed positioning on mobile to avoid overlap issues */}
           <div className="fixed sm:absolute right-4 sm:right-0 top-[72px] sm:top-auto sm:mt-2 left-4 sm:left-auto w-[calc(100vw-2rem)] sm:w-80 md:w-96 max-w-sm bg-white rounded-lg shadow-xl border border-gray-200 z-[50] sm:z-[1000] max-h-[calc(100vh-88px)] sm:max-h-[500px] flex flex-col">

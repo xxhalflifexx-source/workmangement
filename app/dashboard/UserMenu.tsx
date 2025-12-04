@@ -8,9 +8,11 @@ import { broadcastSessionEvent } from "@/lib/session-sync";
 interface UserMenuProps {
   userName: string | null | undefined;
   userEmail: string | null | undefined;
+  hideWhenNotificationsOpen?: boolean;
+  notificationsOpen?: boolean;
 }
 
-export default function UserMenu({ userName, userEmail }: UserMenuProps) {
+export default function UserMenu({ userName, userEmail, hideWhenNotificationsOpen, notificationsOpen }: UserMenuProps) {
   const [showDropdown, setShowDropdown] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -42,6 +44,11 @@ export default function UserMenu({ userName, userEmail }: UserMenuProps) {
     
     await signOut({ callbackUrl: "/login" });
   };
+
+  // Hide UserMenu when notifications dropdown is open
+  if (hideWhenNotificationsOpen && notificationsOpen) {
+    return null;
+  }
 
   return (
     <>

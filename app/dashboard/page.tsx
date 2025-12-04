@@ -2,8 +2,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authOptions";
 import Link from "next/link";
 import { formatDateShort } from "@/lib/date-utils";
-import UserMenu from "./UserMenu";
-import NotificationsDropdown from "./NotificationsDropdown";
+import DashboardHeaderActions from "./DashboardHeaderActions";
 import { getNotifications } from "./notifications-actions";
 import { getUserPermissionsForSession } from "../admin/user-access-actions";
 import { hasPermission, ModulePermission } from "@/lib/permissions";
@@ -35,13 +34,12 @@ export default async function Dashboard() {
             <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Employee Portal</h1>
             <p className="text-xs sm:text-sm text-gray-500 truncate">Welcome back, {user?.name}</p>
           </div>
-          <div className="flex items-center gap-2 flex-shrink-0 relative z-30">
-            <NotificationsDropdown 
-              initialNotifications={notifications as any}
-              initialUnreadCount={unreadCount}
-            />
-            <UserMenu userName={user?.name} userEmail={user?.email} />
-          </div>
+          <DashboardHeaderActions
+            userName={user?.name}
+            userEmail={user?.email}
+            initialNotifications={notifications as any}
+            initialUnreadCount={unreadCount}
+          />
         </div>
       </header>
 
