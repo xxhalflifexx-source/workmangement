@@ -29,13 +29,13 @@ export default async function Dashboard() {
   return (
     <main className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b relative z-10">
+      <header className="bg-white shadow-sm border-b relative z-20">
         <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-24 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className="flex-1 min-w-0">
             <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Employee Portal</h1>
             <p className="text-xs sm:text-sm text-gray-500 truncate">Welcome back, {user?.name}</p>
           </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="flex items-center gap-2 flex-shrink-0 relative z-30">
             <NotificationsDropdown 
               initialNotifications={notifications as any}
               initialUnreadCount={unreadCount}

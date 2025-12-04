@@ -45,7 +45,7 @@ export default function UserMenu({ userName, userEmail }: UserMenuProps) {
 
   return (
     <>
-      <div className="relative" ref={dropdownRef}>
+      <div className="relative z-30" ref={dropdownRef}>
         <button
           ref={buttonRef}
           onClick={() => setShowDropdown(!showDropdown)}
@@ -70,11 +70,11 @@ export default function UserMenu({ userName, userEmail }: UserMenuProps) {
           <>
             {/* Backdrop for mobile */}
             <div 
-              className="fixed inset-0 bg-black/20 z-[999] sm:hidden"
+              className="fixed inset-0 bg-black/20 z-[40] sm:hidden"
               onClick={() => setShowDropdown(false)}
             />
-            {/* Dropdown */}
-            <div className="absolute right-0 mt-2 w-[280px] sm:w-48 max-w-[calc(100vw-1rem)] bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-[1000]">
+            {/* Dropdown - Use fixed positioning on mobile to avoid overlap issues */}
+            <div className="fixed sm:absolute right-4 sm:right-0 top-[72px] sm:top-auto sm:mt-2 w-[calc(100vw-2rem)] sm:w-48 max-w-[280px] sm:max-w-[calc(100vw-1rem)] bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-[50] sm:z-[1000]">
               <div className="px-4 py-2 border-b border-gray-100">
                 <p className="text-sm font-semibold text-gray-900 break-words">{userName || "User"}</p>
                 <p className="text-xs text-gray-500 break-all mt-1">{userEmail}</p>
