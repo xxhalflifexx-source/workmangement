@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import {
   getInventoryItems,
   createInventoryItem,
@@ -76,7 +76,7 @@ interface InventoryItemForRequest {
   minStockLevel: number;
 }
 
-export default function InventoryPage() {
+export default function InventoryPage(): React.JSX.Element {
   const { data: session } = useSession();
   const userRole = (session?.user as any)?.role;
   const canManage = userRole === "MANAGER" || userRole === "ADMIN";
