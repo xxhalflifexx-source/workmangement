@@ -523,31 +523,31 @@ export default function InventoryPage() {
   const uniqueItems = Array.from(new Set(materialRequests.map((r) => r.itemName))).sort();
 
   // Helper functions (must be defined before export functions that use them)
-  const formatDate = (dateString: string) => {
+  const formatDate = useCallback((dateString: string) => {
     return formatDateTime(dateString);
-  };
+  }, []);
 
-  const formatCurrency = (amount: number | null) => {
+  const formatCurrency = useCallback((amount: number | null) => {
     if (!amount) return "N/A";
     return new Intl.NumberFormat("en-US", {
       style: "currency",
       currency: "USD",
     }).format(amount);
-  };
+  }, []);
 
   // Get current stock for an item
-  const getCurrentStock = (itemName: string): number => {
+  const getCurrentStock = useCallback((itemName: string): number => {
     const inventoryItem = items.find((item) => item.name.toLowerCase() === itemName.toLowerCase());
     return inventoryItem ? inventoryItem.quantity : 0;
-  };
+  }, [items]);
 
   // Get recommended action (manual only, no auto-calculation)
-  const getRecommendedAction = (req: MaterialRequest): string => {
+  const getRecommendedAction = useCallback((req: MaterialRequest): string => {
     return req.recommendedAction || "PENDING"; // Return stored value or default to PENDING
-  };
+  }, []);
 
   // Export functions
-  const exportInventoryToCSV = () => {
+  const exportInventoryToCSV = useCallback(() => {
     const headers = ["Item Name", "SKU", "Category", "Quantity", "Unit", "Location", "Status", "Last Updated"];
     const rows = sortedItems.map((item) => {
       const status = getStockStatus(item);
@@ -570,9 +570,9 @@ export default function InventoryPage() {
     a.download = `inventory-${new Date().toISOString().split("T")[0]}.csv`;
     a.click();
     URL.revokeObjectURL(url);
-  };
+  }, [sortedItems, getStockStatus, formatDate]);
 
-  const exportRequestsToCSV = () => {
+  const exportRequestsToCSV = useCallback(() => {
     const headers = ["Job No.", "Employee", "Item", "Qty Requested", "Availability", "Action", "Amount", "Order Status", "Date Requested", "Date Approved", "Notes"];
     const rows = sortedRequests.map((req) => {
       const currentStock = getCurrentStock(req.itemName);
@@ -603,7 +603,7 @@ export default function InventoryPage() {
     a.download = `material-requests-${new Date().toISOString().split("T")[0]}.csv`;
     a.click();
     URL.revokeObjectURL(url);
-  };
+  }, [sortedRequests, getCurrentStock, getRecommendedAction, items, formatDate, formatCurrency]);
 
   const lowStockCount = items.filter((item) => item.quantity > 0 && item.quantity <= item.minStockLevel).length;
   const outOfStockCount = items.filter((item) => item.quantity === 0).length;
@@ -949,6 +949,7 @@ export default function InventoryPage() {
                   })}
                 </tbody>
               </table>
+              </div>
             </div>
           </div>
         )}
