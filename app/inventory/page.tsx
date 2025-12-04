@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import {
   getInventoryItems,
   createInventoryItem,
@@ -617,8 +617,13 @@ export default function InventoryPage() {
     URL.revokeObjectURL(url);
   }, [sortedRequests, getCurrentStock, getRecommendedAction, items, formatDate, formatCurrency]);
 
-  const lowStockCount = items.filter((item) => item.quantity > 0 && item.quantity <= item.minStockLevel).length;
-  const outOfStockCount = items.filter((item) => item.quantity === 0).length;
+  const lowStockCount = useMemo(() => {
+    return items.filter((item) => item.quantity > 0 && item.quantity <= item.minStockLevel).length;
+  }, [items]);
+
+  const outOfStockCount = useMemo(() => {
+    return items.filter((item) => item.quantity === 0).length;
+  }, [items]);
 
   return (
     <InventoryErrorBoundary>
