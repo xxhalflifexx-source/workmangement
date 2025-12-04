@@ -2079,7 +2079,6 @@ export default function InventoryPage() {
       )}
 
     </main>
-    </>
   );
 }
 
