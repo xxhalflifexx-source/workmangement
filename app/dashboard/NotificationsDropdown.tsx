@@ -139,7 +139,7 @@ export default function NotificationsDropdown({
   };
 
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div className="relative z-30" ref={dropdownRef}>
       <button
         onClick={() => setShowDropdown(!showDropdown)}
         className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors text-gray-700 min-h-[44px] min-w-[44px] flex items-center justify-center"
@@ -166,7 +166,14 @@ export default function NotificationsDropdown({
       </button>
 
       {showDropdown && (
-        <div className="absolute right-0 mt-2 w-[calc(100vw-2rem)] sm:w-80 md:w-96 max-w-sm bg-white rounded-lg shadow-xl border border-gray-200 z-[100] max-h-[calc(100vh-8rem)] sm:max-h-[500px] flex flex-col">
+        <>
+          {/* Backdrop for mobile */}
+          <div 
+            className="fixed inset-0 bg-black/20 z-[40] sm:hidden"
+            onClick={() => setShowDropdown(false)}
+          />
+          {/* Dropdown - Use fixed positioning on mobile to avoid overlap issues */}
+          <div className="fixed sm:absolute right-4 sm:right-0 top-[72px] sm:top-auto sm:mt-2 w-[calc(100vw-2rem)] sm:w-80 md:w-96 max-w-sm bg-white rounded-lg shadow-xl border border-gray-200 z-[50] sm:z-[1000] max-h-[calc(100vh-8rem)] sm:max-h-[500px] flex flex-col">
           {/* Header */}
           <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
             <h3 className="text-sm font-semibold text-gray-900">Notifications</h3>
@@ -232,7 +239,8 @@ export default function NotificationsDropdown({
               </div>
             )}
           </div>
-        </div>
+          </div>
+        </>
       )}
     </div>
   );
