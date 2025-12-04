@@ -2076,8 +2076,6 @@ export default function InventoryPage(): JSX.Element {
           </div>
         </div>
       )}
-        </>
-      )}
 
     </main>
   );
