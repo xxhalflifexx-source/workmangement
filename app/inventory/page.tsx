@@ -627,19 +627,21 @@ export default function InventoryPage() {
     return items.filter((item) => item.quantity === 0).length;
   }, [items]);
 
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading inventory...</p>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="min-h-screen bg-gray-50">
-      {loading ? (
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading inventory...</p>
-          </div>
-        </div>
-      ) : (
-        <>
-          {/* Header */}
-          <header className="bg-white shadow-sm border-b">
+      {/* Header */}
+      <header className="bg-white shadow-sm border-b">
         <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-24 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Inventory Management</h1>
@@ -2075,8 +2077,7 @@ export default function InventoryPage() {
           </div>
         </div>
       )}
-        </>
-      )}
+
     </main>
   );
 }
