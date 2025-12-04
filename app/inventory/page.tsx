@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import { useEffect, useState, useCallback, useMemo } from "react";
 import {
   getInventoryItems,
