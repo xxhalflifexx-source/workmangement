@@ -173,7 +173,7 @@ export default function NotificationsDropdown({
             onClick={() => setShowDropdown(false)}
           />
           {/* Dropdown - Use fixed positioning on mobile to avoid overlap issues */}
-          <div className="fixed sm:absolute right-4 sm:right-0 top-[72px] sm:top-auto sm:mt-2 w-[calc(100vw-2rem)] sm:w-80 md:w-96 max-w-sm bg-white rounded-lg shadow-xl border border-gray-200 z-[50] sm:z-[1000] max-h-[calc(100vh-8rem)] sm:max-h-[500px] flex flex-col">
+          <div className="fixed sm:absolute right-4 sm:right-0 top-[72px] sm:top-auto sm:mt-2 left-4 sm:left-auto w-[calc(100vw-2rem)] sm:w-80 md:w-96 max-w-sm bg-white rounded-lg shadow-xl border border-gray-200 z-[50] sm:z-[1000] max-h-[calc(100vh-88px)] sm:max-h-[500px] flex flex-col">
           {/* Header */}
           <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
             <h3 className="text-sm font-semibold text-gray-900">Notifications</h3>
