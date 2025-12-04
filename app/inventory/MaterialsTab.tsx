@@ -79,7 +79,7 @@ export default function MaterialsTab({
   return (
     <div className="space-y-6">
       {/* Controls */}
-      <div className="bg-white rounded-xl shadow border border-gray-200 p-6">
+      <div className="bg-white rounded-xl shadow border border-gray-200 p-4 sm:p-6">
         <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center mb-4">
           <div className="flex-1 w-full sm:w-auto">
             <input
@@ -90,22 +90,22 @@ export default function MaterialsTab({
                 setRequestSearchTerm(e.target.value);
                 setRequestCurrentPage(1);
               }}
-              className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm"
+              className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm min-h-[44px]"
             />
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex gap-2 w-full sm:w-auto">
             {userRole === "EMPLOYEE" && (
               <button
                 onClick={() => setShowRequestForm(true)}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium whitespace-nowrap"
+                className="flex-1 sm:flex-none px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium whitespace-nowrap min-h-[44px] min-w-[44px]"
               >
                 + Submit Request
               </button>
             )}
             <button
               onClick={exportRequestsToCSV}
-              className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
+              className="flex-1 sm:flex-none px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium min-h-[44px] min-w-[44px]"
             >
               📥 Export CSV
             </button>
@@ -208,12 +208,13 @@ export default function MaterialsTab({
         </div>
       ) : (
         <div className="bg-white rounded-xl shadow overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
+          <div className="overflow-x-auto -mx-4 sm:mx-0">
+            <div className="inline-block min-w-full align-middle px-4 sm:px-0">
+              <table className="w-full">
               <thead className="bg-gray-50 border-b">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Job No.</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Job No.</th>
+                  <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                     <button
                       onClick={() => {
                         setRequestSortField("requestedDate");
@@ -249,11 +250,11 @@ export default function MaterialsTab({
                       {requestSortField === "quantity" && (requestSortDirection === "asc" ? "↑" : "↓")}
                     </button>
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Availability</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Action</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Amount</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Order Status</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500">Availability</th>
+                  <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500">Action</th>
+                  <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500">Amount</th>
+                  <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500">Order Status</th>
+                  <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                     <button
                       onClick={() => {
                         setRequestSortField("requestedDate");
@@ -277,7 +278,7 @@ export default function MaterialsTab({
                       {requestSortField === "fulfilledDate" && (requestSortDirection === "asc" ? "↑" : "↓")}
                     </button>
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Notes</th>
+                  <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500">Notes</th>
                 </tr>
               </thead>
               <tbody className="divide-y">
@@ -287,14 +288,14 @@ export default function MaterialsTab({
                   const inventoryItem = items.find((item) => item.name.toLowerCase() === req.itemName.toLowerCase());
                   return (
                     <tr key={req.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 text-sm text-gray-900 font-mono font-semibold">
+                      <td className="px-2 sm:px-4 py-3 text-sm text-gray-900 font-mono font-semibold min-w-[80px] sm:min-w-0">
                         {req.job ? req.job.id.substring(0, 8).toUpperCase() : "—"}
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-700">
-                        {req.user.name || req.user.email || "—"}
+                      <td className="px-2 sm:px-4 py-3 text-sm text-gray-700 min-w-[100px] sm:min-w-0">
+                        <div className="break-words">{req.user.name || req.user.email || "—"}</div>
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-900">
-                        <div className="font-medium">{req.itemName}</div>
+                      <td className="px-2 sm:px-4 py-3 text-sm text-gray-900 min-w-[120px] sm:min-w-0">
+                        <div className="font-medium break-words">{req.itemName}</div>
                         {req.description && <div className="text-xs text-gray-500 line-clamp-1 break-words" title={req.description}>{req.description}</div>}
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-900">
@@ -533,7 +534,7 @@ export default function MaterialsTab({
                       <td className="px-4 py-3 text-sm text-gray-600">
                         {req.fulfilledDate ? formatDate(req.fulfilledDate) : "—"}
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-600 max-w-xs">
+                      <td className="px-2 sm:px-4 py-3 text-sm text-gray-600 max-w-[200px] sm:max-w-xs">
                         {canManage ? (
                           <textarea
                             id={`notes-${req.id}`}
@@ -561,7 +562,7 @@ export default function MaterialsTab({
                               }
                             }}
                             rows={2}
-                            className="w-full px-2 py-1 border border-gray-300 rounded text-sm resize-none"
+                            className="w-full px-2 py-1 border border-gray-300 rounded text-sm resize-none min-h-[44px]"
                             placeholder="Add notes..."
                           />
                         ) : (
@@ -583,17 +584,18 @@ export default function MaterialsTab({
 
       {/* Pagination */}
       {totalRequestPages > 1 && (
-        <div className="bg-white rounded-xl shadow border border-gray-200 p-4 flex items-center justify-between">
-          <div className="text-sm text-gray-700">
+        <div className="bg-white rounded-xl shadow border border-gray-200 p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="text-xs sm:text-sm text-gray-700 text-center sm:text-left break-words">
             Showing {(requestCurrentPage - 1) * requestsPerPage + 1} to {Math.min(requestCurrentPage * requestsPerPage, sortedRequests.length)} of {sortedRequests.length} requests
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap justify-center">
             <button
               onClick={() => setRequestCurrentPage(Math.max(1, requestCurrentPage - 1))}
               disabled={requestCurrentPage === 1}
-              className="px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px] min-w-[44px]"
             >
-              Previous
+              <span className="hidden sm:inline">Previous</span>
+              <span className="sm:hidden">←</span>
             </button>
             {Array.from({ length: Math.min(5, totalRequestPages) }, (_, i) => {
               let pageNum;
@@ -610,7 +612,7 @@ export default function MaterialsTab({
                 <button
                   key={pageNum}
                   onClick={() => setRequestCurrentPage(pageNum)}
-                  className={`px-3 py-1 border rounded-lg ${
+                  className={`px-3 py-2 border rounded-lg min-h-[44px] min-w-[44px] ${
                     requestCurrentPage === pageNum
                       ? "bg-blue-600 text-white border-blue-600"
                       : "border-gray-300 hover:bg-gray-50"
@@ -623,9 +625,10 @@ export default function MaterialsTab({
             <button
               onClick={() => setRequestCurrentPage(Math.min(totalRequestPages, requestCurrentPage + 1))}
               disabled={requestCurrentPage === totalRequestPages}
-              className="px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px] min-w-[44px]"
             >
-              Next
+              <span className="hidden sm:inline">Next</span>
+              <span className="sm:hidden">→</span>
             </button>
           </div>
         </div>

@@ -637,13 +637,13 @@ export default function InventoryPage() {
         {/* Tabs */}
         <div className="bg-white rounded-xl shadow border border-gray-200 mb-6">
           <div className="border-b border-gray-200">
-            <nav className="flex space-x-8 px-6" aria-label="Tabs">
+            <nav className="flex space-x-4 sm:space-x-8 px-4 sm:px-6 overflow-x-auto" aria-label="Tabs">
               <button
                 onClick={() => {
                   setActiveTab("inventory");
                   setCurrentPage(1);
                 }}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                className={`py-4 px-2 sm:px-1 border-b-2 font-medium text-sm whitespace-nowrap min-h-[44px] flex items-center ${
                   activeTab === "inventory"
                     ? "border-blue-500 text-blue-600"
                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
@@ -659,7 +659,7 @@ export default function InventoryPage() {
                     loadMaterialRequests();
                   }
                 }}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                className={`py-4 px-2 sm:px-1 border-b-2 font-medium text-sm whitespace-nowrap min-h-[44px] flex items-center ${
                   activeTab === "materials"
                     ? "border-blue-500 text-blue-600"
                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
@@ -763,7 +763,7 @@ export default function InventoryPage() {
                     type="text"
                     value={session?.user?.name || session?.user?.email || ""}
                     disabled
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-50 text-gray-600"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-50 text-gray-600 min-h-[44px]"
                   />
                 </div>
 
@@ -781,7 +781,7 @@ export default function InventoryPage() {
                       }
                     }}
                     required
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
                   >
                     <option value="">Select an item...</option>
                     {inventoryItemsForRequest.map((item) => (
@@ -826,7 +826,7 @@ export default function InventoryPage() {
                       step="1"
                       maxLength={1}
                       required
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
                     />
                   </div>
 
@@ -839,7 +839,7 @@ export default function InventoryPage() {
                       value={requestUnit}
                       onChange={(e) => setRequestUnit(e.target.value)}
                       required
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
                     />
                   </div>
                 </div>
@@ -852,7 +852,7 @@ export default function InventoryPage() {
                     value={requestNotes}
                     onChange={(e) => setRequestNotes(e.target.value)}
                     rows={3}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
                     placeholder="Add any additional notes or details..."
                   />
                 </div>
@@ -905,7 +905,7 @@ export default function InventoryPage() {
                       type="text"
                       defaultValue={editingItem?.name}
                       required
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
                     />
                   </div>
 
@@ -915,7 +915,7 @@ export default function InventoryPage() {
                       name="sku"
                       type="text"
                       defaultValue={editingItem?.sku || ""}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
                     />
                   </div>
                 </div>
@@ -928,11 +928,11 @@ export default function InventoryPage() {
                     name="description"
                     defaultValue={editingItem?.description || ""}
                     rows={3}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Category
@@ -942,7 +942,7 @@ export default function InventoryPage() {
                       type="text"
                       defaultValue={editingItem?.category || ""}
                       list="categories"
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
                     />
                     <datalist id="categories">
                       {categories.map((cat) => (
@@ -960,12 +960,12 @@ export default function InventoryPage() {
                       type="text"
                       defaultValue={editingItem?.location || ""}
                       placeholder="e.g. Warehouse A, Shelf 12"
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
                     />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Quantity *
@@ -976,7 +976,7 @@ export default function InventoryPage() {
                       defaultValue={editingItem?.quantity ?? 0}
                       required
                       min="0"
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
                     />
                   </div>
 
@@ -988,7 +988,7 @@ export default function InventoryPage() {
                       defaultValue={editingItem?.unit || "pcs"}
                       required
                       placeholder="pcs, kg, lbs"
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
                     />
                   </div>
 
@@ -1001,12 +1001,12 @@ export default function InventoryPage() {
                       type="number"
                       defaultValue={editingItem?.minStockLevel ?? 0}
                       min="0"
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
                     />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Supplier
@@ -1015,7 +1015,7 @@ export default function InventoryPage() {
                       name="supplier"
                       type="text"
                       defaultValue={editingItem?.supplier || ""}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
                     />
                   </div>
 
@@ -1029,7 +1029,7 @@ export default function InventoryPage() {
                       step="0.01"
                       min="0"
                       defaultValue={editingItem?.costPerUnit ?? ""}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
                     />
                   </div>
                 </div>
@@ -1080,9 +1080,9 @@ export default function InventoryPage() {
                     type="number"
                     required
                     placeholder="Use + for add, - for remove"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
                   />
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-gray-500 mt-1 break-words">
                     Example: +50 to add 50 units, -20 to remove 20 units
                   </p>
                 </div>
@@ -1094,7 +1094,7 @@ export default function InventoryPage() {
                   <select
                     name="reason"
                     required
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
                   >
                     <option value="">Select a reason</option>
                     <option value="Restocked">Restocked</option>
@@ -1114,7 +1114,7 @@ export default function InventoryPage() {
                     name="notes"
                     rows={3}
                     placeholder="Additional details..."
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
                   />
                 </div>
 
