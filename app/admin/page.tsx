@@ -472,10 +472,10 @@ export default function AdminPage() {
                           </span>
                         </div>
                         <div className="min-w-0 flex-1">
-                          <div className="text-sm font-medium text-gray-900 truncate">
+                          <div className="text-sm font-medium text-gray-900 break-words">
                             {user.name || "Unknown"}
                           </div>
-                          <div className="text-xs text-gray-500 truncate">{user.email}</div>
+                          <div className="text-xs text-gray-500 break-all">{user.email}</div>
                         </div>
                       </div>
                       {canManageRoles ? (
@@ -680,7 +680,7 @@ export default function AdminPage() {
                               <div className="text-sm font-medium text-gray-900 truncate">
                                 {user.name || "Unknown"}
                               </div>
-                              <div className="text-sm text-gray-500 truncate">{user.email}</div>
+                              <div className="text-sm text-gray-500 break-all">{user.email}</div>
                             </div>
                           </div>
                         </td>

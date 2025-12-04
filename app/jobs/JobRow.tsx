@@ -118,23 +118,23 @@ export default function JobRow({
         onClick={() => setIsExpanded(!isExpanded)}
       >
         <td className="px-6 py-4 text-sm font-medium text-gray-900">
-          <div className="truncate max-w-[100px]">{jobNumber}</div>
+          <div className="truncate max-w-[100px] sm:max-w-[150px]" title={jobNumber}>{jobNumber}</div>
         </td>
         <td className="px-6 py-4 text-sm text-gray-900">
           <div className="min-w-0">
-            <div className="font-medium truncate max-w-[200px]">{job.title}</div>
+            <div className="font-medium truncate max-w-[150px] sm:max-w-[200px]" title={job.title}>{job.title}</div>
             {job.description && (
-              <div className="text-xs text-gray-500 mt-1 line-clamp-1 truncate max-w-[200px]">
+              <div className="text-xs text-gray-500 mt-1 line-clamp-1 truncate max-w-[150px] sm:max-w-[200px]" title={job.description}>
                 {job.description}
               </div>
             )}
           </div>
         </td>
         <td className="px-6 py-4 text-sm text-gray-600">
-          <div className="truncate max-w-[150px]">{job.customer?.name || "—"}</div>
+          <div className="truncate max-w-[120px] sm:max-w-[150px]" title={job.customer?.name || "—"}>{job.customer?.name || "—"}</div>
         </td>
         <td className="px-6 py-4 text-sm text-gray-600">
-          <div className="truncate max-w-[150px]">{assignedWorkersDisplay}</div>
+          <div className="truncate max-w-[120px] sm:max-w-[150px]" title={assignedWorkersDisplay}>{assignedWorkersDisplay}</div>
         </td>
         <td className="px-6 py-4">
           <span

@@ -1295,7 +1295,7 @@ setLoading(false);
                             <div className="flex flex-col gap-1">
                               {selectedPDFFiles[invoice.id].map((file, idx) => (
                                 <div key={idx} className="flex items-center gap-1 text-xs text-gray-600">
-                                  <span className="truncate max-w-[100px]">{file.name}</span>
+                                  <span className="truncate max-w-[100px] sm:max-w-[200px]" title={file.name}>{file.name}</span>
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation();

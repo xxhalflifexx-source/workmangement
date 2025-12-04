@@ -378,7 +378,7 @@ export default function TimeClockPage() {
                     </span>
                   </div>
                   {job.description && (
-                    <p className="text-sm text-gray-600 mb-2 line-clamp-2">
+                    <p className="text-sm text-gray-600 mb-2 line-clamp-2 break-words" title={job.description || undefined}>
                       {job.description}
                     </p>
                   )}

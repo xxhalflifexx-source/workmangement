@@ -166,7 +166,7 @@ export default function NotificationsDropdown({
       </button>
 
       {showDropdown && (
-        <div className="absolute right-0 mt-2 w-[calc(100vw-2rem)] sm:w-80 md:w-96 max-w-sm bg-white rounded-lg shadow-xl border border-gray-200 z-50 max-h-[calc(100vh-8rem)] sm:max-h-[500px] flex flex-col">
+        <div className="absolute right-0 mt-2 w-[calc(100vw-2rem)] sm:w-80 md:w-96 max-w-sm bg-white rounded-lg shadow-xl border border-gray-200 z-[100] max-h-[calc(100vh-8rem)] sm:max-h-[500px] flex flex-col">
           {/* Header */}
           <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
             <h3 className="text-sm font-semibold text-gray-900">Notifications</h3>
@@ -218,7 +218,7 @@ export default function NotificationsDropdown({
                           )}
                         </div>
                         {notification.message && (
-                          <p className="text-xs text-gray-600 mt-1 line-clamp-2">
+                          <p className="text-xs text-gray-600 mt-1 line-clamp-2 break-words" title={notification.message || undefined}>
                             {notification.message}
                           </p>
                         )}

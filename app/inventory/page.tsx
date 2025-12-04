@@ -906,7 +906,7 @@ export default function InventoryPage() {
                             <div className="text-xs text-gray-500">SKU: {item.sku}</div>
                           )}
                           {item.description && (
-                            <div className="text-xs text-gray-500 line-clamp-1">
+                            <div className="text-xs text-gray-500 line-clamp-1 break-words" title={item.description}>
                               {item.description}
                             </div>
                           )}
@@ -1255,7 +1255,7 @@ export default function InventoryPage() {
                             </td>
                             <td className="px-4 py-3 text-sm text-gray-900">
                               <div className="font-medium">{req.itemName}</div>
-                              {req.description && <div className="text-xs text-gray-500 line-clamp-1">{req.description}</div>}
+                              {req.description && <div className="text-xs text-gray-500 line-clamp-1 break-words" title={req.description}>{req.description}</div>}
                             </td>
                             <td className="px-4 py-3 text-sm text-gray-900">
                               {req.status === "PENDING" && canManage ? (
@@ -1537,7 +1537,7 @@ export default function InventoryPage() {
                                 />
                               ) : (
                                 req.notes ? (
-                                  <div className="line-clamp-2" title={req.notes}>{req.notes}</div>
+                                  <div className="line-clamp-2 break-words" title={req.notes}>{req.notes}</div>
                                 ) : (
                                   <span className="text-gray-400">—</span>
                                 )
@@ -2006,7 +2006,7 @@ export default function InventoryPage() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl my-4 max-h-[calc(100vh-2rem)] overflow-y-auto">
             {/* Header */}
-            <div className="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center z-10">
+            <div className="sticky top-0 bg-white border-b px-4 sm:px-6 py-3 sm:py-4 flex justify-between items-center z-[1]">
               <div>
                 <h2 className="text-2xl font-bold text-gray-900">📊 Adjustment History</h2>
                 <p className="text-sm text-gray-600 mt-1">{historyItem.name}</p>

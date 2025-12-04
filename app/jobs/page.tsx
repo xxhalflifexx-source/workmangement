@@ -1507,7 +1507,7 @@ function JobsPageContent() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search by job title, description, customer, or job number..."
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm flex-1 min-w-[200px] min-h-[44px]"
+              className="border border-gray-300 rounded-lg px-3 py-2 text-sm flex-1 min-w-0 sm:min-w-[200px] min-h-[44px]"
             />
           </div>
           {canManage && (
@@ -2126,7 +2126,7 @@ function JobsPageContent() {
 
       {/* Customer Update Confirmation Modal */}
       {showCustomerUpdateConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[60]">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
           <div className="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full">
             <div className="text-center mb-6">
               <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100 mb-4">
@@ -2178,7 +2178,7 @@ function JobsPageContent() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl my-4 max-h-[calc(100vh-2rem)] overflow-y-auto">
             {/* Header */}
-            <div className="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center z-10">
+            <div className="sticky top-0 bg-white border-b px-4 sm:px-6 py-3 sm:py-4 flex justify-between items-center z-[1]">
               <div>
                 <h2 className="text-2xl font-bold text-gray-900">📝 Job Activity & Notes</h2>
                 <p className="text-sm text-gray-600 mt-1">{selectedJobForActivity.title}</p>
@@ -2379,7 +2379,7 @@ function JobsPageContent() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl my-4 max-h-[calc(100vh-2rem)] overflow-y-auto">
             {/* Header */}
-            <div className="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center z-10">
+            <div className="sticky top-0 bg-white border-b px-4 sm:px-6 py-3 sm:py-4 flex justify-between items-center z-[1]">
               <div>
                 <h2 className="text-2xl font-bold text-gray-900">📦 Material Requests</h2>
                 <p className="text-sm text-gray-600 mt-1">{selectedJobForMaterial.title}</p>
