@@ -428,30 +428,30 @@ export default function InventoryPage() {
   // Sort inventory items
   const sortedItems = useMemo(() => {
     return [...filteredItems].sort((a, b) => {
-    let aVal: any, bVal: any;
-    switch (sortField) {
-      case "name":
-        aVal = a.name.toLowerCase();
-        bVal = b.name.toLowerCase();
-        break;
-      case "quantity":
-        aVal = a.quantity;
-        bVal = b.quantity;
-        break;
-      case "location":
-        aVal = (a.location || "").toLowerCase();
-        bVal = (b.location || "").toLowerCase();
-        break;
-      case "updatedAt":
-        aVal = new Date(a.updatedAt).getTime();
-        bVal = new Date(b.updatedAt).getTime();
-        break;
-      default:
-        return 0;
-    }
-    if (aVal < bVal) return sortDirection === "asc" ? -1 : 1;
-    if (aVal > bVal) return sortDirection === "asc" ? 1 : -1;
-    return 0;
+      let aVal: any, bVal: any;
+      switch (sortField) {
+        case "name":
+          aVal = a.name.toLowerCase();
+          bVal = b.name.toLowerCase();
+          break;
+        case "quantity":
+          aVal = a.quantity;
+          bVal = b.quantity;
+          break;
+        case "location":
+          aVal = (a.location || "").toLowerCase();
+          bVal = (b.location || "").toLowerCase();
+          break;
+        case "updatedAt":
+          aVal = new Date(a.updatedAt).getTime();
+          bVal = new Date(b.updatedAt).getTime();
+          break;
+        default:
+          return 0;
+      }
+      if (aVal < bVal) return sortDirection === "asc" ? -1 : 1;
+      if (aVal > bVal) return sortDirection === "asc" ? 1 : -1;
+      return 0;
     });
   }, [filteredItems, sortField, sortDirection]);
 
@@ -491,34 +491,34 @@ export default function InventoryPage() {
   // Sort material requests
   const sortedRequests = useMemo(() => {
     return [...filteredRequests].sort((a, b) => {
-    let aVal: any, bVal: any;
-    switch (requestSortField) {
-      case "requestNumber":
-        aVal = a.requestNumber || "";
-        bVal = b.requestNumber || "";
-        break;
-      case "requestedDate":
-        aVal = new Date(a.requestedDate).getTime();
-        bVal = new Date(b.requestedDate).getTime();
-        break;
-      case "itemName":
-        aVal = a.itemName.toLowerCase();
-        bVal = b.itemName.toLowerCase();
-        break;
-      case "quantity":
-        aVal = a.quantity;
-        bVal = b.quantity;
-        break;
-      case "fulfilledDate":
-        aVal = a.fulfilledDate ? new Date(a.fulfilledDate).getTime() : 0;
-        bVal = b.fulfilledDate ? new Date(b.fulfilledDate).getTime() : 0;
-        break;
-      default:
-        return 0;
-    }
-    if (aVal < bVal) return requestSortDirection === "asc" ? -1 : 1;
-    if (aVal > bVal) return requestSortDirection === "asc" ? 1 : -1;
-    return 0;
+      let aVal: any, bVal: any;
+      switch (requestSortField) {
+        case "requestNumber":
+          aVal = a.requestNumber || "";
+          bVal = b.requestNumber || "";
+          break;
+        case "requestedDate":
+          aVal = new Date(a.requestedDate).getTime();
+          bVal = new Date(b.requestedDate).getTime();
+          break;
+        case "itemName":
+          aVal = a.itemName.toLowerCase();
+          bVal = b.itemName.toLowerCase();
+          break;
+        case "quantity":
+          aVal = a.quantity;
+          bVal = b.quantity;
+          break;
+        case "fulfilledDate":
+          aVal = a.fulfilledDate ? new Date(a.fulfilledDate).getTime() : 0;
+          bVal = b.fulfilledDate ? new Date(b.fulfilledDate).getTime() : 0;
+          break;
+        default:
+          return 0;
+      }
+      if (aVal < bVal) return requestSortDirection === "asc" ? -1 : 1;
+      if (aVal > bVal) return requestSortDirection === "asc" ? 1 : -1;
+      return 0;
     });
   }, [filteredRequests, requestSortField, requestSortDirection]);
 
@@ -639,7 +639,7 @@ export default function InventoryPage() {
   }
 
   return (
-    <React.Fragment>
+    <>
       <main className="min-h-screen bg-gray-50">
         {/* Header */}
         <header className="bg-white shadow-sm border-b">
@@ -2080,7 +2080,7 @@ export default function InventoryPage() {
       )}
 
     </main>
-    </React.Fragment>
+    </>
   );
 }
 
