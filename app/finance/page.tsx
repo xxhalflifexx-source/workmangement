@@ -48,8 +48,8 @@ export default function FinancePage() {
   const [finLoading, setFinLoading] = useState(false);
   const [finSummary, setFinSummary] = useState<any>(null);
 
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | undefined>();
+	const [loading, setLoading] = useState(true);
+	const [error, setError] = useState<string | undefined>();
   const [success, setSuccess] = useState<string | undefined>();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [filteredInvoices, setFilteredInvoices] = useState<Invoice[]>([]);
@@ -158,13 +158,13 @@ export default function FinancePage() {
       setInvoices([]);
       setFilteredInvoices([]);
     } finally {
-      setLoading(false);
+setLoading(false);
     }
-  };
+	};
 
-  useEffect(() => {
+	useEffect(() => {
     loadInvoices();
-  }, []);
+	}, []);
 
   // Apply filters and search
   useEffect(() => {
@@ -866,22 +866,22 @@ export default function FinancePage() {
   // Additional permission check (if RBAC is enabled)
   // This will be checked server-side in a real implementation
 
-  return (
-    <main className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-sm border-b">
+	return (
+		<main className="min-h-screen bg-gray-50">
+			<header className="bg-white shadow-sm border-b">
         <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-24 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
+					<div>
             <h1 className="text-xl sm:text-2xl font-bold text-gray-900">💰 Finance</h1>
             <p className="text-xs sm:text-sm text-gray-500">Manage invoices and view financial summaries</p>
-          </div>
+					</div>
           <Link
             href="/dashboard"
             className="w-full sm:w-auto min-h-[44px] flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
           >
             Back to Dashboard
-          </Link>
-        </div>
-      </header>
+					</Link>
+				</div>
+			</header>
 
       <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-24 py-6 sm:py-8">
         {/* Success/Error Messages */}
@@ -958,11 +958,11 @@ export default function FinancePage() {
               )}
             </div>
 
-            {/* Filters */}
+				{/* Filters */}
             <div className="bg-white rounded-xl shadow border border-gray-200 p-6">
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 {/* Search */}
-                <div>
+						<div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Search
                   </label>
@@ -973,10 +973,10 @@ export default function FinancePage() {
                     placeholder="Invoice #, Job #, Customer..."
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
                   />
-                </div>
+						</div>
 
                 {/* Status Filter */}
-                <div>
+						<div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Status
                   </label>
@@ -991,7 +991,7 @@ export default function FinancePage() {
                     <option value="OVERDUE">Overdue</option>
                     <option value="CANCELLED">Cancelled</option>
                   </select>
-                </div>
+						</div>
 
             {/* Date From */}
             <div>
@@ -1017,8 +1017,8 @@ export default function FinancePage() {
                 onChange={(e) => setDateTo(e.target.value)}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
               />
-                </div>
-              </div>
+					</div>
+				</div>
 
               {/* Clear Filters */}
               {(searchQuery || statusFilter !== "ALL" || dateFrom || dateTo) && (
@@ -1039,14 +1039,14 @@ export default function FinancePage() {
             </div>
 
             {/* Error Message */}
-            {error && (
+				{error && (
               <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
                 {error}
               </div>
-            )}
+				)}
 
             {/* Loading State */}
-            {loading ? (
+				{loading ? (
               <div className="bg-white rounded-xl shadow border border-gray-200 p-12 text-center">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
                 <p className="text-gray-600">Loading invoices...</p>
@@ -1366,17 +1366,17 @@ export default function FinancePage() {
                               </button>
                             </>
                           )}
-                        </div>
+							</div>
                       </td>
                     </tr>
                   ))}
                 </tbody>
                   </table>
-                  </div>
-                </div>
-              </div>
+							</div>
+							</div>
+							</div>
             )}
-          </div>
+						</div>
         </div>
         )}
 
@@ -1447,7 +1447,7 @@ export default function FinancePage() {
                         ))}
                       </ul>
                     )}
-                  </div>
+											</div>
                   <div className="p-4 border rounded-lg">
                     <h3 className="font-semibold mb-3">Bankroll</h3>
                     <div className="text-3xl font-bold">${finSummary.bankroll.toFixed(2)}</div>
