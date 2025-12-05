@@ -10,6 +10,8 @@ const schema = z.object({
   email: z.string().email(),
   password: z.string().min(6),
   confirmPassword: z.string().min(6),
+  gender: z.enum(["Male", "Female", "Others"]),
+  birthDate: z.string().min(1),
   registrationCode: z.string().optional(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
@@ -37,8 +39,11 @@ export async function registerUser(formData: FormData) {
       return { ok: false, error: "Invalid input" };
     }
     
-    const { name, email, password, registrationCode } = parsed.data;
+    const { name, email, password, gender, birthDate, registrationCode } = parsed.data;
     // confirmPassword is validated but not needed after validation
+    
+    // Parse birthDate string to Date object
+    const birthDateObj = birthDate ? new Date(birthDate) : null;
     
     const exists = await prisma.user.findUnique({ where: { email } });
     
@@ -74,6 +79,8 @@ export async function registerUser(formData: FormData) {
         email,
         passwordHash,
         role,
+        gender,
+        birthDate: birthDateObj,
         isVerified: false,
         verificationCode,
         codeExpiresAt,

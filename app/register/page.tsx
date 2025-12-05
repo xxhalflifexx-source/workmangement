@@ -51,6 +51,23 @@ export default function RegisterPage() {
           required
           minLength={6}
         />
+        <select
+          name="gender"
+          className="border p-2 w-full rounded min-h-[44px]"
+          required
+        >
+          <option value="">Select Gender</option>
+          <option value="Male">Male</option>
+          <option value="Female">Female</option>
+          <option value="Others">Others</option>
+        </select>
+        <input
+          name="birthDate"
+          type="date"
+          placeholder="Birthdate"
+          className="border p-2 w-full rounded min-h-[44px]"
+          required
+        />
         <input
           name="registrationCode"
           type="password"
