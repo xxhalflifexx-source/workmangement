@@ -335,9 +335,9 @@ export default function InventoryPage() {
   }, []);
 
   const getStockStatus = useCallback((item: InventoryItem) => {
-    if (item.quantity === 0) return { text: "Out of Stock", color: "bg-red-100 text-red-800", icon: "🚨" };
-    if (item.quantity <= item.minStockLevel) return { text: "Low Stock", color: "bg-orange-100 text-orange-800", icon: "⚠️" };
-    return { text: "In Stock", color: "bg-green-100 text-green-800", icon: "✓" };
+    if (item.quantity === 0) return { text: "OUT OF STOCK", color: "bg-red-100 text-red-800", icon: "🚨" };
+    if (item.quantity <= item.minStockLevel) return { text: "LOW STOCK", color: "bg-orange-100 text-orange-800", icon: "⚠️" };
+    return { text: "IN STOCK", color: "bg-green-100 text-green-800", icon: "✓" };
   }, []);
 
   const categories = useMemo(() => {
@@ -627,7 +627,7 @@ export default function InventoryPage() {
                   </div>
                 </div>
                 <div className="flex-1">
-                  <p className="font-bold text-red-900 text-base">Out of Stock</p>
+                  <p className="font-bold text-red-900 text-base">OUT OF STOCK</p>
                   <p className="text-sm text-red-700 mt-1">{outOfStockCount} item(s) need restocking</p>
                 </div>
               </div>
@@ -640,7 +640,7 @@ export default function InventoryPage() {
                   </div>
                 </div>
                 <div className="flex-1">
-                  <p className="font-bold text-orange-900 text-base">Low Stock Warning</p>
+                  <p className="font-bold text-orange-900 text-base">LOW STOCK WARNING</p>
                   <p className="text-sm text-orange-700 mt-1">{lowStockCount} item(s) running low</p>
                 </div>
               </div>

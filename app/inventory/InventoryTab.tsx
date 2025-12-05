@@ -247,7 +247,7 @@ export default function InventoryTab({
                         </td>
                         <td className="px-4 py-4 text-sm text-gray-900">
                           {item.category ? (
-                            <span className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-800 rounded-full">
+                            <span className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-800 rounded-full uppercase">
                               {item.category}
                             </span>
                           ) : (

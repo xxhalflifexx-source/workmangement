@@ -356,11 +356,11 @@ export default function MaterialsTab({
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-900">
                         {inventoryItem ? (
-                          <span className={currentStock >= req.quantity ? "text-green-600 font-semibold" : "text-red-600 font-semibold"}>
-                            {currentStock >= req.quantity ? "Available" : "Unavailable"}
+                          <span className={currentStock >= req.quantity ? "text-green-600 font-semibold uppercase" : "text-red-600 font-semibold uppercase"}>
+                            {currentStock >= req.quantity ? "AVAILABLE" : "UNAVAILABLE"}
                           </span>
                         ) : (
-                          <span className="text-red-600 font-semibold">Unavailable</span>
+                          <span className="text-red-600 font-semibold uppercase">UNAVAILABLE</span>
                         )}
                       </td>
                       <td className="px-4 py-3 text-sm">
@@ -397,26 +397,26 @@ export default function MaterialsTab({
                                 e.target.value = req.recommendedAction || "PENDING";
                               }
                             }}
-                            className={`text-xs font-medium px-2 py-1 rounded border ${
+                            className={`text-xs font-medium px-2 py-1 rounded border uppercase ${
                               (req.recommendedAction || "PENDING") === "APPROVE" ? "bg-green-100 text-green-700 border-green-300" :
                               (req.recommendedAction || "PENDING") === "PARTIAL" ? "bg-orange-100 text-orange-700 border-orange-300" :
                               (req.recommendedAction || "PENDING") === "REJECTED" ? "bg-red-100 text-red-700 border-red-300" :
                               "bg-yellow-100 text-yellow-700 border-yellow-300"
                             }`}
                           >
-                            <option value="PENDING">Pending</option>
-                            <option value="APPROVE">Approve</option>
-                            <option value="PARTIAL">Partial</option>
-                            <option value="REJECTED">Rejected</option>
+                            <option value="PENDING">PENDING</option>
+                            <option value="APPROVE">APPROVE</option>
+                            <option value="PARTIAL">PARTIAL</option>
+                            <option value="REJECTED">REJECTED</option>
                           </select>
                         ) : (
-                          <span className={`px-2 py-1 rounded text-xs font-medium ${
+                          <span className={`px-2 py-1 rounded text-xs font-medium uppercase ${
                             recommendedAction === "APPROVE" ? "bg-green-100 text-green-700" :
                             recommendedAction === "PARTIAL" ? "bg-orange-100 text-orange-700" :
                             recommendedAction === "REJECTED" ? "bg-red-100 text-red-700" :
                             "bg-yellow-100 text-yellow-700"
                           }`}>
-                            {recommendedAction === "APPROVE" ? "Approve" : recommendedAction === "PARTIAL" ? "Partial" : recommendedAction === "REJECTED" ? "Rejected" : "Pending"}
+                            {recommendedAction === "APPROVE" ? "APPROVE" : recommendedAction === "PARTIAL" ? "PARTIAL" : recommendedAction === "REJECTED" ? "REJECTED" : "PENDING"}
                           </span>
                         )}
                       </td>
@@ -515,16 +515,16 @@ export default function MaterialsTab({
                                 e.target.value = req.orderStatus || "";
                               }
                             }}
-                            className="text-xs font-medium px-2 py-1 rounded border border-gray-300 bg-white"
+                            className="text-xs font-medium px-2 py-1 rounded border border-gray-300 bg-white uppercase"
                           >
-                            <option value="">Select...</option>
-                            <option value="TO_ORDER">To Order</option>
-                            <option value="ORDERED">Ordered</option>
-                            <option value="RECEIVED">Received</option>
+                            <option value="">SELECT...</option>
+                            <option value="TO_ORDER">TO ORDER</option>
+                            <option value="ORDERED">ORDERED</option>
+                            <option value="RECEIVED">RECEIVED</option>
                           </select>
                         ) : (
-                          <span className="px-2 py-1 rounded text-xs font-medium text-gray-600">
-                            {req.orderStatus === "TO_ORDER" ? "To Order" : req.orderStatus === "ORDERED" ? "Ordered" : req.orderStatus === "RECEIVED" ? "Received" : "—"}
+                          <span className="px-2 py-1 rounded text-xs font-medium text-gray-600 uppercase">
+                            {req.orderStatus === "TO_ORDER" ? "TO ORDER" : req.orderStatus === "ORDERED" ? "ORDERED" : req.orderStatus === "RECEIVED" ? "RECEIVED" : "—"}
                           </span>
                         )}
                       </td>
