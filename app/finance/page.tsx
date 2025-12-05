@@ -1332,7 +1332,7 @@ setLoading(false);
                               setSelectedInvoice(invoice);
                               setShowDetails(true);
                             }}
-                            className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-xs font-medium"
+                            className="px-3 py-1 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-md transition-all duration-200 text-xs font-medium min-h-[44px]"
                           >
                             View
                           </button>
@@ -1343,7 +1343,7 @@ setLoading(false);
                                   e.stopPropagation();
                                   handleEditInvoice(invoice);
                                 }}
-                                className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 transition-colors text-xs font-medium"
+                                className="px-3 py-1 text-indigo-600 hover:text-indigo-900 hover:bg-indigo-50 rounded-md transition-all duration-200 text-xs font-medium min-h-[44px]"
                               >
                                 Edit
                               </button>
@@ -1360,7 +1360,7 @@ setLoading(false);
                                     }
                                   }
                                 }}
-                                className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 transition-colors text-xs font-medium"
+                                className="px-3 py-1 text-red-600 hover:text-red-900 hover:bg-red-50 rounded-md transition-all duration-200 text-xs font-medium min-h-[44px]"
                               >
                                 Delete
                               </button>
