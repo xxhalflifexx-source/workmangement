@@ -582,17 +582,17 @@ export default function InventoryPage() {
   return (
     <main className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b relative z-20">
+      <header className="bg-white shadow-sm border-b">
         <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-24 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div className="flex-1 min-w-0">
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Inventory Management</h1>
+          <div>
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">📦 Inventory Management</h1>
             <p className="text-xs sm:text-sm text-gray-500">Track and manage your inventory items</p>
           </div>
           <Link
             href="/dashboard"
-            className="w-full sm:w-auto min-h-[44px] flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-all duration-200 hover:shadow-sm active:scale-95 text-sm font-medium"
+            className="w-full sm:w-auto min-h-[44px] flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
           >
-            ← Back to Dashboard
+            Back to Dashboard
           </Link>
         </div>
       </header>
@@ -600,19 +600,25 @@ export default function InventoryPage() {
       <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-24 py-6 sm:py-8">
         {/* Status Messages */}
         {error && (
-          <div className="mb-6 bg-red-50 border-l-4 border-red-500 text-red-700 px-4 py-3 rounded-lg shadow-sm animate-fade-in">
-            <div className="flex items-center gap-2">
-              <span className="text-red-500">⚠️</span>
-              <span className="font-medium">{error}</span>
-            </div>
+          <div className="mb-6 bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
+            {error}
+            <button
+              onClick={() => setError(undefined)}
+              className="float-right text-red-600 hover:text-red-800"
+            >
+              ×
+            </button>
           </div>
         )}
         {success && (
-          <div className="mb-6 bg-green-50 border-l-4 border-green-500 text-green-700 px-4 py-3 rounded-lg shadow-sm animate-fade-in">
-            <div className="flex items-center gap-2">
-              <span className="text-green-500">✓</span>
-              <span className="font-medium">{success}</span>
-            </div>
+          <div className="mb-6 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg">
+            {success}
+            <button
+              onClick={() => setSuccess(undefined)}
+              className="float-right text-green-600 hover:text-green-800"
+            >
+              ×
+            </button>
           </div>
         )}
 
@@ -620,50 +626,36 @@ export default function InventoryPage() {
         {activeTab === "inventory" && (lowStockCount > 0 || outOfStockCount > 0) && (
           <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
             {outOfStockCount > 0 && (
-              <div className="bg-gradient-to-r from-red-50 to-red-100/50 border-l-4 border-red-500 rounded-xl p-5 shadow-md flex items-center gap-4 transition-all duration-200 hover:shadow-lg">
-                <div className="flex-shrink-0">
-                  <div className="w-14 h-14 bg-red-500/20 rounded-full flex items-center justify-center shadow-sm">
-                    <span className="text-2xl">🚨</span>
-                  </div>
-                </div>
-                <div className="flex-1">
-                  <p className="font-bold text-red-900 text-base uppercase tracking-wide">OUT OF STOCK</p>
-                  <p className="text-sm text-red-700 mt-1.5 font-medium">{outOfStockCount} item(s) need restocking</p>
-                </div>
+              <div className="bg-white rounded-xl shadow border border-gray-200 p-4">
+                <p className="font-semibold text-red-900 text-base uppercase tracking-wide">OUT OF STOCK</p>
+                <p className="text-sm text-red-700 mt-1">{outOfStockCount} item(s) need restocking</p>
               </div>
             )}
             {lowStockCount > 0 && (
-              <div className="bg-gradient-to-r from-orange-50 to-orange-100/50 border-l-4 border-orange-500 rounded-xl p-5 shadow-md flex items-center gap-4 transition-all duration-200 hover:shadow-lg">
-                <div className="flex-shrink-0">
-                  <div className="w-14 h-14 bg-orange-500/20 rounded-full flex items-center justify-center shadow-sm">
-                    <span className="text-2xl">⚠️</span>
-                  </div>
-                </div>
-                <div className="flex-1">
-                  <p className="font-bold text-orange-900 text-base uppercase tracking-wide">LOW STOCK WARNING</p>
-                  <p className="text-sm text-orange-700 mt-1.5 font-medium">{lowStockCount} item(s) running low</p>
-                </div>
+              <div className="bg-white rounded-xl shadow border border-gray-200 p-4">
+                <p className="font-semibold text-orange-900 text-base uppercase tracking-wide">LOW STOCK WARNING</p>
+                <p className="text-sm text-orange-700 mt-1">{lowStockCount} item(s) running low</p>
               </div>
             )}
           </div>
         )}
 
         {/* Tabs */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-6 overflow-hidden">
-          <div className="border-b border-gray-200 bg-gray-50/50">
-            <nav className="flex space-x-1 sm:space-x-2 px-4 sm:px-6 overflow-x-auto" aria-label="Tabs">
+        <div className="mb-6">
+          <div className="border-b border-gray-200 overflow-x-auto">
+            <nav className="-mb-px flex space-x-4 sm:space-x-8 min-w-max">
               <button
                 onClick={() => {
                   setActiveTab("inventory");
                   setCurrentPage(1);
                 }}
-                className={`py-4 px-4 sm:px-6 border-b-2 font-semibold text-sm whitespace-nowrap min-h-[44px] flex items-center transition-all duration-200 ${
+                className={`py-3 sm:py-4 px-2 sm:px-1 border-b-2 font-medium text-xs sm:text-sm whitespace-nowrap min-h-[44px] flex items-center ${
                   activeTab === "inventory"
-                    ? "border-blue-600 text-blue-600 bg-white"
+                    ? "border-blue-500 text-blue-600"
                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                 }`}
               >
-                Inventory
+                📦 <span className="ml-1 sm:ml-0">Inventory</span>
               </button>
               <button
                 onClick={() => {
@@ -673,13 +665,13 @@ export default function InventoryPage() {
                     loadMaterialRequests();
                   }
                 }}
-                className={`py-4 px-4 sm:px-6 border-b-2 font-semibold text-sm whitespace-nowrap min-h-[44px] flex items-center transition-all duration-200 ${
+                className={`py-3 sm:py-4 px-2 sm:px-1 border-b-2 font-medium text-xs sm:text-sm whitespace-nowrap min-h-[44px] flex items-center ${
                   activeTab === "materials"
-                    ? "border-blue-600 text-blue-600 bg-white"
+                    ? "border-blue-500 text-blue-600"
                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                 }`}
               >
-                Materials Requested
+                📋 <span className="ml-1 sm:ml-0">Materials Requested</span>
               </button>
             </nav>
           </div>

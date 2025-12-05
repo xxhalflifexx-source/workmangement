@@ -66,249 +66,256 @@ export default function InventoryTab({
   handleDelete,
 }: InventoryTabProps) {
   return (
-    <div className="space-y-6">
-      {/* Controls */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
-        <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center mb-4">
-          <div className="flex-1 w-full sm:w-auto">
+    <div className="space-y-4 sm:space-y-6">
+      {/* Header with Create Button */}
+      <div className="flex justify-between items-center">
+        <h2 className="text-xl font-semibold text-gray-900">Inventory</h2>
+        <div className="flex gap-2">
+          <button
+            onClick={exportInventoryToCSV}
+            className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium min-h-[44px]"
+          >
+            Export CSV
+          </button>
+          {canManage && (
+            <button
+              onClick={openCreateModal}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium min-h-[44px]"
+            >
+              + Add Item
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div className="bg-white rounded-xl shadow border border-gray-200 p-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Search */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Search
+            </label>
             <input
               type="text"
-              placeholder="Search by name, SKU, or description..."
               value={searchTerm}
               onChange={(e) => {
                 setSearchTerm(e.target.value);
                 setCurrentPage(1);
               }}
-              className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm min-h-[44px] focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+              placeholder="Name, SKU, or description..."
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
             />
           </div>
 
-          <div className="flex gap-2 w-full sm:w-auto">
-            <button
-              onClick={exportInventoryToCSV}
-              className="flex-1 sm:flex-none px-4 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 transition-all duration-200 hover:shadow-sm active:scale-95 text-sm font-medium min-h-[44px] min-w-[44px]"
+          {/* Category Filter */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Category
+            </label>
+            <select
+              value={filterCategory}
+              onChange={(e) => {
+                setFilterCategory(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
             >
-              📥 Export CSV
-            </button>
-            {canManage && (
-              <button
-                onClick={openCreateModal}
-                className="flex-1 sm:flex-none bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-all duration-200 hover:shadow-md active:scale-95 font-medium whitespace-nowrap min-h-[44px] min-w-[44px]"
-              >
-                + Add Item
-              </button>
-            )}
+              <option value="ALL">All Categories</option>
+              {categories.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
+              ))}
+            </select>
           </div>
-        </div>
 
-        <div className="flex flex-wrap gap-3">
-          <select
-            value={filterCategory}
-            onChange={(e) => {
-              setFilterCategory(e.target.value);
-              setCurrentPage(1);
-            }}
-            className="border border-gray-300 rounded-lg px-3 py-2.5 text-sm min-h-[44px] flex-1 sm:flex-none min-w-[150px] focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
-          >
-            <option value="ALL">ALL CATEGORIES</option>
-            {categories.map((cat) => (
-              <option key={cat} value={cat}>
-                {cat}
-              </option>
-            ))}
-          </select>
-
-          <select
-            value={filterStockStatus}
-            onChange={(e) => {
-              setFilterStockStatus(e.target.value);
-              setCurrentPage(1);
-            }}
-            className="border border-gray-300 rounded-lg px-3 py-2.5 text-sm min-h-[44px] flex-1 sm:flex-none min-w-[150px] focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
-          >
-            <option value="ALL">ALL STOCK STATUS</option>
-            <option value="IN_STOCK">IN STOCK</option>
-            <option value="LOW">LOW/OUT OF STOCK</option>
-          </select>
+          {/* Stock Status Filter */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Stock Status
+            </label>
+            <select
+              value={filterStockStatus}
+              onChange={(e) => {
+                setFilterStockStatus(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+            >
+              <option value="ALL">All Status</option>
+              <option value="IN_STOCK">In Stock</option>
+              <option value="LOW">Low/Out of Stock</option>
+            </select>
+          </div>
         </div>
       </div>
 
       {/* Inventory Table */}
       {loading ? (
-        <div className="text-center py-12 bg-white rounded-xl shadow">
-          <div className="text-gray-500">Loading inventory...</div>
+        <div className="bg-white rounded-xl shadow border border-gray-200 p-12 text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading inventory...</p>
         </div>
       ) : sortedItems.length === 0 ? (
-        <div className="bg-white rounded-xl shadow p-12 text-center">
-          <div className="text-6xl mb-4">📦</div>
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">
+        <div className="bg-white rounded-xl shadow border border-gray-200 p-12 text-center">
+          <p className="text-lg font-medium text-gray-900 mb-2">
             {items.length === 0 ? "No inventory items yet" : "No items match your search"}
-          </h3>
-          <p className="text-gray-600 mb-6">
+          </p>
+          <p className="text-sm text-gray-600">
             {items.length === 0
               ? canManage
                 ? "Add your first inventory item to get started"
                 : "No items in inventory yet"
-              : "Try adjusting your filters or search term"}
+              : "Try adjusting your filters."}
           </p>
-          {canManage && items.length === 0 && (
-            <button
-              onClick={openCreateModal}
-              className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium"
-            >
-              Add First Item
-            </button>
-          )}
         </div>
       ) : (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="bg-white rounded-xl shadow border border-gray-200 overflow-hidden">
           <div className="overflow-x-auto -mx-4 sm:mx-0">
             <div className="inline-block min-w-full align-middle px-4 sm:px-0">
-              <table className="w-full">
-                <thead className="bg-gradient-to-r from-gray-50 to-gray-100/50 border-b-2 border-gray-200">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-2 sm:px-4 py-3.5 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                      <button
-                        onClick={() => {
-                          setSortField("name");
-                          setSortDirection(sortField === "name" && sortDirection === "asc" ? "desc" : "asc");
-                        }}
-                        className="flex items-center gap-1 hover:text-gray-900 transition-colors duration-200 min-h-[44px] font-semibold"
-                      >
+                    <th
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                      onClick={() => {
+                        setSortField("name");
+                        setSortDirection(sortField === "name" && sortDirection === "asc" ? "desc" : "asc");
+                      }}
+                    >
+                      <div className="flex items-center gap-2">
                         Item Name
-                        {sortField === "name" && (sortDirection === "asc" ? "↑" : "↓")}
-                      </button>
+                        {sortField === "name" && (
+                          <span>{sortDirection === "asc" ? "↑" : "↓"}</span>
+                        )}
+                      </div>
                     </th>
-                    <th className="px-2 sm:px-4 py-3.5 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Category
                     </th>
-                    <th className="px-2 sm:px-4 py-3.5 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                      <button
-                        onClick={() => {
-                          setSortField("quantity");
-                          setSortDirection(sortField === "quantity" && sortDirection === "asc" ? "desc" : "asc");
-                        }}
-                        className="flex items-center gap-1 hover:text-gray-900 transition-colors duration-200 min-h-[44px] font-semibold"
-                      >
+                    <th
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                      onClick={() => {
+                        setSortField("quantity");
+                        setSortDirection(sortField === "quantity" && sortDirection === "asc" ? "desc" : "asc");
+                      }}
+                    >
+                      <div className="flex items-center gap-2">
                         Quantity
-                        {sortField === "quantity" && (sortDirection === "asc" ? "↑" : "↓")}
-                      </button>
+                        {sortField === "quantity" && (
+                          <span>{sortDirection === "asc" ? "↑" : "↓"}</span>
+                        )}
+                      </div>
                     </th>
-                    <th className="px-2 sm:px-4 py-3.5 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Unit
                     </th>
-                    <th className="px-2 sm:px-4 py-3.5 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                      <button
-                        onClick={() => {
-                          setSortField("location");
-                          setSortDirection(sortField === "location" && sortDirection === "asc" ? "desc" : "asc");
-                        }}
-                        className="flex items-center gap-1 hover:text-gray-900 transition-colors duration-200 min-h-[44px] font-semibold"
-                      >
+                    <th
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                      onClick={() => {
+                        setSortField("location");
+                        setSortDirection(sortField === "location" && sortDirection === "asc" ? "desc" : "asc");
+                      }}
+                    >
+                      <div className="flex items-center gap-2">
                         Location
-                        {sortField === "location" && (sortDirection === "asc" ? "↑" : "↓")}
-                      </button>
+                        {sortField === "location" && (
+                          <span>{sortDirection === "asc" ? "↑" : "↓"}</span>
+                        )}
+                      </div>
                     </th>
-                    <th className="px-2 sm:px-4 py-3.5 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Status
                     </th>
-                    <th className="px-2 sm:px-4 py-3.5 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                      <button
-                        onClick={() => {
-                          setSortField("updatedAt");
-                          setSortDirection(sortField === "updatedAt" && sortDirection === "asc" ? "desc" : "asc");
-                        }}
-                        className="flex items-center gap-1 hover:text-gray-900 transition-colors duration-200 min-h-[44px] font-semibold"
-                      >
+                    <th
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                      onClick={() => {
+                        setSortField("updatedAt");
+                        setSortDirection(sortField === "updatedAt" && sortDirection === "asc" ? "desc" : "asc");
+                      }}
+                    >
+                      <div className="flex items-center gap-2">
                         Last Updated
-                        {sortField === "updatedAt" && (sortDirection === "asc" ? "↑" : "↓")}
-                      </button>
+                        {sortField === "updatedAt" && (
+                          <span>{sortDirection === "asc" ? "↑" : "↓"}</span>
+                        )}
+                      </div>
                     </th>
-                    <th className="px-2 sm:px-4 py-3.5 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Actions
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-100">
+                <tbody className="bg-white divide-y divide-gray-200">
                   {paginatedItems.map((item) => {
                     const stockStatus = getStockStatus(item);
                     return (
-                          <tr key={item.id} className="hover:bg-blue-50/50 transition-all duration-200 border-b border-gray-100 group">
-                        <td className="px-2 sm:px-4 py-4 text-sm text-gray-900 min-w-[120px] sm:min-w-0">
-                          <div className="font-semibold text-gray-900 break-words">{item.name}</div>
+                          <tr key={item.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                          <div>{item.name}</div>
                           {item.sku && (
-                            <div className="text-xs text-gray-500 break-all mt-0.5">SKU: {item.sku}</div>
-                          )}
-                          {item.description && (
-                            <div className="text-xs text-gray-500 line-clamp-1 break-words mt-0.5" title={item.description}>
-                              {item.description}
-                            </div>
+                            <div className="text-xs text-gray-500">SKU: {item.sku}</div>
                           )}
                         </td>
-                        <td className="px-4 py-4 text-sm text-gray-900">
-                          {item.category ? (
-                            <span className="px-2.5 py-1 text-xs font-semibold bg-gray-100 text-gray-800 rounded-full uppercase tracking-wide">
-                              {item.category}
-                            </span>
-                          ) : (
-                            <span className="text-gray-400">—</span>
-                          )}
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {item.category || "—"}
                         </td>
-                        <td className="px-4 py-4 text-sm text-gray-900">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           {Math.floor(item.quantity)}
                         </td>
-                        <td className="px-4 py-4 text-sm text-gray-900">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {item.unit}
                         </td>
-                        <td className="px-4 py-4 text-sm text-gray-900">
-                          {item.location || <span className="text-gray-400">—</span>}
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {item.location || "—"}
                         </td>
-                        <td className="px-4 py-4 text-sm">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">
                           <span
-                            className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold uppercase tracking-wide rounded-full shadow-sm ${stockStatus.color}`}
+                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-full ${stockStatus.color}`}
                           >
                             <span>{stockStatus.icon}</span>
                             <span>{stockStatus.text}</span>
                           </span>
                         </td>
-                        <td className="px-4 py-4 text-sm text-gray-600">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {formatDate(item.updatedAt)}
                         </td>
-                        <td className="px-2 sm:px-4 py-4 text-right text-sm space-x-1 sm:space-x-2">
-                          <button
-                            onClick={() => openHistoryModal(item)}
-                            className="text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md p-2 transition-all duration-200 min-h-[44px] min-w-[44px] flex items-center justify-center"
-                            title="View history"
-                          >
-                            📊
-                          </button>
-                          {canManage && (
-                            <>
-                              <button
-                                onClick={() => openAdjustModal(item)}
-                                className="text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-md p-2 transition-all duration-200 min-h-[44px] min-w-[44px] flex items-center justify-center"
-                                title="Adjust quantity"
-                              >
-                                ±
-                              </button>
-                              <button
-                                onClick={() => openEditModal(item)}
-                                className="text-indigo-600 hover:text-indigo-900 hover:bg-indigo-50 rounded-md px-3 py-2 transition-all duration-200 min-h-[44px] font-medium"
-                              >
-                                <span className="hidden sm:inline">Edit</span>
-                                <span className="sm:hidden">✏️</span>
-                              </button>
-                              {isAdmin && (
+                        <td className="px-6 py-4 whitespace-nowrap text-sm" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => openHistoryModal(item)}
+                              className="px-3 py-1 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-md transition-all duration-200 text-xs font-medium min-h-[44px]"
+                              title="View history"
+                            >
+                              View
+                            </button>
+                            {canManage && (
+                              <>
                                 <button
-                                  onClick={() => handleDelete(item.id)}
-                                  className="text-red-600 hover:text-red-900 hover:bg-red-50 rounded-md px-3 py-2 transition-all duration-200 min-h-[44px] font-medium"
+                                  onClick={() => openAdjustModal(item)}
+                                  className="px-3 py-1 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-md transition-all duration-200 text-xs font-medium min-h-[44px]"
+                                  title="Adjust quantity"
                                 >
-                                  <span className="hidden sm:inline">Delete</span>
-                                  <span className="sm:hidden">🗑️</span>
+                                  Adjust
                                 </button>
-                              )}
-                            </>
-                          )}
+                                <button
+                                  onClick={() => openEditModal(item)}
+                                  className="px-3 py-1 text-indigo-600 hover:text-indigo-900 hover:bg-indigo-50 rounded-md transition-all duration-200 text-xs font-medium min-h-[44px]"
+                                >
+                                  Edit
+                                </button>
+                                {isAdmin && (
+                                  <button
+                                    onClick={() => handleDelete(item.id)}
+                                    className="px-3 py-1 text-red-600 hover:text-red-900 hover:bg-red-50 rounded-md transition-all duration-200 text-xs font-medium min-h-[44px]"
+                                  >
+                                    Delete
+                                  </button>
+                                )}
+                              </>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     );
@@ -322,7 +329,7 @@ export default function InventoryTab({
 
       {/* Pagination */}
       {totalInventoryPages > 1 && (
-        <div className="bg-white rounded-xl shadow border border-gray-200 p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="bg-white rounded-xl shadow border border-gray-200 p-4 flex flex-col sm:flex-row items-center justify-between gap-4 mt-6">
           <div className="text-xs sm:text-sm text-gray-700 text-center sm:text-left break-words">
             Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, sortedItems.length)} of {sortedItems.length} items
           </div>

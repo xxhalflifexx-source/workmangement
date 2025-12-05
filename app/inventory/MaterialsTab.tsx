@@ -77,208 +77,179 @@ export default function MaterialsTab({
   setError,
 }: MaterialsTabProps) {
   return (
-    <div className="space-y-6">
-      {/* Controls */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
-        <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center mb-4">
-          <div className="flex-1 w-full sm:w-auto">
+    <div className="space-y-4 sm:space-y-6">
+      {/* Header with Create Button */}
+      <div className="flex justify-between items-center">
+        <h2 className="text-xl font-semibold text-gray-900">Materials Requested</h2>
+        <div className="flex gap-2">
+          {userRole === "EMPLOYEE" && (
+            <button
+              onClick={() => setShowRequestForm(true)}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium min-h-[44px]"
+            >
+              + Submit Request
+            </button>
+          )}
+          <button
+            onClick={exportRequestsToCSV}
+            className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium min-h-[44px]"
+          >
+            Export CSV
+          </button>
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div className="bg-white rounded-xl shadow border border-gray-200 p-6">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          {/* Search */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Search
+            </label>
             <input
               type="text"
-              placeholder="Search by Job No., Request ID, Employee, Item, or Status..."
               value={requestSearchTerm}
               onChange={(e) => {
                 setRequestSearchTerm(e.target.value);
                 setRequestCurrentPage(1);
               }}
-              className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm min-h-[44px] focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+              placeholder="Job No., Request ID, Employee..."
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
             />
           </div>
 
-          <div className="flex gap-2 w-full sm:w-auto">
-            {userRole === "EMPLOYEE" && (
-              <button
-                onClick={() => setShowRequestForm(true)}
-                className="flex-1 sm:flex-none px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 hover:shadow-md active:scale-95 font-medium whitespace-nowrap min-h-[44px] min-w-[44px]"
-              >
-                + Submit Request
-              </button>
-            )}
-            <button
-              onClick={exportRequestsToCSV}
-              className="flex-1 sm:flex-none px-4 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 transition-all duration-200 hover:shadow-sm active:scale-95 text-sm font-medium min-h-[44px] min-w-[44px]"
-            >
-              📥 Export CSV
-            </button>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {/* Employee Filter */}
-          <select
-            value={filterRequester}
-            onChange={(e) => {
-              setFilterRequester(e.target.value);
-              setRequestCurrentPage(1);
-            }}
-            className="border border-gray-300 rounded-lg px-3 py-2.5 text-sm min-h-[44px] focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
-          >
-            <option value="ALL">ALL EMPLOYEES</option>
-            {materialRequests
-              .map((r) => r.user.email)
-              .filter((email): email is string => email !== null && email !== undefined)
-              .filter((email, index, self) => index === self.indexOf(email))
-              .sort()
-              .map((email) => {
-                const user = materialRequests.find((r) => r.user.email === email)?.user;
-                return (
-                  <option key={email} value={email}>
-                    {user?.name || email}
-                  </option>
-                );
-              })}
-          </select>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Employee
+            </label>
+            <select
+              value={filterRequester}
+              onChange={(e) => {
+                setFilterRequester(e.target.value);
+                setRequestCurrentPage(1);
+              }}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+            >
+              <option value="ALL">All Employees</option>
+              {materialRequests
+                .map((r) => r.user.email)
+                .filter((email): email is string => email !== null && email !== undefined)
+                .filter((email, index, self) => index === self.indexOf(email))
+                .sort()
+                .map((email) => {
+                  const user = materialRequests.find((r) => r.user.email === email)?.user;
+                  return (
+                    <option key={email} value={email}>
+                      {user?.name || email}
+                    </option>
+                  );
+                })}
+            </select>
+          </div>
 
           {/* Item Filter */}
-          <select
-            value={filterItem}
-            onChange={(e) => {
-              setFilterItem(e.target.value);
-              setRequestCurrentPage(1);
-            }}
-            className="border border-gray-300 rounded-lg px-3 py-2.5 text-sm min-h-[44px] focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
-          >
-            <option value="ALL">ALL ITEMS</option>
-            {uniqueItems.map((item) => (
-              <option key={item} value={item}>
-                {item}
-              </option>
-            ))}
-          </select>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Item
+            </label>
+            <select
+              value={filterItem}
+              onChange={(e) => {
+                setFilterItem(e.target.value);
+                setRequestCurrentPage(1);
+              }}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+            >
+              <option value="ALL">All Items</option>
+              {uniqueItems.map((item) => (
+                <option key={item} value={item}>
+                  {item}
+                </option>
+              ))}
+            </select>
+          </div>
 
           {/* Action Filter */}
-          <select
-            value={filterAction}
-            onChange={(e) => {
-              setFilterAction(e.target.value);
-              setRequestCurrentPage(1);
-            }}
-            className="border border-gray-300 rounded-lg px-3 py-2.5 text-sm min-h-[44px] focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
-          >
-            <option value="ALL">ALL ACTIONS</option>
-            <option value="PENDING">PENDING</option>
-            <option value="APPROVE">APPROVE</option>
-            <option value="PARTIAL">PARTIAL</option>
-            <option value="REJECTED">REJECTED</option>
-          </select>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Action
+            </label>
+            <select
+              value={filterAction}
+              onChange={(e) => {
+                setFilterAction(e.target.value);
+                setRequestCurrentPage(1);
+              }}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+            >
+              <option value="ALL">All Actions</option>
+              <option value="PENDING">Pending</option>
+              <option value="APPROVE">Approve</option>
+              <option value="PARTIAL">Partial</option>
+              <option value="REJECTED">Rejected</option>
+            </select>
+          </div>
 
           {/* Status Filter */}
-          <select
-            value={filterRequestStatus}
-            onChange={(e) => {
-              setFilterRequestStatus(e.target.value);
-              setRequestCurrentPage(1);
-            }}
-            className="border border-gray-300 rounded-lg px-3 py-2.5 text-sm min-h-[44px] focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
-          >
-            <option value="ALL">ALL STATUS</option>
-            <option value="PENDING">PENDING</option>
-            <option value="APPROVED">APPROVED</option>
-            <option value="ON_HOLD">ON HOLD</option>
-            <option value="REJECTED">REJECTED</option>
-          </select>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Status
+            </label>
+            <select
+              value={filterRequestStatus}
+              onChange={(e) => {
+                setFilterRequestStatus(e.target.value);
+                setRequestCurrentPage(1);
+              }}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+            >
+              <option value="ALL">All Status</option>
+              <option value="PENDING">Pending</option>
+              <option value="APPROVED">Approved</option>
+              <option value="ON_HOLD">On Hold</option>
+              <option value="REJECTED">Rejected</option>
+            </select>
+          </div>
         </div>
       </div>
 
       {/* Materials Requested Table */}
       {loadingRequests ? (
-        <div className="text-center py-12 bg-white rounded-xl shadow">
-          <div className="text-gray-500">Loading material requests...</div>
+        <div className="bg-white rounded-xl shadow border border-gray-200 p-12 text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading material requests...</p>
         </div>
       ) : sortedRequests.length === 0 ? (
-        <div className="bg-white rounded-xl shadow p-12 text-center">
-          <div className="text-6xl mb-4">📋</div>
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">
+        <div className="bg-white rounded-xl shadow border border-gray-200 p-12 text-center">
+          <p className="text-lg font-medium text-gray-900 mb-2">
             {materialRequests.length === 0 ? "No material requests yet" : "No requests match your search"}
-          </h3>
-          <p className="text-gray-600">
+          </p>
+          <p className="text-sm text-gray-600">
             {materialRequests.length === 0
               ? "Material requests will appear here when employees submit them"
-              : "Try adjusting your filters or search term"}
+              : "Try adjusting your filters."}
           </p>
         </div>
       ) : (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="bg-white rounded-xl shadow border border-gray-200 overflow-hidden">
           <div className="overflow-x-auto -mx-4 sm:mx-0">
             <div className="inline-block min-w-full align-middle px-4 sm:px-0">
-              <table className="w-full">
-              <thead className="bg-gradient-to-r from-gray-50 to-gray-100/50 border-b-2 border-gray-200">
+              <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-2 sm:px-4 py-3.5 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Job No.</th>
-                  <th className="px-2 sm:px-4 py-3.5 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                    <button
-                      onClick={() => {
-                        setRequestSortField("requestedDate");
-                        setRequestSortDirection(requestSortField === "requestedDate" && requestSortDirection === "asc" ? "desc" : "asc");
-                      }}
-                      className="flex items-center gap-1 hover:text-gray-900 transition-colors duration-200 min-h-[44px] font-semibold"
-                    >
-                      Employee
-                      {requestSortField === "requestedDate" && (requestSortDirection === "asc" ? "↑" : "↓")}
-                    </button>
-                  </th>
-                  <th className="px-2 sm:px-4 py-3.5 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                    <button
-                      onClick={() => {
-                        setRequestSortField("itemName");
-                        setRequestSortDirection(requestSortField === "itemName" && requestSortDirection === "asc" ? "desc" : "asc");
-                      }}
-                      className="flex items-center gap-1 hover:text-gray-900 transition-colors duration-200 min-h-[44px] font-semibold"
-                    >
-                      Item
-                      {requestSortField === "itemName" && (requestSortDirection === "asc" ? "↑" : "↓")}
-                    </button>
-                  </th>
-                  <th className="px-2 sm:px-4 py-3.5 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                    <button
-                      onClick={() => {
-                        setRequestSortField("quantity");
-                        setRequestSortDirection(requestSortField === "quantity" && requestSortDirection === "asc" ? "desc" : "asc");
-                      }}
-                      className="flex items-center gap-1 hover:text-gray-900 transition-colors duration-200 min-h-[44px] font-semibold"
-                    >
-                      Qty Requested
-                      {requestSortField === "quantity" && (requestSortDirection === "asc" ? "↑" : "↓")}
-                    </button>
-                  </th>
-                  <th className="px-2 sm:px-4 py-3.5 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Availability</th>
-                  <th className="px-2 sm:px-4 py-3.5 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Action</th>
-                  <th className="px-2 sm:px-4 py-3.5 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Amount</th>
-                  <th className="px-2 sm:px-4 py-3.5 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Order Status</th>
-                  <th className="px-2 sm:px-4 py-3.5 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                    <button
-                      onClick={() => {
-                        setRequestSortField("requestedDate");
-                        setRequestSortDirection(requestSortField === "requestedDate" && requestSortDirection === "asc" ? "desc" : "asc");
-                      }}
-                      className="flex items-center gap-1 hover:text-gray-700"
-                    >
-                      Date Requested
-                      {requestSortField === "requestedDate" && (requestSortDirection === "asc" ? "↑" : "↓")}
-                    </button>
-                  </th>
-                  <th className="px-2 sm:px-4 py-3.5 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                    <button
-                      onClick={() => {
-                        setRequestSortField("fulfilledDate");
-                        setRequestSortDirection(requestSortField === "fulfilledDate" && requestSortDirection === "asc" ? "desc" : "asc");
-                      }}
-                      className="flex items-center gap-1 hover:text-gray-900 transition-colors duration-200 min-h-[44px] font-semibold"
-                    >
-                      Date Approved
-                      {requestSortField === "fulfilledDate" && (requestSortDirection === "asc" ? "↑" : "↓")}
-                    </button>
-                  </th>
-                  <th className="px-2 sm:px-4 py-3.5 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Notes</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Job No.</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Employee</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Qty Requested</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Availability</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order Status</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date Requested</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date Approved</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Notes</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-100">
@@ -287,18 +258,17 @@ export default function MaterialsTab({
                   const recommendedAction = getRecommendedAction(req);
                   const inventoryItem = items.find((item) => item.name.toLowerCase() === req.itemName.toLowerCase());
                   return (
-                        <tr key={req.id} className="hover:bg-blue-50/50 transition-all duration-200 border-b border-gray-100 group">
-                      <td className="px-2 sm:px-4 py-4 text-sm text-gray-900 font-mono font-bold min-w-[80px] sm:min-w-0">
+                        <tr key={req.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                         {req.job ? req.job.id.substring(0, 8).toUpperCase() : "—"}
                       </td>
-                      <td className="px-2 sm:px-4 py-4 text-sm text-gray-700 min-w-[100px] sm:min-w-0">
-                        <div className="font-medium break-words">{req.user.name || req.user.email || "—"}</div>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {req.user.name || req.user.email || "—"}
                       </td>
-                      <td className="px-2 sm:px-4 py-4 text-sm text-gray-900 min-w-[120px] sm:min-w-0">
-                        <div className="font-semibold text-gray-900 break-words">{req.itemName}</div>
-                        {req.description && <div className="text-xs text-gray-500 line-clamp-1 break-words mt-0.5" title={req.description}>{req.description}</div>}
+                      <td className="px-6 py-4 text-sm text-gray-500">
+                        {req.itemName}
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-900">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {req.status === "PENDING" && canManage ? (
                           <input
                             id={`qty-${req.id}`}
@@ -354,7 +324,7 @@ export default function MaterialsTab({
                           <span>{Math.floor(req.quantity)} {req.unit}</span>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-900">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {inventoryItem ? (
                           <span className={`inline-flex items-center px-2.5 py-1 text-xs font-bold uppercase tracking-wide rounded-full ${
                             currentStock >= req.quantity 
@@ -367,7 +337,7 @@ export default function MaterialsTab({
                           <span className="inline-flex items-center px-2.5 py-1 text-xs font-bold uppercase tracking-wide rounded-full bg-red-100 text-red-800">UNAVAILABLE</span>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-sm">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
                         {canManage ? (
                           <select
                             value={req.recommendedAction || "PENDING"}
@@ -424,7 +394,7 @@ export default function MaterialsTab({
                           </span>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-sm">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
                         {canManage ? (
                           <input
                             key={`amount-${req.id}-${req.amount}`}
@@ -481,7 +451,7 @@ export default function MaterialsTab({
                           </span>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-sm">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
                         {canManage ? (
                           <select
                             value={req.orderStatus || ""}
@@ -532,13 +502,13 @@ export default function MaterialsTab({
                           </span>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-600">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {formatDate(req.requestedDate)}
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-600">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {req.fulfilledDate ? formatDate(req.fulfilledDate) : "—"}
                       </td>
-                      <td className="px-2 sm:px-4 py-4 text-sm text-gray-600 max-w-[200px] sm:max-w-xs">
+                      <td className="px-6 py-4 text-sm text-gray-500 max-w-[200px] sm:max-w-xs">
                         {canManage ? (
                           <textarea
                             id={`notes-${req.id}`}
