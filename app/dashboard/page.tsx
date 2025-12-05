@@ -37,6 +37,7 @@ export default async function Dashboard() {
           <DashboardHeaderActions
             userName={user?.name}
             userEmail={user?.email}
+            userRole={role}
             initialNotifications={notifications as any}
             initialUnreadCount={unreadCount}
           />

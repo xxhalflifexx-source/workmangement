@@ -8,11 +8,12 @@ import { broadcastSessionEvent } from "@/lib/session-sync";
 interface UserMenuProps {
   userName: string | null | undefined;
   userEmail: string | null | undefined;
+  userRole?: string;
   hideWhenNotificationsOpen?: boolean;
   notificationsOpen?: boolean;
 }
 
-export default function UserMenu({ userName, userEmail, hideWhenNotificationsOpen, notificationsOpen }: UserMenuProps) {
+export default function UserMenu({ userName, userEmail, userRole, hideWhenNotificationsOpen, notificationsOpen }: UserMenuProps) {
   const [showDropdown, setShowDropdown] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -81,11 +82,39 @@ export default function UserMenu({ userName, userEmail, hideWhenNotificationsOpe
               onClick={() => setShowDropdown(false)}
             />
             {/* Dropdown - Use fixed positioning on mobile to avoid overlap issues */}
-            <div className="fixed sm:absolute right-4 sm:right-0 top-[72px] sm:top-auto sm:mt-2 left-4 sm:left-auto w-[calc(100vw-2rem)] sm:w-48 max-w-[280px] sm:max-w-[calc(100vw-1rem)] max-h-[calc(100vh-88px)] sm:max-h-none bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-[50] sm:z-[1000] dropdown-enter">
-              <div className="px-4 py-2 border-b border-gray-100">
+            <div className="fixed sm:absolute right-4 sm:right-0 top-[72px] sm:top-auto sm:mt-2 left-4 sm:left-auto w-[calc(100vw-2rem)] sm:w-64 max-w-[320px] sm:max-w-[calc(100vw-1rem)] max-h-[calc(100vh-88px)] sm:max-h-none bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-[50] sm:z-[1000] dropdown-enter">
+              <div className="px-4 py-3 border-b border-gray-100">
                 <p className="text-sm font-semibold text-gray-900 break-words">{userName || "User"}</p>
                 <p className="text-xs text-gray-500 break-all mt-1">{userEmail}</p>
               </div>
+              
+              {/* Quick Info Section */}
+              {userRole && (
+                <div className="px-4 py-3 border-b border-gray-100 bg-gray-50/50">
+                  <h3 className="text-xs font-semibold text-gray-700 mb-2 flex items-center gap-1.5">
+                    <span>📢</span>
+                    <span>Quick Info</span>
+                  </h3>
+                  <div className="space-y-2 text-xs text-gray-600">
+                    <p>
+                      <span className="font-medium">Your Role:</span>{" "}
+                      <span className="text-blue-600 font-semibold">{userRole}</span>
+                    </p>
+                    <p>
+                      <span className="font-medium">Access Level:</span>{" "}
+                      {userRole === "ADMIN"
+                        ? "Full system access"
+                        : userRole === "MANAGER"
+                        ? "Team management access"
+                        : "Standard employee access"}
+                    </p>
+                    <p>
+                      <span className="font-medium">Account Status:</span>{" "}
+                      <span className="text-green-600 font-medium">✓ Active & Verified</span>
+                    </p>
+                  </div>
+                </div>
+              )}
               
               <button
                 onClick={() => {

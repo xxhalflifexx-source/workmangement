@@ -7,6 +7,7 @@ import NotificationsDropdown from "./NotificationsDropdown";
 interface DashboardHeaderActionsProps {
   userName: string | null | undefined;
   userEmail: string | null | undefined;
+  userRole?: string;
   initialNotifications?: any[];
   initialUnreadCount?: number;
 }
@@ -14,6 +15,7 @@ interface DashboardHeaderActionsProps {
 export default function DashboardHeaderActions({
   userName,
   userEmail,
+  userRole,
   initialNotifications,
   initialUnreadCount,
 }: DashboardHeaderActionsProps) {
@@ -29,6 +31,7 @@ export default function DashboardHeaderActions({
       <UserMenu 
         userName={userName} 
         userEmail={userEmail}
+        userRole={userRole}
         hideWhenNotificationsOpen={true}
         notificationsOpen={notificationsOpen}
       />
