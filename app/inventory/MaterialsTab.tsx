@@ -324,17 +324,17 @@ export default function MaterialsTab({
                           <span>{Math.floor(req.quantity)} {req.unit}</span>
                         )}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {inventoryItem ? (
-                          <span className={`inline-flex items-center px-2.5 py-1 text-xs font-bold uppercase tracking-wide rounded-full ${
+                          <span className={`text-xs font-medium uppercase tracking-wide ${
                             currentStock >= req.quantity 
-                              ? "bg-green-100 text-green-800" 
-                              : "bg-red-100 text-red-800"
+                              ? "text-green-600" 
+                              : "text-red-600"
                           }`}>
                             {currentStock >= req.quantity ? "AVAILABLE" : "UNAVAILABLE"}
                           </span>
                         ) : (
-                          <span className="inline-flex items-center px-2.5 py-1 text-xs font-bold uppercase tracking-wide rounded-full bg-red-100 text-red-800">UNAVAILABLE</span>
+                          <span className="text-xs font-medium uppercase tracking-wide text-red-600">UNAVAILABLE</span>
                         )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
@@ -371,12 +371,7 @@ export default function MaterialsTab({
                                 e.target.value = req.recommendedAction || "PENDING";
                               }
                             }}
-                            className={`text-xs font-semibold px-2.5 py-1.5 rounded-full border-2 uppercase tracking-wide shadow-sm ${
-                              (req.recommendedAction || "PENDING") === "APPROVE" ? "bg-green-100 text-green-800 border-green-300" :
-                              (req.recommendedAction || "PENDING") === "PARTIAL" ? "bg-orange-100 text-orange-800 border-orange-300" :
-                              (req.recommendedAction || "PENDING") === "REJECTED" ? "bg-red-100 text-red-800 border-red-300" :
-                              "bg-yellow-100 text-yellow-800 border-yellow-300"
-                            }`}
+                            className="text-xs font-medium px-2.5 py-1.5 rounded border border-gray-300 uppercase tracking-wide bg-white hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                           >
                             <option value="PENDING">PENDING</option>
                             <option value="APPROVE">APPROVE</option>
@@ -384,11 +379,11 @@ export default function MaterialsTab({
                             <option value="REJECTED">REJECTED</option>
                           </select>
                         ) : (
-                          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wide shadow-sm ${
-                            recommendedAction === "APPROVE" ? "bg-green-100 text-green-800" :
-                            recommendedAction === "PARTIAL" ? "bg-orange-100 text-orange-800" :
-                            recommendedAction === "REJECTED" ? "bg-red-100 text-red-800" :
-                            "bg-yellow-100 text-yellow-800"
+                          <span className={`text-xs font-medium uppercase tracking-wide ${
+                            recommendedAction === "APPROVE" ? "text-green-600" :
+                            recommendedAction === "PARTIAL" ? "text-orange-600" :
+                            recommendedAction === "REJECTED" ? "text-red-600" :
+                            "text-yellow-600"
                           }`}>
                             {recommendedAction === "APPROVE" ? "APPROVE" : recommendedAction === "PARTIAL" ? "PARTIAL" : recommendedAction === "REJECTED" ? "REJECTED" : "PENDING"}
                           </span>
@@ -489,7 +484,7 @@ export default function MaterialsTab({
                                 e.target.value = req.orderStatus || "";
                               }
                             }}
-                            className="text-xs font-semibold px-2.5 py-1.5 rounded-lg border-2 border-gray-300 bg-white uppercase tracking-wide focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            className="text-xs font-medium px-2.5 py-1.5 rounded border border-gray-300 bg-white uppercase tracking-wide focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                           >
                             <option value="">SELECT...</option>
                             <option value="TO_ORDER">TO ORDER</option>
@@ -497,7 +492,7 @@ export default function MaterialsTab({
                             <option value="RECEIVED">RECEIVED</option>
                           </select>
                         ) : (
-                          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold text-gray-700 bg-gray-100 uppercase tracking-wide">
+                          <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">
                             {req.orderStatus === "TO_ORDER" ? "TO ORDER" : req.orderStatus === "ORDERED" ? "ORDERED" : req.orderStatus === "RECEIVED" ? "RECEIVED" : "—"}
                           </span>
                         )}
