@@ -168,29 +168,6 @@ export default async function Dashboard() {
             </Link>
           )}
         </div>
-
-        {/* Quick Info Section */}
-        <div className="bg-white rounded-lg shadow p-4 sm:p-6 border border-gray-200">
-          <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">📢 Quick Info</h3>
-          <div className="space-y-3 text-sm text-gray-600">
-            <p>
-              • <span className="font-medium">Your Role:</span>{" "}
-              <span className="text-blue-600 font-semibold">{role}</span>
-            </p>
-            <p>
-              • <span className="font-medium">Access Level:</span>{" "}
-              {role === "ADMIN"
-                ? "Full system access"
-                : role === "MANAGER"
-                ? "Team management access"
-                : "Standard employee access"}
-            </p>
-            <p>
-              • <span className="font-medium">Account Status:</span>{" "}
-              <span className="text-green-600 font-medium">✓ Active & Verified</span>
-            </p>
-          </div>
-        </div>
       </div>
     </main>
   );
