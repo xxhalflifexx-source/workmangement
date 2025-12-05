@@ -110,7 +110,7 @@ export default function InventoryTab({
             }}
             className="border border-gray-300 rounded-lg px-3 py-2.5 text-sm min-h-[44px] flex-1 sm:flex-none min-w-[150px] focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
           >
-            <option value="ALL">All Categories</option>
+            <option value="ALL">ALL CATEGORIES</option>
             {categories.map((cat) => (
               <option key={cat} value={cat}>
                 {cat}
@@ -126,9 +126,9 @@ export default function InventoryTab({
             }}
             className="border border-gray-300 rounded-lg px-3 py-2.5 text-sm min-h-[44px] flex-1 sm:flex-none min-w-[150px] focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
           >
-            <option value="ALL">All Stock Status</option>
-            <option value="IN_STOCK">In Stock</option>
-            <option value="LOW">Low/Out of Stock</option>
+            <option value="ALL">ALL STOCK STATUS</option>
+            <option value="IN_STOCK">IN STOCK</option>
+            <option value="LOW">LOW/OUT OF STOCK</option>
           </select>
         </div>
       </div>
@@ -224,7 +224,7 @@ export default function InventoryTab({
                         {sortField === "updatedAt" && (sortDirection === "asc" ? "↑" : "↓")}
                       </button>
                     </th>
-                    <th className="px-2 sm:px-4 py-3 text-right text-xs font-medium text-gray-500">
+                    <th className="px-2 sm:px-4 py-3.5 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">
                       Actions
                     </th>
                   </tr>
@@ -233,21 +233,21 @@ export default function InventoryTab({
                   {paginatedItems.map((item) => {
                     const stockStatus = getStockStatus(item);
                     return (
-                          <tr key={item.id} className="hover:bg-blue-50/50 transition-all duration-200 border-b border-gray-100">
+                          <tr key={item.id} className="hover:bg-blue-50/50 transition-all duration-200 border-b border-gray-100 group">
                         <td className="px-2 sm:px-4 py-4 text-sm text-gray-900 min-w-[120px] sm:min-w-0">
-                          <div className="font-medium break-words">{item.name}</div>
+                          <div className="font-semibold text-gray-900 break-words">{item.name}</div>
                           {item.sku && (
-                            <div className="text-xs text-gray-500 break-all">SKU: {item.sku}</div>
+                            <div className="text-xs text-gray-500 break-all mt-0.5">SKU: {item.sku}</div>
                           )}
                           {item.description && (
-                            <div className="text-xs text-gray-500 line-clamp-1 break-words" title={item.description}>
+                            <div className="text-xs text-gray-500 line-clamp-1 break-words mt-0.5" title={item.description}>
                               {item.description}
                             </div>
                           )}
                         </td>
                         <td className="px-4 py-4 text-sm text-gray-900">
                           {item.category ? (
-                            <span className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-800 rounded-full uppercase">
+                            <span className="px-2.5 py-1 text-xs font-semibold bg-gray-100 text-gray-800 rounded-full uppercase tracking-wide">
                               {item.category}
                             </span>
                           ) : (
@@ -265,9 +265,10 @@ export default function InventoryTab({
                         </td>
                         <td className="px-4 py-4 text-sm">
                           <span
-                            className={`inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full ${stockStatus.color}`}
+                            className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold uppercase tracking-wide rounded-full shadow-sm ${stockStatus.color}`}
                           >
-                            {stockStatus.icon} {stockStatus.text}
+                            <span>{stockStatus.icon}</span>
+                            <span>{stockStatus.text}</span>
                           </span>
                         </td>
                         <td className="px-4 py-4 text-sm text-gray-600">

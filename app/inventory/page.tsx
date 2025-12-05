@@ -532,16 +532,16 @@ export default function InventoryPage() {
       const currentStock = getCurrentStock(req.itemName);
       const recommendedAction = getRecommendedAction(req);
       const inventoryItem = items.find((item) => item.name.toLowerCase() === req.itemName.toLowerCase());
-      const availability = inventoryItem ? (currentStock >= req.quantity ? "Available" : "Unavailable") : "Unavailable";
+      const availability = inventoryItem ? (currentStock >= req.quantity ? "AVAILABLE" : "UNAVAILABLE") : "UNAVAILABLE";
       const dateApproved = req.fulfilledDate ? formatDate(req.fulfilledDate) : "";
-      const orderStatus = req.orderStatus === "TO_ORDER" ? "To Order" : req.orderStatus === "ORDERED" ? "Ordered" : req.orderStatus === "RECEIVED" ? "Received" : "";
+      const orderStatus = req.orderStatus === "TO_ORDER" ? "TO ORDER" : req.orderStatus === "ORDERED" ? "ORDERED" : req.orderStatus === "RECEIVED" ? "RECEIVED" : "";
       return [
         req.job ? req.job.id.substring(0, 8).toUpperCase() : "",
         req.user.name || req.user.email || "",
         req.itemName,
         `${req.quantity} ${req.unit}`,
         availability,
-        recommendedAction === "APPROVE" ? "Approve" : recommendedAction === "PARTIAL" ? "Partial" : recommendedAction === "REJECTED" ? "Rejected" : "Pending",
+        recommendedAction === "APPROVE" ? "APPROVE" : recommendedAction === "PARTIAL" ? "PARTIAL" : recommendedAction === "REJECTED" ? "REJECTED" : "PENDING",
         req.amount ? formatCurrency(req.amount) : "",
         orderStatus,
         formatDate(req.requestedDate),
@@ -620,28 +620,28 @@ export default function InventoryPage() {
         {activeTab === "inventory" && (lowStockCount > 0 || outOfStockCount > 0) && (
           <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
             {outOfStockCount > 0 && (
-              <div className="bg-gradient-to-r from-red-50 to-red-100/50 border-l-4 border-red-500 rounded-lg p-4 shadow-sm flex items-center gap-4 transition-all duration-200 hover:shadow-md">
+              <div className="bg-gradient-to-r from-red-50 to-red-100/50 border-l-4 border-red-500 rounded-xl p-5 shadow-md flex items-center gap-4 transition-all duration-200 hover:shadow-lg">
                 <div className="flex-shrink-0">
-                  <div className="w-12 h-12 bg-red-500/20 rounded-full flex items-center justify-center">
+                  <div className="w-14 h-14 bg-red-500/20 rounded-full flex items-center justify-center shadow-sm">
                     <span className="text-2xl">🚨</span>
                   </div>
                 </div>
                 <div className="flex-1">
-                  <p className="font-bold text-red-900 text-base">OUT OF STOCK</p>
-                  <p className="text-sm text-red-700 mt-1">{outOfStockCount} item(s) need restocking</p>
+                  <p className="font-bold text-red-900 text-base uppercase tracking-wide">OUT OF STOCK</p>
+                  <p className="text-sm text-red-700 mt-1.5 font-medium">{outOfStockCount} item(s) need restocking</p>
                 </div>
               </div>
             )}
             {lowStockCount > 0 && (
-              <div className="bg-gradient-to-r from-orange-50 to-orange-100/50 border-l-4 border-orange-500 rounded-lg p-4 shadow-sm flex items-center gap-4 transition-all duration-200 hover:shadow-md">
+              <div className="bg-gradient-to-r from-orange-50 to-orange-100/50 border-l-4 border-orange-500 rounded-xl p-5 shadow-md flex items-center gap-4 transition-all duration-200 hover:shadow-lg">
                 <div className="flex-shrink-0">
-                  <div className="w-12 h-12 bg-orange-500/20 rounded-full flex items-center justify-center">
+                  <div className="w-14 h-14 bg-orange-500/20 rounded-full flex items-center justify-center shadow-sm">
                     <span className="text-2xl">⚠️</span>
                   </div>
                 </div>
                 <div className="flex-1">
-                  <p className="font-bold text-orange-900 text-base">LOW STOCK WARNING</p>
-                  <p className="text-sm text-orange-700 mt-1">{lowStockCount} item(s) running low</p>
+                  <p className="font-bold text-orange-900 text-base uppercase tracking-wide">LOW STOCK WARNING</p>
+                  <p className="text-sm text-orange-700 mt-1.5 font-medium">{lowStockCount} item(s) running low</p>
                 </div>
               </div>
             )}

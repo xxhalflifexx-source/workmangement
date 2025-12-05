@@ -122,7 +122,7 @@ export default function MaterialsTab({
             }}
             className="border border-gray-300 rounded-lg px-3 py-2.5 text-sm min-h-[44px] focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
           >
-            <option value="ALL">All Employees</option>
+            <option value="ALL">ALL EMPLOYEES</option>
             {materialRequests
               .map((r) => r.user.email)
               .filter((email): email is string => email !== null && email !== undefined)
@@ -147,7 +147,7 @@ export default function MaterialsTab({
             }}
             className="border border-gray-300 rounded-lg px-3 py-2.5 text-sm min-h-[44px] focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
           >
-            <option value="ALL">All Items</option>
+            <option value="ALL">ALL ITEMS</option>
             {uniqueItems.map((item) => (
               <option key={item} value={item}>
                 {item}
@@ -164,11 +164,11 @@ export default function MaterialsTab({
             }}
             className="border border-gray-300 rounded-lg px-3 py-2.5 text-sm min-h-[44px] focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
           >
-            <option value="ALL">All Actions</option>
-            <option value="PENDING">Pending</option>
-            <option value="APPROVE">Approve</option>
-            <option value="PARTIAL">Partial</option>
-            <option value="REJECTED">Rejected</option>
+            <option value="ALL">ALL ACTIONS</option>
+            <option value="PENDING">PENDING</option>
+            <option value="APPROVE">APPROVE</option>
+            <option value="PARTIAL">PARTIAL</option>
+            <option value="REJECTED">REJECTED</option>
           </select>
 
           {/* Status Filter */}
@@ -180,11 +180,11 @@ export default function MaterialsTab({
             }}
             className="border border-gray-300 rounded-lg px-3 py-2.5 text-sm min-h-[44px] focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
           >
-            <option value="ALL">All Status</option>
-            <option value="PENDING">Pending</option>
-            <option value="APPROVED">Approved</option>
-            <option value="ON_HOLD">On Hold</option>
-            <option value="REJECTED">Rejected</option>
+            <option value="ALL">ALL STATUS</option>
+            <option value="PENDING">PENDING</option>
+            <option value="APPROVED">APPROVED</option>
+            <option value="ON_HOLD">ON HOLD</option>
+            <option value="REJECTED">REJECTED</option>
           </select>
         </div>
       </div>
@@ -220,40 +220,40 @@ export default function MaterialsTab({
                         setRequestSortField("requestedDate");
                         setRequestSortDirection(requestSortField === "requestedDate" && requestSortDirection === "asc" ? "desc" : "asc");
                       }}
-                      className="flex items-center gap-1 hover:text-gray-700"
+                      className="flex items-center gap-1 hover:text-gray-900 transition-colors duration-200 min-h-[44px] font-semibold"
                     >
                       Employee
                       {requestSortField === "requestedDate" && (requestSortDirection === "asc" ? "↑" : "↓")}
                     </button>
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  <th className="px-2 sm:px-4 py-3.5 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                     <button
                       onClick={() => {
                         setRequestSortField("itemName");
                         setRequestSortDirection(requestSortField === "itemName" && requestSortDirection === "asc" ? "desc" : "asc");
                       }}
-                      className="flex items-center gap-1 hover:text-gray-700"
+                      className="flex items-center gap-1 hover:text-gray-900 transition-colors duration-200 min-h-[44px] font-semibold"
                     >
                       Item
                       {requestSortField === "itemName" && (requestSortDirection === "asc" ? "↑" : "↓")}
                     </button>
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  <th className="px-2 sm:px-4 py-3.5 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                     <button
                       onClick={() => {
                         setRequestSortField("quantity");
                         setRequestSortDirection(requestSortField === "quantity" && requestSortDirection === "asc" ? "desc" : "asc");
                       }}
-                      className="flex items-center gap-1 hover:text-gray-700"
+                      className="flex items-center gap-1 hover:text-gray-900 transition-colors duration-200 min-h-[44px] font-semibold"
                     >
                       Qty Requested
                       {requestSortField === "quantity" && (requestSortDirection === "asc" ? "↑" : "↓")}
                     </button>
                   </th>
-                  <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500">Availability</th>
-                  <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500">Action</th>
-                  <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500">Amount</th>
-                  <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500">Order Status</th>
+                  <th className="px-2 sm:px-4 py-3.5 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Availability</th>
+                  <th className="px-2 sm:px-4 py-3.5 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Action</th>
+                  <th className="px-2 sm:px-4 py-3.5 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Amount</th>
+                  <th className="px-2 sm:px-4 py-3.5 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Order Status</th>
                   <th className="px-2 sm:px-4 py-3.5 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                     <button
                       onClick={() => {
@@ -266,19 +266,19 @@ export default function MaterialsTab({
                       {requestSortField === "requestedDate" && (requestSortDirection === "asc" ? "↑" : "↓")}
                     </button>
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  <th className="px-2 sm:px-4 py-3.5 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                     <button
                       onClick={() => {
                         setRequestSortField("fulfilledDate");
                         setRequestSortDirection(requestSortField === "fulfilledDate" && requestSortDirection === "asc" ? "desc" : "asc");
                       }}
-                      className="flex items-center gap-1 hover:text-gray-700"
+                      className="flex items-center gap-1 hover:text-gray-900 transition-colors duration-200 min-h-[44px] font-semibold"
                     >
                       Date Approved
                       {requestSortField === "fulfilledDate" && (requestSortDirection === "asc" ? "↑" : "↓")}
                     </button>
                   </th>
-                  <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500">Notes</th>
+                  <th className="px-2 sm:px-4 py-3.5 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Notes</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-100">
@@ -287,16 +287,16 @@ export default function MaterialsTab({
                   const recommendedAction = getRecommendedAction(req);
                   const inventoryItem = items.find((item) => item.name.toLowerCase() === req.itemName.toLowerCase());
                   return (
-                        <tr key={req.id} className="hover:bg-blue-50/50 transition-all duration-200 border-b border-gray-100">
-                      <td className="px-2 sm:px-4 py-4 text-sm text-gray-900 font-mono font-semibold min-w-[80px] sm:min-w-0">
+                        <tr key={req.id} className="hover:bg-blue-50/50 transition-all duration-200 border-b border-gray-100 group">
+                      <td className="px-2 sm:px-4 py-4 text-sm text-gray-900 font-mono font-bold min-w-[80px] sm:min-w-0">
                         {req.job ? req.job.id.substring(0, 8).toUpperCase() : "—"}
                       </td>
                       <td className="px-2 sm:px-4 py-4 text-sm text-gray-700 min-w-[100px] sm:min-w-0">
-                        <div className="break-words">{req.user.name || req.user.email || "—"}</div>
+                        <div className="font-medium break-words">{req.user.name || req.user.email || "—"}</div>
                       </td>
                       <td className="px-2 sm:px-4 py-4 text-sm text-gray-900 min-w-[120px] sm:min-w-0">
-                        <div className="font-medium break-words">{req.itemName}</div>
-                        {req.description && <div className="text-xs text-gray-500 line-clamp-1 break-words" title={req.description}>{req.description}</div>}
+                        <div className="font-semibold text-gray-900 break-words">{req.itemName}</div>
+                        {req.description && <div className="text-xs text-gray-500 line-clamp-1 break-words mt-0.5" title={req.description}>{req.description}</div>}
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-900">
                         {req.status === "PENDING" && canManage ? (
@@ -356,11 +356,15 @@ export default function MaterialsTab({
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-900">
                         {inventoryItem ? (
-                          <span className={currentStock >= req.quantity ? "text-green-600 font-semibold uppercase" : "text-red-600 font-semibold uppercase"}>
+                          <span className={`inline-flex items-center px-2.5 py-1 text-xs font-bold uppercase tracking-wide rounded-full ${
+                            currentStock >= req.quantity 
+                              ? "bg-green-100 text-green-800" 
+                              : "bg-red-100 text-red-800"
+                          }`}>
                             {currentStock >= req.quantity ? "AVAILABLE" : "UNAVAILABLE"}
                           </span>
                         ) : (
-                          <span className="text-red-600 font-semibold uppercase">UNAVAILABLE</span>
+                          <span className="inline-flex items-center px-2.5 py-1 text-xs font-bold uppercase tracking-wide rounded-full bg-red-100 text-red-800">UNAVAILABLE</span>
                         )}
                       </td>
                       <td className="px-4 py-3 text-sm">
@@ -397,11 +401,11 @@ export default function MaterialsTab({
                                 e.target.value = req.recommendedAction || "PENDING";
                               }
                             }}
-                            className={`text-xs font-medium px-2 py-1 rounded border uppercase ${
-                              (req.recommendedAction || "PENDING") === "APPROVE" ? "bg-green-100 text-green-700 border-green-300" :
-                              (req.recommendedAction || "PENDING") === "PARTIAL" ? "bg-orange-100 text-orange-700 border-orange-300" :
-                              (req.recommendedAction || "PENDING") === "REJECTED" ? "bg-red-100 text-red-700 border-red-300" :
-                              "bg-yellow-100 text-yellow-700 border-yellow-300"
+                            className={`text-xs font-semibold px-2.5 py-1.5 rounded-full border-2 uppercase tracking-wide shadow-sm ${
+                              (req.recommendedAction || "PENDING") === "APPROVE" ? "bg-green-100 text-green-800 border-green-300" :
+                              (req.recommendedAction || "PENDING") === "PARTIAL" ? "bg-orange-100 text-orange-800 border-orange-300" :
+                              (req.recommendedAction || "PENDING") === "REJECTED" ? "bg-red-100 text-red-800 border-red-300" :
+                              "bg-yellow-100 text-yellow-800 border-yellow-300"
                             }`}
                           >
                             <option value="PENDING">PENDING</option>
@@ -410,11 +414,11 @@ export default function MaterialsTab({
                             <option value="REJECTED">REJECTED</option>
                           </select>
                         ) : (
-                          <span className={`px-2 py-1 rounded text-xs font-medium uppercase ${
-                            recommendedAction === "APPROVE" ? "bg-green-100 text-green-700" :
-                            recommendedAction === "PARTIAL" ? "bg-orange-100 text-orange-700" :
-                            recommendedAction === "REJECTED" ? "bg-red-100 text-red-700" :
-                            "bg-yellow-100 text-yellow-700"
+                          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wide shadow-sm ${
+                            recommendedAction === "APPROVE" ? "bg-green-100 text-green-800" :
+                            recommendedAction === "PARTIAL" ? "bg-orange-100 text-orange-800" :
+                            recommendedAction === "REJECTED" ? "bg-red-100 text-red-800" :
+                            "bg-yellow-100 text-yellow-800"
                           }`}>
                             {recommendedAction === "APPROVE" ? "APPROVE" : recommendedAction === "PARTIAL" ? "PARTIAL" : recommendedAction === "REJECTED" ? "REJECTED" : "PENDING"}
                           </span>
@@ -515,7 +519,7 @@ export default function MaterialsTab({
                                 e.target.value = req.orderStatus || "";
                               }
                             }}
-                            className="text-xs font-medium px-2 py-1 rounded border border-gray-300 bg-white uppercase"
+                            className="text-xs font-semibold px-2.5 py-1.5 rounded-lg border-2 border-gray-300 bg-white uppercase tracking-wide focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                           >
                             <option value="">SELECT...</option>
                             <option value="TO_ORDER">TO ORDER</option>
@@ -523,7 +527,7 @@ export default function MaterialsTab({
                             <option value="RECEIVED">RECEIVED</option>
                           </select>
                         ) : (
-                          <span className="px-2 py-1 rounded text-xs font-medium text-gray-600 uppercase">
+                          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold text-gray-700 bg-gray-100 uppercase tracking-wide">
                             {req.orderStatus === "TO_ORDER" ? "TO ORDER" : req.orderStatus === "ORDERED" ? "ORDERED" : req.orderStatus === "RECEIVED" ? "RECEIVED" : "—"}
                           </span>
                         )}
