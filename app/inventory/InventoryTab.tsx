@@ -68,7 +68,7 @@ export default function InventoryTab({
   return (
     <div className="space-y-6">
       {/* Controls */}
-      <div className="bg-white rounded-xl shadow border border-gray-200 p-4 sm:p-6">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
         <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center mb-4">
           <div className="flex-1 w-full sm:w-auto">
             <input
@@ -79,14 +79,14 @@ export default function InventoryTab({
                 setSearchTerm(e.target.value);
                 setCurrentPage(1);
               }}
-              className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm min-h-[44px]"
+              className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm min-h-[44px] focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
             />
           </div>
 
           <div className="flex gap-2 w-full sm:w-auto">
             <button
               onClick={exportInventoryToCSV}
-              className="flex-1 sm:flex-none px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium min-h-[44px] min-w-[44px]"
+              className="flex-1 sm:flex-none px-4 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 transition-all duration-200 hover:shadow-sm active:scale-95 text-sm font-medium min-h-[44px] min-w-[44px]"
             >
               📥 Export CSV
             </button>
@@ -108,7 +108,7 @@ export default function InventoryTab({
               setFilterCategory(e.target.value);
               setCurrentPage(1);
             }}
-            className="border border-gray-300 rounded-lg px-3 py-2 text-sm min-h-[44px] flex-1 sm:flex-none min-w-[150px]"
+            className="border border-gray-300 rounded-lg px-3 py-2.5 text-sm min-h-[44px] flex-1 sm:flex-none min-w-[150px] focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
           >
             <option value="ALL">All Categories</option>
             {categories.map((cat) => (
@@ -124,7 +124,7 @@ export default function InventoryTab({
               setFilterStockStatus(e.target.value);
               setCurrentPage(1);
             }}
-            className="border border-gray-300 rounded-lg px-3 py-2 text-sm min-h-[44px] flex-1 sm:flex-none min-w-[150px]"
+            className="border border-gray-300 rounded-lg px-3 py-2.5 text-sm min-h-[44px] flex-1 sm:flex-none min-w-[150px] focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
           >
             <option value="ALL">All Stock Status</option>
             <option value="IN_STOCK">In Stock</option>
@@ -161,64 +161,64 @@ export default function InventoryTab({
           )}
         </div>
       ) : (
-        <div className="bg-white rounded-xl shadow overflow-hidden">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
           <div className="overflow-x-auto -mx-4 sm:mx-0">
             <div className="inline-block min-w-full align-middle px-4 sm:px-0">
               <table className="w-full">
-                <thead className="bg-gray-50 border-b">
+                <thead className="bg-gradient-to-r from-gray-50 to-gray-100/50 border-b-2 border-gray-200">
                   <tr>
-                    <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500">
+                    <th className="px-2 sm:px-4 py-3.5 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                       <button
                         onClick={() => {
                           setSortField("name");
                           setSortDirection(sortField === "name" && sortDirection === "asc" ? "desc" : "asc");
                         }}
-                        className="flex items-center gap-1 hover:text-gray-700 min-h-[44px]"
+                        className="flex items-center gap-1 hover:text-gray-900 transition-colors duration-200 min-h-[44px] font-semibold"
                       >
                         Item Name
                         {sortField === "name" && (sortDirection === "asc" ? "↑" : "↓")}
                       </button>
                     </th>
-                    <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500">
+                    <th className="px-2 sm:px-4 py-3.5 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                       Category
                     </th>
-                    <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500">
+                    <th className="px-2 sm:px-4 py-3.5 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                       <button
                         onClick={() => {
                           setSortField("quantity");
                           setSortDirection(sortField === "quantity" && sortDirection === "asc" ? "desc" : "asc");
                         }}
-                        className="flex items-center gap-1 hover:text-gray-700 min-h-[44px]"
+                        className="flex items-center gap-1 hover:text-gray-900 transition-colors duration-200 min-h-[44px] font-semibold"
                       >
                         Quantity
                         {sortField === "quantity" && (sortDirection === "asc" ? "↑" : "↓")}
                       </button>
                     </th>
-                    <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500">
+                    <th className="px-2 sm:px-4 py-3.5 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                       Unit
                     </th>
-                    <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500">
+                    <th className="px-2 sm:px-4 py-3.5 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                       <button
                         onClick={() => {
                           setSortField("location");
                           setSortDirection(sortField === "location" && sortDirection === "asc" ? "desc" : "asc");
                         }}
-                        className="flex items-center gap-1 hover:text-gray-700 min-h-[44px]"
+                        className="flex items-center gap-1 hover:text-gray-900 transition-colors duration-200 min-h-[44px] font-semibold"
                       >
                         Location
                         {sortField === "location" && (sortDirection === "asc" ? "↑" : "↓")}
                       </button>
                     </th>
-                    <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500">
+                    <th className="px-2 sm:px-4 py-3.5 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                       Status
                     </th>
-                    <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500">
+                    <th className="px-2 sm:px-4 py-3.5 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                       <button
                         onClick={() => {
                           setSortField("updatedAt");
                           setSortDirection(sortField === "updatedAt" && sortDirection === "asc" ? "desc" : "asc");
                         }}
-                        className="flex items-center gap-1 hover:text-gray-700 min-h-[44px]"
+                        className="flex items-center gap-1 hover:text-gray-900 transition-colors duration-200 min-h-[44px] font-semibold"
                       >
                         Last Updated
                         {sortField === "updatedAt" && (sortDirection === "asc" ? "↑" : "↓")}
@@ -229,12 +229,12 @@ export default function InventoryTab({
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="bg-white divide-y divide-gray-100">
                   {paginatedItems.map((item) => {
                     const stockStatus = getStockStatus(item);
                     return (
-                          <tr key={item.id} className="hover:bg-gray-50 transition-colors duration-200">
-                        <td className="px-2 sm:px-4 py-3 text-sm text-gray-900 min-w-[120px] sm:min-w-0">
+                          <tr key={item.id} className="hover:bg-blue-50/50 transition-all duration-200 border-b border-gray-100">
+                        <td className="px-2 sm:px-4 py-4 text-sm text-gray-900 min-w-[120px] sm:min-w-0">
                           <div className="font-medium break-words">{item.name}</div>
                           {item.sku && (
                             <div className="text-xs text-gray-500 break-all">SKU: {item.sku}</div>
@@ -245,7 +245,7 @@ export default function InventoryTab({
                             </div>
                           )}
                         </td>
-                        <td className="px-4 py-3 text-sm text-gray-900">
+                        <td className="px-4 py-4 text-sm text-gray-900">
                           {item.category ? (
                             <span className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-800 rounded-full">
                               {item.category}
@@ -254,29 +254,29 @@ export default function InventoryTab({
                             <span className="text-gray-400">—</span>
                           )}
                         </td>
-                        <td className="px-4 py-3 text-sm text-gray-900">
+                        <td className="px-4 py-4 text-sm text-gray-900">
                           {Math.floor(item.quantity)}
                         </td>
-                        <td className="px-4 py-3 text-sm text-gray-900">
+                        <td className="px-4 py-4 text-sm text-gray-900">
                           {item.unit}
                         </td>
-                        <td className="px-4 py-3 text-sm text-gray-900">
+                        <td className="px-4 py-4 text-sm text-gray-900">
                           {item.location || <span className="text-gray-400">—</span>}
                         </td>
-                        <td className="px-4 py-3 text-sm">
+                        <td className="px-4 py-4 text-sm">
                           <span
-                            className={`px-2 py-1 text-xs font-medium rounded-full ${stockStatus.color}`}
+                            className={`inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full ${stockStatus.color}`}
                           >
                             {stockStatus.icon} {stockStatus.text}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-sm text-gray-600">
+                        <td className="px-4 py-4 text-sm text-gray-600">
                           {formatDate(item.updatedAt)}
                         </td>
-                        <td className="px-2 sm:px-4 py-3 text-right text-sm space-x-1 sm:space-x-2">
+                        <td className="px-2 sm:px-4 py-4 text-right text-sm space-x-1 sm:space-x-2">
                           <button
                             onClick={() => openHistoryModal(item)}
-                            className="text-gray-600 hover:text-gray-900 min-h-[44px] min-w-[44px] flex items-center justify-center"
+                            className="text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md p-2 transition-all duration-200 min-h-[44px] min-w-[44px] flex items-center justify-center"
                             title="View history"
                           >
                             📊
@@ -285,14 +285,14 @@ export default function InventoryTab({
                             <>
                               <button
                                 onClick={() => openAdjustModal(item)}
-                                className="text-blue-600 hover:text-blue-900 min-h-[44px] min-w-[44px] flex items-center justify-center"
+                                className="text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-md p-2 transition-all duration-200 min-h-[44px] min-w-[44px] flex items-center justify-center"
                                 title="Adjust quantity"
                               >
                                 ±
                               </button>
                               <button
                                 onClick={() => openEditModal(item)}
-                                className="text-indigo-600 hover:text-indigo-900 min-h-[44px] px-2 sm:px-3"
+                                className="text-indigo-600 hover:text-indigo-900 hover:bg-indigo-50 rounded-md px-3 py-2 transition-all duration-200 min-h-[44px] font-medium"
                               >
                                 <span className="hidden sm:inline">Edit</span>
                                 <span className="sm:hidden">✏️</span>
@@ -300,7 +300,7 @@ export default function InventoryTab({
                               {isAdmin && (
                                 <button
                                   onClick={() => handleDelete(item.id)}
-                                  className="text-red-600 hover:text-red-900 min-h-[44px] px-2 sm:px-3"
+                                  className="text-red-600 hover:text-red-900 hover:bg-red-50 rounded-md px-3 py-2 transition-all duration-200 min-h-[44px] font-medium"
                                 >
                                   <span className="hidden sm:inline">Delete</span>
                                   <span className="sm:hidden">🗑️</span>

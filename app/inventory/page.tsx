@@ -582,15 +582,15 @@ export default function InventoryPage() {
   return (
     <main className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b">
+      <header className="bg-white shadow-sm border-b relative z-20">
         <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-24 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
+          <div className="flex-1 min-w-0">
             <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Inventory Management</h1>
             <p className="text-xs sm:text-sm text-gray-500">Track and manage your inventory items</p>
           </div>
           <Link
             href="/dashboard"
-            className="w-full sm:w-auto min-h-[44px] flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
+            className="w-full sm:w-auto min-h-[44px] flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-all duration-200 hover:shadow-sm active:scale-95 text-sm font-medium"
           >
             ← Back to Dashboard
           </Link>
@@ -600,13 +600,19 @@ export default function InventoryPage() {
       <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-24 py-6 sm:py-8">
         {/* Status Messages */}
         {error && (
-          <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-            {error}
+          <div className="mb-6 bg-red-50 border-l-4 border-red-500 text-red-700 px-4 py-3 rounded-lg shadow-sm animate-fade-in">
+            <div className="flex items-center gap-2">
+              <span className="text-red-500">⚠️</span>
+              <span className="font-medium">{error}</span>
+            </div>
           </div>
         )}
         {success && (
-          <div className="mb-6 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg">
-            ✓ {success}
+          <div className="mb-6 bg-green-50 border-l-4 border-green-500 text-green-700 px-4 py-3 rounded-lg shadow-sm animate-fade-in">
+            <div className="flex items-center gap-2">
+              <span className="text-green-500">✓</span>
+              <span className="font-medium">{success}</span>
+            </div>
           </div>
         )}
 
@@ -614,20 +620,28 @@ export default function InventoryPage() {
         {activeTab === "inventory" && (lowStockCount > 0 || outOfStockCount > 0) && (
           <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
             {outOfStockCount > 0 && (
-              <div className="bg-red-50 border-2 border-red-200 rounded-lg p-4 flex items-center gap-3">
-                <span className="text-3xl">🚨</span>
-                <div>
-                  <p className="font-bold text-red-900">Out of Stock</p>
-                  <p className="text-sm text-red-700">{outOfStockCount} item(s) need restocking</p>
+              <div className="bg-gradient-to-r from-red-50 to-red-100/50 border-l-4 border-red-500 rounded-lg p-4 shadow-sm flex items-center gap-4 transition-all duration-200 hover:shadow-md">
+                <div className="flex-shrink-0">
+                  <div className="w-12 h-12 bg-red-500/20 rounded-full flex items-center justify-center">
+                    <span className="text-2xl">🚨</span>
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <p className="font-bold text-red-900 text-base">Out of Stock</p>
+                  <p className="text-sm text-red-700 mt-1">{outOfStockCount} item(s) need restocking</p>
                 </div>
               </div>
             )}
             {lowStockCount > 0 && (
-              <div className="bg-orange-50 border-2 border-orange-200 rounded-lg p-4 flex items-center gap-3">
-                <span className="text-3xl">⚠️</span>
-                <div>
-                  <p className="font-bold text-orange-900">Low Stock Warning</p>
-                  <p className="text-sm text-orange-700">{lowStockCount} item(s) running low</p>
+              <div className="bg-gradient-to-r from-orange-50 to-orange-100/50 border-l-4 border-orange-500 rounded-lg p-4 shadow-sm flex items-center gap-4 transition-all duration-200 hover:shadow-md">
+                <div className="flex-shrink-0">
+                  <div className="w-12 h-12 bg-orange-500/20 rounded-full flex items-center justify-center">
+                    <span className="text-2xl">⚠️</span>
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <p className="font-bold text-orange-900 text-base">Low Stock Warning</p>
+                  <p className="text-sm text-orange-700 mt-1">{lowStockCount} item(s) running low</p>
                 </div>
               </div>
             )}
@@ -635,17 +649,17 @@ export default function InventoryPage() {
         )}
 
         {/* Tabs */}
-        <div className="bg-white rounded-xl shadow border border-gray-200 mb-6">
-          <div className="border-b border-gray-200">
-            <nav className="flex space-x-4 sm:space-x-8 px-4 sm:px-6 overflow-x-auto" aria-label="Tabs">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-6 overflow-hidden">
+          <div className="border-b border-gray-200 bg-gray-50/50">
+            <nav className="flex space-x-1 sm:space-x-2 px-4 sm:px-6 overflow-x-auto" aria-label="Tabs">
               <button
                 onClick={() => {
                   setActiveTab("inventory");
                   setCurrentPage(1);
                 }}
-                className={`py-4 px-2 sm:px-1 border-b-2 font-medium text-sm whitespace-nowrap min-h-[44px] flex items-center ${
+                className={`py-4 px-4 sm:px-6 border-b-2 font-semibold text-sm whitespace-nowrap min-h-[44px] flex items-center transition-all duration-200 ${
                   activeTab === "inventory"
-                    ? "border-blue-500 text-blue-600"
+                    ? "border-blue-600 text-blue-600 bg-white"
                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                 }`}
               >
@@ -659,9 +673,9 @@ export default function InventoryPage() {
                     loadMaterialRequests();
                   }
                 }}
-                className={`py-4 px-2 sm:px-1 border-b-2 font-medium text-sm whitespace-nowrap min-h-[44px] flex items-center ${
+                className={`py-4 px-4 sm:px-6 border-b-2 font-semibold text-sm whitespace-nowrap min-h-[44px] flex items-center transition-all duration-200 ${
                   activeTab === "materials"
-                    ? "border-blue-500 text-blue-600"
+                    ? "border-blue-600 text-blue-600 bg-white"
                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                 }`}
               >
@@ -749,10 +763,27 @@ export default function InventoryPage() {
 
       {/* Material Request Submission Modal (Employees) */}
       {showRequestForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full my-4 max-h-[calc(100vh-2rem)] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto animate-fade-in">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full my-4 max-h-[calc(100vh-2rem)] overflow-y-auto modal-enter">
             <div className="p-4 sm:p-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Submit Material Request</h2>
+              <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-200">
+                <h2 className="text-2xl font-bold text-gray-900">Submit Material Request</h2>
+                <button
+                  onClick={() => {
+                    setShowRequestForm(false);
+                    setRequestItemName("");
+                    setRequestQuantity(1);
+                    setRequestUnit("pcs");
+                    setRequestNotes("");
+                  }}
+                  className="text-gray-400 hover:text-gray-600 transition-all duration-200 hover:scale-110 active:scale-95"
+                  aria-label="Close"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
 
               <form onSubmit={(e) => { e.preventDefault(); handleSubmitMaterialRequest(); }} className="space-y-4">
                 <div>
@@ -763,7 +794,7 @@ export default function InventoryPage() {
                     type="text"
                     value={session?.user?.name || session?.user?.email || ""}
                     disabled
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-50 text-gray-600 min-h-[44px]"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2.5 bg-gray-50 text-gray-600 min-h-[44px] transition-all duration-200"
                   />
                 </div>
 
@@ -781,7 +812,7 @@ export default function InventoryPage() {
                       }
                     }}
                     required
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2.5 min-h-[44px] focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
                   >
                     <option value="">Select an item...</option>
                     {inventoryItemsForRequest.map((item) => (
@@ -826,7 +857,7 @@ export default function InventoryPage() {
                       step="1"
                       maxLength={1}
                       required
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2.5 min-h-[44px] focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
                     />
                   </div>
 
@@ -839,7 +870,7 @@ export default function InventoryPage() {
                       value={requestUnit}
                       onChange={(e) => setRequestUnit(e.target.value)}
                       required
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2.5 min-h-[44px] focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
                     />
                   </div>
                 </div>
@@ -852,7 +883,7 @@ export default function InventoryPage() {
                     value={requestNotes}
                     onChange={(e) => setRequestNotes(e.target.value)}
                     rows={3}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2.5 min-h-[44px] focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
                     placeholder="Add any additional notes or details..."
                   />
                 </div>
@@ -867,14 +898,14 @@ export default function InventoryPage() {
                       setRequestUnit("pcs");
                       setRequestNotes("");
                     }}
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                    className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 transition-all duration-200 hover:shadow-sm active:scale-95 font-medium"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={submittingRequest}
-                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:bg-gray-400 disabled:cursor-not-allowed"
+                    className="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 hover:shadow-md active:scale-95 font-medium disabled:bg-gray-400 disabled:cursor-not-allowed disabled:hover:shadow-none disabled:active:scale-100"
                   >
                     {submittingRequest ? "Submitting..." : "Submit Request"}
                   </button>
@@ -887,12 +918,26 @@ export default function InventoryPage() {
 
       {/* Create/Edit Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
-          <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full my-4 max-h-[calc(100vh-2rem)] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto animate-fade-in">
+          <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full my-4 max-h-[calc(100vh-2rem)] overflow-y-auto modal-enter">
             <div className="p-4 sm:p-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">
-                {editingItem ? "Edit Item" : "Add New Item"}
-              </h2>
+              <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-200">
+                <h2 className="text-2xl font-bold text-gray-900">
+                  {editingItem ? "Edit Item" : "Add New Item"}
+                </h2>
+                <button
+                  onClick={() => {
+                    setShowModal(false);
+                    setEditingItem(null);
+                  }}
+                  className="text-gray-400 hover:text-gray-600 transition-all duration-200 hover:scale-110 active:scale-95"
+                  aria-label="Close"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
@@ -905,7 +950,7 @@ export default function InventoryPage() {
                       type="text"
                       defaultValue={editingItem?.name}
                       required
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2.5 min-h-[44px] focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
                     />
                   </div>
 
@@ -915,7 +960,7 @@ export default function InventoryPage() {
                       name="sku"
                       type="text"
                       defaultValue={editingItem?.sku || ""}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2.5 min-h-[44px] focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
                     />
                   </div>
                 </div>
@@ -928,7 +973,7 @@ export default function InventoryPage() {
                     name="description"
                     defaultValue={editingItem?.description || ""}
                     rows={3}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2.5 min-h-[44px] focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
                   />
                 </div>
 
@@ -942,7 +987,7 @@ export default function InventoryPage() {
                       type="text"
                       defaultValue={editingItem?.category || ""}
                       list="categories"
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2.5 min-h-[44px] focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
                     />
                     <datalist id="categories">
                       {categories.map((cat) => (
@@ -960,7 +1005,7 @@ export default function InventoryPage() {
                       type="text"
                       defaultValue={editingItem?.location || ""}
                       placeholder="e.g. Warehouse A, Shelf 12"
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2.5 min-h-[44px] focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
                     />
                   </div>
                 </div>
@@ -976,7 +1021,7 @@ export default function InventoryPage() {
                       defaultValue={editingItem?.quantity ?? 0}
                       required
                       min="0"
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2.5 min-h-[44px] focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
                     />
                   </div>
 
@@ -988,7 +1033,7 @@ export default function InventoryPage() {
                       defaultValue={editingItem?.unit || "pcs"}
                       required
                       placeholder="pcs, kg, lbs"
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2.5 min-h-[44px] focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
                     />
                   </div>
 
@@ -1001,7 +1046,7 @@ export default function InventoryPage() {
                       type="number"
                       defaultValue={editingItem?.minStockLevel ?? 0}
                       min="0"
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2.5 min-h-[44px] focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
                     />
                   </div>
                 </div>
@@ -1015,7 +1060,7 @@ export default function InventoryPage() {
                       name="supplier"
                       type="text"
                       defaultValue={editingItem?.supplier || ""}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2.5 min-h-[44px] focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
                     />
                   </div>
 
@@ -1029,7 +1074,7 @@ export default function InventoryPage() {
                       step="0.01"
                       min="0"
                       defaultValue={editingItem?.costPerUnit ?? ""}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2.5 min-h-[44px] focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
                     />
                   </div>
                 </div>
@@ -1041,13 +1086,13 @@ export default function InventoryPage() {
                       setShowModal(false);
                       setEditingItem(null);
                     }}
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                    className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 transition-all duration-200 hover:shadow-sm active:scale-95 font-medium"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                    className="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 hover:shadow-md active:scale-95 font-medium"
                   >
                     {editingItem ? "Update Item" : "Create Item"}
                   </button>
@@ -1060,13 +1105,29 @@ export default function InventoryPage() {
 
       {/* Adjust Quantity Modal */}
       {showAdjustModal && adjustingItem && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full my-4 max-h-[calc(100vh-2rem)] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto animate-fade-in">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full my-4 max-h-[calc(100vh-2rem)] overflow-y-auto modal-enter">
             <div className="p-4 sm:p-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Adjust Inventory</h2>
-              <p className="text-sm text-gray-600 mb-6">
-                Current stock: <span className="font-bold">{adjustingItem.quantity} {adjustingItem.unit}</span>
-              </p>
+              <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-200">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">Adjust Inventory</h2>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Current stock: <span className="font-bold">{adjustingItem.quantity} {adjustingItem.unit}</span>
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowAdjustModal(false);
+                    setAdjustingItem(null);
+                  }}
+                  className="text-gray-400 hover:text-gray-600 transition-all duration-200 hover:scale-110 active:scale-95"
+                  aria-label="Close"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
 
               <form onSubmit={handleAdjustSubmit} className="space-y-4">
                 <input type="hidden" name="itemId" value={adjustingItem.id} />
@@ -1080,7 +1141,7 @@ export default function InventoryPage() {
                     type="number"
                     required
                     placeholder="Use + for add, - for remove"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2.5 min-h-[44px] focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
                   />
                   <p className="text-xs text-gray-500 mt-1 break-words">
                     Example: +50 to add 50 units, -20 to remove 20 units
@@ -1094,7 +1155,7 @@ export default function InventoryPage() {
                   <select
                     name="reason"
                     required
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2.5 min-h-[44px] focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
                   >
                     <option value="">Select a reason</option>
                     <option value="Restocked">Restocked</option>
@@ -1114,7 +1175,7 @@ export default function InventoryPage() {
                     name="notes"
                     rows={3}
                     placeholder="Additional details..."
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[44px]"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2.5 min-h-[44px] focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
                   />
                 </div>
 
@@ -1125,13 +1186,13 @@ export default function InventoryPage() {
                       setShowAdjustModal(false);
                       setAdjustingItem(null);
                     }}
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                    className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 transition-all duration-200 hover:shadow-sm active:scale-95 font-medium"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                    className="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 hover:shadow-md active:scale-95 font-medium"
                   >
                     Adjust Inventory
                   </button>
@@ -1144,10 +1205,10 @@ export default function InventoryPage() {
 
       {/* History Modal */}
       {showHistoryModal && historyItem && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl my-4 max-h-[calc(100vh-2rem)] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto animate-fade-in">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-3xl my-4 max-h-[calc(100vh-2rem)] overflow-y-auto modal-enter">
             {/* Header */}
-            <div className="sticky top-0 bg-white border-b px-4 sm:px-6 py-3 sm:py-4 flex justify-between items-center z-[1]">
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-4 sm:px-6 py-4 flex justify-between items-center z-[1]">
               <div>
                 <h2 className="text-2xl font-bold text-gray-900">📊 Adjustment History</h2>
                 <p className="text-sm text-gray-600 mt-1">{historyItem.name}</p>
@@ -1158,9 +1219,12 @@ export default function InventoryPage() {
                   setHistoryItem(null);
                   setAdjustments([]);
                 }}
-                className="text-gray-400 hover:text-gray-600 text-2xl"
+                className="text-gray-400 hover:text-gray-600 transition-all duration-200 hover:scale-110 active:scale-95"
+                aria-label="Close"
               >
-                ✕
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
               </button>
             </div>
 

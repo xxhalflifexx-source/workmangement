@@ -79,7 +79,7 @@ export default function MaterialsTab({
   return (
     <div className="space-y-6">
       {/* Controls */}
-      <div className="bg-white rounded-xl shadow border border-gray-200 p-4 sm:p-6">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
         <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center mb-4">
           <div className="flex-1 w-full sm:w-auto">
             <input
@@ -90,7 +90,7 @@ export default function MaterialsTab({
                 setRequestSearchTerm(e.target.value);
                 setRequestCurrentPage(1);
               }}
-              className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm min-h-[44px]"
+              className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm min-h-[44px] focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
             />
           </div>
 
@@ -105,7 +105,7 @@ export default function MaterialsTab({
             )}
             <button
               onClick={exportRequestsToCSV}
-              className="flex-1 sm:flex-none px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium min-h-[44px] min-w-[44px]"
+              className="flex-1 sm:flex-none px-4 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 transition-all duration-200 hover:shadow-sm active:scale-95 text-sm font-medium min-h-[44px] min-w-[44px]"
             >
               📥 Export CSV
             </button>
@@ -120,7 +120,7 @@ export default function MaterialsTab({
               setFilterRequester(e.target.value);
               setRequestCurrentPage(1);
             }}
-            className="border border-gray-300 rounded-lg px-3 py-2.5 sm:py-2 text-sm min-h-[44px]"
+            className="border border-gray-300 rounded-lg px-3 py-2.5 text-sm min-h-[44px] focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
           >
             <option value="ALL">All Employees</option>
             {materialRequests
@@ -145,7 +145,7 @@ export default function MaterialsTab({
               setFilterItem(e.target.value);
               setRequestCurrentPage(1);
             }}
-            className="border border-gray-300 rounded-lg px-3 py-2.5 sm:py-2 text-sm min-h-[44px]"
+            className="border border-gray-300 rounded-lg px-3 py-2.5 text-sm min-h-[44px] focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
           >
             <option value="ALL">All Items</option>
             {uniqueItems.map((item) => (
@@ -162,7 +162,7 @@ export default function MaterialsTab({
               setFilterAction(e.target.value);
               setRequestCurrentPage(1);
             }}
-            className="border border-gray-300 rounded-lg px-3 py-2.5 sm:py-2 text-sm min-h-[44px]"
+            className="border border-gray-300 rounded-lg px-3 py-2.5 text-sm min-h-[44px] focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
           >
             <option value="ALL">All Actions</option>
             <option value="PENDING">Pending</option>
@@ -178,7 +178,7 @@ export default function MaterialsTab({
               setFilterRequestStatus(e.target.value);
               setRequestCurrentPage(1);
             }}
-            className="border border-gray-300 rounded-lg px-3 py-2.5 sm:py-2 text-sm min-h-[44px]"
+            className="border border-gray-300 rounded-lg px-3 py-2.5 text-sm min-h-[44px] focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
           >
             <option value="ALL">All Status</option>
             <option value="PENDING">Pending</option>
@@ -207,14 +207,14 @@ export default function MaterialsTab({
           </p>
         </div>
       ) : (
-        <div className="bg-white rounded-xl shadow overflow-hidden">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
           <div className="overflow-x-auto -mx-4 sm:mx-0">
             <div className="inline-block min-w-full align-middle px-4 sm:px-0">
               <table className="w-full">
-              <thead className="bg-gray-50 border-b">
+              <thead className="bg-gradient-to-r from-gray-50 to-gray-100/50 border-b-2 border-gray-200">
                 <tr>
-                  <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Job No.</th>
-                  <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  <th className="px-2 sm:px-4 py-3.5 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Job No.</th>
+                  <th className="px-2 sm:px-4 py-3.5 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                     <button
                       onClick={() => {
                         setRequestSortField("requestedDate");
@@ -254,7 +254,7 @@ export default function MaterialsTab({
                   <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500">Action</th>
                   <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500">Amount</th>
                   <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500">Order Status</th>
-                  <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  <th className="px-2 sm:px-4 py-3.5 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                     <button
                       onClick={() => {
                         setRequestSortField("requestedDate");
@@ -281,20 +281,20 @@ export default function MaterialsTab({
                   <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500">Notes</th>
                 </tr>
               </thead>
-              <tbody className="divide-y">
+              <tbody className="bg-white divide-y divide-gray-100">
                 {paginatedRequests.map((req) => {
                   const currentStock = getCurrentStock(req.itemName);
                   const recommendedAction = getRecommendedAction(req);
                   const inventoryItem = items.find((item) => item.name.toLowerCase() === req.itemName.toLowerCase());
                   return (
-                        <tr key={req.id} className="hover:bg-gray-50 transition-colors duration-200">
-                      <td className="px-2 sm:px-4 py-3 text-sm text-gray-900 font-mono font-semibold min-w-[80px] sm:min-w-0">
+                        <tr key={req.id} className="hover:bg-blue-50/50 transition-all duration-200 border-b border-gray-100">
+                      <td className="px-2 sm:px-4 py-4 text-sm text-gray-900 font-mono font-semibold min-w-[80px] sm:min-w-0">
                         {req.job ? req.job.id.substring(0, 8).toUpperCase() : "—"}
                       </td>
-                      <td className="px-2 sm:px-4 py-3 text-sm text-gray-700 min-w-[100px] sm:min-w-0">
+                      <td className="px-2 sm:px-4 py-4 text-sm text-gray-700 min-w-[100px] sm:min-w-0">
                         <div className="break-words">{req.user.name || req.user.email || "—"}</div>
                       </td>
-                      <td className="px-2 sm:px-4 py-3 text-sm text-gray-900 min-w-[120px] sm:min-w-0">
+                      <td className="px-2 sm:px-4 py-4 text-sm text-gray-900 min-w-[120px] sm:min-w-0">
                         <div className="font-medium break-words">{req.itemName}</div>
                         {req.description && <div className="text-xs text-gray-500 line-clamp-1 break-words" title={req.description}>{req.description}</div>}
                       </td>
@@ -534,7 +534,7 @@ export default function MaterialsTab({
                       <td className="px-4 py-3 text-sm text-gray-600">
                         {req.fulfilledDate ? formatDate(req.fulfilledDate) : "—"}
                       </td>
-                      <td className="px-2 sm:px-4 py-3 text-sm text-gray-600 max-w-[200px] sm:max-w-xs">
+                      <td className="px-2 sm:px-4 py-4 text-sm text-gray-600 max-w-[200px] sm:max-w-xs">
                         {canManage ? (
                           <textarea
                             id={`notes-${req.id}`}
