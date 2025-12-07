@@ -108,6 +108,7 @@ export default function ManualPage() {
   const [targetFolderId, setTargetFolderId] = useState<string | null>(null);
   const [renamingFile, setRenamingFile] = useState<File | null>(null);
   const [renamingFileName, setRenamingFileName] = useState("");
+  const [downloadingFolder, setDownloadingFolder] = useState<string | null>(null);
 
   // Load data
   const loadData = useCallback(async () => {
@@ -721,54 +722,77 @@ export default function ManualPage() {
                             onClick={async (e) => {
                               e.preventDefault();
                               e.stopPropagation();
+                              if (downloadingFolder === folder.id) return;
+                              
+                              setDownloadingFolder(folder.id);
+                              setError(undefined);
+                              
                               try {
+                                // Dynamically import JSZip
+                                const JSZip = (await import('jszip')).default;
+                                
                                 const res = await fetch(`/api/manual/download-folder?folderId=${folder.id}`);
                                 if (!res.ok) {
                                   const error = await res.json();
                                   setError(error.error || "Failed to download folder");
+                                  setDownloadingFolder(null);
                                   return;
                                 }
                                 const data = await res.json();
                                 
-                                // Download all files individually with forced download
                                 if (data.files && data.files.length > 0) {
+                                  // Create a new ZIP file
+                                  const zip = new JSZip();
+                                  
+                                  // Download and add each file to the ZIP
                                   for (const file of data.files) {
                                     try {
-                                      // Fetch the file as blob
                                       const fileRes = await fetch(file.url);
+                                      if (!fileRes.ok) {
+                                        console.error(`Failed to fetch ${file.name}`);
+                                        continue;
+                                      }
                                       const blob = await fileRes.blob();
                                       
-                                      // Create download link
-                                      const url = window.URL.createObjectURL(blob);
-                                      const link = document.createElement('a');
-                                      link.href = url;
-                                      link.download = file.path || file.name;
-                                      link.style.display = 'none';
-                                      document.body.appendChild(link);
-                                      link.click();
-                                      document.body.removeChild(link);
-                                      
-                                      // Clean up the URL object
-                                      window.URL.revokeObjectURL(url);
-                                      
-                                      // Small delay between downloads
-                                      await new Promise(resolve => setTimeout(resolve, 200));
+                                      // Add file to ZIP with its path
+                                      zip.file(file.path || file.name, blob);
                                     } catch (fileErr) {
                                       console.error(`Failed to download ${file.name}:`, fileErr);
                                     }
                                   }
-                                  setSuccess(`Downloaded ${data.files.length} file(s) from "${folder.name}"`);
+                                  
+                                  // Generate ZIP file
+                                  const zipBlob = await zip.generateAsync({ type: 'blob' });
+                                  
+                                  // Create download link for ZIP
+                                  const url = window.URL.createObjectURL(zipBlob);
+                                  const link = document.createElement('a');
+                                  link.href = url;
+                                  link.download = `${folder.name}.zip`;
+                                  link.style.display = 'none';
+                                  document.body.appendChild(link);
+                                  link.click();
+                                  document.body.removeChild(link);
+                                  
+                                  // Clean up
+                                  window.URL.revokeObjectURL(url);
+                                  
+                                  setSuccess(`Downloaded "${folder.name}.zip" with ${data.files.length} file(s)`);
                                 } else {
                                   setError("Folder is empty");
                                 }
                               } catch (err: any) {
-                                setError(err?.message || "Failed to download folder");
+                                console.error("Error creating ZIP:", err);
+                                setError(err?.message || "Failed to download folder as ZIP");
+                              } finally {
+                                setDownloadingFolder(null);
                               }
                             }}
-                            className="px-3 py-1 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-all duration-200 text-xs font-medium min-h-[44px]"
-                            title="Download folder"
+                            disabled={downloadingFolder === folder.id}
+                            className="px-3 py-1 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-all duration-200 text-xs font-medium min-h-[44px] disabled:opacity-50 disabled:cursor-not-allowed"
+                            title="Download folder as ZIP"
                           >
-                            Download
+                            {downloadingFolder === folder.id ? "Creating ZIP..." : "Download"}
                           </button>
                           {isAdmin && (
                             <>
