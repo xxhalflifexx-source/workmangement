@@ -43,6 +43,8 @@ model User {
   /// Rework entries created/logged by this user (QC/admin)
   reworkCreated        ReworkEntry[]         @relation("ReworkCreatedBy")
   notifications        Notification[]
+  manualFolders        ManualFolder[]
+  manualFiles          ManualFile[]
 }
 
 model Account {
@@ -375,4 +377,36 @@ model EmployeeHandbook {
   updatedAt DateTime @updatedAt
 
   @@map("EmployeeHandbook")
+}
+
+model ManualFolder {
+  id          String       @id @default(cuid())
+  name        String
+  parentId    String? // For nested folders
+  createdBy   String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  parent      ManualFolder? @relation("FolderHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children    ManualFolder[] @relation("FolderHierarchy")
+  files       ManualFile[]
+  creator     User         @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+
+  @@index([parentId])
+}
+
+model ManualFile {
+  id          String       @id @default(cuid())
+  name        String
+  originalName String
+  fileType    String // pdf, image, word, excel, cad, etc.
+  fileSize    Int // Size in bytes
+  fileUrl     String // URL to the file (Supabase or other storage)
+  folderId    String?
+  createdBy   String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  folder      ManualFolder? @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  creator     User         @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+
+  @@index([folderId])
 }

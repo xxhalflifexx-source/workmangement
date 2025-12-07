@@ -167,6 +167,18 @@ export default async function Dashboard() {
               <div className="text-xs text-gray-500 mt-1">Company policies</div>
             </Link>
           )}
+
+          {/* Manual - Visible to Employees, Managers, and Admin */}
+          {(role === "ADMIN" || role === "MANAGER" || role === "EMPLOYEE") && (
+            <Link
+              href="/manual"
+              className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 hover:shadow-lg transition-all duration-300 hover:border-blue-300 hover:-translate-y-1 active:scale-95 flex flex-col items-center justify-center text-center min-h-[100px] sm:min-h-[120px]"
+            >
+              <div className="text-3xl sm:text-4xl mb-2">📚</div>
+              <div className="font-semibold text-sm sm:text-base text-gray-900">Manual</div>
+              <div className="text-xs text-gray-500 mt-1">Standard Operating Procedures</div>
+            </Link>
+          )}
         </div>
       </div>
     </main>
