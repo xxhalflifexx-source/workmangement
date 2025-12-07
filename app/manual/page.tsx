@@ -101,7 +101,7 @@ export default function ManualPage() {
   const [editingFolder, setEditingFolder] = useState<Folder | null>(null);
   const [editingFolderName, setEditingFolderName] = useState("");
   const [deletingFolder, setDeletingFolder] = useState<Folder | null>(null);
-  const [uploadingFiles, setUploadingFiles] = useState<File[]>([]);
+  const [uploadingFiles, setUploadingFiles] = useState<globalThis.File[]>([]);
   const [uploading, setUploading] = useState(false);
   const [deletingFile, setDeletingFile] = useState<File | null>(null);
   const [movingFile, setMovingFile] = useState<File | null>(null);
@@ -292,7 +292,7 @@ export default function ManualPage() {
     try {
       const formData = new FormData();
       uploadingFiles.forEach((file) => {
-        formData.append("files", file);
+        formData.append("files", file as Blob);
       });
 
       const uploadRes = await fetch("/api/upload-manual", {
@@ -1021,7 +1021,7 @@ export default function ManualPage() {
                     type="file"
                     multiple
                     onChange={(e) => {
-                      const files = Array.from(e.target.files || []);
+                      const files = Array.from(e.target.files || []) as globalThis.File[];
                       setUploadingFiles(files);
                     }}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-h-[44px]"
