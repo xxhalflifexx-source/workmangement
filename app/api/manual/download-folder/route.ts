@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authOptions";
 import { prisma } from "@/lib/prisma";
+import archiver from "archiver";
+import { Readable } from "stream";
 
 // Helper function to get all files in a folder (recursively)
 async function getAllFilesInFolder(folderId: string): Promise<Array<{ name: string; url: string; path: string }>> {
@@ -44,10 +46,7 @@ async function getAllFilesInFolder(folderId: string): Promise<Array<{ name: stri
   return files;
 }
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params?: { folderId?: string } }
-) {
+export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
@@ -78,29 +77,65 @@ export async function GET(
       return NextResponse.json({ error: "Folder is empty" }, { status: 400 });
     }
 
-    // Create ZIP file using JSZip (we'll need to install it or use a different approach)
-    // For now, return a JSON response with file URLs and let the client handle ZIP creation
-    // Or we can use a server-side ZIP library
+    // Create ZIP file using archiver
+    const archive = archiver("zip", {
+      zlib: { level: 9 }, // Maximum compression
+    });
+
+    // Collect all chunks
+    const chunks: Buffer[] = [];
     
-    // Using a simpler approach: return file list and let client download individually
-    // Or use a library like 'archiver' or 'jszip' on the server
-    
-    // For now, let's use a client-side approach or return the files list
-    // The client can download them or we can create ZIP server-side
-    
-    // Simple approach: Return file URLs for client to handle
-    return NextResponse.json({
-      folderName: folder.name,
-      files: files.map((f) => ({
-        name: f.name,
-        url: f.url,
-        path: f.path,
-      })),
+    archive.on("data", (chunk: Buffer) => {
+      chunks.push(chunk);
+    });
+
+    archive.on("error", (err) => {
+      console.error("Archive error:", err);
+    });
+
+    // Download and add each file to the ZIP
+    for (const file of files) {
+      try {
+        const fileResponse = await fetch(file.url);
+        if (!fileResponse.ok) {
+          console.error(`Failed to fetch ${file.name}`);
+          continue;
+        }
+        
+        const arrayBuffer = await fileResponse.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+        
+        // Add file to ZIP with its path
+        archive.append(buffer, { name: file.path || file.name });
+      } catch (fileErr) {
+        console.error(`Error adding ${file.name} to ZIP:`, fileErr);
+      }
+    }
+
+    // Finalize the archive
+    archive.finalize();
+
+    // Wait for archive to finish
+    await new Promise<void>((resolve, reject) => {
+      archive.on("end", () => resolve());
+      archive.on("error", (err) => reject(err));
+    });
+
+    // Combine all chunks into a single buffer
+    const zipBuffer = Buffer.concat(chunks);
+
+    // Return ZIP file as download
+    return new NextResponse(zipBuffer, {
+      headers: {
+        "Content-Type": "application/zip",
+        "Content-Disposition": `attachment; filename="${encodeURIComponent(folder.name)}.zip"`,
+        "Content-Length": zipBuffer.length.toString(),
+      },
     });
   } catch (error: any) {
-    console.error("Error downloading folder:", error);
+    console.error("Error creating ZIP:", error);
     return NextResponse.json(
-      { error: error?.message || "Failed to download folder" },
+      { error: error?.message || "Failed to create ZIP file" },
       { status: 500 }
     );
   }

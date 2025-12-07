@@ -728,61 +728,34 @@ export default function ManualPage() {
                               setError(undefined);
                               
                               try {
-                                // Dynamically import JSZip
-                                const JSZip = (await import('jszip')).default;
-                                
                                 const res = await fetch(`/api/manual/download-folder?folderId=${folder.id}`);
+                                
                                 if (!res.ok) {
-                                  const error = await res.json();
+                                  const error = await res.json().catch(() => ({ error: "Failed to download folder" }));
                                   setError(error.error || "Failed to download folder");
                                   setDownloadingFolder(null);
                                   return;
                                 }
-                                const data = await res.json();
                                 
-                                if (data.files && data.files.length > 0) {
-                                  // Create a new ZIP file
-                                  const zip = new JSZip();
-                                  
-                                  // Download and add each file to the ZIP
-                                  for (const file of data.files) {
-                                    try {
-                                      const fileRes = await fetch(file.url);
-                                      if (!fileRes.ok) {
-                                        console.error(`Failed to fetch ${file.name}`);
-                                        continue;
-                                      }
-                                      const blob = await fileRes.blob();
-                                      
-                                      // Add file to ZIP with its path
-                                      zip.file(file.path || file.name, blob);
-                                    } catch (fileErr) {
-                                      console.error(`Failed to download ${file.name}:`, fileErr);
-                                    }
-                                  }
-                                  
-                                  // Generate ZIP file
-                                  const zipBlob = await zip.generateAsync({ type: 'blob' });
-                                  
-                                  // Create download link for ZIP
-                                  const url = window.URL.createObjectURL(zipBlob);
-                                  const link = document.createElement('a');
-                                  link.href = url;
-                                  link.download = `${folder.name}.zip`;
-                                  link.style.display = 'none';
-                                  document.body.appendChild(link);
-                                  link.click();
-                                  document.body.removeChild(link);
-                                  
-                                  // Clean up
-                                  window.URL.revokeObjectURL(url);
-                                  
-                                  setSuccess(`Downloaded "${folder.name}.zip" with ${data.files.length} file(s)`);
-                                } else {
-                                  setError("Folder is empty");
-                                }
+                                // Get the ZIP file as blob
+                                const zipBlob = await res.blob();
+                                
+                                // Create download link for ZIP
+                                const url = window.URL.createObjectURL(zipBlob);
+                                const link = document.createElement('a');
+                                link.href = url;
+                                link.download = `${folder.name}.zip`;
+                                link.style.display = 'none';
+                                document.body.appendChild(link);
+                                link.click();
+                                document.body.removeChild(link);
+                                
+                                // Clean up
+                                window.URL.revokeObjectURL(url);
+                                
+                                setSuccess(`Downloaded "${folder.name}.zip"`);
                               } catch (err: any) {
-                                console.error("Error creating ZIP:", err);
+                                console.error("Error downloading ZIP:", err);
                                 setError(err?.message || "Failed to download folder as ZIP");
                               } finally {
                                 setDownloadingFolder(null);
