@@ -279,6 +279,28 @@ export default function ManualPage() {
     }
   };
 
+  // Helper function to generate unique file name
+  const generateUniqueFileName = (fileName: string, existingNames: Set<string>): string => {
+    if (!existingNames.has(fileName)) {
+      return fileName;
+    }
+
+    // Extract name and extension
+    const lastDotIndex = fileName.lastIndexOf('.');
+    const nameWithoutExt = lastDotIndex > 0 ? fileName.substring(0, lastDotIndex) : fileName;
+    const extension = lastDotIndex > 0 ? fileName.substring(lastDotIndex) : '';
+
+    // Try adding numbers until we find a unique name
+    let counter = 1;
+    let newFileName = `${nameWithoutExt} (${counter})${extension}`;
+    while (existingNames.has(newFileName)) {
+      counter++;
+      newFileName = `${nameWithoutExt} (${counter})${extension}`;
+    }
+
+    return newFileName;
+  };
+
   // Upload files
   const handleFileUpload = async () => {
     if (uploadingFiles.length === 0) {
@@ -290,8 +312,39 @@ export default function ManualPage() {
     setError(undefined);
 
     try {
-      const formData = new FormData();
+      // Check for duplicate file names in current folder
+      const existingFilesRes = await getFiles(currentFolderId);
+      const existingFiles = existingFilesRes.ok ? existingFilesRes.files || [] : [];
+      const existingFileNames = new Set(existingFiles.map((f: File) => f.name));
+
+      // Check for duplicates in the files being uploaded
+      const duplicateFiles: string[] = [];
+      const filesToUpload: Array<{ file: globalThis.File; finalName: string }> = [];
+
       uploadingFiles.forEach((file) => {
+        const fileName = file.name;
+        if (existingFileNames.has(fileName)) {
+          // Generate unique name
+          const uniqueName = generateUniqueFileName(fileName, existingFileNames);
+          filesToUpload.push({ file, finalName: uniqueName });
+          existingFileNames.add(uniqueName); // Add to set to prevent duplicates within the same batch
+          duplicateFiles.push(`${fileName} → ${uniqueName}`);
+        } else {
+          filesToUpload.push({ file, finalName: fileName });
+          existingFileNames.add(fileName);
+        }
+      });
+
+      // Show warning if duplicates were renamed
+      if (duplicateFiles.length > 0) {
+        setSuccess(
+          `${duplicateFiles.length} file(s) renamed to avoid duplicates: ${duplicateFiles.join(', ')}`
+        );
+      }
+
+      // Upload files
+      const formData = new FormData();
+      filesToUpload.forEach(({ file }) => {
         formData.append("files", file as Blob);
       });
 
@@ -310,14 +363,18 @@ export default function ManualPage() {
       const uploadData = await uploadRes.json();
       const uploadedFiles = uploadData.files || [];
 
-      // Create file records
-      for (const file of uploadedFiles) {
+      // Create file records with unique names
+      for (let i = 0; i < uploadedFiles.length; i++) {
+        const uploadedFile = uploadedFiles[i];
+        const fileToUpload = filesToUpload[i];
+        const finalName = fileToUpload.finalName;
+
         const res = await createFile(
-          file.originalName,
-          file.originalName,
-          file.fileType,
-          file.fileSize,
-          file.fileUrl,
+          finalName,
+          uploadedFile.originalName, // Keep original name for reference
+          uploadedFile.fileType,
+          uploadedFile.fileSize,
+          uploadedFile.fileUrl,
           currentFolderId
         );
         if (!res.ok) {
@@ -325,7 +382,9 @@ export default function ManualPage() {
         }
       }
 
-      setSuccess(`${uploadedFiles.length} file(s) uploaded successfully`);
+      if (duplicateFiles.length === 0) {
+        setSuccess(`${uploadedFiles.length} file(s) uploaded successfully`);
+      }
       setShowUploadModal(false);
       setUploadingFiles([]);
       loadData();
