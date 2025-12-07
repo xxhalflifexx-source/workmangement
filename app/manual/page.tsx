@@ -658,31 +658,75 @@ export default function ManualPage() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         —
                       </td>
-                      {isAdmin && (
-                        <td className="px-6 py-4 whitespace-nowrap text-sm" onClick={(e) => e.stopPropagation()}>
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => {
-                                setEditingFolder(folder);
-                                setEditingFolderName(folder.name);
-                                setShowEditFolderModal(true);
-                              }}
-                              className="text-indigo-600 hover:text-indigo-900 hover:bg-indigo-50 rounded-md px-3 py-2 transition-all duration-200 min-h-[44px] font-medium text-xs"
-                            >
-                              Edit
-                            </button>
-                            <button
-                              onClick={() => {
-                                setDeletingFolder(folder);
-                                setShowDeleteFolderModal(true);
-                              }}
-                              className="text-red-600 hover:text-red-900 hover:bg-red-50 rounded-md px-3 py-2 transition-all duration-200 min-h-[44px] font-medium text-xs"
-                            >
-                              Delete
-                            </button>
-                          </div>
-                        </td>
-                      )}
+                      <td className="px-6 py-4 whitespace-nowrap text-sm" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex gap-2 flex-wrap">
+                          <a
+                            href={`/api/manual/download-folder?folderId=${folder.id}`}
+                            download={`${folder.name}.zip`}
+                            onClick={async (e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              try {
+                                const res = await fetch(`/api/manual/download-folder?folderId=${folder.id}`);
+                                if (!res.ok) {
+                                  const error = await res.json();
+                                  setError(error.error || "Failed to download folder");
+                                  return;
+                                }
+                                const data = await res.json();
+                                
+                                // Create ZIP using JSZip (client-side)
+                                // For now, download all files individually
+                                if (data.files && data.files.length > 0) {
+                                  // Download each file
+                                  for (const file of data.files) {
+                                    const link = document.createElement('a');
+                                    link.href = file.url;
+                                    link.download = file.path;
+                                    link.style.display = 'none';
+                                    document.body.appendChild(link);
+                                    link.click();
+                                    document.body.removeChild(link);
+                                    // Small delay between downloads
+                                    await new Promise(resolve => setTimeout(resolve, 100));
+                                  }
+                                  setSuccess(`Downloaded ${data.files.length} file(s) from "${folder.name}"`);
+                                } else {
+                                  setError("Folder is empty");
+                                }
+                              } catch (err: any) {
+                                setError(err?.message || "Failed to download folder");
+                              }
+                            }}
+                            className="text-green-600 hover:text-green-900 hover:bg-green-50 rounded-md px-3 py-2 transition-all duration-200 min-h-[44px] font-medium text-xs"
+                          >
+                            ⬇️ Download
+                          </a>
+                          {isAdmin && (
+                            <>
+                              <button
+                                onClick={() => {
+                                  setEditingFolder(folder);
+                                  setEditingFolderName(folder.name);
+                                  setShowEditFolderModal(true);
+                                }}
+                                className="text-indigo-600 hover:text-indigo-900 hover:bg-indigo-50 rounded-md px-3 py-2 transition-all duration-200 min-h-[44px] font-medium text-xs"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setDeletingFolder(folder);
+                                  setShowDeleteFolderModal(true);
+                                }}
+                                className="text-red-600 hover:text-red-900 hover:bg-red-50 rounded-md px-3 py-2 transition-all duration-200 min-h-[44px] font-medium text-xs"
+                              >
+                                Delete
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </td>
                     </tr>
                   ))}
 
@@ -720,48 +764,58 @@ export default function ManualPage() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {formatFileSize(file.fileSize)}
                       </td>
-                      {isAdmin && (
-                        <td className="px-6 py-4 whitespace-nowrap text-sm" onClick={(e) => e.stopPropagation()}>
-                          <div className="flex gap-2 flex-wrap">
-                            <button
-                              onClick={() => {
-                                setRenamingFile(file);
-                                setRenamingFileName(file.name);
-                                setShowRenameFileModal(true);
-                              }}
-                              className="text-indigo-600 hover:text-indigo-900 hover:bg-indigo-50 rounded-md px-3 py-2 transition-all duration-200 min-h-[44px] font-medium text-xs"
-                            >
-                              Rename
-                            </button>
-                            <button
-                              onClick={() => {
-                                setMovingFile(file);
-                                setTargetFolderId(file.folderId || null);
-                                setShowMoveFileModal(true);
-                              }}
-                              className="text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-md px-3 py-2 transition-all duration-200 min-h-[44px] font-medium text-xs"
-                            >
-                              Move
-                            </button>
-                            <button
-                              onClick={() => {
-                                setDeletingFile(file);
-                                setShowDeleteFileModal(true);
-                              }}
-                              className="text-red-600 hover:text-red-900 hover:bg-red-50 rounded-md px-3 py-2 transition-all duration-200 min-h-[44px] font-medium text-xs"
-                            >
-                              Delete
-                            </button>
-                          </div>
-                        </td>
-                      )}
+                      <td className="px-6 py-4 whitespace-nowrap text-sm" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex gap-2 flex-wrap">
+                          <a
+                            href={file.fileUrl}
+                            download={file.name}
+                            onClick={(e) => e.stopPropagation()}
+                            className="text-green-600 hover:text-green-900 hover:bg-green-50 rounded-md px-3 py-2 transition-all duration-200 min-h-[44px] font-medium text-xs"
+                          >
+                            ⬇️ Download
+                          </a>
+                          {isAdmin && (
+                            <>
+                              <button
+                                onClick={() => {
+                                  setRenamingFile(file);
+                                  setRenamingFileName(file.name);
+                                  setShowRenameFileModal(true);
+                                }}
+                                className="text-indigo-600 hover:text-indigo-900 hover:bg-indigo-50 rounded-md px-3 py-2 transition-all duration-200 min-h-[44px] font-medium text-xs"
+                              >
+                                Rename
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setMovingFile(file);
+                                  setTargetFolderId(file.folderId || null);
+                                  setShowMoveFileModal(true);
+                                }}
+                                className="text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-md px-3 py-2 transition-all duration-200 min-h-[44px] font-medium text-xs"
+                              >
+                                Move
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setDeletingFile(file);
+                                  setShowDeleteFileModal(true);
+                                }}
+                                className="text-red-600 hover:text-red-900 hover:bg-red-50 rounded-md px-3 py-2 transition-all duration-200 min-h-[44px] font-medium text-xs"
+                              >
+                                Delete
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </td>
                     </tr>
                   ))}
 
                   {/* Empty State */}
                   {filteredAndSorted.folders.length === 0 && filteredAndSorted.files.length === 0 && (
                     <tr>
-                      <td colSpan={isAdmin ? 5 : 4} className="px-6 py-12 text-center">
+                      <td colSpan={5} className="px-6 py-12 text-center">
                         <p className="text-gray-500 text-sm">
                           {searchQuery || filterType !== "ALL"
                             ? "No files or folders match your search criteria."
