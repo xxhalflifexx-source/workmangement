@@ -387,7 +387,7 @@ export default function ManualPage() {
       setShowRenameFileModal(false);
       setRenamingFile(null);
       setRenamingFileName("");
-      if (selectedFile?.id === renamingFile.id) {
+      if (selectedFile?.id === renamingFile.id && res.file) {
         setSelectedFile(res.file);
       }
       loadData();
