@@ -660,9 +660,7 @@ export default function ManualPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm" onClick={(e) => e.stopPropagation()}>
                         <div className="flex gap-2 flex-wrap">
-                          <a
-                            href={`/api/manual/download-folder?folderId=${folder.id}`}
-                            download={`${folder.name}.zip`}
+                          <button
                             onClick={async (e) => {
                               e.preventDefault();
                               e.stopPropagation();
@@ -675,20 +673,32 @@ export default function ManualPage() {
                                 }
                                 const data = await res.json();
                                 
-                                // Create ZIP using JSZip (client-side)
-                                // For now, download all files individually
+                                // Download all files individually with forced download
                                 if (data.files && data.files.length > 0) {
-                                  // Download each file
                                   for (const file of data.files) {
-                                    const link = document.createElement('a');
-                                    link.href = file.url;
-                                    link.download = file.path;
-                                    link.style.display = 'none';
-                                    document.body.appendChild(link);
-                                    link.click();
-                                    document.body.removeChild(link);
-                                    // Small delay between downloads
-                                    await new Promise(resolve => setTimeout(resolve, 100));
+                                    try {
+                                      // Fetch the file as blob
+                                      const fileRes = await fetch(file.url);
+                                      const blob = await fileRes.blob();
+                                      
+                                      // Create download link
+                                      const url = window.URL.createObjectURL(blob);
+                                      const link = document.createElement('a');
+                                      link.href = url;
+                                      link.download = file.path || file.name;
+                                      link.style.display = 'none';
+                                      document.body.appendChild(link);
+                                      link.click();
+                                      document.body.removeChild(link);
+                                      
+                                      // Clean up the URL object
+                                      window.URL.revokeObjectURL(url);
+                                      
+                                      // Small delay between downloads
+                                      await new Promise(resolve => setTimeout(resolve, 200));
+                                    } catch (fileErr) {
+                                      console.error(`Failed to download ${file.name}:`, fileErr);
+                                    }
                                   }
                                   setSuccess(`Downloaded ${data.files.length} file(s) from "${folder.name}"`);
                                 } else {
@@ -701,7 +711,7 @@ export default function ManualPage() {
                             className="text-green-600 hover:text-green-900 hover:bg-green-50 rounded-md px-3 py-2 transition-all duration-200 min-h-[44px] font-medium text-xs"
                           >
                             ⬇️ Download
-                          </a>
+                          </button>
                           {isAdmin && (
                             <>
                               <button
@@ -766,14 +776,37 @@ export default function ManualPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm" onClick={(e) => e.stopPropagation()}>
                         <div className="flex gap-2 flex-wrap">
-                          <a
-                            href={file.fileUrl}
-                            download={file.name}
-                            onClick={(e) => e.stopPropagation()}
+                          <button
+                            onClick={async (e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              try {
+                                // Fetch the file as blob to force download
+                                const fileRes = await fetch(file.fileUrl);
+                                const blob = await fileRes.blob();
+                                
+                                // Create download link
+                                const url = window.URL.createObjectURL(blob);
+                                const link = document.createElement('a');
+                                link.href = url;
+                                link.download = file.name;
+                                link.style.display = 'none';
+                                document.body.appendChild(link);
+                                link.click();
+                                document.body.removeChild(link);
+                                
+                                // Clean up the URL object
+                                window.URL.revokeObjectURL(url);
+                                
+                                setSuccess(`Downloaded "${file.name}"`);
+                              } catch (err: any) {
+                                setError(err?.message || "Failed to download file");
+                              }
+                            }}
                             className="text-green-600 hover:text-green-900 hover:bg-green-50 rounded-md px-3 py-2 transition-all duration-200 min-h-[44px] font-medium text-xs"
                           >
                             ⬇️ Download
-                          </a>
+                          </button>
                           {isAdmin && (
                             <>
                               <button
@@ -925,13 +958,36 @@ export default function ManualPage() {
                   >
                     Open File
                   </a>
-                  <a
-                    href={selectedFile.fileUrl}
-                    download
+                  <button
+                    onClick={async () => {
+                      try {
+                        // Fetch the file as blob to force download
+                        const fileRes = await fetch(selectedFile.fileUrl);
+                        const blob = await fileRes.blob();
+                        
+                        // Create download link
+                        const url = window.URL.createObjectURL(blob);
+                        const link = document.createElement('a');
+                        link.href = url;
+                        link.download = selectedFile.name;
+                        link.style.display = 'none';
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        
+                        // Clean up the URL object
+                        window.URL.revokeObjectURL(url);
+                        
+                        setSuccess(`Downloaded "${selectedFile.name}"`);
+                        setShowFileDetails(false);
+                      } catch (err: any) {
+                        setError(err?.message || "Failed to download file");
+                      }
+                    }}
                     className="flex-1 sm:flex-none px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm font-medium text-center min-h-[44px] flex items-center justify-center"
                   >
                     Download
-                  </a>
+                  </button>
                 </div>
               </div>
             </div>
