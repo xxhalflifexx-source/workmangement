@@ -563,16 +563,16 @@ export default function ManualPage() {
         <div className="mb-4 flex items-center gap-2 flex-wrap">
           <button
             onClick={() => handleBreadcrumbClick(-1)}
-            className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+            className="text-blue-600 hover:text-blue-800 text-sm font-medium min-h-[44px] px-2 py-1 rounded hover:bg-blue-50 transition-all duration-200"
           >
             Root
           </button>
           {folderPath.map((folder, index) => (
             <div key={folder.id} className="flex items-center gap-2">
-              <span className="text-gray-400">/</span>
+              <span className="text-gray-400 text-sm">/</span>
               <button
                 onClick={() => handleBreadcrumbClick(index)}
-                className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                className="text-blue-600 hover:text-blue-800 text-sm font-medium min-h-[44px] px-2 py-1 rounded hover:bg-blue-50 transition-all duration-200 break-words"
               >
                 {folder.name}
               </button>
@@ -615,7 +615,7 @@ export default function ManualPage() {
                     setNewFolderName("");
                     setShowCreateFolderModal(true);
                   }}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium min-h-[44px]"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 text-sm font-medium min-h-[44px] shadow-sm hover:shadow-md active:scale-95"
                 >
                   + New Folder
                 </button>
@@ -624,7 +624,7 @@ export default function ManualPage() {
                     setUploadingFiles([]);
                     setShowUploadModal(true);
                   }}
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium min-h-[44px]"
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all duration-200 text-sm font-medium min-h-[44px] shadow-sm hover:shadow-md active:scale-95"
                 >
                   📤 Upload Files
                 </button>
@@ -633,8 +633,8 @@ export default function ManualPage() {
           </div>
 
           {/* Sort Controls */}
-          <div className="mt-4 flex flex-wrap items-center gap-3 text-sm">
-            <span className="text-gray-600 font-medium">Sort by:</span>
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            <span className="text-sm text-gray-600 font-medium">Sort by:</span>
             <select
               value={sortField}
               onChange={(e) => setSortField(e.target.value as SortField)}
@@ -649,7 +649,7 @@ export default function ManualPage() {
               onClick={() =>
                 setSortDirection(sortDirection === "asc" ? "desc" : "asc")
               }
-              className="px-3 py-1.5 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors min-h-[44px] text-sm font-medium"
+              className="px-3 py-1.5 border border-gray-300 rounded-lg hover:bg-gray-50 transition-all duration-200 min-h-[44px] text-sm font-medium"
             >
               {sortDirection === "asc" ? "↑ Ascending" : "↓ Descending"}
             </button>
@@ -660,31 +660,29 @@ export default function ManualPage() {
         {loading ? (
           <div className="bg-white rounded-xl shadow border border-gray-200 p-12 text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading...</p>
+            <p className="text-gray-600 text-sm">Loading...</p>
           </div>
         ) : (
           <div className="bg-white rounded-xl shadow border border-gray-200 overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table className="w-full min-w-[640px]">
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Name
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Type
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Date Modified
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Size
                     </th>
-                    {isAdmin && (
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Actions
-                      </th>
-                    )}
+                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
@@ -695,30 +693,30 @@ export default function ManualPage() {
                       className="hover:bg-gray-50 cursor-pointer transition-colors"
                       onClick={() => handleFolderClick(folder)}
                     >
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-4 sm:px-6 py-4">
                         <div className="flex items-center gap-2">
-                          <span className="text-2xl">📁</span>
-                          <div>
-                            <div className="text-sm font-medium text-gray-900">
+                          <span className="text-xl sm:text-2xl flex-shrink-0">📁</span>
+                          <div className="min-w-0 flex-1">
+                            <div className="text-sm font-medium text-gray-900 break-words">
                               {folder.name}
                             </div>
-                            <div className="text-xs text-gray-500">
+                            <div className="text-xs text-gray-500 break-words">
                               {folder._count.files} file(s), {folder._count.children} folder(s)
                             </div>
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        Folder
+                      <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <span className="uppercase">Folder</span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {formatDateShort(folder.updatedAt.toString())}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         —
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex gap-2 flex-wrap">
+                      <td className="px-4 sm:px-6 py-4 text-sm" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex gap-1.5 sm:gap-2 flex-wrap">
                           <button
                             onClick={async (e) => {
                               e.preventDefault();
@@ -767,9 +765,10 @@ export default function ManualPage() {
                                 setError(err?.message || "Failed to download folder");
                               }
                             }}
-                            className="text-green-600 hover:text-green-900 hover:bg-green-50 rounded-md px-3 py-2 transition-all duration-200 min-h-[44px] font-medium text-xs"
+                            className="px-3 py-1 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-all duration-200 text-xs font-medium min-h-[44px]"
+                            title="Download folder"
                           >
-                            ⬇️ Download
+                            Download
                           </button>
                           {isAdmin && (
                             <>
@@ -779,7 +778,8 @@ export default function ManualPage() {
                                   setEditingFolderName(folder.name);
                                   setShowEditFolderModal(true);
                                 }}
-                                className="text-indigo-600 hover:text-indigo-900 hover:bg-indigo-50 rounded-md px-3 py-2 transition-all duration-200 min-h-[44px] font-medium text-xs"
+                                className="px-3 py-1 text-indigo-600 hover:text-indigo-900 hover:bg-indigo-50 rounded-md transition-all duration-200 text-xs font-medium min-h-[44px]"
+                                title="Edit folder"
                               >
                                 Edit
                               </button>
@@ -788,7 +788,8 @@ export default function ManualPage() {
                                   setDeletingFolder(folder);
                                   setShowDeleteFolderModal(true);
                                 }}
-                                className="text-red-600 hover:text-red-900 hover:bg-red-50 rounded-md px-3 py-2 transition-all duration-200 min-h-[44px] font-medium text-xs"
+                                className="px-3 py-1 text-red-600 hover:text-red-900 hover:bg-red-50 rounded-md transition-all duration-200 text-xs font-medium min-h-[44px]"
+                                title="Delete folder"
                               >
                                 Delete
                               </button>
@@ -809,10 +810,10 @@ export default function ManualPage() {
                         setShowFileDetails(true);
                       }}
                     >
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-4 sm:px-6 py-4">
                         <div className="flex items-center gap-2">
-                          <span className="text-2xl">{getFileIcon(file.fileType)}</span>
-                          <div>
+                          <span className="text-xl sm:text-2xl flex-shrink-0">{getFileIcon(file.fileType)}</span>
+                          <div className="min-w-0 flex-1">
                             <div className="text-sm font-medium text-gray-900 break-words">
                               {file.name}
                             </div>
@@ -824,17 +825,17 @@ export default function ManualPage() {
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 uppercase">
+                      <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500 uppercase">
                         {file.fileType}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {formatDateShort(file.updatedAt.toString())}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {formatFileSize(file.fileSize)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex gap-2 flex-wrap">
+                      <td className="px-4 sm:px-6 py-4 text-sm" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex gap-1.5 sm:gap-2 flex-wrap">
                           <button
                             onClick={async (e) => {
                               e.preventDefault();
@@ -862,9 +863,10 @@ export default function ManualPage() {
                                 setError(err?.message || "Failed to download file");
                               }
                             }}
-                            className="text-green-600 hover:text-green-900 hover:bg-green-50 rounded-md px-3 py-2 transition-all duration-200 min-h-[44px] font-medium text-xs"
+                            className="px-3 py-1 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-all duration-200 text-xs font-medium min-h-[44px]"
+                            title="Download file"
                           >
-                            ⬇️ Download
+                            Download
                           </button>
                           {isAdmin && (
                             <>
@@ -874,7 +876,8 @@ export default function ManualPage() {
                                   setRenamingFileName(file.name);
                                   setShowRenameFileModal(true);
                                 }}
-                                className="text-indigo-600 hover:text-indigo-900 hover:bg-indigo-50 rounded-md px-3 py-2 transition-all duration-200 min-h-[44px] font-medium text-xs"
+                                className="px-3 py-1 text-indigo-600 hover:text-indigo-900 hover:bg-indigo-50 rounded-md transition-all duration-200 text-xs font-medium min-h-[44px]"
+                                title="Rename file"
                               >
                                 Rename
                               </button>
@@ -884,7 +887,8 @@ export default function ManualPage() {
                                   setTargetFolderId(file.folderId || null);
                                   setShowMoveFileModal(true);
                                 }}
-                                className="text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-md px-3 py-2 transition-all duration-200 min-h-[44px] font-medium text-xs"
+                                className="px-3 py-1 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-md transition-all duration-200 text-xs font-medium min-h-[44px]"
+                                title="Move file"
                               >
                                 Move
                               </button>
@@ -893,7 +897,8 @@ export default function ManualPage() {
                                   setDeletingFile(file);
                                   setShowDeleteFileModal(true);
                                 }}
-                                className="text-red-600 hover:text-red-900 hover:bg-red-50 rounded-md px-3 py-2 transition-all duration-200 min-h-[44px] font-medium text-xs"
+                                className="px-3 py-1 text-red-600 hover:text-red-900 hover:bg-red-50 rounded-md transition-all duration-200 text-xs font-medium min-h-[44px]"
+                                title="Delete file"
                               >
                                 Delete
                               </button>
@@ -907,8 +912,8 @@ export default function ManualPage() {
                   {/* Empty State */}
                   {filteredAndSorted.folders.length === 0 && filteredAndSorted.files.length === 0 && (
                     <tr>
-                      <td colSpan={5} className="px-6 py-12 text-center">
-                        <p className="text-gray-500 text-sm">
+                      <td colSpan={5} className="px-4 sm:px-6 py-12 text-center">
+                        <p className="text-gray-500 text-sm break-words px-4">
                           {searchQuery || filterType !== "ALL"
                             ? "No files or folders match your search criteria."
                             : "No files or folders yet. " + (isAdmin ? "Create a folder or upload files to get started." : "")}
@@ -926,26 +931,26 @@ export default function ManualPage() {
         {showFileDetails && selectedFile && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
             <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto animate-scale-in">
-              <div className="p-6 border-b border-gray-200">
+              <div className="p-4 sm:p-6 border-b border-gray-200">
                 <div className="flex items-start justify-between mb-4">
-                  <h2 className="text-xl font-bold text-gray-900">File Details</h2>
+                  <h2 className="text-lg sm:text-xl font-bold text-gray-900">File Details</h2>
                   <button
                     onClick={() => {
                       setShowFileDetails(false);
                       setSelectedFile(null);
                     }}
-                    className="text-gray-400 hover:text-gray-600 text-2xl font-bold leading-none"
+                    className="text-gray-400 hover:text-gray-600 text-2xl font-bold leading-none min-h-[44px] min-w-[44px] flex items-center justify-center"
                   >
                     ×
                   </button>
                 </div>
               </div>
 
-              <div className="p-6 space-y-4">
+              <div className="p-4 sm:p-6 space-y-4">
                 {/* File Preview/Thumbnail */}
                 <div className="flex justify-center mb-6">
-                  <div className="w-32 h-32 bg-gray-100 rounded-lg flex items-center justify-center">
-                    <span className="text-6xl">{getFileIcon(selectedFile.fileType)}</span>
+                  <div className="w-24 h-24 sm:w-32 sm:h-32 bg-gray-100 rounded-lg flex items-center justify-center">
+                    <span className="text-4xl sm:text-6xl">{getFileIcon(selectedFile.fileType)}</span>
                   </div>
                 </div>
 
@@ -1013,7 +1018,7 @@ export default function ManualPage() {
                     href={selectedFile.fileUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex-1 sm:flex-none px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium text-center min-h-[44px] flex items-center justify-center"
+                    className="flex-1 sm:flex-none px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 text-sm font-medium text-center min-h-[44px] flex items-center justify-center shadow-sm hover:shadow-md active:scale-95"
                   >
                     Open File
                   </a>
@@ -1043,7 +1048,7 @@ export default function ManualPage() {
                         setError(err?.message || "Failed to download file");
                       }
                     }}
-                    className="flex-1 sm:flex-none px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm font-medium text-center min-h-[44px] flex items-center justify-center"
+                    className="flex-1 sm:flex-none px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-all duration-200 text-sm font-medium text-center min-h-[44px] flex items-center justify-center shadow-sm hover:shadow-md active:scale-95"
                   >
                     Download
                   </button>
@@ -1056,11 +1061,11 @@ export default function ManualPage() {
         {/* Create Folder Modal */}
         {showCreateFolderModal && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
-            <div className="bg-white rounded-xl shadow-2xl max-w-md w-full animate-scale-in">
-              <div className="p-6 border-b border-gray-200">
-                <h2 className="text-xl font-bold text-gray-900">Create New Folder</h2>
+            <div className="bg-white rounded-xl shadow-2xl max-w-md w-full animate-scale-in max-h-[90vh] overflow-y-auto">
+              <div className="p-4 sm:p-6 border-b border-gray-200">
+                <h2 className="text-lg sm:text-xl font-bold text-gray-900">Create New Folder</h2>
               </div>
-              <div className="p-6 space-y-4">
+              <div className="p-4 sm:p-6 space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Folder Name
@@ -1069,7 +1074,7 @@ export default function ManualPage() {
                     type="text"
                     value={newFolderName}
                     onChange={(e) => setNewFolderName(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-h-[44px]"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-h-[44px] text-sm"
                     placeholder="Enter folder name"
                     autoFocus
                   />
@@ -1080,13 +1085,13 @@ export default function ManualPage() {
                       setShowCreateFolderModal(false);
                       setNewFolderName("");
                     }}
-                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium min-h-[44px]"
+                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-all duration-200 text-sm font-medium min-h-[44px] active:scale-95"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleCreateFolder}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium min-h-[44px]"
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 text-sm font-medium min-h-[44px] shadow-sm hover:shadow-md active:scale-95"
                   >
                     Create
                   </button>
@@ -1099,11 +1104,11 @@ export default function ManualPage() {
         {/* Edit Folder Modal */}
         {showEditFolderModal && editingFolder && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
-            <div className="bg-white rounded-xl shadow-2xl max-w-md w-full animate-scale-in">
-              <div className="p-6 border-b border-gray-200">
-                <h2 className="text-xl font-bold text-gray-900">Edit Folder</h2>
+            <div className="bg-white rounded-xl shadow-2xl max-w-md w-full animate-scale-in max-h-[90vh] overflow-y-auto">
+              <div className="p-4 sm:p-6 border-b border-gray-200">
+                <h2 className="text-lg sm:text-xl font-bold text-gray-900">Edit Folder</h2>
               </div>
-              <div className="p-6 space-y-4">
+              <div className="p-4 sm:p-6 space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Folder Name
@@ -1112,7 +1117,7 @@ export default function ManualPage() {
                     type="text"
                     value={editingFolderName}
                     onChange={(e) => setEditingFolderName(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-h-[44px]"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-h-[44px] text-sm"
                     placeholder="Enter folder name"
                     autoFocus
                   />
@@ -1124,13 +1129,13 @@ export default function ManualPage() {
                       setEditingFolder(null);
                       setEditingFolderName("");
                     }}
-                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium min-h-[44px]"
+                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-all duration-200 text-sm font-medium min-h-[44px] active:scale-95"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleUpdateFolder}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium min-h-[44px]"
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 text-sm font-medium min-h-[44px] shadow-sm hover:shadow-md active:scale-95"
                   >
                     Save
                   </button>
@@ -1143,11 +1148,11 @@ export default function ManualPage() {
         {/* Delete Folder Modal */}
         {showDeleteFolderModal && deletingFolder && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
-            <div className="bg-white rounded-xl shadow-2xl max-w-md w-full animate-scale-in">
-              <div className="p-6 border-b border-gray-200">
-                <h2 className="text-xl font-bold text-gray-900">Delete Folder</h2>
+            <div className="bg-white rounded-xl shadow-2xl max-w-md w-full animate-scale-in max-h-[90vh] overflow-y-auto">
+              <div className="p-4 sm:p-6 border-b border-gray-200">
+                <h2 className="text-lg sm:text-xl font-bold text-gray-900">Delete Folder</h2>
               </div>
-              <div className="p-6 space-y-4">
+              <div className="p-4 sm:p-6 space-y-4">
                 <p className="text-sm text-gray-600">
                   Are you sure you want to delete the folder <strong>"{deletingFolder.name}"</strong>?
                   This will also delete all files and subfolders inside it.
@@ -1158,13 +1163,13 @@ export default function ManualPage() {
                       setShowDeleteFolderModal(false);
                       setDeletingFolder(null);
                     }}
-                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium min-h-[44px]"
+                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-all duration-200 text-sm font-medium min-h-[44px] active:scale-95"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleDeleteFolder}
-                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium min-h-[44px]"
+                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all duration-200 text-sm font-medium min-h-[44px] shadow-sm hover:shadow-md active:scale-95"
                   >
                     Delete
                   </button>
@@ -1177,11 +1182,11 @@ export default function ManualPage() {
         {/* Upload Files Modal */}
         {showUploadModal && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
-            <div className="bg-white rounded-xl shadow-2xl max-w-md w-full animate-scale-in">
-              <div className="p-6 border-b border-gray-200">
-                <h2 className="text-xl font-bold text-gray-900">Upload Files</h2>
+            <div className="bg-white rounded-xl shadow-2xl max-w-md w-full animate-scale-in max-h-[90vh] overflow-y-auto">
+              <div className="p-4 sm:p-6 border-b border-gray-200">
+                <h2 className="text-lg sm:text-xl font-bold text-gray-900">Upload Files</h2>
               </div>
-              <div className="p-6 space-y-4">
+              <div className="p-4 sm:p-6 space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Select Files
@@ -1207,7 +1212,7 @@ export default function ManualPage() {
                       setShowUploadModal(false);
                       setUploadingFiles([]);
                     }}
-                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium min-h-[44px]"
+                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-all duration-200 text-sm font-medium min-h-[44px] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                     disabled={uploading}
                   >
                     Cancel
@@ -1215,7 +1220,7 @@ export default function ManualPage() {
                   <button
                     onClick={handleFileUpload}
                     disabled={uploading || uploadingFiles.length === 0}
-                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium min-h-[44px] disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all duration-200 text-sm font-medium min-h-[44px] shadow-sm hover:shadow-md active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {uploading ? "Uploading..." : "Upload"}
                   </button>
@@ -1228,11 +1233,11 @@ export default function ManualPage() {
         {/* Delete File Modal */}
         {showDeleteFileModal && deletingFile && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
-            <div className="bg-white rounded-xl shadow-2xl max-w-md w-full animate-scale-in">
-              <div className="p-6 border-b border-gray-200">
-                <h2 className="text-xl font-bold text-gray-900">Delete File</h2>
+            <div className="bg-white rounded-xl shadow-2xl max-w-md w-full animate-scale-in max-h-[90vh] overflow-y-auto">
+              <div className="p-4 sm:p-6 border-b border-gray-200">
+                <h2 className="text-lg sm:text-xl font-bold text-gray-900">Delete File</h2>
               </div>
-              <div className="p-6 space-y-4">
+              <div className="p-4 sm:p-6 space-y-4">
                 <p className="text-sm text-gray-600">
                   Are you sure you want to delete <strong>"{deletingFile.name}"</strong>?
                 </p>
@@ -1242,13 +1247,13 @@ export default function ManualPage() {
                       setShowDeleteFileModal(false);
                       setDeletingFile(null);
                     }}
-                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium min-h-[44px]"
+                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-all duration-200 text-sm font-medium min-h-[44px] active:scale-95"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleDeleteFile}
-                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium min-h-[44px]"
+                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all duration-200 text-sm font-medium min-h-[44px] shadow-sm hover:shadow-md active:scale-95"
                   >
                     Delete
                   </button>
@@ -1278,11 +1283,11 @@ export default function ManualPage() {
         {/* Rename File Modal */}
         {showRenameFileModal && renamingFile && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
-            <div className="bg-white rounded-xl shadow-2xl max-w-md w-full animate-scale-in">
-              <div className="p-6 border-b border-gray-200">
-                <h2 className="text-xl font-bold text-gray-900">Rename File</h2>
+            <div className="bg-white rounded-xl shadow-2xl max-w-md w-full animate-scale-in max-h-[90vh] overflow-y-auto">
+              <div className="p-4 sm:p-6 border-b border-gray-200">
+                <h2 className="text-lg sm:text-xl font-bold text-gray-900">Rename File</h2>
               </div>
-              <div className="p-6 space-y-4">
+              <div className="p-4 sm:p-6 space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     File Name
@@ -1291,7 +1296,7 @@ export default function ManualPage() {
                     type="text"
                     value={renamingFileName}
                     onChange={(e) => setRenamingFileName(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-h-[44px]"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-h-[44px] text-sm"
                     placeholder="Enter file name"
                     autoFocus
                   />
@@ -1303,13 +1308,13 @@ export default function ManualPage() {
                       setRenamingFile(null);
                       setRenamingFileName("");
                     }}
-                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium min-h-[44px]"
+                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-all duration-200 text-sm font-medium min-h-[44px] active:scale-95"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleRenameFile}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium min-h-[44px]"
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 text-sm font-medium min-h-[44px] shadow-sm hover:shadow-md active:scale-95"
                   >
                     Save
                   </button>
@@ -1358,11 +1363,11 @@ function MoveFileModal({
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
-      <div className="bg-white rounded-xl shadow-2xl max-w-md w-full animate-scale-in">
-        <div className="p-6 border-b border-gray-200">
-          <h2 className="text-xl font-bold text-gray-900">Move File</h2>
+      <div className="bg-white rounded-xl shadow-2xl max-w-md w-full animate-scale-in max-h-[90vh] overflow-y-auto">
+        <div className="p-4 sm:p-6 border-b border-gray-200">
+          <h2 className="text-lg sm:text-xl font-bold text-gray-900">Move File</h2>
         </div>
-        <div className="p-6 space-y-4">
+        <div className="p-4 sm:p-6 space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Move "{file.name}" to:
@@ -1370,7 +1375,7 @@ function MoveFileModal({
             <select
               value={targetFolderId || ""}
               onChange={(e) => onTargetFolderChange(e.target.value || null)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-h-[44px]"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-h-[44px] text-sm"
             >
               <option value="">Root (No Folder)</option>
               {loadingFolders ? (
@@ -1389,13 +1394,13 @@ function MoveFileModal({
           <div className="flex gap-3 justify-end">
             <button
               onClick={onCancel}
-              className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium min-h-[44px]"
+              className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-all duration-200 text-sm font-medium min-h-[44px] active:scale-95"
             >
               Cancel
             </button>
             <button
               onClick={onMove}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium min-h-[44px]"
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 text-sm font-medium min-h-[44px] shadow-sm hover:shadow-md active:scale-95"
             >
               Move
             </button>
