@@ -102,49 +102,54 @@ export default function TimeClockPage() {
     setError(undefined);
     setSuccess(undefined);
 
-    const [statusRes, todayRes, recentRes, jobsRes, assignedRes] = await Promise.all([
-      getCurrentStatus(),
-      getTodayEntries(),
-      getRecentEntries(10),
-      getAvailableJobs(),
-      getAssignedJobs(),
-    ]);
+    try {
+      const [statusRes, todayRes, recentRes, jobsRes, assignedRes] = await Promise.all([
+        getCurrentStatus(),
+        getTodayEntries(),
+        getRecentEntries(10),
+        getAvailableJobs(),
+        getAssignedJobs(),
+      ]);
 
-    if (statusRes.ok && statusRes.activeEntry) {
-      setIsClockedIn(true);
-      setCurrentEntry(statusRes.activeEntry as any);
-      setSelectedJobId(statusRes.activeEntry.jobId || "");
-    } else {
-      setIsClockedIn(false);
-      setCurrentEntry(null);
-      setSelectedJobId("");
+      if (statusRes.ok && statusRes.activeEntry) {
+        setIsClockedIn(true);
+        setCurrentEntry(statusRes.activeEntry as any);
+        setSelectedJobId(statusRes.activeEntry.jobId || "");
+      } else {
+        setIsClockedIn(false);
+        setCurrentEntry(null);
+        setSelectedJobId("");
+      }
+
+      if (todayRes.ok) {
+        setTodayEntries(todayRes.entries as any);
+      } else {
+        setError(todayRes.error);
+      }
+
+      if (recentRes.ok) {
+        setRecentEntries(recentRes.entries as any);
+      } else {
+        setError(recentRes.error);
+      }
+
+      if (jobsRes.ok && jobsRes.jobs) {
+        setAvailableJobs(jobsRes.jobs);
+      } else {
+        setError(jobsRes.error || "Failed to load jobs");
+      }
+
+      if (assignedRes.ok && assignedRes.jobs) {
+        setAssignedJobs(assignedRes.jobs as any);
+      } else {
+        setError(assignedRes.error || "Failed to load assigned jobs");
+      }
+    } catch (err: any) {
+      console.error("Load data error:", err);
+      setError(err?.message || "Failed to load time clock data.");
+    } finally {
+      setLoading(false);
     }
-
-    if (todayRes.ok) {
-      setTodayEntries(todayRes.entries as any);
-    } else {
-      setError(todayRes.error);
-    }
-
-    if (recentRes.ok) {
-      setRecentEntries(recentRes.entries as any);
-    } else {
-      setError(recentRes.error);
-    }
-
-    if (jobsRes.ok && jobsRes.jobs) {
-      setAvailableJobs(jobsRes.jobs);
-    } else {
-      setError(jobsRes.error || "Failed to load jobs");
-    }
-
-    if (assignedRes.ok && assignedRes.jobs) {
-      setAssignedJobs(assignedRes.jobs as any);
-    } else {
-      setError(assignedRes.error || "Failed to load assigned jobs");
-    }
-
-    setLoading(false);
   };
 
   const handleClockIn = async () => {
