@@ -1,0 +1,329 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import Link from "next/link";
+import { formatDateShort } from "@/lib/date-utils";
+
+type TimeEntry = {
+  id: string;
+  clockIn: string;
+  clockOut: string | null;
+  durationHours: number | null;
+  clockInNotes: string | null;
+  notes: string | null;
+  images: string | null;
+  jobTitle: string | null;
+  isRework: boolean;
+};
+
+type Props = {
+  entries: TimeEntry[];
+  userName: string;
+};
+
+function formatTime(date: string) {
+  return new Date(date).toLocaleTimeString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  });
+}
+
+function getDuration(entry: TimeEntry) {
+  const start = new Date(entry.clockIn).getTime();
+  const end = entry.clockOut ? new Date(entry.clockOut).getTime() : Date.now();
+  const diffMs = Math.max(end - start, 0);
+
+  const hours = Math.floor(diffMs / (1000 * 60 * 60));
+  const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+  return { hours, minutes, label: `${hours}h ${minutes}m` };
+}
+
+function toISODate(date: Date) {
+  return date.toISOString().slice(0, 10);
+}
+
+export default function TimeRecordsClient({ entries, userName }: Props) {
+  const defaultStart = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 30);
+    return toISODate(d);
+  }, []);
+
+  const [search, setSearch] = useState("");
+  const [from, setFrom] = useState(defaultStart);
+  const [to, setTo] = useState(toISODate(new Date()));
+  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "longest" | "shortest">("newest");
+  const [quickRange, setQuickRange] = useState<"7" | "30" | "month" | "all">("30");
+
+  const filtered = useMemo(() => {
+    return entries
+      .filter((entry) => {
+        const date = toISODate(new Date(entry.clockIn));
+        const afterStart = !from || date >= from;
+        const beforeEnd = !to || date <= to;
+        const term = search.toLowerCase();
+        const matchesTerm =
+          !term ||
+          (entry.jobTitle && entry.jobTitle.toLowerCase().includes(term)) ||
+          (entry.clockInNotes && entry.clockInNotes.toLowerCase().includes(term)) ||
+          (entry.notes && entry.notes.toLowerCase().includes(term));
+        return afterStart && beforeEnd && matchesTerm;
+      })
+      .sort((a, b) => {
+        if (sortBy === "newest") return new Date(b.clockIn).getTime() - new Date(a.clockIn).getTime();
+        if (sortBy === "oldest") return new Date(a.clockIn).getTime() - new Date(b.clockIn).getTime();
+        const durA = getDuration(a);
+        const durB = getDuration(b);
+        const minutesA = durA.hours * 60 + durA.minutes;
+        const minutesB = durB.hours * 60 + durB.minutes;
+        if (sortBy === "longest") return minutesB - minutesA;
+        return minutesA - minutesB; // shortest
+      });
+  }, [entries, from, to, search, sortBy]);
+
+  const totals = useMemo(() => {
+    let totalMinutes = 0;
+    let completed = 0;
+    let inProgress = 0;
+    let reworkMinutes = 0;
+
+    filtered.forEach((e) => {
+      const { hours, minutes } = getDuration(e);
+      const minutesTotal = hours * 60 + minutes;
+      totalMinutes += minutesTotal;
+      if (e.clockOut) {
+        completed += 1;
+      } else {
+        inProgress += 1;
+      }
+      if (e.isRework) {
+        reworkMinutes += minutesTotal;
+      }
+    });
+
+    return {
+      totalHours: (totalMinutes / 60).toFixed(1),
+      totalShifts: filtered.length,
+      completed,
+      inProgress,
+      reworkHours: (reworkMinutes / 60).toFixed(1),
+    };
+  }, [filtered]);
+
+  const applyQuickRange = (range: "7" | "30" | "month" | "all") => {
+    const today = new Date();
+    setQuickRange(range);
+
+    if (range === "all") {
+      setFrom("");
+      setTo("");
+      return;
+    }
+
+    if (range === "month") {
+      const start = new Date(today.getFullYear(), today.getMonth(), 1);
+      setFrom(toISODate(start));
+      setTo(toISODate(today));
+      return;
+    }
+
+    const days = range === "7" ? 7 : 30;
+    const start = new Date();
+    start.setDate(start.getDate() - days);
+    setFrom(toISODate(start));
+    setTo(toISODate(today));
+  };
+
+  return (
+    <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-24 py-6 sm:py-8">
+      <div className="mb-6 sm:mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-xs sm:text-sm text-gray-500">Welcome back</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">My Time Records</h1>
+          <p className="text-sm text-gray-600 mt-1">Viewing your own clock-ins and hours</p>
+        </div>
+        <div className="flex gap-2 w-full sm:w-auto">
+          <Link
+            href="/dashboard"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors min-h-[44px]"
+          >
+            ← Back to dashboard
+          </Link>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
+        <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+          <p className="text-xs text-gray-500 font-medium">Total hours</p>
+          <p className="text-2xl font-bold text-gray-900 mt-1">{totals.totalHours}h</p>
+          <p className="text-xs text-gray-500 mt-1">Filtered range</p>
+        </div>
+        <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+          <p className="text-xs text-gray-500 font-medium">Shifts</p>
+          <p className="text-2xl font-bold text-gray-900 mt-1">{totals.totalShifts}</p>
+          <p className="text-xs text-gray-500 mt-1">Completed: {totals.completed}</p>
+        </div>
+        <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+          <p className="text-xs text-gray-500 font-medium">In progress</p>
+          <p className="text-2xl font-bold text-gray-900 mt-1">{totals.inProgress}</p>
+          <p className="text-xs text-gray-500 mt-1">Live shifts</p>
+        </div>
+        <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+          <p className="text-xs text-gray-500 font-medium">Rework hours</p>
+          <p className="text-2xl font-bold text-gray-900 mt-1">{totals.reworkHours}h</p>
+          <p className="text-xs text-gray-500 mt-1">Time on rework jobs</p>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
+        <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4 lg:gap-6 mb-4">
+          <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-gray-600">Search</label>
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Job title or notes"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-h-[40px]"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-gray-600">From</label>
+              <input
+                type="date"
+                value={from}
+                onChange={(e) => setFrom(e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-h-[40px]"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-gray-600">To</label>
+              <input
+                type="date"
+                value={to}
+                onChange={(e) => setTo(e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-h-[40px]"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-gray-600">Sort</label>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as any)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-h-[40px]"
+              >
+                <option value="newest">Newest first</option>
+                <option value="oldest">Oldest first</option>
+                <option value="longest">Longest duration</option>
+                <option value="shortest">Shortest duration</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            {[
+              { key: "7", label: "Last 7 days" },
+              { key: "30", label: "Last 30 days" },
+              { key: "month", label: "This month" },
+              { key: "all", label: "All time" },
+            ].map((btn) => (
+              <button
+                key={btn.key}
+                onClick={() => applyQuickRange(btn.key as any)}
+                className={`px-3 py-2 rounded-lg text-xs font-medium border ${
+                  quickRange === btn.key
+                    ? "bg-blue-600 text-white border-blue-600"
+                    : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                } min-h-[36px] transition-colors`}
+              >
+                {btn.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="overflow-x-auto -mx-4 sm:-mx-6 lg:-mx-8">
+          <div className="inline-block min-w-full align-middle px-4 sm:px-6 lg:px-8">
+            <div className="overflow-hidden border border-gray-200 rounded-lg">
+              <table className="min-w-full divide-y divide-gray-200 text-sm">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-3 text-left font-semibold text-gray-700">Date</th>
+                    <th className="px-4 py-3 text-left font-semibold text-gray-700">Job / Task</th>
+                    <th className="px-4 py-3 text-left font-semibold text-gray-700">Clock in</th>
+                    <th className="px-4 py-3 text-left font-semibold text-gray-700">Clock out</th>
+                    <th className="px-4 py-3 text-left font-semibold text-gray-700">Duration</th>
+                    <th className="px-4 py-3 text-left font-semibold text-gray-700">Notes</th>
+                    <th className="px-4 py-3 text-left font-semibold text-gray-700">Type</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 bg-white">
+                  {filtered.length === 0 && (
+                    <tr>
+                      <td colSpan={7} className="px-4 py-6 text-center text-gray-500">
+                        No records found for this range.
+                      </td>
+                    </tr>
+                  )}
+                  {filtered.map((entry) => {
+                    const duration = getDuration(entry);
+                    return (
+                      <tr key={entry.id} className="hover:bg-gray-50">
+                        <td className="px-4 py-3 text-gray-900 font-medium whitespace-nowrap">
+                          {formatDateShort(entry.clockIn)}
+                        </td>
+                        <td className="px-4 py-3 text-gray-800">
+                          <div className="font-semibold text-gray-900">
+                            {entry.jobTitle || "General task"}
+                          </div>
+                          {entry.clockInNotes && (
+                            <p className="text-xs text-gray-600 mt-1 line-clamp-2">
+                              {entry.clockInNotes}
+                            </p>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-gray-700 whitespace-nowrap">
+                          {formatTime(entry.clockIn)}
+                        </td>
+                        <td className="px-4 py-3 text-gray-700 whitespace-nowrap">
+                          {entry.clockOut ? formatTime(entry.clockOut) : (
+                            <span className="inline-flex items-center gap-1 text-yellow-700 bg-yellow-50 border border-yellow-200 px-2 py-1 rounded-full text-xs font-semibold">
+                              • In progress
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-gray-900 font-semibold whitespace-nowrap">
+                          {duration.label}
+                        </td>
+                        <td className="px-4 py-3 text-gray-700">
+                          {entry.notes ? (
+                            <p className="text-xs text-gray-700 line-clamp-2">{entry.notes}</p>
+                          ) : (
+                            <span className="text-xs text-gray-400">—</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span
+                            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border ${
+                              entry.isRework
+                                ? "text-purple-700 bg-purple-50 border-purple-200"
+                                : "text-blue-700 bg-blue-50 border-blue-200"
+                            }`}
+                          >
+                            {entry.isRework ? "Rework" : "Standard"}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
