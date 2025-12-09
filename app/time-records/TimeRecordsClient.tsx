@@ -343,7 +343,7 @@ export default function TimeRecordsClient({ entries, userName }: Props) {
                     setDetailEntry(entry);
                     setDetailOpen(true);
                   }}
-                  className="mt-2 inline-flex items-center justify-center w-full px-3 py-2 text-xs font-semibold text-blue-700 border border-blue-200 bg-blue-50 rounded-lg hover:border-blue-300 hover:bg-blue-100 transition-colors"
+                  className="mt-2 text-xs font-semibold text-blue-600 hover:text-blue-700 underline underline-offset-2"
                 >
                   View details
                 </button>
@@ -419,7 +419,7 @@ export default function TimeRecordsClient({ entries, userName }: Props) {
                               setDetailEntry(entry);
                               setDetailOpen(true);
                             }}
-                            className="inline-flex items-center px-3 py-2 text-xs font-semibold text-blue-700 border border-blue-200 bg-blue-50 rounded-lg hover:border-blue-300 hover:bg-blue-100 transition-colors"
+                            className="text-xs font-semibold text-blue-600 hover:text-blue-700 underline underline-offset-2"
                           >
                             View details
                           </button>
