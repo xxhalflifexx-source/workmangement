@@ -301,8 +301,8 @@ export default function HRPage() {
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-24 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">HR Management</h1>
-            <p className="text-sm text-gray-500">Employee time tracking and statistics</p>
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">HR Management</h1>
+            <p className="text-xs sm:text-sm text-gray-500">Employee time tracking and statistics</p>
           </div>
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
             <Link
@@ -323,11 +323,11 @@ export default function HRPage() {
         )}
 
         {/* Date Range Filter */}
-        <div className="bg-white rounded-lg shadow p-6 border border-gray-200 mb-8">
-          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6 mb-6">
+        <div className="bg-white rounded-lg shadow p-4 sm:p-6 border border-gray-200 mb-6 sm:mb-8">
+          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 sm:gap-6 mb-4 sm:mb-6">
             <div className="flex-shrink-0">
-              <h2 className="text-lg font-semibold text-gray-900 mb-2">Date Range Filter</h2>
-              <p className="text-sm text-gray-500">Select a date range to calculate employee hours</p>
+              <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-1 sm:mb-2">Date Range Filter</h2>
+              <p className="text-xs sm:text-sm text-gray-500">Select a date range to calculate employee hours</p>
             </div>
             <div className="flex flex-col lg:flex-row gap-4 lg:items-end">
               <div className="flex-1 min-w-0">
@@ -372,10 +372,10 @@ export default function HRPage() {
         </div>
 
         {/* Summary Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
-            <div className="text-sm font-medium text-gray-500 mb-1">Total Employees</div>
-            <div className="text-3xl font-bold text-gray-900">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
+          <div className="bg-white rounded-lg shadow p-4 sm:p-6 border border-gray-200">
+            <div className="text-xs sm:text-sm font-medium text-gray-500 mb-1">Total Employees</div>
+            <div className="text-2xl sm:text-3xl font-bold text-gray-900">
               {filterLoading ? (
                 <span className="text-gray-400">...</span>
               ) : (
@@ -383,9 +383,9 @@ export default function HRPage() {
               )}
             </div>
           </div>
-          <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
-            <div className="text-sm font-medium text-gray-500 mb-1">Working Employees</div>
-            <div className="text-3xl font-bold text-green-600">
+          <div className="bg-white rounded-lg shadow p-4 sm:p-6 border border-gray-200">
+            <div className="text-xs sm:text-sm font-medium text-gray-500 mb-1">Working Employees</div>
+            <div className="text-2xl sm:text-3xl font-bold text-green-600">
               {filterLoading ? (
                 <span className="text-gray-400">...</span>
               ) : (
@@ -401,9 +401,9 @@ export default function HRPage() {
               )}
             </div>
           </div>
-          <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
-            <div className="text-sm font-medium text-gray-500 mb-1">Hours (Selected Range)</div>
-            <div className="text-3xl font-bold text-blue-600">
+          <div className="bg-white rounded-lg shadow p-4 sm:p-6 border border-gray-200">
+            <div className="text-xs sm:text-sm font-medium text-gray-500 mb-1">Hours (Selected Range)</div>
+            <div className="text-2xl sm:text-3xl font-bold text-blue-600">
               {filterLoading ? (
                 <span className="text-gray-400">...</span>
               ) : (
@@ -411,9 +411,9 @@ export default function HRPage() {
               )}
             </div>
           </div>
-          <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
-            <div className="text-sm font-medium text-gray-500 mb-1">Completed Shifts</div>
-            <div className="text-3xl font-bold text-purple-600">
+          <div className="bg-white rounded-lg shadow p-4 sm:p-6 border border-gray-200">
+            <div className="text-xs sm:text-sm font-medium text-gray-500 mb-1">Completed Shifts</div>
+            <div className="text-2xl sm:text-3xl font-bold text-purple-600">
               {filterLoading ? (
                 <span className="text-gray-400">...</span>
               ) : (
@@ -424,8 +424,8 @@ export default function HRPage() {
         </div>
 
         {/* Search and Filter Bar */}
-        <div className="bg-white rounded-lg shadow p-6 border border-gray-200 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-white rounded-lg shadow p-4 sm:p-6 border border-gray-200 mb-4 sm:mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
             {/* Search */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -476,25 +476,91 @@ export default function HRPage() {
 
         {/* Employee List */}
         <div className="bg-white rounded-xl shadow border border-gray-200">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-gray-900">
+          <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+              <h2 className="text-lg sm:text-xl font-semibold text-gray-900">
                 Employee Time Records
                 {filteredUsers.length !== users.length && (
-                  <span className="ml-2 text-sm font-normal text-gray-500">
+                  <span className="ml-2 text-xs sm:text-sm font-normal text-gray-500">
                     ({filteredUsers.length} of {users.length})
                   </span>
                 )}
               </h2>
               {filterLoading && (
-                <div className="flex items-center gap-2 text-sm text-gray-500">
+                <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-500">
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
                   <span>Updating...</span>
                 </div>
               )}
             </div>
           </div>
-          <div className="overflow-x-auto relative">
+
+          {/* Mobile Card View */}
+          <div className="sm:hidden divide-y divide-gray-200">
+            {filterLoading && (
+              <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10">
+                <div className="flex items-center gap-2 text-gray-600">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                  <span className="text-sm">Loading data...</span>
+                </div>
+              </div>
+            )}
+            {filteredUsers.length === 0 ? (
+              <div className="px-4 py-8 text-center text-gray-500 text-sm">
+                {users.length === 0 
+                  ? "No employees found" 
+                  : "No employees match your search criteria"}
+              </div>
+            ) : (
+              filteredUsers.map((user) => {
+                const statusBadge = getStatusBadge(user.currentStatus);
+                return (
+                  <div key={user.id} className="p-4 space-y-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <div className="flex-shrink-0 h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                          <span className="text-blue-600 font-medium text-sm">
+                            {(user.name || "U").charAt(0).toUpperCase()}
+                          </span>
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="text-sm font-medium text-gray-900 truncate">{user.name || "Unknown"}</div>
+                          <div className="text-xs text-gray-500 truncate">{user.email}</div>
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-end gap-2 flex-shrink-0">
+                        <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getRoleBadgeColor(user.role)}`}>
+                          {user.role}
+                        </span>
+                        <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full border ${statusBadge.className}`}>
+                          {statusBadge.label}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3 pt-2 border-t border-gray-100">
+                      <div>
+                        <div className="text-xs text-gray-500">Hours</div>
+                        <div className="text-sm font-semibold text-gray-900">{user.dateRangeHours.toFixed(1)}h</div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-gray-500">Shifts</div>
+                        <div className="text-sm font-semibold text-gray-900">{user.completedShifts}</div>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handleViewEntries(user)}
+                      className="w-full min-h-[44px] px-4 py-2 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-lg font-medium transition-colors border border-blue-200"
+                    >
+                      View Details
+                    </button>
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          {/* Desktop Table View */}
+          <div className="hidden sm:block overflow-x-auto relative">
             {filterLoading && (
               <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10">
                 <div className="flex items-center gap-2 text-gray-600">
