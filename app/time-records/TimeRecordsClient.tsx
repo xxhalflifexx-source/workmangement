@@ -146,7 +146,7 @@ export default function TimeRecordsClient({ entries, userName }: Props) {
         <div className="flex gap-2 w-full sm:w-auto">
           <Link
             href="/dashboard"
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors min-h-[44px]"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors min-h-[44px] bg-white shadow-sm"
           >
             ← Back to dashboard
           </Link>
@@ -231,10 +231,10 @@ export default function TimeRecordsClient({ entries, userName }: Props) {
               <button
                 key={btn.key}
                 onClick={() => applyQuickRange(btn.key as any)}
-                className={`px-3 py-2 rounded-lg text-xs font-medium border ${
+                className={`px-3 py-2 rounded-lg text-xs font-semibold border ${
                   quickRange === btn.key
-                    ? "bg-blue-600 text-white border-blue-600"
-                    : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                    ? "bg-blue-600 text-white border-blue-600 shadow-sm"
+                    : "bg-white text-gray-700 border-gray-200 hover:bg-blue-50 hover:border-blue-200"
                 } min-h-[36px] transition-colors`}
               >
                 {btn.label}
@@ -243,7 +243,60 @@ export default function TimeRecordsClient({ entries, userName }: Props) {
           </div>
         </div>
 
-        <div className="overflow-x-auto -mx-4 sm:-mx-6 lg:-mx-8">
+        {/* Mobile cards */}
+        <div className="space-y-3 sm:hidden">
+          {filtered.length === 0 && (
+            <div className="px-4 py-4 text-center text-gray-500 border border-gray-200 rounded-lg">
+              No records found for this range.
+            </div>
+          )}
+          {filtered.map((entry) => {
+            const duration = getDuration(entry);
+            return (
+              <div key={entry.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-xs space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">{formatDateShort(entry.clockIn)}</p>
+                    <p className="text-xs text-gray-500">{formatTime(entry.clockIn)} {entry.clockOut ? `- ${formatTime(entry.clockOut)}` : ""}</p>
+                  </div>
+                  <span
+                    className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold border ${
+                      entry.clockOut
+                        ? "text-gray-700 bg-gray-50 border-gray-200"
+                        : "text-yellow-700 bg-yellow-50 border-yellow-200"
+                    }`}
+                  >
+                    {entry.clockOut ? "Completed" : "In progress"}
+                  </span>
+                </div>
+                <div>
+                  <p className="font-semibold text-gray-900">{entry.jobTitle || "General task"}</p>
+                  {entry.clockInNotes && (
+                    <p className="text-xs text-gray-600 mt-1 line-clamp-2">{entry.clockInNotes}</p>
+                  )}
+                </div>
+                <div className="flex items-center justify-between text-sm text-gray-800">
+                  <span className="font-semibold">{duration.label}</span>
+                  <span
+                    className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-semibold border ${
+                      entry.isRework
+                        ? "text-purple-700 bg-purple-50 border-purple-200"
+                        : "text-blue-700 bg-blue-50 border-blue-200"
+                    }`}
+                  >
+                    {entry.isRework ? "Rework" : "Standard"}
+                  </span>
+                </div>
+                {entry.notes && (
+                  <p className="text-xs text-gray-700 border-t border-gray-100 pt-2">{entry.notes}</p>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Desktop/tablet table */}
+        <div className="overflow-x-auto -mx-4 sm:-mx-6 lg:-mx-8 hidden sm:block">
           <div className="inline-block min-w-full align-middle px-4 sm:px-6 lg:px-8">
             <div className="overflow-hidden border border-gray-200 rounded-lg">
               <table className="min-w-full divide-y divide-gray-200 text-sm">
