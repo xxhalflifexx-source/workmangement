@@ -94,8 +94,12 @@ export default function HRPage() {
   useEffect(() => {
     const loadRole = async () => {
       const res = await getCurrentUserRole();
+      console.log("Current user role check:", res);
       if (res.ok && res.role === "ADMIN") {
         setIsAdmin(true);
+        console.log("User is ADMIN - edit button should be visible");
+      } else {
+        console.log("User is not ADMIN - role:", res.role);
       }
     };
     loadRole();
@@ -170,12 +174,30 @@ export default function HRPage() {
   };
 
   const openEditModal = (entry: TimeEntry) => {
-    setEditEntry(entry);
-    setEditClockIn(entry.clockIn.slice(0, 16));
-    setEditClockOut(entry.clockOut ? entry.clockOut.slice(0, 16) : "");
-    setEditPassword("");
-    setEditError(undefined);
-    setShowEditConfirm(true);
+    try {
+      // Format dates for datetime-local input (YYYY-MM-DDTHH:mm)
+      const clockInDate = new Date(entry.clockIn);
+      const clockOutDate = entry.clockOut ? new Date(entry.clockOut) : null;
+      
+      const formatForInput = (date: Date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        return `${year}-${month}-${day}T${hours}:${minutes}`;
+      };
+      
+      setEditEntry(entry);
+      setEditClockIn(formatForInput(clockInDate));
+      setEditClockOut(clockOutDate ? formatForInput(clockOutDate) : "");
+      setEditPassword("");
+      setEditError(undefined);
+      setShowEditConfirm(true);
+    } catch (err) {
+      console.error("Error opening edit modal:", err);
+      setEditError("Failed to open edit form. Please try again.");
+    }
   };
 
   const handleSaveEdit = async () => {
@@ -568,8 +590,13 @@ export default function HRPage() {
                               {isAdmin ? (
                                 <button
                                   type="button"
-                                  onClick={() => openEditModal(entry)}
-                                  className="text-xs text-blue-600 hover:text-blue-800 font-semibold underline underline-offset-2"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    console.log("Edit time clicked for entry:", entry.id);
+                                    openEditModal(entry);
+                                  }}
+                                  className="text-xs text-blue-600 hover:text-blue-800 font-semibold underline underline-offset-2 cursor-pointer"
                                 >
                                   Edit time
                                 </button>
