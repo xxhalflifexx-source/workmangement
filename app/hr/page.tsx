@@ -565,13 +565,16 @@ export default function HRPage() {
                           <div className="font-semibold text-sm sm:text-base text-blue-600">
                             {calculateDuration(entry)}
                           </div>
-                              {isAdmin && (
+                              {isAdmin ? (
                                 <button
+                                  type="button"
                                   onClick={() => openEditModal(entry)}
                                   className="text-xs text-blue-600 hover:text-blue-800 font-semibold underline underline-offset-2"
                                 >
                                   Edit time
                                 </button>
+                              ) : (
+                                <span className="text-[11px] text-gray-400">Admin only</span>
                               )}
                         </div>
                       </div>
