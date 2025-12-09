@@ -59,6 +59,8 @@ export default function TimeRecordsClient({ entries, userName }: Props) {
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerPhotos, setViewerPhotos] = useState<string[]>([]);
   const [viewerIndex, setViewerIndex] = useState(0);
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [detailEntry, setDetailEntry] = useState<TimeEntry | null>(null);
 
   const openViewer = (photos: string[], index: number) => {
     setViewerPhotos(photos);
@@ -335,6 +337,16 @@ export default function TimeRecordsClient({ entries, userName }: Props) {
                     </div>
                   </div>
                 )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDetailEntry(entry);
+                    setDetailOpen(true);
+                  }}
+                  className="mt-2 inline-flex items-center justify-center w-full px-3 py-2 text-xs font-semibold text-blue-700 border border-blue-200 bg-blue-50 rounded-lg hover:border-blue-300 hover:bg-blue-100 transition-colors"
+                >
+                  View details
+                </button>
               </div>
             );
           })}
@@ -401,36 +413,16 @@ export default function TimeRecordsClient({ entries, userName }: Props) {
                           </span>
                         </td>
                         <td className="px-4 py-3 text-gray-700 space-y-2 align-top">
-                          {entry.clockInNotes && (
-                            <div className="text-xs text-gray-800 bg-gray-50 border border-gray-200 rounded-md px-3 py-2 break-words max-w-xs">
-                              <span className="font-semibold text-gray-900">Clock-in:</span>{" "}
-                              <span className="line-clamp-3">{entry.clockInNotes}</span>
-                            </div>
-                          )}
-                          {entry.notes && (
-                            <div className="text-xs text-gray-800 bg-gray-50 border border-gray-200 rounded-md px-3 py-2 break-words max-w-xs">
-                              <span className="font-semibold text-gray-900">Clock-out:</span>{" "}
-                              <span className="line-clamp-3">{entry.notes}</span>
-                            </div>
-                          )}
-                          {!entry.clockInNotes && !entry.notes && (
-                            <span className="text-xs text-gray-400">—</span>
-                          )}
-                          {images.length > 0 && (
-                            <div className="flex flex-wrap gap-2 pt-1">
-                              {images.map((img, idx) => (
-                                <button
-                                  key={idx}
-                                  type="button"
-                                  onClick={() => openViewer(images, idx)}
-                                  className="w-12 h-12 rounded-md border border-gray-200 overflow-hidden bg-gray-50"
-                                  aria-label={`View photo ${idx + 1}`}
-                                >
-                                  <img src={img} alt={`Photo ${idx + 1}`} className="w-full h-full object-cover" />
-                                </button>
-                              ))}
-                            </div>
-                          )}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setDetailEntry(entry);
+                              setDetailOpen(true);
+                            }}
+                            className="inline-flex items-center px-3 py-2 text-xs font-semibold text-blue-700 border border-blue-200 bg-blue-50 rounded-lg hover:border-blue-300 hover:bg-blue-100 transition-colors"
+                          >
+                            View details
+                          </button>
                         </td>
                         <td className="px-4 py-3">
                           <span
@@ -459,6 +451,119 @@ export default function TimeRecordsClient({ entries, userName }: Props) {
           initialIndex={viewerIndex}
           onClose={() => setViewerOpen(false)}
         />
+      )}
+
+      {detailOpen && detailEntry && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-3">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto border border-gray-200">
+            <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-gray-200 sticky top-0 bg-white">
+              <div>
+                <p className="text-xs text-gray-500">Time entry details</p>
+                <h3 className="text-lg font-bold text-gray-900">
+                  {formatDateShort(detailEntry.clockIn)}
+                </h3>
+              </div>
+              <button
+                onClick={() => {
+                  setDetailOpen(false);
+                  setDetailEntry(null);
+                }}
+                className="text-gray-400 hover:text-gray-600 active:text-gray-800 rounded-full w-10 h-10 flex items-center justify-center border border-gray-200 bg-white"
+                aria-label="Close details"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="px-4 sm:px-6 py-4 space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                  <p className="text-xs text-gray-500 font-medium">Clock in</p>
+                  <p className="text-sm font-semibold text-gray-900">{formatTime(detailEntry.clockIn)}</p>
+                </div>
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                  <p className="text-xs text-gray-500 font-medium">Clock out</p>
+                  <p className="text-sm font-semibold text-gray-900">
+                    {detailEntry.clockOut ? formatTime(detailEntry.clockOut) : "In progress"}
+                  </p>
+                </div>
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                  <p className="text-xs text-gray-500 font-medium">Duration</p>
+                  <p className="text-sm font-semibold text-gray-900">{getDuration(detailEntry).label}</p>
+                </div>
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                  <p className="text-xs text-gray-500 font-medium">Type</p>
+                  <p className="text-sm font-semibold text-gray-900">
+                    {detailEntry.isRework ? "Rework" : "Standard"}
+                  </p>
+                </div>
+              </div>
+
+              <div className="bg-white border border-gray-200 rounded-lg p-3 sm:p-4 shadow-sm">
+                <p className="text-xs text-gray-500 font-medium mb-2">Job / Task</p>
+                <p className="text-sm font-semibold text-gray-900">
+                  {detailEntry.jobTitle || "General task"}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {detailEntry.clockInNotes && (
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 sm:p-4">
+                    <p className="text-xs font-semibold text-gray-700 mb-1">Clock-in note</p>
+                    <p className="text-sm text-gray-800 whitespace-pre-wrap">{detailEntry.clockInNotes}</p>
+                  </div>
+                )}
+                {detailEntry.notes && (
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 sm:p-4">
+                    <p className="text-xs font-semibold text-gray-700 mb-1">Clock-out note</p>
+                    <p className="text-sm text-gray-800 whitespace-pre-wrap">{detailEntry.notes}</p>
+                  </div>
+                )}
+                {!detailEntry.clockInNotes && !detailEntry.notes && (
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 sm:p-4">
+                    <p className="text-xs font-semibold text-gray-700 mb-1">Notes</p>
+                    <p className="text-sm text-gray-500">No notes provided.</p>
+                  </div>
+                )}
+              </div>
+
+              {getImages(detailEntry).length > 0 && (
+                <div className="bg-white border border-gray-200 rounded-lg p-3 sm:p-4 shadow-sm">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-xs font-semibold text-gray-700">Photos</p>
+                    <p className="text-xs text-gray-500">{getImages(detailEntry).length} file(s)</p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {getImages(detailEntry).map((img, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => openViewer(getImages(detailEntry), idx)}
+                        className="w-20 h-20 rounded-lg border border-gray-200 overflow-hidden bg-gray-50"
+                        aria-label={`View photo ${idx + 1}`}
+                      >
+                        <img src={img} alt={`Photo ${idx + 1}`} className="w-full h-full object-cover" />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="px-4 sm:px-6 py-3 border-t border-gray-200 bg-gray-50 sticky bottom-0 flex justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  setDetailOpen(false);
+                  setDetailEntry(null);
+                }}
+                className="px-4 py-2 text-sm font-semibold text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors min-h-[40px]"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
