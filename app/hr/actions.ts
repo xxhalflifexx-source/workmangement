@@ -134,6 +134,21 @@ export async function getAllUsersStats(dateFrom?: string, dateTo?: string) {
 
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
+      // Find current active entry (clocked in but not clocked out)
+      const activeEntry = user.timeEntries.find((entry: any) => 
+        entry.clockIn && !entry.clockOut
+      );
+
+      // Determine current status
+      let currentStatus: "IDLE" | "WORKING" | "ON_BREAK" = "IDLE";
+      if (activeEntry) {
+        if (activeEntry.breakStart && !activeEntry.breakEnd) {
+          currentStatus = "ON_BREAK";
+        } else {
+          currentStatus = "WORKING";
+        }
+      }
+
       user.timeEntries.forEach((entry: any) => {
         if (entry.clockIn && entry.clockOut) {
           const clockInDate = new Date(entry.clockIn);
@@ -183,6 +198,7 @@ export async function getAllUsersStats(dateFrom?: string, dateTo?: string) {
         completedShifts,
         thisWeekHours: Math.round(thisWeekHours * 10) / 10,
         thisMonthHours: Math.round(thisMonthHours * 10) / 10,
+        currentStatus,
         recentEntries: user.timeEntries.slice(0, 5),
       };
     });

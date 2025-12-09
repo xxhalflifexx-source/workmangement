@@ -29,6 +29,7 @@ interface UserStats {
   completedShifts: number;
   thisWeekHours: number;
   thisMonthHours: number;
+  currentStatus?: "IDLE" | "WORKING" | "ON_BREAK";
   recentEntries: TimeEntry[];
 }
 
@@ -245,6 +246,26 @@ export default function HRPage() {
     }
   };
 
+  const getStatusBadge = (status?: "IDLE" | "WORKING" | "ON_BREAK") => {
+    switch (status) {
+      case "WORKING":
+        return {
+          label: "Working",
+          className: "bg-green-100 text-green-700 border-green-200",
+        };
+      case "ON_BREAK":
+        return {
+          label: "On Break",
+          className: "bg-orange-100 text-orange-700 border-orange-200",
+        };
+      default:
+        return {
+          label: "Idle",
+          className: "bg-gray-100 text-gray-700 border-gray-200",
+        };
+    }
+  };
+
   // Filter users based on search and role
   const filteredUsers = users.filter((user) => {
     // Search filter
@@ -351,7 +372,7 @@ export default function HRPage() {
         </div>
 
         {/* Summary Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
             <div className="text-sm font-medium text-gray-500 mb-1">Total Employees</div>
             <div className="text-3xl font-bold text-gray-900">
@@ -359,6 +380,24 @@ export default function HRPage() {
                 <span className="text-gray-400">...</span>
               ) : (
                 users.length
+              )}
+            </div>
+          </div>
+          <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
+            <div className="text-sm font-medium text-gray-500 mb-1">Working Employees</div>
+            <div className="text-3xl font-bold text-green-600">
+              {filterLoading ? (
+                <span className="text-gray-400">...</span>
+              ) : (
+                users.filter((user) => user.currentStatus === "WORKING" || user.currentStatus === "ON_BREAK").length
+              )}
+            </div>
+            <div className="text-xs text-gray-500 mt-1">
+              {filterLoading ? "" : (
+                <>
+                  {users.filter((u) => u.currentStatus === "WORKING").length} working,{" "}
+                  {users.filter((u) => u.currentStatus === "ON_BREAK").length} on break
+                </>
               )}
             </div>
           </div>
@@ -374,7 +413,7 @@ export default function HRPage() {
           </div>
           <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
             <div className="text-sm font-medium text-gray-500 mb-1">Completed Shifts</div>
-            <div className="text-3xl font-bold text-green-600">
+            <div className="text-3xl font-bold text-purple-600">
               {filterLoading ? (
                 <span className="text-gray-400">...</span>
               ) : (
@@ -473,6 +512,9 @@ export default function HRPage() {
                   <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Role
                   </th>
+                  <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Status
+                  </th>
                   <th className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Hours (Selected Range)
                   </th>
@@ -487,49 +529,57 @@ export default function HRPage() {
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredUsers.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-4 sm:px-6 py-8 text-center text-gray-500">
+                    <td colSpan={6} className="px-4 sm:px-6 py-8 text-center text-gray-500">
                       {users.length === 0 
                         ? "No employees found" 
                         : "No employees match your search criteria"}
                     </td>
                   </tr>
                 ) : (
-                  filteredUsers.map((user) => (
-                    <tr key={user.id} className="hover:bg-gray-50">
-                      <td className="px-4 sm:px-6 py-4">
-                        <div className="flex items-center min-w-0">
-                          <div className="flex-shrink-0 h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
-                            <span className="text-blue-600 font-medium text-sm">
-                              {(user.name || "U").charAt(0).toUpperCase()}
-                            </span>
+                  filteredUsers.map((user) => {
+                    const statusBadge = getStatusBadge(user.currentStatus);
+                    return (
+                      <tr key={user.id} className="hover:bg-gray-50">
+                        <td className="px-4 sm:px-6 py-4">
+                          <div className="flex items-center min-w-0">
+                            <div className="flex-shrink-0 h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                              <span className="text-blue-600 font-medium text-sm">
+                                {(user.name || "U").charAt(0).toUpperCase()}
+                              </span>
+                            </div>
+                            <div className="ml-3 min-w-0 flex-1">
+                              <div className="text-sm font-medium text-gray-900 truncate break-words">{user.name || "Unknown"}</div>
+                              <div className="text-sm text-gray-500 truncate break-all">{user.email}</div>
+                            </div>
                           </div>
-                          <div className="ml-3 min-w-0 flex-1">
-                            <div className="text-sm font-medium text-gray-900 truncate break-words">{user.name || "Unknown"}</div>
-                            <div className="text-sm text-gray-500 truncate break-all">{user.email}</div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getRoleBadgeColor(user.role)}`}>
-                          {user.role}
-                        </span>
-                      </td>
-                      <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-right text-sm font-medium text-gray-900">
-                        {user.dateRangeHours.toFixed(1)}h
-                      </td>
-                      <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-right text-sm text-gray-600">
-                        {user.completedShifts}
-                      </td>
-                      <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <button
-                          onClick={() => handleViewEntries(user)}
-                          className="px-3 py-2 sm:px-2 sm:py-1 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-lg font-medium transition-colors min-h-[44px] sm:min-h-0"
-                        >
-                          View Details
-                        </button>
-                      </td>
-                    </tr>
-                  ))
+                        </td>
+                        <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
+                          <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getRoleBadgeColor(user.role)}`}>
+                            {user.role}
+                          </span>
+                        </td>
+                        <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
+                          <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full border ${statusBadge.className}`}>
+                            {statusBadge.label}
+                          </span>
+                        </td>
+                        <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-right text-sm font-medium text-gray-900">
+                          {user.dateRangeHours.toFixed(1)}h
+                        </td>
+                        <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-right text-sm text-gray-600">
+                          {user.completedShifts}
+                        </td>
+                        <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <button
+                            onClick={() => handleViewEntries(user)}
+                            className="px-3 py-2 sm:px-2 sm:py-1 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-lg font-medium transition-colors min-h-[44px] sm:min-h-0"
+                          >
+                            View Details
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>
