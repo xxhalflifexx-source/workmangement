@@ -307,16 +307,16 @@ export default function TimeRecordsClient({ entries, userName }: Props) {
                 </div>
                 <div className="space-y-1 border-t border-gray-100 pt-2">
                   {entry.clockInNotes && (
-                    <div className="text-xs text-gray-800 bg-gray-50 border border-gray-200 rounded-md px-2 py-1.5 break-words">
+                    <p className="text-xs text-gray-800">
                       <span className="font-semibold text-gray-900">Clock-in:</span>{" "}
                       <span className="line-clamp-3">{entry.clockInNotes}</span>
-                    </div>
+                    </p>
                   )}
                   {entry.notes && (
-                    <div className="text-xs text-gray-800 bg-gray-50 border border-gray-200 rounded-md px-2 py-1.5 break-words">
+                    <p className="text-xs text-gray-800">
                       <span className="font-semibold text-gray-900">Clock-out:</span>{" "}
                       <span className="line-clamp-3">{entry.notes}</span>
-                    </div>
+                    </p>
                   )}
                 </div>
                 {images.length > 0 && (
@@ -499,8 +499,8 @@ export default function TimeRecordsClient({ entries, userName }: Props) {
                 </div>
               </div>
 
-              <div className="bg-white border border-gray-200 rounded-lg p-3 sm:p-4 shadow-sm">
-                <p className="text-xs text-gray-500 font-medium mb-2">Job / Task</p>
+              <div className="space-y-2">
+                <p className="text-xs text-gray-500 font-medium">Job / Task</p>
                 <p className="text-sm font-semibold text-gray-900">
                   {detailEntry.jobTitle || "General task"}
                 </p>
@@ -508,20 +508,20 @@ export default function TimeRecordsClient({ entries, userName }: Props) {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {detailEntry.clockInNotes && (
-                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 sm:p-4">
-                    <p className="text-xs font-semibold text-gray-700 mb-1">Clock-in note</p>
+                  <div className="space-y-1">
+                    <p className="text-xs font-semibold text-gray-700">Clock-in note</p>
                     <p className="text-sm text-gray-800 whitespace-pre-wrap">{detailEntry.clockInNotes}</p>
                   </div>
                 )}
                 {detailEntry.notes && (
-                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 sm:p-4">
-                    <p className="text-xs font-semibold text-gray-700 mb-1">Clock-out note</p>
+                  <div className="space-y-1">
+                    <p className="text-xs font-semibold text-gray-700">Clock-out note</p>
                     <p className="text-sm text-gray-800 whitespace-pre-wrap">{detailEntry.notes}</p>
                   </div>
                 )}
                 {!detailEntry.clockInNotes && !detailEntry.notes && (
-                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 sm:p-4">
-                    <p className="text-xs font-semibold text-gray-700 mb-1">Notes</p>
+                  <div className="space-y-1">
+                    <p className="text-xs font-semibold text-gray-700">Notes</p>
                     <p className="text-sm text-gray-500">No notes provided.</p>
                   </div>
                 )}
