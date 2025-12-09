@@ -296,10 +296,8 @@ export default function TimeRecordsClient({ entries, userName }: Props) {
                 <div className="flex items-center justify-between text-sm text-gray-800">
                   <span className="font-semibold">{duration.label}</span>
                   <span
-                    className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-semibold border ${
-                      entry.isRework
-                        ? "text-purple-700 bg-purple-50 border-purple-200"
-                        : "text-blue-700 bg-blue-50 border-blue-200"
+                    className={`text-[11px] font-semibold ${
+                      entry.isRework ? "text-purple-700" : "text-blue-700"
                     }`}
                   >
                     {entry.isRework ? "Rework" : "Standard"}
@@ -426,10 +424,8 @@ export default function TimeRecordsClient({ entries, userName }: Props) {
                         </td>
                         <td className="px-4 py-3">
                           <span
-                            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border ${
-                              entry.isRework
-                                ? "text-purple-700 bg-purple-50 border-purple-200"
-                                : "text-blue-700 bg-blue-50 border-blue-200"
+                            className={`text-xs font-semibold ${
+                              entry.isRework ? "text-purple-700" : "text-blue-700"
                             }`}
                           >
                             {entry.isRework ? "Rework" : "Standard"}
