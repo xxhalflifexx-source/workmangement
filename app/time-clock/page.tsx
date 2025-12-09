@@ -50,6 +50,8 @@ export default function TimeClockPage() {
   const [clockInDescription, setClockInDescription] = useState("");
   const [descriptionError, setDescriptionError] = useState<string | undefined>();
   const [showClockOutConfirm, setShowClockOutConfirm] = useState(false);
+  const [showStartBreakConfirm, setShowStartBreakConfirm] = useState(false);
+  const [showEndBreakConfirm, setShowEndBreakConfirm] = useState(false);
   const [clockOutPhotos, setClockOutPhotos] = useState<File[]>([]);
   const [uploadingPhotos, setUploadingPhotos] = useState(false);
   const [showPhotoViewer, setShowPhotoViewer] = useState(false);
@@ -196,6 +198,7 @@ export default function TimeClockPage() {
   const handleStartBreak = async () => {
     setError(undefined);
     setSuccess(undefined);
+    setShowStartBreakConfirm(false);
     setLoading(true);
     try {
       const res = await startBreak();
@@ -215,6 +218,7 @@ export default function TimeClockPage() {
   const handleEndBreak = async () => {
     setError(undefined);
     setSuccess(undefined);
+    setShowEndBreakConfirm(false);
     setLoading(true);
     try {
       const res = await endBreak();
@@ -585,14 +589,14 @@ export default function TimeClockPage() {
 
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <button
-                      onClick={handleStartBreak}
+                      onClick={() => setShowStartBreakConfirm(true)}
                       disabled={loading || !!currentEntry?.breakStart && !currentEntry?.breakEnd}
                       className="min-h-[44px] w-full bg-white border border-gray-300 text-gray-800 py-3 rounded-xl font-semibold text-sm sm:text-base hover:bg-gray-50 transition-colors disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed shadow-sm"
                     >
                       Start Break
                     </button>
                     <button
-                      onClick={handleEndBreak}
+                      onClick={() => setShowEndBreakConfirm(true)}
                       disabled={loading || !currentEntry?.breakStart || !!currentEntry?.breakEnd}
                       className="min-h-[44px] w-full bg-white border border-gray-300 text-gray-800 py-3 rounded-xl font-semibold text-sm sm:text-base hover:bg-gray-50 transition-colors disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed shadow-sm"
                     >
@@ -850,6 +854,68 @@ export default function TimeClockPage() {
                 className="flex-1 min-h-[44px] px-4 py-2.5 sm:py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 active:bg-red-800 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed touch-manipulation shadow-md"
               >
                 {uploadingPhotos ? "Uploading..." : loading ? "Processing..." : "Yes, Clock Out"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Start Break Confirmation */}
+      {showStartBreakConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
+          <div className="bg-white rounded-xl shadow-2xl p-4 sm:p-6 max-w-md w-full">
+            <div className="text-center mb-4">
+              <div className="mx-auto flex items-center justify-center h-10 w-10 rounded-full bg-blue-100 mb-3">
+                <span className="text-blue-600 text-lg">⏸️</span>
+              </div>
+              <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-1">Start Break</h3>
+              <p className="text-xs sm:text-sm text-gray-600">Pause your shift and start a break?</p>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <button
+                onClick={() => setShowStartBreakConfirm(false)}
+                disabled={loading}
+                className="flex-1 min-h-[44px] px-4 py-2 border-2 border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 disabled:bg-gray-100 disabled:text-gray-400"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleStartBreak}
+                disabled={loading}
+                className="flex-1 min-h-[44px] px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:bg-gray-300"
+              >
+                {loading ? "Processing..." : "Yes, start break"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* End Break Confirmation */}
+      {showEndBreakConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
+          <div className="bg-white rounded-xl shadow-2xl p-4 sm:p-6 max-w-md w-full">
+            <div className="text-center mb-4">
+              <div className="mx-auto flex items-center justify-center h-10 w-10 rounded-full bg-green-100 mb-3">
+                <span className="text-green-600 text-lg">▶️</span>
+              </div>
+              <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-1">End Break</h3>
+              <p className="text-xs sm:text-sm text-gray-600">Resume your shift now?</p>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <button
+                onClick={() => setShowEndBreakConfirm(false)}
+                disabled={loading}
+                className="flex-1 min-h-[44px] px-4 py-2 border-2 border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 disabled:bg-gray-100 disabled:text-gray-400"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleEndBreak}
+                disabled={loading}
+                className="flex-1 min-h-[44px] px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 disabled:bg-gray-300"
+              >
+                {loading ? "Processing..." : "Yes, end break"}
               </button>
             </div>
           </div>
