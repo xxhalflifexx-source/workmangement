@@ -48,6 +48,8 @@ export default function HRPage() {
   const [editEntry, setEditEntry] = useState<TimeEntry | null>(null);
   const [editClockIn, setEditClockIn] = useState("");
   const [editClockOut, setEditClockOut] = useState("");
+  const [editBreakStart, setEditBreakStart] = useState("");
+  const [editBreakEnd, setEditBreakEnd] = useState("");
   const [editPassword, setEditPassword] = useState("");
   const [editError, setEditError] = useState<string | undefined>();
   const [editLoading, setEditLoading] = useState(false);
@@ -178,6 +180,8 @@ export default function HRPage() {
       // Format dates for datetime-local input (YYYY-MM-DDTHH:mm)
       const clockInDate = new Date(entry.clockIn);
       const clockOutDate = entry.clockOut ? new Date(entry.clockOut) : null;
+      const breakStartDate = entry.breakStart ? new Date(entry.breakStart) : null;
+      const breakEndDate = entry.breakEnd ? new Date(entry.breakEnd) : null;
       
       const formatForInput = (date: Date) => {
         const year = date.getFullYear();
@@ -191,6 +195,8 @@ export default function HRPage() {
       setEditEntry(entry);
       setEditClockIn(formatForInput(clockInDate));
       setEditClockOut(clockOutDate ? formatForInput(clockOutDate) : "");
+      setEditBreakStart(breakStartDate ? formatForInput(breakStartDate) : "");
+      setEditBreakEnd(breakEndDate ? formatForInput(breakEndDate) : "");
       setEditPassword("");
       setEditError(undefined);
       setShowEditConfirm(true);
@@ -208,6 +214,8 @@ export default function HRPage() {
       editEntry.id,
       new Date(editClockIn).toISOString(),
       editClockOut ? new Date(editClockOut).toISOString() : null,
+      editBreakStart ? new Date(editBreakStart).toISOString() : null,
+      editBreakEnd ? new Date(editBreakEnd).toISOString() : null,
       editPassword
     );
     if (!res.ok) {
@@ -694,7 +702,7 @@ export default function HRPage() {
 
       {showEditConfirm && editEntry && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2 sm:p-4 z-50">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-4 sm:p-6">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-4 sm:p-6 max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-semibold text-gray-900 mb-3">Edit time entry</h3>
             <div className="space-y-3">
               <div>
@@ -703,7 +711,7 @@ export default function HRPage() {
                   type="datetime-local"
                   value={editClockIn}
                   onChange={(e) => setEditClockIn(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm min-h-[44px]"
                 />
               </div>
               <div>
@@ -712,9 +720,29 @@ export default function HRPage() {
                   type="datetime-local"
                   value={editClockOut}
                   onChange={(e) => setEditClockOut(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm min-h-[44px]"
                 />
                 <p className="text-xs text-gray-500 mt-1">Leave empty if still in progress.</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Break start (optional)</label>
+                <input
+                  type="datetime-local"
+                  value={editBreakStart}
+                  onChange={(e) => setEditBreakStart(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm min-h-[44px]"
+                />
+                <p className="text-xs text-gray-500 mt-1">Leave empty if no break was taken.</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Break end (optional)</label>
+                <input
+                  type="datetime-local"
+                  value={editBreakEnd}
+                  onChange={(e) => setEditBreakEnd(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm min-h-[44px]"
+                />
+                <p className="text-xs text-gray-500 mt-1">Leave empty if break is still ongoing.</p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Admin password (required)</label>
@@ -722,7 +750,8 @@ export default function HRPage() {
                   type="password"
                   value={editPassword}
                   onChange={(e) => setEditPassword(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm min-h-[44px]"
+                  placeholder="Enter your admin password"
                 />
               </div>
               {editError && <p className="text-sm text-red-600">{editError}</p>}

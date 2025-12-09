@@ -286,7 +286,14 @@ export async function getCurrentUserRole() {
   return { ok: true, role };
 }
 
-export async function updateTimeEntryTimes(entryId: string, clockInIso: string, clockOutIso: string | null, password: string) {
+export async function updateTimeEntryTimes(
+  entryId: string,
+  clockInIso: string,
+  clockOutIso: string | null,
+  breakStartIso: string | null,
+  breakEndIso: string | null,
+  password: string
+) {
   const session = await getServerSession(authOptions);
 
   if (!session?.user) {
@@ -314,23 +321,30 @@ export async function updateTimeEntryTimes(entryId: string, clockInIso: string, 
 
   const clockIn = new Date(clockInIso);
   const clockOut = clockOutIso ? new Date(clockOutIso) : null;
+  const breakStart = breakStartIso ? new Date(breakStartIso) : null;
+  const breakEnd = breakEndIso ? new Date(breakEndIso) : null;
 
-  const existing = await prisma.timeEntry.findUnique({
-    where: { id: entryId },
-    select: { breakStart: true, breakEnd: true },
-  });
-  if (!existing) {
-    return { ok: false, error: "Time entry not found" };
+  // Validate break times
+  if (breakStart && clockIn && breakStart < clockIn) {
+    return { ok: false, error: "Break start cannot be before clock in" };
+  }
+  if (breakEnd && breakStart && breakEnd < breakStart) {
+    return { ok: false, error: "Break end cannot be before break start" };
+  }
+  if (breakEnd && clockOut && breakEnd > clockOut) {
+    return { ok: false, error: "Break end cannot be after clock out" };
   }
 
+  // Calculate break duration
   let breakMs = 0;
-  if (existing.breakStart) {
-    const endMs = existing.breakEnd ? existing.breakEnd.getTime() : clockOut ? clockOut.getTime() : Date.now();
-    breakMs = endMs - existing.breakStart.getTime();
+  if (breakStart) {
+    const endMs = breakEnd ? breakEnd.getTime() : clockOut ? clockOut.getTime() : Date.now();
+    breakMs = Math.max(endMs - breakStart.getTime(), 0);
   }
 
+  // Calculate total duration (excluding break time)
   const durationHours = clockOut
-    ? Math.max((clockOut.getTime() - clockIn.getTime() - Math.max(breakMs, 0)) / (1000 * 60 * 60), 0)
+    ? Math.max((clockOut.getTime() - clockIn.getTime() - breakMs) / (1000 * 60 * 60), 0)
     : null;
 
   const updated = await prisma.timeEntry.update({
@@ -338,6 +352,8 @@ export async function updateTimeEntryTimes(entryId: string, clockInIso: string, 
     data: {
       clockIn,
       clockOut,
+      breakStart,
+      breakEnd,
       durationHours,
     },
     include: {
