@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authOptions";
 import { startOfDayCentral, endOfDayCentral, parseCentralDate } from "@/lib/date-utils";
+import bcrypt from "bcryptjs";
 
 // Set timezone for Node.js process
 if (typeof process !== "undefined") {
@@ -274,6 +275,77 @@ export async function getUserTimeEntries(userId: string) {
     console.error("Get user time entries error:", error);
     return { ok: false, error: "Failed to fetch time entries" };
   }
+}
+
+export async function getCurrentUserRole() {
+  const session = await getServerSession(authOptions);
+  if (!session?.user) {
+    return { ok: false, error: "Not authenticated" };
+  }
+  const role = (session.user as any).role;
+  return { ok: true, role };
+}
+
+export async function updateTimeEntryTimes(entryId: string, clockInIso: string, clockOutIso: string | null, password: string) {
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user) {
+    return { ok: false, error: "Not authenticated" };
+  }
+
+  const role = (session.user as any).role;
+  const userId = (session.user as any).id;
+  if (role !== "ADMIN") {
+    return { ok: false, error: "Unauthorized: Admin only" };
+  }
+
+  // Verify password
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { passwordHash: true },
+  });
+  if (!user?.passwordHash) {
+    return { ok: false, error: "Password verification failed" };
+  }
+  const valid = await bcrypt.compare(password, user.passwordHash);
+  if (!valid) {
+    return { ok: false, error: "Incorrect password" };
+  }
+
+  const clockIn = new Date(clockInIso);
+  const clockOut = clockOutIso ? new Date(clockOutIso) : null;
+
+  const existing = await prisma.timeEntry.findUnique({
+    where: { id: entryId },
+    select: { breakStart: true, breakEnd: true },
+  });
+  if (!existing) {
+    return { ok: false, error: "Time entry not found" };
+  }
+
+  let breakMs = 0;
+  if (existing.breakStart) {
+    const endMs = existing.breakEnd ? existing.breakEnd.getTime() : clockOut ? clockOut.getTime() : Date.now();
+    breakMs = endMs - existing.breakStart.getTime();
+  }
+
+  const durationHours = clockOut
+    ? Math.max((clockOut.getTime() - clockIn.getTime() - Math.max(breakMs, 0)) / (1000 * 60 * 60), 0)
+    : null;
+
+  const updated = await prisma.timeEntry.update({
+    where: { id: entryId },
+    data: {
+      clockIn,
+      clockOut,
+      durationHours,
+    },
+    include: {
+      job: { select: { id: true, title: true } },
+    },
+  });
+
+  return { ok: true, entry: updated };
 }
 
 

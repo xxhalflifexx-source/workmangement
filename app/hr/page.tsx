@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { getAllUsersStats, getUserTimeEntries } from "./actions";
+import { getAllUsersStats, getUserTimeEntries, getCurrentUserRole, updateTimeEntryTimes } from "./actions";
 import Link from "next/link";
 import { nowInCentral, formatDateShort, formatDateTime, formatDateInput, startOfDayCentral, endOfDayCentral } from "@/lib/date-utils";
 import dayjs from "dayjs";
@@ -44,6 +44,14 @@ export default function HRPage() {
   const [showPhotoViewer, setShowPhotoViewer] = useState(false);
   const [photoViewerPhotos, setPhotoViewerPhotos] = useState<string[]>([]);
   const [photoViewerIndex, setPhotoViewerIndex] = useState(0);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [editEntry, setEditEntry] = useState<TimeEntry | null>(null);
+  const [editClockIn, setEditClockIn] = useState("");
+  const [editClockOut, setEditClockOut] = useState("");
+  const [editPassword, setEditPassword] = useState("");
+  const [editError, setEditError] = useState<string | undefined>();
+  const [editLoading, setEditLoading] = useState(false);
+  const [showEditConfirm, setShowEditConfirm] = useState(false);
   
   // Search and filter state
   const [searchQuery, setSearchQuery] = useState("");
@@ -82,6 +90,16 @@ export default function HRPage() {
   useEffect(() => {
     loadData();
   }, [dateFrom, dateTo]);
+
+  useEffect(() => {
+    const loadRole = async () => {
+      const res = await getCurrentUserRole();
+      if (res.ok && res.role === "ADMIN") {
+        setIsAdmin(true);
+      }
+    };
+    loadRole();
+  }, []);
 
   const loadData = async () => {
     // Use filterLoading for subsequent updates, full loading only for initial load
@@ -149,6 +167,41 @@ export default function HRPage() {
     const hours = Math.floor(diff / (1000 * 60 * 60));
     const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
     return `${hours}h ${minutes}m`;
+  };
+
+  const openEditModal = (entry: TimeEntry) => {
+    setEditEntry(entry);
+    setEditClockIn(entry.clockIn.slice(0, 16));
+    setEditClockOut(entry.clockOut ? entry.clockOut.slice(0, 16) : "");
+    setEditPassword("");
+    setEditError(undefined);
+    setShowEditConfirm(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editEntry) return;
+    setEditLoading(true);
+    setEditError(undefined);
+    const res = await updateTimeEntryTimes(
+      editEntry.id,
+      new Date(editClockIn).toISOString(),
+      editClockOut ? new Date(editClockOut).toISOString() : null,
+      editPassword
+    );
+    if (!res.ok) {
+      setEditError(res.error || "Failed to update entry");
+      setEditLoading(false);
+      return;
+    }
+    // refresh entries list
+    if (selectedUser) {
+      const refreshed = await getUserTimeEntries(selectedUser.id);
+      if (refreshed.ok) {
+        setUserEntries(refreshed.entries as any);
+      }
+    }
+    setShowEditConfirm(false);
+    setEditLoading(false);
   };
 
   const getRoleBadgeColor = (role: string) => {
@@ -508,10 +561,18 @@ export default function HRPage() {
                             </div>
                           ) : null}
                         </div>
-                        <div className="text-left sm:text-right">
+                            <div className="text-left sm:text-right flex flex-col items-start sm:items-end gap-2">
                           <div className="font-semibold text-sm sm:text-base text-blue-600">
                             {calculateDuration(entry)}
                           </div>
+                              {isAdmin && (
+                                <button
+                                  onClick={() => openEditModal(entry)}
+                                  className="text-xs text-blue-600 hover:text-blue-800 font-semibold underline underline-offset-2"
+                                >
+                                  Edit time
+                                </button>
+                              )}
                         </div>
                       </div>
                       {entry.job && (
@@ -599,6 +660,61 @@ export default function HRPage() {
           initialIndex={photoViewerIndex}
           onClose={() => setShowPhotoViewer(false)}
         />
+      )}
+
+      {showEditConfirm && editEntry && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2 sm:p-4 z-50">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-4 sm:p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-3">Edit time entry</h3>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Clock in</label>
+                <input
+                  type="datetime-local"
+                  value={editClockIn}
+                  onChange={(e) => setEditClockIn(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Clock out</label>
+                <input
+                  type="datetime-local"
+                  value={editClockOut}
+                  onChange={(e) => setEditClockOut(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                />
+                <p className="text-xs text-gray-500 mt-1">Leave empty if still in progress.</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Admin password (required)</label>
+                <input
+                  type="password"
+                  value={editPassword}
+                  onChange={(e) => setEditPassword(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                />
+              </div>
+              {editError && <p className="text-sm text-red-600">{editError}</p>}
+            </div>
+            <div className="flex flex-col sm:flex-row gap-2 mt-4">
+              <button
+                onClick={() => setShowEditConfirm(false)}
+                disabled={editLoading}
+                className="flex-1 min-h-[44px] px-4 py-2 border-2 border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 disabled:bg-gray-100 disabled:text-gray-400"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveEdit}
+                disabled={editLoading}
+                className="flex-1 min-h-[44px] px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:bg-gray-300"
+              >
+                {editLoading ? "Saving..." : "Save changes"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </main>
   );
