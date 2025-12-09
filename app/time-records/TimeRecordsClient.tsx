@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { formatDateShort } from "@/lib/date-utils";
+import PhotoViewerModal from "../qc/PhotoViewerModal";
 
 type TimeEntry = {
   id: string;
@@ -55,6 +56,25 @@ export default function TimeRecordsClient({ entries, userName }: Props) {
   const [to, setTo] = useState(toISODate(new Date()));
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "longest" | "shortest">("newest");
   const [quickRange, setQuickRange] = useState<"7" | "30" | "month" | "all">("30");
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const [viewerPhotos, setViewerPhotos] = useState<string[]>([]);
+  const [viewerIndex, setViewerIndex] = useState(0);
+
+  const openViewer = (photos: string[], index: number) => {
+    setViewerPhotos(photos);
+    setViewerIndex(index);
+    setViewerOpen(true);
+  };
+
+  const getImages = (entry: TimeEntry) => {
+    if (!entry.images) return [];
+    try {
+      const parsed = JSON.parse(entry.images);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  };
 
   const filtered = useMemo(() => {
     return entries
@@ -252,6 +272,7 @@ export default function TimeRecordsClient({ entries, userName }: Props) {
           )}
           {filtered.map((entry) => {
             const duration = getDuration(entry);
+            const images = getImages(entry);
             return (
               <div key={entry.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-xs space-y-2">
                 <div className="flex items-center justify-between gap-2">
@@ -287,8 +308,37 @@ export default function TimeRecordsClient({ entries, userName }: Props) {
                     {entry.isRework ? "Rework" : "Standard"}
                   </span>
                 </div>
-                {entry.notes && (
-                  <p className="text-xs text-gray-700 border-t border-gray-100 pt-2">{entry.notes}</p>
+                <div className="space-y-1 border-t border-gray-100 pt-2">
+                  {entry.clockInNotes && (
+                    <p className="text-xs text-gray-800">
+                      <span className="font-semibold text-gray-900">Clock-in note: </span>
+                      {entry.clockInNotes}
+                    </p>
+                  )}
+                  {entry.notes && (
+                    <p className="text-xs text-gray-800">
+                      <span className="font-semibold text-gray-900">Clock-out note: </span>
+                      {entry.notes}
+                    </p>
+                  )}
+                </div>
+                {images.length > 0 && (
+                  <div className="pt-1">
+                    <p className="text-xs font-semibold text-gray-800 mb-2">Photos</p>
+                    <div className="flex flex-wrap gap-2">
+                      {images.map((img, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => openViewer(images, idx)}
+                          className="w-16 h-16 rounded-lg border border-gray-200 overflow-hidden bg-gray-50"
+                          aria-label={`View photo ${idx + 1}`}
+                        >
+                          <img src={img} alt={`Photo ${idx + 1}`} className="w-full h-full object-cover" />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 )}
               </div>
             );
@@ -321,6 +371,7 @@ export default function TimeRecordsClient({ entries, userName }: Props) {
                   )}
                   {filtered.map((entry) => {
                     const duration = getDuration(entry);
+                    const images = getImages(entry);
                     return (
                       <tr key={entry.id} className="hover:bg-gray-50">
                         <td className="px-4 py-3 text-gray-900 font-medium whitespace-nowrap">
@@ -349,11 +400,36 @@ export default function TimeRecordsClient({ entries, userName }: Props) {
                         <td className="px-4 py-3 text-gray-900 font-semibold whitespace-nowrap">
                           {duration.label}
                         </td>
-                        <td className="px-4 py-3 text-gray-700">
-                          {entry.notes ? (
-                            <p className="text-xs text-gray-700 line-clamp-2">{entry.notes}</p>
-                          ) : (
+                        <td className="px-4 py-3 text-gray-700 space-y-1">
+                          {entry.clockInNotes && (
+                            <p className="text-xs text-gray-800">
+                              <span className="font-semibold text-gray-900">Clock-in: </span>
+                              {entry.clockInNotes}
+                            </p>
+                          )}
+                          {entry.notes && (
+                            <p className="text-xs text-gray-800">
+                              <span className="font-semibold text-gray-900">Clock-out: </span>
+                              {entry.notes}
+                            </p>
+                          )}
+                          {!entry.clockInNotes && !entry.notes && (
                             <span className="text-xs text-gray-400">—</span>
+                          )}
+                          {images.length > 0 && (
+                            <div className="flex flex-wrap gap-2 pt-1">
+                              {images.map((img, idx) => (
+                                <button
+                                  key={idx}
+                                  type="button"
+                                  onClick={() => openViewer(images, idx)}
+                                  className="w-12 h-12 rounded-md border border-gray-200 overflow-hidden bg-gray-50"
+                                  aria-label={`View photo ${idx + 1}`}
+                                >
+                                  <img src={img} alt={`Photo ${idx + 1}`} className="w-full h-full object-cover" />
+                                </button>
+                              ))}
+                            </div>
                           )}
                         </td>
                         <td className="px-4 py-3">
@@ -376,6 +452,14 @@ export default function TimeRecordsClient({ entries, userName }: Props) {
           </div>
         </div>
       </div>
+
+      {viewerOpen && (
+        <PhotoViewerModal
+          photos={viewerPhotos}
+          initialIndex={viewerIndex}
+          onClose={() => setViewerOpen(false)}
+        />
+      )}
     </div>
   );
 }
