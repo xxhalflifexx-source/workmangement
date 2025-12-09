@@ -156,7 +156,7 @@ export default function TimeRecordsClient({ entries, userName }: Props) {
   };
 
   return (
-    <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-24 py-6 sm:py-8">
+    <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-24 py-6 sm:py-8 bg-gray-50">
       <div className="mb-6 sm:mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-xs sm:text-sm text-gray-500">Welcome back</p>
@@ -166,7 +166,7 @@ export default function TimeRecordsClient({ entries, userName }: Props) {
         <div className="flex gap-2 w-full sm:w-auto">
           <Link
             href="/dashboard"
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors min-h-[44px] bg-white shadow-sm"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2 border border-gray-200 rounded-lg text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors min-h-[44px] bg-white shadow-sm"
           >
             ← Back to dashboard
           </Link>
@@ -174,26 +174,21 @@ export default function TimeRecordsClient({ entries, userName }: Props) {
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
-        <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
-          <p className="text-xs text-gray-500 font-medium">Total hours</p>
-          <p className="text-2xl font-bold text-gray-900 mt-1">{totals.totalHours}h</p>
-          <p className="text-xs text-gray-500 mt-1">Filtered range</p>
-        </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
-          <p className="text-xs text-gray-500 font-medium">Shifts</p>
-          <p className="text-2xl font-bold text-gray-900 mt-1">{totals.totalShifts}</p>
-          <p className="text-xs text-gray-500 mt-1">Completed: {totals.completed}</p>
-        </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
-          <p className="text-xs text-gray-500 font-medium">In progress</p>
-          <p className="text-2xl font-bold text-gray-900 mt-1">{totals.inProgress}</p>
-          <p className="text-xs text-gray-500 mt-1">Live shifts</p>
-        </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
-          <p className="text-xs text-gray-500 font-medium">Rework hours</p>
-          <p className="text-2xl font-bold text-gray-900 mt-1">{totals.reworkHours}h</p>
-          <p className="text-xs text-gray-500 mt-1">Time on rework jobs</p>
-        </div>
+        {[
+          { label: "Total hours", value: `${totals.totalHours}h`, sub: "Filtered range" },
+          { label: "Shifts", value: totals.totalShifts.toString(), sub: `Completed: ${totals.completed}` },
+          { label: "In progress", value: totals.inProgress.toString(), sub: "Live shifts" },
+          { label: "Rework hours", value: `${totals.reworkHours}h`, sub: "Time on rework jobs" },
+        ].map((card) => (
+          <div
+            key={card.label}
+            className="bg-white rounded-xl border border-gray-200 p-4 sm:p-5 shadow-sm flex flex-col gap-1.5"
+          >
+            <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">{card.label}</p>
+            <p className="text-2xl font-bold text-gray-900">{card.value}</p>
+            <p className="text-xs text-gray-500">{card.sub}</p>
+          </div>
+        ))}
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
@@ -310,16 +305,16 @@ export default function TimeRecordsClient({ entries, userName }: Props) {
                 </div>
                 <div className="space-y-1 border-t border-gray-100 pt-2">
                   {entry.clockInNotes && (
-                    <p className="text-xs text-gray-800">
-                      <span className="font-semibold text-gray-900">Clock-in note: </span>
-                      {entry.clockInNotes}
-                    </p>
+                    <div className="text-xs text-gray-800 bg-gray-50 border border-gray-200 rounded-md px-2 py-1.5 break-words">
+                      <span className="font-semibold text-gray-900">Clock-in:</span>{" "}
+                      <span className="line-clamp-3">{entry.clockInNotes}</span>
+                    </div>
                   )}
                   {entry.notes && (
-                    <p className="text-xs text-gray-800">
-                      <span className="font-semibold text-gray-900">Clock-out note: </span>
-                      {entry.notes}
-                    </p>
+                    <div className="text-xs text-gray-800 bg-gray-50 border border-gray-200 rounded-md px-2 py-1.5 break-words">
+                      <span className="font-semibold text-gray-900">Clock-out:</span>{" "}
+                      <span className="line-clamp-3">{entry.notes}</span>
+                    </div>
                   )}
                 </div>
                 {images.length > 0 && (
@@ -369,11 +364,14 @@ export default function TimeRecordsClient({ entries, userName }: Props) {
                       </td>
                     </tr>
                   )}
-                  {filtered.map((entry) => {
+                  {filtered.map((entry, rowIdx) => {
                     const duration = getDuration(entry);
                     const images = getImages(entry);
                     return (
-                      <tr key={entry.id} className="hover:bg-gray-50">
+                      <tr
+                        key={entry.id}
+                        className={`hover:bg-gray-50 transition-colors ${rowIdx % 2 === 1 ? "bg-gray-50/50" : ""}`}
+                      >
                         <td className="px-4 py-3 text-gray-900 font-medium whitespace-nowrap">
                           {formatDateShort(entry.clockIn)}
                         </td>
@@ -382,7 +380,7 @@ export default function TimeRecordsClient({ entries, userName }: Props) {
                             {entry.jobTitle || "General task"}
                           </div>
                           {entry.clockInNotes && (
-                            <p className="text-xs text-gray-600 mt-1 line-clamp-2">
+                            <p className="text-xs text-gray-600 mt-1 line-clamp-2 break-words max-w-xs">
                               {entry.clockInNotes}
                             </p>
                           )}
@@ -397,21 +395,23 @@ export default function TimeRecordsClient({ entries, userName }: Props) {
                             </span>
                           )}
                         </td>
-                        <td className="px-4 py-3 text-gray-900 font-semibold whitespace-nowrap">
-                          {duration.label}
+                        <td className="px-4 py-3">
+                          <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-gray-100 text-gray-800 border border-gray-200">
+                            {duration.label}
+                          </span>
                         </td>
-                        <td className="px-4 py-3 text-gray-700 space-y-1">
+                        <td className="px-4 py-3 text-gray-700 space-y-2 align-top">
                           {entry.clockInNotes && (
-                            <p className="text-xs text-gray-800">
-                              <span className="font-semibold text-gray-900">Clock-in: </span>
-                              {entry.clockInNotes}
-                            </p>
+                            <div className="text-xs text-gray-800 bg-gray-50 border border-gray-200 rounded-md px-3 py-2 break-words max-w-xs">
+                              <span className="font-semibold text-gray-900">Clock-in:</span>{" "}
+                              <span className="line-clamp-3">{entry.clockInNotes}</span>
+                            </div>
                           )}
                           {entry.notes && (
-                            <p className="text-xs text-gray-800">
-                              <span className="font-semibold text-gray-900">Clock-out: </span>
-                              {entry.notes}
-                            </p>
+                            <div className="text-xs text-gray-800 bg-gray-50 border border-gray-200 rounded-md px-3 py-2 break-words max-w-xs">
+                              <span className="font-semibold text-gray-900">Clock-out:</span>{" "}
+                              <span className="line-clamp-3">{entry.notes}</span>
+                            </div>
                           )}
                           {!entry.clockInNotes && !entry.notes && (
                             <span className="text-xs text-gray-400">—</span>
