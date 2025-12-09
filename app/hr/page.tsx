@@ -11,6 +11,8 @@ interface TimeEntry {
   id: string;
   clockIn: string;
   clockOut: string | null;
+  breakStart?: string | null;
+  breakEnd?: string | null;
   clockInNotes: string | null;
   notes: string | null;
   images: string | null;
@@ -141,7 +143,9 @@ export default function HRPage() {
     
     const start = new Date(entry.clockIn);
     const end = new Date(entry.clockOut);
-    const diff = end.getTime() - start.getTime();
+    const breakMs =
+      entry.breakStart ? (entry.breakEnd ? new Date(entry.breakEnd).getTime() : end.getTime()) - new Date(entry.breakStart).getTime() : 0;
+    const diff = end.getTime() - start.getTime() - Math.max(breakMs, 0);
     const hours = Math.floor(diff / (1000 * 60 * 60));
     const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
     return `${hours}h ${minutes}m`;
@@ -496,6 +500,13 @@ export default function HRPage() {
                           <div className="text-xs sm:text-sm text-gray-600">
                             {formatTime(entry.clockIn)} - {entry.clockOut ? formatTime(entry.clockOut) : "In progress"}
                           </div>
+                          {(entry as any).breakStart || (entry as any).breakEnd ? (
+                            <div className="text-xs sm:text-sm text-gray-600 mt-1 flex flex-col sm:flex-row sm:items-center sm:gap-3">
+                              {(entry as any).breakStart && <span>Break start: {formatTime((entry as any).breakStart)}</span>}
+                              {(entry as any).breakEnd && <span>Break end: {formatTime((entry as any).breakEnd)}</span>}
+                              {(entry as any).breakStart && !(entry as any).breakEnd && <span className="text-orange-600 font-medium">On break</span>}
+                            </div>
+                          ) : null}
                         </div>
                         <div className="text-left sm:text-right">
                           <div className="font-semibold text-sm sm:text-base text-blue-600">

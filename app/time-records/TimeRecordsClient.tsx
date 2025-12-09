@@ -9,6 +9,8 @@ type TimeEntry = {
   id: string;
   clockIn: string;
   clockOut: string | null;
+  breakStart: string | null;
+  breakEnd: string | null;
   durationHours: number | null;
   clockInNotes: string | null;
   notes: string | null;
@@ -33,7 +35,9 @@ function formatTime(date: string) {
 function getDuration(entry: TimeEntry) {
   const start = new Date(entry.clockIn).getTime();
   const end = entry.clockOut ? new Date(entry.clockOut).getTime() : Date.now();
-  const diffMs = Math.max(end - start, 0);
+  const breakMs =
+    entry.breakStart ? (entry.breakEnd ? new Date(entry.breakEnd).getTime() : end) - new Date(entry.breakStart).getTime() : 0;
+  const diffMs = Math.max(end - start - Math.max(breakMs, 0), 0);
 
   const hours = Math.floor(diffMs / (1000 * 60 * 60));
   const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
@@ -303,6 +307,12 @@ export default function TimeRecordsClient({ entries, userName }: Props) {
                     {entry.isRework ? "Rework" : "Standard"}
                   </span>
                 </div>
+                {(entry.breakStart || entry.breakEnd) && (
+                  <div className="text-xs text-gray-700 flex flex-col gap-0.5 border-t border-gray-100 pt-2">
+                    {entry.breakStart && <span>Break start: {formatTime(entry.breakStart)}</span>}
+                    {entry.breakEnd && <span>Break end: {formatTime(entry.breakEnd)}</span>}
+                  </div>
+                )}
                 <div className="space-y-1 border-t border-gray-100 pt-2">
                   {entry.clockInNotes && (
                     <p className="text-xs text-gray-800">
@@ -361,6 +371,8 @@ export default function TimeRecordsClient({ entries, userName }: Props) {
                     <th className="px-4 py-3 text-left font-semibold text-gray-700">Job / Task</th>
                     <th className="px-4 py-3 text-left font-semibold text-gray-700">Clock in</th>
                     <th className="px-4 py-3 text-left font-semibold text-gray-700">Clock out</th>
+                    <th className="px-4 py-3 text-left font-semibold text-gray-700">Break start</th>
+                    <th className="px-4 py-3 text-left font-semibold text-gray-700">Break end</th>
                     <th className="px-4 py-3 text-left font-semibold text-gray-700">Duration</th>
                     <th className="px-4 py-3 text-left font-semibold text-gray-700">Notes</th>
                     <th className="px-4 py-3 text-left font-semibold text-gray-700">Type</th>
@@ -403,6 +415,14 @@ export default function TimeRecordsClient({ entries, userName }: Props) {
                             <span className="inline-flex items-center gap-1 text-yellow-700 bg-yellow-50 border border-yellow-200 px-2 py-1 rounded-full text-xs font-semibold">
                               • In progress
                             </span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-gray-700 whitespace-nowrap">
+                          {entry.breakStart ? formatTime(entry.breakStart) : <span className="text-xs text-gray-400">—</span>}
+                        </td>
+                        <td className="px-4 py-3 text-gray-700 whitespace-nowrap">
+                          {entry.breakEnd ? formatTime(entry.breakEnd) : (
+                            entry.breakStart ? <span className="text-xs text-yellow-700">On break</span> : <span className="text-xs text-gray-400">—</span>
                           )}
                         </td>
                         <td className="px-4 py-3">
@@ -491,6 +511,22 @@ export default function TimeRecordsClient({ entries, userName }: Props) {
                   <p className="text-xs text-gray-500 font-medium">Type</p>
                   <p className="text-sm font-semibold text-gray-900">
                     {detailEntry.isRework ? "Rework" : "Standard"}
+                  </p>
+                </div>
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                  <p className="text-xs text-gray-500 font-medium">Break start</p>
+                  <p className="text-sm font-semibold text-gray-900">
+                    {detailEntry.breakStart ? formatTime(detailEntry.breakStart) : "—"}
+                  </p>
+                </div>
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                  <p className="text-xs text-gray-500 font-medium">Break end</p>
+                  <p className="text-sm font-semibold text-gray-900">
+                    {detailEntry.breakEnd
+                      ? formatTime(detailEntry.breakEnd)
+                      : detailEntry.breakStart
+                        ? "On break"
+                        : "—"}
                   </p>
                 </div>
               </div>

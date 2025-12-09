@@ -52,6 +52,8 @@ export async function getAllUsersStats(dateFrom?: string, dateTo?: string) {
               id: true,
               clockIn: true,
               clockOut: true,
+              breakStart: true,
+              breakEnd: true,
               clockInNotes: true,
               notes: true,
               job: {
@@ -80,23 +82,25 @@ export async function getAllUsersStats(dateFrom?: string, dateTo?: string) {
             email: true,
             role: true,
             createdAt: true,
-            timeEntries: {
-              select: {
-                id: true,
-                clockIn: true,
-                clockOut: true,
-                notes: true,
-                job: {
-                  select: {
-                    id: true,
-                    title: true,
-                  },
+          timeEntries: {
+            select: {
+              id: true,
+              clockIn: true,
+              clockOut: true,
+              breakStart: true,
+              breakEnd: true,
+              notes: true,
+              job: {
+                select: {
+                  id: true,
+                  title: true,
                 },
               },
-              orderBy: {
-                clockIn: "desc",
-              },
             },
+            orderBy: {
+              clockIn: "desc",
+            },
+          },
           },
           orderBy: {
             name: "asc",
@@ -132,7 +136,11 @@ export async function getAllUsersStats(dateFrom?: string, dateTo?: string) {
       user.timeEntries.forEach((entry: any) => {
         if (entry.clockIn && entry.clockOut) {
           const clockInDate = new Date(entry.clockIn);
-          const duration = new Date(entry.clockOut).getTime() - new Date(entry.clockIn).getTime();
+          const breakMs = entry.breakStart
+            ? (entry.breakEnd ? new Date(entry.breakEnd).getTime() : new Date(entry.clockOut).getTime()) -
+              new Date(entry.breakStart).getTime()
+            : 0;
+          const duration = new Date(entry.clockOut).getTime() - new Date(entry.clockIn).getTime() - Math.max(breakMs, 0);
           const hours = duration / (1000 * 60 * 60);
           
           // Check if entry is within date range
@@ -209,6 +217,8 @@ export async function getUserTimeEntries(userId: string) {
           id: true,
           clockIn: true,
           clockOut: true,
+          breakStart: true,
+          breakEnd: true,
           clockInNotes: true,
           notes: true,
           images: true,
@@ -233,6 +243,8 @@ export async function getUserTimeEntries(userId: string) {
             id: true,
             clockIn: true,
             clockOut: true,
+            breakStart: true,
+            breakEnd: true,
             notes: true,
             images: true,
             job: {

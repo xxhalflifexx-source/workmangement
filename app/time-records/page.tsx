@@ -26,6 +26,8 @@ export default async function TimeRecordsPage() {
     id: entry.id,
     clockIn: entry.clockIn.toISOString(),
     clockOut: entry.clockOut ? entry.clockOut.toISOString() : null,
+    breakStart: entry.breakStart ? entry.breakStart.toISOString() : null,
+    breakEnd: entry.breakEnd ? entry.breakEnd.toISOString() : null,
     durationHours: entry.durationHours,
     clockInNotes: entry.clockInNotes,
     notes: entry.notes,

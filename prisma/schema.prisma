@@ -79,6 +79,8 @@ model TimeEntry {
   jobId         String?
   clockIn       DateTime
   clockOut      DateTime?
+  breakStart    DateTime?
+  breakEnd      DateTime?
   durationHours Float? // Computed on clock out for efficiency metrics
   isRework      Boolean   @default(false)
   clockInNotes  String? // Description entered at Clock In

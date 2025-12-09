@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { clockIn, clockOut, getCurrentStatus, getTodayEntries, getRecentEntries, getAvailableJobs, getAssignedJobs } from "./actions";
+import { clockIn, clockOut, getCurrentStatus, getTodayEntries, getRecentEntries, getAvailableJobs, getAssignedJobs, startBreak, endBreak } from "./actions";
 import Link from "next/link";
 import { nowInCentral, formatCentralTime, formatDateShort } from "@/lib/date-utils";
 import PhotoViewerModal from "../qc/PhotoViewerModal";
@@ -10,6 +10,8 @@ interface TimeEntry {
   id: string;
   clockIn: string;
   clockOut: string | null;
+  breakStart?: string | null;
+  breakEnd?: string | null;
   clockInNotes: string | null;
   notes: string | null;
   images: string | null;
@@ -184,6 +186,44 @@ export default function TimeClockPage() {
 
   const handleClockOutClick = () => {
     setShowClockOutConfirm(true);
+  };
+
+  const handleStartBreak = async () => {
+    setError(undefined);
+    setSuccess(undefined);
+    setLoading(true);
+    try {
+      const res = await startBreak();
+      if (!res.ok) {
+        setError(res.error || "Failed to start break");
+      } else {
+        await loadData();
+        setSuccess("Break started");
+      }
+    } catch (err: any) {
+      setError(err?.message || "Failed to start break");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEndBreak = async () => {
+    setError(undefined);
+    setSuccess(undefined);
+    setLoading(true);
+    try {
+      const res = await endBreak();
+      if (!res.ok) {
+        setError(res.error || "Failed to end break");
+      } else {
+        await loadData();
+        setSuccess("Break ended");
+      }
+    } catch (err: any) {
+      setError(err?.message || "Failed to end break");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleClockOutConfirm = async () => {
@@ -435,6 +475,11 @@ export default function TimeClockPage() {
                           Working on: {currentEntry.job.title}
                         </span>
                       )}
+                      {currentEntry?.breakStart && !currentEntry?.breakEnd && (
+                        <span className="block mt-1 font-medium text-orange-600">
+                          On break since {formatTime(currentEntry.breakStart)}
+                        </span>
+                      )}
                     </p>
                   </div>
                 )}
@@ -533,13 +578,29 @@ export default function TimeClockPage() {
                     rows={3}
                   />
 
-                  <button
-                    onClick={handleClockOutClick}
-                    disabled={loading}
-                    className="w-full min-h-[44px] bg-red-600 text-white py-3 sm:py-4 rounded-xl font-semibold text-base sm:text-lg hover:bg-red-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed shadow-lg"
-                  >
-                    {loading ? "Processing..." : "Clock Out"}
-                  </button>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <button
+                      onClick={handleStartBreak}
+                      disabled={loading || !!currentEntry?.breakStart && !currentEntry?.breakEnd}
+                      className="min-h-[44px] w-full bg-white border border-gray-300 text-gray-800 py-3 rounded-xl font-semibold text-sm sm:text-base hover:bg-gray-50 transition-colors disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed shadow-sm"
+                    >
+                      Start Break
+                    </button>
+                    <button
+                      onClick={handleEndBreak}
+                      disabled={loading || !currentEntry?.breakStart || !!currentEntry?.breakEnd}
+                      className="min-h-[44px] w-full bg-white border border-gray-300 text-gray-800 py-3 rounded-xl font-semibold text-sm sm:text-base hover:bg-gray-50 transition-colors disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed shadow-sm"
+                    >
+                      End Break
+                    </button>
+                    <button
+                      onClick={handleClockOutClick}
+                      disabled={loading}
+                      className="min-h-[44px] w-full bg-red-600 text-white py-3 sm:py-4 rounded-xl font-semibold text-base sm:text-lg hover:bg-red-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed shadow-lg"
+                    >
+                      {loading ? "Processing..." : "Clock Out"}
+                    </button>
+                  </div>
                 </div>
               )}
             </div>

@@ -76,6 +76,8 @@ export async function clockIn(jobId?: string, notes?: string) {
       clockIn: now,
       isRework,
       clockInNotes: notes || null, // Store Clock In description separately
+      breakStart: null,
+      breakEnd: null,
     },
     include: {
       job: { select: { title: true, id: true } },
@@ -111,8 +113,15 @@ export async function clockOut(formData: FormData) {
   // Get current time in Central Time, then convert to UTC for database storage
   const nowCentral = nowInCentral();
   const now = centralToUTC(nowCentral.toDate());
-  const durationHours =
-    (now.getTime() - activeEntry.clockIn.getTime()) / (1000 * 60 * 60);
+  const breakMs =
+    activeEntry.breakStart
+      ? (activeEntry.breakEnd ? activeEntry.breakEnd.getTime() : now.getTime()) -
+        activeEntry.breakStart.getTime()
+      : 0;
+  const durationHours = Math.max(
+    (now.getTime() - activeEntry.clockIn.getTime() - Math.max(breakMs, 0)) / (1000 * 60 * 60),
+    0
+  );
 
   // Parse image paths if provided
   let imagePaths: string[] = [];
@@ -131,6 +140,7 @@ export async function clockOut(formData: FormData) {
       clockOut: now,
       durationHours,
       notes: notes || null,
+      breakEnd: activeEntry.breakStart && !activeEntry.breakEnd ? now : activeEntry.breakEnd,
       // Store images in TimeEntry if no jobId (for non-job clock-ins)
       images: !activeEntry.jobId && imagePaths.length > 0 ? JSON.stringify(imagePaths) : activeEntry.images,
     },
@@ -155,6 +165,74 @@ export async function clockOut(formData: FormData) {
       // Don't fail the clock out if activity creation fails
     }
   }
+
+  return { ok: true, entry };
+}
+
+export async function startBreak() {
+  const session = await getServerSession(authOptions);
+  
+  if (!session?.user) {
+    return { ok: false, error: "Not authenticated" };
+  }
+
+  const userId = (session.user as any).id;
+
+  const activeEntry = await prisma.timeEntry.findFirst({
+    where: { userId, clockOut: null },
+  });
+
+  if (!activeEntry) {
+    return { ok: false, error: "Not clocked in" };
+  }
+
+  if (activeEntry.breakStart && !activeEntry.breakEnd) {
+    return { ok: false, error: "Break already started" };
+  }
+
+  const now = centralToUTC(nowInCentral().toDate());
+
+  const entry = await prisma.timeEntry.update({
+    where: { id: activeEntry.id },
+    data: { breakStart: now, breakEnd: null },
+    include: { job: { select: { title: true, id: true } } },
+  });
+
+  return { ok: true, entry };
+}
+
+export async function endBreak() {
+  const session = await getServerSession(authOptions);
+  
+  if (!session?.user) {
+    return { ok: false, error: "Not authenticated" };
+  }
+
+  const userId = (session.user as any).id;
+
+  const activeEntry = await prisma.timeEntry.findFirst({
+    where: { userId, clockOut: null },
+  });
+
+  if (!activeEntry) {
+    return { ok: false, error: "Not clocked in" };
+  }
+
+  if (!activeEntry.breakStart) {
+    return { ok: false, error: "No break in progress" };
+  }
+
+  if (activeEntry.breakEnd) {
+    return { ok: false, error: "Break already ended" };
+  }
+
+  const now = centralToUTC(nowInCentral().toDate());
+
+  const entry = await prisma.timeEntry.update({
+    where: { id: activeEntry.id },
+    data: { breakEnd: now },
+    include: { job: { select: { title: true, id: true } } },
+  });
 
   return { ok: true, entry };
 }
