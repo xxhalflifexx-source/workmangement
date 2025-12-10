@@ -2219,7 +2219,7 @@ setLoading(false);
                   </div>
                 </div>
 
-                <form onSubmit={handleSaveEditInvoice} className="space-y-6">
+                <form onSubmit={handleSaveEditInvoice} className="space-y-7">
                   {/* Status */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -2252,91 +2252,175 @@ setLoading(false);
 
                   {/* Invoice Lines */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Line Items
-                    </label>
-                    <div className="border border-gray-300 rounded-lg overflow-hidden">
-                      <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
-                          <tr>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
-                            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Quantity</th>
-                            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Rate</th>
-                            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Amount</th>
-                            <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase w-20">Action</th>
-                          </tr>
-                        </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
-                          {editLines.map((line, index) => (
-                            <tr key={index}>
-                              <td className="px-4 py-3">
-                                <input
-                                  type="text"
-                                  value={line.description}
-                                  onChange={(e) => updateEditLine(index, "description", e.target.value)}
-                                  className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
-                                  required
-                                />
-                              </td>
-                              <td className="px-4 py-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="block text-sm font-semibold text-slate-800">
+                        Line Items
+                      </label>
+                      <span className="text-xs text-slate-500">Taxes & shipping handled below</span>
+                    </div>
+
+                    {/* Mobile: stacked cards */}
+                    <div className="space-y-3 sm:hidden">
+                      {editLines.map((line, index) => (
+                        <div key={index} className="rounded-2xl border border-[var(--brand-border)] bg-white p-3 shadow-sm">
+                          <div className="flex justify-between items-center mb-2">
+                            <p className="text-xs font-semibold text-slate-600 uppercase tracking-[0.08em]">Item {index + 1}</p>
+                            {editLines.length > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => removeEditLine(index)}
+                                className="text-red-500 hover:text-red-700 text-sm font-semibold"
+                                aria-label="Remove line item"
+                              >
+                                ✕
+                              </button>
+                            )}
+                          </div>
+                          <div className="space-y-3">
+                            <div>
+                              <label className="block text-xs text-slate-600 mb-1">Description</label>
+                              <input
+                                type="text"
+                                value={line.description}
+                                onChange={(e) => updateEditLine(index, "description", e.target.value)}
+                                className="w-full border border-[var(--brand-border)] rounded-xl px-3 py-2.5 text-base"
+                                placeholder="Item description"
+                                required
+                              />
+                            </div>
+                            <div className="grid grid-cols-2 gap-3">
+                              <div>
+                                <label className="block text-xs text-slate-600 mb-1">Quantity</label>
                                 <input
                                   type="number"
                                   value={line.quantity}
                                   onChange={(e) => updateEditLine(index, "quantity", parseFloat(e.target.value) || 0)}
-                                  className="w-full border border-gray-300 rounded px-2 py-1 text-sm text-right"
+                                  className="w-full border border-[var(--brand-border)] rounded-xl px-3 py-2.5 text-base text-right"
                                   step="0.01"
                                   min="0"
                                   required
                                 />
-                              </td>
-                              <td className="px-4 py-3">
+                              </div>
+                              <div>
+                                <label className="block text-xs text-slate-600 mb-1">Rate</label>
                                 <input
                                   type="number"
                                   value={line.rate}
                                   onChange={(e) => updateEditLine(index, "rate", parseFloat(e.target.value) || 0)}
-                                  className="w-full border border-gray-300 rounded px-2 py-1 text-sm text-right"
+                                  className="w-full border border-[var(--brand-border)] rounded-xl px-3 py-2.5 text-base text-right"
                                   step="0.01"
                                   min="0"
                                   required
                                 />
-                              </td>
-                              <td className="px-4 py-3 text-right font-medium">
-                                {formatCurrency(line.amount)}
-                              </td>
-                              <td className="px-4 py-3 text-center">
-                                {editLines.length > 1 && (
-                                  <button
-                                    type="button"
-                                    onClick={() => removeEditLine(index)}
-                                    className="text-red-600 hover:text-red-800 text-sm"
-                                  >
-                                    ✕
-                                  </button>
-                                )}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                        <tfoot>
-                          <tr className="bg-gray-50">
-                            <td colSpan={3} className="px-4 py-3 text-right font-semibold">
-                              Total:
-                            </td>
-                            <td className="px-4 py-3 text-right font-bold text-lg">
-                              {formatCurrency(editLines.reduce((sum, line) => sum + line.amount, 0))}
-                            </td>
-                            <td></td>
-                          </tr>
-                        </tfoot>
-                      </table>
+                              </div>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm font-semibold text-slate-700">Amount</span>
+                              <span className="text-lg font-extrabold text-slate-900">{formatCurrency(line.amount)}</span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                      <div className="rounded-2xl border border-[var(--brand-border)] bg-[var(--brand-surface-muted)] p-3 space-y-3">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm font-semibold text-slate-700">Total</span>
+                          <span className="text-xl font-extrabold text-slate-900">{formatCurrency(editLines.reduce((sum, line) => sum + line.amount, 0))}</span>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={addEditLine}
+                        className="w-full justify-center inline-flex items-center gap-2 px-4 py-2.5 border-2 border-dashed border-[var(--brand-border)] rounded-xl hover:border-[var(--brand-blue)] hover:bg-blue-50 transition-colors text-sm font-semibold text-slate-700"
+                      >
+                        + Add Line Item
+                      </button>
                     </div>
-                    <button
-                      type="button"
-                      onClick={addEditLine}
-                      className="mt-2 px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-600 hover:bg-blue-50 transition-colors text-sm font-medium text-gray-600"
-                    >
-                      + Add Line Item
-                    </button>
+
+                    {/* Desktop table */}
+                    <div className="hidden sm:block">
+                      <div className="border border-gray-300 rounded-lg overflow-hidden">
+                        <table className="min-w-full divide-y divide-gray-200">
+                          <thead className="bg-gray-50">
+                            <tr>
+                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
+                              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Quantity</th>
+                              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Rate</th>
+                              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Amount</th>
+                              <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase w-20">Action</th>
+                            </tr>
+                          </thead>
+                          <tbody className="bg-white divide-y divide-gray-200">
+                            {editLines.map((line, index) => (
+                              <tr key={index}>
+                                <td className="px-4 py-3">
+                                  <input
+                                    type="text"
+                                    value={line.description}
+                                    onChange={(e) => updateEditLine(index, "description", e.target.value)}
+                                    className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
+                                    required
+                                  />
+                                </td>
+                                <td className="px-4 py-3">
+                                  <input
+                                    type="number"
+                                    value={line.quantity}
+                                    onChange={(e) => updateEditLine(index, "quantity", parseFloat(e.target.value) || 0)}
+                                    className="w-full border border-gray-300 rounded px-2 py-1 text-sm text-right"
+                                    step="0.01"
+                                    min="0"
+                                    required
+                                  />
+                                </td>
+                                <td className="px-4 py-3">
+                                  <input
+                                    type="number"
+                                    value={line.rate}
+                                    onChange={(e) => updateEditLine(index, "rate", parseFloat(e.target.value) || 0)}
+                                    className="w-full border border-gray-300 rounded px-2 py-1 text-sm text-right"
+                                    step="0.01"
+                                    min="0"
+                                    required
+                                  />
+                                </td>
+                                <td className="px-4 py-3 text-right font-medium">
+                                  {formatCurrency(line.amount)}
+                                </td>
+                                <td className="px-4 py-3 text-center">
+                                  {editLines.length > 1 && (
+                                    <button
+                                      type="button"
+                                      onClick={() => removeEditLine(index)}
+                                      className="text-red-600 hover:text-red-800 text-sm"
+                                    >
+                                      ✕
+                                    </button>
+                                  )}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                          <tfoot>
+                            <tr className="bg-gray-50">
+                              <td colSpan={3} className="px-4 py-3 text-right font-semibold">
+                                Total:
+                              </td>
+                              <td className="px-4 py-3 text-right font-bold text-lg">
+                                {formatCurrency(editLines.reduce((sum, line) => sum + line.amount, 0))}
+                              </td>
+                              <td></td>
+                            </tr>
+                          </tfoot>
+                        </table>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={addEditLine}
+                        className="mt-2 px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-600 hover:bg-blue-50 transition-colors text-sm font-medium text-gray-600"
+                      >
+                        + Add Line Item
+                      </button>
+                    </div>
                   </div>
 
                   {/* Notes */}
