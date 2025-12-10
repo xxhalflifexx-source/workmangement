@@ -67,104 +67,17 @@ export default function LoginPage() {
                 const email = formData.get("email") as string;
                 const password = formData.get("password") as string;
                 
-                const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-                
-                // Use redirect: false and handle redirect manually for better iOS compatibility
+                // Use NextAuth's built-in redirect - this was the original working approach
+                // For iOS, NextAuth handles the redirect internally which is more reliable
                 const res = await signIn("credentials", {
                   email,
                   password,
-                  redirect: false,
+                  redirect: true,
+                  callbackUrl: "/dashboard",
                 });
                 
-                if (res?.error) {
-                  const errorMsg = res.error === "CredentialsSignin" 
-                    ? "Invalid email or password" 
-                    : res.error;
-                  setError(errorMsg);
-                  setLoading(false);
-                  return;
-                }
-                
-                // iOS Safari: Verify cookie is set before redirect
-                // This prevents redirecting before the token is written to storage
-                let cookieVerified = false;
-                let sessionVerified = false;
-                
-                if (isIOS) {
-                  // For iOS, retry multiple times with increasing delays
-                  // iOS Safari can be slow to write cookies
-                  for (let attempt = 0; attempt < 8; attempt++) {
-                    const delay = 200 + (attempt * 100); // 200ms, 300ms, 400ms, etc.
-                    await new Promise(resolve => setTimeout(resolve, delay));
-                    
-                    try {
-                      // Check if session cookie exists by checking session endpoint
-                      const sessionRes = await fetch("/api/auth/session", {
-                        credentials: "include",
-                        cache: "no-store",
-                        headers: {
-                          "Cache-Control": "no-cache",
-                        },
-                      });
-                      
-                      if (sessionRes.ok) {
-                        const sessionJson = await sessionRes.json();
-                        if (sessionJson?.user) {
-                          sessionVerified = true;
-                          cookieVerified = true;
-                          console.log(`[Login] iOS: Session verified on attempt ${attempt + 1}`);
-                          break;
-                        }
-                      }
-                    } catch (err) {
-                      console.log(`[Login] iOS: Session check attempt ${attempt + 1} failed:`, err);
-                    }
-                  }
-                  
-                  if (!cookieVerified) {
-                    setError("Login failed. Please enable cookies in Safari Settings > Safari > Privacy & Security, then try again.");
-                    setLoading(false);
-                    return;
-                  }
-                } else {
-                  // Non-iOS: Quick verification
-                  await new Promise(resolve => setTimeout(resolve, 500));
-                  
-                  try {
-                    const sessionRes = await fetch("/api/auth/session", {
-                      credentials: "include",
-                      cache: "no-store",
-                    });
-                    const sessionJson = sessionRes.ok ? await sessionRes.json() : null;
-                    if (sessionJson?.user) {
-                      sessionVerified = true;
-                    }
-                  } catch (err) {
-                    console.log("[Login] Session check failed:", err);
-                  }
-                  
-                  if (!sessionVerified) {
-                    setError("Login failed. Please allow cookies and try again.");
-                    setLoading(false);
-                    return;
-                  }
-                }
-                
-                // Store login indicator in sessionStorage as backup (iOS compatible)
-                try {
-                  sessionStorage.setItem("auth_login_success", "true");
-                  sessionStorage.setItem("auth_timestamp", Date.now().toString());
-                } catch (e) {
-                  console.log("[Login] Could not write to sessionStorage:", e);
-                }
-                
-                // Broadcast sign in to other tabs
-                broadcastSessionEvent("signin");
-                
-                // Redirect to callback page first - this allows client-side session verification
-                // The callback page will then redirect to dashboard if session is confirmed
-                // This is more reliable on iOS Safari
-                window.location.href = "/auth/callback";
+                // If redirect is true, signIn handles everything
+                // We don't need to do anything else here
               } catch (err: any) {
                 console.error("[Login] Error:", err);
                 setError(err?.message || "An error occurred. Please try again.");

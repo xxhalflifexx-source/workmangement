@@ -21,33 +21,29 @@ export const authOptions: NextAuthOptions = {
     sessionToken: {
       name: `next-auth.session-token`,
       options: {
-        httpOnly: true, // Prevents JavaScript access - secure storage
-        sameSite: "lax", // CSRF protection - works globally, allows top-level navigation
+        httpOnly: true,
+        sameSite: "lax",
         path: "/",
-        secure: process.env.NODE_ENV === "production" || process.env.VERCEL === "1", // Secure in production/Vercel
-        maxAge: 30 * 24 * 60 * 60, // 30 days - matches session maxAge
-        // No domain restriction - works from any location worldwide
-        // iOS Safari compatibility: sameSite: "lax" works better than "strict" or "none"
+        secure: process.env.NODE_ENV === "production",
+        maxAge: 30 * 24 * 60 * 60, // 30 days
       },
     },
     callbackUrl: {
       name: `next-auth.callback-url`,
       options: {
         httpOnly: true,
-        sameSite: "lax", // Works globally, iOS Safari compatible
+        sameSite: "lax",
         path: "/",
-        secure: process.env.NODE_ENV === "production" || process.env.VERCEL === "1", // Secure in production/Vercel
-        // No domain restriction - works from any location worldwide
+        secure: process.env.NODE_ENV === "production",
       },
     },
     csrfToken: {
       name: `next-auth.csrf-token`,
       options: {
         httpOnly: true,
-        sameSite: "lax", // Works globally, iOS Safari compatible
+        sameSite: "lax",
         path: "/",
-        secure: process.env.NODE_ENV === "production" || process.env.VERCEL === "1", // Secure in production/Vercel
-        // No domain restriction - works from any location worldwide
+        secure: process.env.NODE_ENV === "production",
       },
     },
   },

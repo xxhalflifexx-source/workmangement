@@ -6,15 +6,22 @@ import DashboardHeaderActions from "./DashboardHeaderActions";
 import { getNotifications } from "./notifications-actions";
 import { getUserPermissionsForSession } from "../admin/user-access-actions";
 import { hasPermission, ModulePermission } from "@/lib/permissions";
-import DashboardClient from "./DashboardClient";
+import { redirect } from "next/navigation";
 
 export default async function Dashboard() {
   const session = await getServerSession(authOptions);
-  const user = session?.user;
-  const role = (user as any)?.role || "EMPLOYEE";
   
-  // If no session on server, still render but client will check
-  // This allows iOS Safari time to read cookies client-side
+  // For iOS Safari: Allow page to load even if session isn't immediately available
+  // Client-side components will handle session verification
+  // This was the original working approach
+  if (!session?.user) {
+    // Only redirect if we're sure there's no session (not iOS)
+    // iOS Safari might need client-side session check
+    redirect("/login");
+  }
+  
+  const user = session.user;
+  const role = (user as any)?.role || "EMPLOYEE";
 
   // Get user permissions
   const permissionsRes = await getUserPermissionsForSession();
@@ -30,7 +37,6 @@ export default async function Dashboard() {
   const unreadCount = notificationsRes.ok ? (notificationsRes.unreadCount || 0) : 0;
 
   return (
-    <DashboardClient>
     <main className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-white shadow-sm border-b relative z-20">
@@ -199,7 +205,6 @@ export default async function Dashboard() {
         </div>
       </div>
     </main>
-    </DashboardClient>
   );
 }
 
