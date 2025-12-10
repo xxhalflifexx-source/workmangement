@@ -78,6 +78,15 @@ export default function LoginPage() {
                   setLoading(false);
                   return;
                 }
+
+                // Verify session was actually set (iOS/Brave can block cookies)
+                const sessionRes = await fetch("/api/auth/session");
+                const sessionJson = sessionRes.ok ? await sessionRes.json() : null;
+                if (!sessionJson?.user) {
+                  setError("Login failed. Please allow cookies and try again.");
+                  setLoading(false);
+                  return;
+                }
                 
                 // Get user info from session to store indicator
                 // Note: We can't get the full session immediately, but NextAuth will set the cookie
