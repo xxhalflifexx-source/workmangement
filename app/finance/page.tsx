@@ -1463,13 +1463,13 @@ setLoading(false);
 
         {/* Invoice Details Modal */}
         {showDetails && selectedInvoice && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
-            <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full my-4 max-h-[calc(100vh-2rem)] overflow-y-auto">
-              <div className="p-4 sm:p-6">
-                <div className="flex justify-between items-start mb-6">
-                  <div>
-                    <h2 className="text-2xl font-bold text-gray-900">Invoice Details</h2>
-                    <p className="text-sm text-gray-500 mt-1">
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 z-50 overflow-y-auto">
+            <div className="bg-white rounded-2xl shadow-2xl border border-[var(--brand-border)] max-w-3xl w-full my-4 max-h-[calc(100vh-2rem)] overflow-y-auto">
+              <div className="p-5 sm:p-7">
+                <div className="flex items-start justify-between gap-3 mb-6">
+                  <div className="space-y-1">
+                    <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">Invoice Details</h2>
+                    <p className="text-sm text-slate-500 font-medium">
                       {selectedInvoice.invoiceNumber || "No Invoice Number"}
                     </p>
                   </div>
@@ -1478,56 +1478,59 @@ setLoading(false);
                       setShowDetails(false);
                       setSelectedInvoice(null);
                     }}
-                    className="text-gray-400 hover:text-gray-600 text-2xl"
+                    className="text-slate-400 hover:text-slate-600 text-2xl leading-none rounded-full p-1.5 transition-colors"
+                    aria-label="Close"
                   >
                     ✕
                   </button>
                 </div>
 
                 {/* Invoice Info */}
-                <div className="grid grid-cols-2 gap-6 mb-6">
-                  <div>
-                    <h3 className="text-sm font-semibold text-gray-700 uppercase mb-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-6">
+                  <div className="rounded-xl border border-[var(--brand-border)] bg-[var(--brand-surface-muted)] p-4">
+                    <h3 className="text-xs font-semibold text-slate-600 tracking-[0.08em] uppercase mb-3">
                       Invoice Information
                     </h3>
                     <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Invoice Number:</span>
-                        <span className="font-medium">{selectedInvoice.invoiceNumber || "—"}</span>
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-slate-500">Invoice Number</span>
+                        <span className="font-semibold text-slate-900">{selectedInvoice.invoiceNumber || "—"}</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Status:</span>
-                        <span>{getStatusBadge(selectedInvoice)}</span>
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-slate-500">Status</span>
+                        <span className="inline-flex items-center gap-2 rounded-full bg-blue-50 text-blue-700 text-xs font-semibold px-3 py-1">
+                          {getStatusBadge(selectedInvoice)}
+                        </span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Issue Date:</span>
-                        <span className="font-medium">{formatDate(selectedInvoice.issueDate)}</span>
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-slate-500">Issue Date</span>
+                        <span className="font-semibold text-slate-900">{formatDate(selectedInvoice.issueDate)}</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Due Date:</span>
-                        <span className="font-medium">{formatDate(selectedInvoice.dueDate)}</span>
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-slate-500">Due Date</span>
+                        <span className="font-semibold text-slate-900">{formatDate(selectedInvoice.dueDate)}</span>
                       </div>
                     </div>
                   </div>
 
-                  <div>
-                    <h3 className="text-sm font-semibold text-gray-700 uppercase mb-2">
+                  <div className="rounded-xl border border-[var(--brand-border)] bg-[var(--brand-surface-muted)] p-4">
+                    <h3 className="text-xs font-semibold text-slate-600 tracking-[0.08em] uppercase mb-3">
                       Customer & Job
                     </h3>
                     <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Customer:</span>
-                        <span className="font-medium">
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-slate-500">Customer</span>
+                        <span className="font-semibold text-slate-900">
                           {selectedInvoice.customer?.name || "—"}
                         </span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Job Number:</span>
-                        <span className="font-medium">{getJobNumber(selectedInvoice)}</span>
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-slate-500">Job Number</span>
+                        <span className="font-semibold text-slate-900">{getJobNumber(selectedInvoice)}</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Job Title:</span>
-                        <span className="font-medium">
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-slate-500">Job Title</span>
+                        <span className="font-semibold text-slate-900">
                           {selectedInvoice.job?.title || "—"}
                         </span>
                       </div>
@@ -1536,25 +1539,19 @@ setLoading(false);
                 </div>
 
                 {/* Financial Summary */}
-                <div className="bg-gray-50 rounded-lg p-4 mb-6">
-                  <div className="grid grid-cols-3 gap-4 text-sm">
-                    <div>
-                      <span className="text-gray-600">Total Amount:</span>
-                      <p className="text-lg font-bold text-gray-900">
-                        {formatCurrency(selectedInvoice.total)}
-                      </p>
+                <div className="rounded-2xl border border-[var(--brand-border)] bg-gradient-to-br from-white via-[var(--brand-surface-muted)] to-white p-4 sm:p-5 mb-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="rounded-xl bg-blue-50 border border-blue-100 p-3.5">
+                      <span className="text-xs font-semibold uppercase tracking-[0.08em] text-blue-700">Total Amount</span>
+                      <p className="text-2xl font-extrabold text-slate-900 mt-1">{formatCurrency(selectedInvoice.total)}</p>
                     </div>
-                    <div>
-                      <span className="text-gray-600">Balance:</span>
-                      <p className="text-lg font-bold text-gray-900">
-                        {formatCurrency(selectedInvoice.balance)}
-                      </p>
+                    <div className="rounded-xl bg-orange-50 border border-orange-100 p-3.5">
+                      <span className="text-xs font-semibold uppercase tracking-[0.08em] text-orange-700">Balance</span>
+                      <p className="text-2xl font-extrabold text-slate-900 mt-1">{formatCurrency(selectedInvoice.balance)}</p>
                     </div>
-                    <div>
-                      <span className="text-gray-600">Paid:</span>
-                      <p className="text-lg font-bold text-green-600">
-                        {formatCurrency(selectedInvoice.total - selectedInvoice.balance)}
-                      </p>
+                    <div className="rounded-xl bg-emerald-50 border border-emerald-100 p-3.5">
+                      <span className="text-xs font-semibold uppercase tracking-[0.08em] text-emerald-700">Paid</span>
+                      <p className="text-2xl font-extrabold text-emerald-700 mt-1">{formatCurrency(selectedInvoice.total - selectedInvoice.balance)}</p>
                     </div>
                   </div>
                 </div>
