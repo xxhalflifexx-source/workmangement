@@ -67,6 +67,22 @@ export default function LoginPage() {
                 const email = formData.get("email") as string;
                 const password = formData.get("password") as string;
                 
+                const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+                
+                // For iOS, use NextAuth's built-in redirect which handles cookies better
+                if (isIOS) {
+                  const res = await signIn("credentials", {
+                    email,
+                    password,
+                    redirect: true,
+                    callbackUrl: "/dashboard",
+                  });
+                  // If redirect is true, signIn will handle the redirect itself
+                  // We don't need to do anything else
+                  return;
+                }
+                
+                // For non-iOS, use manual redirect with verification
                 const res = await signIn("credentials", {
                   email,
                   password,
@@ -79,68 +95,37 @@ export default function LoginPage() {
                   return;
                 }
 
-                // If signIn succeeded (no error), proceed with login
-                // On iOS Safari, cookies might be set but session check can be delayed
-                // So we trust the signIn response if it succeeded
-                const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-                
-                if (isIOS) {
-                  // iOS Safari: Wait a bit for cookie to be set, then proceed
-                  // We trust signIn succeeded if there's no error
-                  await new Promise(resolve => setTimeout(resolve, 800));
-                  
-                  // Optional: Quick session check, but don't fail if it doesn't work yet
+                // Verify session before proceeding
+                let sessionVerified = false;
+                for (let attempt = 0; attempt < 3; attempt++) {
+                  await new Promise(resolve => setTimeout(resolve, 300));
                   try {
                     const sessionRes = await fetch("/api/auth/session", {
                       credentials: "include",
                       cache: "no-store",
                     });
                     const sessionJson = sessionRes.ok ? await sessionRes.json() : null;
-                    if (!sessionJson?.user) {
-                      console.log("[Login] iOS: Session not immediately available, proceeding anyway");
+                    if (sessionJson?.user) {
+                      sessionVerified = true;
+                      break;
                     }
                   } catch (err) {
-                    console.log("[Login] iOS: Session check failed, proceeding anyway:", err);
+                    console.log(`[Login] Session check attempt ${attempt + 1} failed:`, err);
                   }
-                  
-                  // Broadcast sign in to other tabs
-                  broadcastSessionEvent("signin");
-                  
-                  // Use full page reload for iOS - more reliable
-                  window.location.href = "/dashboard";
-                } else {
-                  // Non-iOS: Verify session before proceeding
-                  let sessionVerified = false;
-                  for (let attempt = 0; attempt < 3; attempt++) {
-                    await new Promise(resolve => setTimeout(resolve, 300));
-                    try {
-                      const sessionRes = await fetch("/api/auth/session", {
-                        credentials: "include",
-                        cache: "no-store",
-                      });
-                      const sessionJson = sessionRes.ok ? await sessionRes.json() : null;
-                      if (sessionJson?.user) {
-                        sessionVerified = true;
-                        break;
-                      }
-                    } catch (err) {
-                      console.log(`[Login] Session check attempt ${attempt + 1} failed:`, err);
-                    }
-                  }
-
-                  if (!sessionVerified) {
-                    setError("Login failed. Please allow cookies and try again.");
-                    setLoading(false);
-                    return;
-                  }
-                  
-                  // Broadcast sign in to other tabs
-                  broadcastSessionEvent("signin");
-                  
-                  // Small delay before redirect for other browsers
-                  await new Promise(resolve => setTimeout(resolve, 500));
-                  router.replace("/dashboard");
                 }
+
+                if (!sessionVerified) {
+                  setError("Login failed. Please allow cookies and try again.");
+                  setLoading(false);
+                  return;
+                }
+                
+                // Broadcast sign in to other tabs
+                broadcastSessionEvent("signin");
+                
+                // Small delay before redirect for other browsers
+                await new Promise(resolve => setTimeout(resolve, 500));
+                router.replace("/dashboard");
               } catch (err) {
                 setError("An error occurred. Please try again.");
                 setLoading(false);
