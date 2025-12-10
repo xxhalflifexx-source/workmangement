@@ -166,6 +166,22 @@ setLoading(false);
     loadInvoices();
 	}, []);
 
+  // Preload next invoice number whenever the create modal opens so we can show the exact number instead of "Auto-generated".
+  useEffect(() => {
+    const preloadInvoiceNumber = async () => {
+      try {
+        const next = await getNextInvoiceNumber();
+        if (next) setInvoiceNumber(next);
+      } catch (err) {
+        console.error("Failed to preload invoice number", err);
+      }
+    };
+
+    if (showCreateModal) {
+      preloadInvoiceNumber();
+    }
+  }, [showCreateModal]);
+
   // Apply filters and search
   useEffect(() => {
     let filtered = [...invoices];
@@ -1770,7 +1786,7 @@ setLoading(false);
                       </label>
                       <input
                         type="text"
-                        value={invoiceNumber || "Auto-generated"}
+                        value={invoiceNumber || "Generating..."}
                         disabled
                         className="w-full border border-[var(--brand-border)] rounded-xl px-3 py-3 text-base bg-[var(--brand-surface-muted)] text-slate-600"
                       />
