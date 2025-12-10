@@ -74,51 +74,69 @@ export default function LoginPage() {
                 });
                 
                 if (res?.error) {
-                  setError("Invalid credentials");
+                  setError(res.error === "CredentialsSignin" ? "Invalid credentials" : res.error);
                   setLoading(false);
                   return;
                 }
 
-                // iOS Safari compatibility: Wait longer and verify session multiple times
-                // iOS Safari can be slow to set cookies, so we retry session verification
-                let sessionVerified = false;
-                for (let attempt = 0; attempt < 5; attempt++) {
-                  await new Promise(resolve => setTimeout(resolve, 300));
+                // If signIn succeeded (no error), proceed with login
+                // On iOS Safari, cookies might be set but session check can be delayed
+                // So we trust the signIn response if it succeeded
+                const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+                
+                if (isIOS) {
+                  // iOS Safari: Wait a bit for cookie to be set, then proceed
+                  // We trust signIn succeeded if there's no error
+                  await new Promise(resolve => setTimeout(resolve, 800));
+                  
+                  // Optional: Quick session check, but don't fail if it doesn't work yet
                   try {
                     const sessionRes = await fetch("/api/auth/session", {
                       credentials: "include",
                       cache: "no-store",
                     });
                     const sessionJson = sessionRes.ok ? await sessionRes.json() : null;
-                    if (sessionJson?.user) {
-                      sessionVerified = true;
-                      break;
+                    if (!sessionJson?.user) {
+                      console.log("[Login] iOS: Session not immediately available, proceeding anyway");
                     }
                   } catch (err) {
-                    console.log(`[Login] Session check attempt ${attempt + 1} failed:`, err);
+                    console.log("[Login] iOS: Session check failed, proceeding anyway:", err);
                   }
-                }
-
-                if (!sessionVerified) {
-                  // Detect iOS and provide specific instructions
-                  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-                  const errorMsg = isIOS 
-                    ? "Login failed. Please enable cookies in Safari Settings > Safari > Privacy & Security, then try again."
-                    : "Login failed. Please allow cookies and try again.";
-                  setError(errorMsg);
-                  setLoading(false);
-                  return;
-                }
-                
-                // Broadcast sign in to other tabs
-                broadcastSessionEvent("signin");
-                
-                // iOS Safari: Use full page reload instead of client-side navigation
-                // This ensures cookies are properly recognized
-                const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-                if (isIOS) {
+                  
+                  // Broadcast sign in to other tabs
+                  broadcastSessionEvent("signin");
+                  
+                  // Use full page reload for iOS - more reliable
                   window.location.href = "/dashboard";
                 } else {
+                  // Non-iOS: Verify session before proceeding
+                  let sessionVerified = false;
+                  for (let attempt = 0; attempt < 3; attempt++) {
+                    await new Promise(resolve => setTimeout(resolve, 300));
+                    try {
+                      const sessionRes = await fetch("/api/auth/session", {
+                        credentials: "include",
+                        cache: "no-store",
+                      });
+                      const sessionJson = sessionRes.ok ? await sessionRes.json() : null;
+                      if (sessionJson?.user) {
+                        sessionVerified = true;
+                        break;
+                      }
+                    } catch (err) {
+                      console.log(`[Login] Session check attempt ${attempt + 1} failed:`, err);
+                    }
+                  }
+
+                  if (!sessionVerified) {
+                    setError("Login failed. Please allow cookies and try again.");
+                    setLoading(false);
+                    return;
+                  }
+                  
+                  // Broadcast sign in to other tabs
+                  broadcastSessionEvent("signin");
+                  
                   // Small delay before redirect for other browsers
                   await new Promise(resolve => setTimeout(resolve, 500));
                   router.replace("/dashboard");
