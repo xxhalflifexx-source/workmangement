@@ -4,9 +4,22 @@
 
 /* React Quill Editor Styles */
 @import 'react-quill/dist/quill.snow.css';
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
 /* Mobile Optimization - Prevent horizontal scrolling */
 @layer base {
+  :root {
+    --brand-blue: #2563eb;
+    --brand-blue-strong: #1d4ed8;
+    --brand-orange: #f97316;
+    --brand-gray: #1e293b;
+    --brand-gray-soft: #334155;
+    --brand-border: #e2e8f0;
+    --brand-surface: #ffffff;
+    --brand-surface-muted: #f7f9fc;
+    --brand-bg: #f4f6fb;
+  }
+
   html {
     overflow-x: hidden;
     -webkit-text-size-adjust: 100%;
@@ -18,6 +31,11 @@
     word-wrap: break-word;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    background: radial-gradient(120% 80% at 20% 20%, #f8fbff 0%, #f5f7fb 45%, #eef2f8 100%);
+    color: var(--brand-gray);
+    font-family: "Inter", "Segoe UI", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+    letter-spacing: -0.01em;
+    line-height: 1.65;
   }
   
   /* Ensure all images are responsive */
@@ -32,6 +50,65 @@
     max-width: 100%;
   }
   
+  h1, h2, h3, h4 {
+    color: #0f172a;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  h1 { font-size: clamp(1.6rem, 2vw, 2.2rem); }
+  h2 { font-size: clamp(1.4rem, 1.6vw, 1.8rem); }
+  h3 { font-size: clamp(1.2rem, 1.4vw, 1.4rem); }
+
+  p {
+    color: var(--brand-gray-soft);
+  }
+
+  a {
+    color: var(--brand-blue);
+    font-weight: 600;
+  }
+
+  a:hover {
+    color: var(--brand-blue-strong);
+  }
+
+  /* Uniform form and interactive elements */
+  input,
+  select,
+  textarea {
+    border: 1px solid var(--brand-border);
+    background: var(--brand-surface);
+    color: #0f172a;
+    border-radius: 0.75rem;
+    padding: 0.6rem 0.85rem;
+  }
+
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible,
+  button:focus-visible,
+  a:focus-visible {
+    outline: 2px solid var(--brand-blue);
+    outline-offset: 2px;
+    box-shadow: 0 10px 30px -12px rgba(37, 99, 235, 0.45);
+  }
+
+  button {
+    font-weight: 600;
+    border-radius: 0.75rem;
+  }
+
+  table thead th {
+    color: #0f172a;
+    font-weight: 700;
+    background: #f8fafc;
+  }
+
+  table tbody td {
+    color: #1f2937;
+  }
+
   /* Smooth transitions for common interactive elements */
   button, a, input, select, textarea {
     transition: all 0.2s ease-in-out;

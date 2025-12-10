@@ -21,7 +21,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="page-transition">
+      <body className="page-transition font-sans bg-[var(--brand-bg)] text-slate-900 antialiased">
         <Providers>{children}</Providers>
       </body>
     </html>
