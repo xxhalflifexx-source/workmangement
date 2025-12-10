@@ -316,7 +316,7 @@ export default function InventoryPage() {
     setShowAdjustModal(false);
     setAdjustingItem(null);
     loadData();
-  }, [loadData]);
+  }, [loadData, adjustMode]);
 
   const openCreateModal = useCallback(() => {
     setEditingItem(null);
