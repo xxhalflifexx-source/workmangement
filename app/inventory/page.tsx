@@ -33,6 +33,7 @@ export default function InventoryPage() {
   
   const [showAdjustModal, setShowAdjustModal] = useState(false);
   const [adjustingItem, setAdjustingItem] = useState<InventoryItem | null>(null);
+  const [adjustMode, setAdjustMode] = useState<"add" | "remove">("add");
   
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [historyItem, setHistoryItem] = useState<InventoryItem | null>(null);
@@ -294,6 +295,16 @@ export default function InventoryPage() {
 
     const formData = new FormData(e.currentTarget);
 
+    // Normalize quantity based on mode (add/remove) so mobile users don't need to type "-".
+    const raw = formData.get("quantityChange")?.toString().replace(/,/g, ".").trim() || "";
+    const numeric = parseFloat(raw);
+    if (Number.isNaN(numeric)) {
+      setError("Enter a valid quantity (numbers only).");
+      return;
+    }
+    const signed = adjustMode === "remove" ? -Math.abs(numeric) : Math.abs(numeric);
+    formData.set("quantityChange", signed.toString());
+
     const res = await adjustInventory(formData);
 
     if (!res.ok) {
@@ -319,6 +330,7 @@ export default function InventoryPage() {
 
   const openAdjustModal = useCallback((item: InventoryItem) => {
     setAdjustingItem(item);
+    setAdjustMode("add");
     setShowAdjustModal(true);
   }, []);
 
@@ -1128,17 +1140,41 @@ export default function InventoryPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Quantity Change *
                   </label>
+                  <div className="flex items-center gap-2 mb-2">
+                    <button
+                      type="button"
+                      onClick={() => setAdjustMode("add")}
+                      className={`flex-1 px-3 py-2 rounded-lg border ${
+                        adjustMode === "add"
+                          ? "bg-blue-50 border-blue-500 text-blue-700 font-semibold"
+                          : "bg-white border-gray-300 text-gray-700"
+                      }`}
+                    >
+                      Add (+)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setAdjustMode("remove")}
+                      className={`flex-1 px-3 py-2 rounded-lg border ${
+                        adjustMode === "remove"
+                          ? "bg-red-50 border-red-500 text-red-700 font-semibold"
+                          : "bg-white border-gray-300 text-gray-700"
+                      }`}
+                    >
+                      Remove (–)
+                    </button>
+                  </div>
                   <input
                     name="quantityChange"
                     type="text"
                     inputMode="decimal"
                     pattern="^-?[0-9]*[.,]?[0-9]*$"
                     required
-                    placeholder="Use + for add, - for remove"
+                    placeholder="Enter amount (we'll apply + or –)"
                     className="w-full border border-gray-300 rounded-lg px-3 py-2.5 min-h-[44px] focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
                   />
                   <p className="text-xs text-gray-500 mt-1 break-words">
-                    Example: +50 to add 50 units, -20 to remove 20 units
+                    Enter the amount; tap Add/Remove above and we’ll set the sign for you.
                   </p>
                 </div>
 
