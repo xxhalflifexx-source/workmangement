@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/authOptions";
+import { getSafeServerSession } from "@/lib/api-auth";
 import { createClient } from "@supabase/supabase-js";
 
 export async function POST(request: NextRequest) {
 	try {
-		const session = await getServerSession(authOptions);
+		const session = await getSafeServerSession(request);
 
 		if (!session?.user) {
-			return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+			return NextResponse.json({ 
+				error: "Not authenticated. Please ensure cookies are enabled." 
+			}, { status: 401 });
 		}
 
 		const userRole = (session.user as any).role;

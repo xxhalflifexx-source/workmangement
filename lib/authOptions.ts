@@ -27,13 +27,14 @@ export const authOptions: NextAuthOptions = {
         secure: process.env.NODE_ENV === "production" || process.env.VERCEL === "1", // Secure in production/Vercel
         maxAge: 30 * 24 * 60 * 60, // 30 days - matches session maxAge
         // No domain restriction - works from any location worldwide
+        // iOS Safari compatibility: sameSite: "lax" works better than "strict" or "none"
       },
     },
     callbackUrl: {
       name: `next-auth.callback-url`,
       options: {
         httpOnly: true,
-        sameSite: "lax", // Works globally
+        sameSite: "lax", // Works globally, iOS Safari compatible
         path: "/",
         secure: process.env.NODE_ENV === "production" || process.env.VERCEL === "1", // Secure in production/Vercel
         // No domain restriction - works from any location worldwide
@@ -43,7 +44,7 @@ export const authOptions: NextAuthOptions = {
       name: `next-auth.csrf-token`,
       options: {
         httpOnly: true,
-        sameSite: "lax", // Works globally
+        sameSite: "lax", // Works globally, iOS Safari compatible
         path: "/",
         secure: process.env.NODE_ENV === "production" || process.env.VERCEL === "1", // Secure in production/Vercel
         // No domain restriction - works from any location worldwide

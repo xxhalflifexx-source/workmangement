@@ -1,14 +1,15 @@
-import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/authOptions";
+import { NextRequest, NextResponse } from "next/server";
+import { getSafeServerSession } from "@/lib/api-auth";
 import { prisma } from "@/lib/prisma";
 import { parsePermissions } from "@/lib/permissions";
 
-export async function GET() {
-  const session = await getServerSession(authOptions);
+export async function GET(request: NextRequest) {
+  const session = await getSafeServerSession(request);
 
   if (!session?.user) {
-    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    return NextResponse.json({ 
+      error: "Not authenticated. Please ensure cookies are enabled." 
+    }, { status: 401 });
   }
 
   try {

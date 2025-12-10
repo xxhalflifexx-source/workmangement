@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
+import { getSafeServerSession } from "@/lib/api-auth";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-import { authOptions } from "@/lib/authOptions";
 import { prisma } from "@/lib/prisma";
 import archiver from "archiver";
 import { Readable } from "stream";
@@ -51,9 +50,11 @@ async function getAllFilesInFolder(folderId: string): Promise<Array<{ name: stri
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getSafeServerSession(request);
     if (!session?.user) {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+      return NextResponse.json({ 
+        error: "Not authenticated. Please ensure cookies are enabled." 
+      }, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);

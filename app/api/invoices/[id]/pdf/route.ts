@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/authOptions";
+import { getSafeServerSession } from "@/lib/api-auth";
 import { prisma } from "@/lib/prisma";
 import { generateInvoicePDF, InvoicePDFData } from "@/lib/pdf-generator";
 
@@ -8,9 +7,11 @@ export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const session = await getServerSession(authOptions);
+  const session = await getSafeServerSession(request);
   if (!session?.user) {
-    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    return NextResponse.json({ 
+      error: "Not authenticated. Please ensure cookies are enabled." 
+    }, { status: 401 });
   }
 
   const role = (session.user as any).role;
