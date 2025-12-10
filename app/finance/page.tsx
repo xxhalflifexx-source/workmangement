@@ -1857,26 +1857,122 @@ setLoading(false);
                       </label>
                       <span className="text-xs text-slate-500">Taxes & shipping handled below</span>
                     </div>
-                    <div className="border border-[var(--brand-border)] rounded-2xl overflow-hidden shadow-sm">
-                      <table className="min-w-full divide-y divide-[var(--brand-border)]">
-                        <thead className="bg-[var(--brand-surface-muted)]">
-                          <tr>
-                            <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Description</th>
-                            <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase">Quantity</th>
-                            <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase">Rate</th>
-                            <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase">Amount</th>
-                            <th className="px-4 py-3 text-center text-xs font-semibold text-slate-600 uppercase w-20">Action</th>
-                          </tr>
-                        </thead>
-                        <tbody className="bg-white divide-y divide-[var(--brand-border)]">
-                          {invoiceLines.map((line, index) => (
+
+                    {/* Mobile: stacked cards for full readability */}
+                    <div className="space-y-3 sm:hidden">
+                      {invoiceLines.map((line, index) => (
+                        <div key={index} className="rounded-2xl border border-[var(--brand-border)] bg-white p-3 shadow-sm">
+                          <div className="flex justify-between items-center mb-2">
+                            <p className="text-xs font-semibold text-slate-600 uppercase tracking-[0.08em]">Item {index + 1}</p>
+                            {invoiceLines.length > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => removeInvoiceLine(index)}
+                                className="text-red-500 hover:text-red-700 text-sm font-semibold"
+                                aria-label="Remove line item"
+                              >
+                                ✕
+                              </button>
+                            )}
+                          </div>
+                          <div className="space-y-3">
+                            <div>
+                              <label className="block text-xs text-slate-600 mb-1">Description</label>
+                              <input
+                                type="text"
+                                value={line.description}
+                                onChange={(e) => updateInvoiceLine(index, "description", e.target.value)}
+                                className="w-full border border-[var(--brand-border)] rounded-xl px-3 py-2.5 text-base"
+                                placeholder="Item description"
+                                required
+                              />
+                            </div>
+                            <div className="grid grid-cols-2 gap-3">
+                              <div>
+                                <label className="block text-xs text-slate-600 mb-1">Quantity</label>
+                                <input
+                                  type="number"
+                                  value={line.quantity}
+                                  onChange={(e) => updateInvoiceLine(index, "quantity", parseFloat(e.target.value) || 0)}
+                                  className="w-full border border-[var(--brand-border)] rounded-xl px-3 py-2.5 text-base text-right"
+                                  step="0.01"
+                                  min="0"
+                                  required
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs text-slate-600 mb-1">Rate</label>
+                                <input
+                                  type="number"
+                                  value={line.rate}
+                                  onChange={(e) => updateInvoiceLine(index, "rate", parseFloat(e.target.value) || 0)}
+                                  className="w-full border border-[var(--brand-border)] rounded-xl px-3 py-2.5 text-base text-right"
+                                  step="0.01"
+                                  min="0"
+                                  required
+                                />
+                              </div>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm font-semibold text-slate-700">Amount</span>
+                              <span className="text-lg font-extrabold text-slate-900">{formatCurrency(line.amount)}</span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                      <div className="rounded-2xl border border-[var(--brand-border)] bg-[var(--brand-surface-muted)] p-3 space-y-3">
+                        <div className="flex justify-between">
+                          <span className="text-sm font-semibold text-slate-700">Subtotal</span>
+                          <span className="text-lg font-extrabold text-slate-900">{formatCurrency(calculateInvoiceSubtotal())}</span>
+                        </div>
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="text-sm font-semibold text-slate-700">Shipping Fee</span>
+                          <input
+                            type="number"
+                            value={shippingFee}
+                            onChange={(e) => setShippingFee(parseFloat(e.target.value) || 0)}
+                            className="w-32 border border-[var(--brand-border)] rounded-xl px-3 py-2 text-base text-right bg-white"
+                            step="0.01"
+                            min="0"
+                            placeholder="0.00"
+                          />
+                        </div>
+                        <div className="flex justify-between items-center border-t border-[var(--brand-border)] pt-2">
+                          <span className="text-base font-extrabold text-slate-900">Total</span>
+                          <span className="text-xl font-extrabold text-slate-900">{formatCurrency(calculateInvoiceTotal())}</span>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={addInvoiceLine}
+                        className="w-full justify-center inline-flex items-center gap-2 px-4 py-2.5 border-2 border-dashed border-[var(--brand-border)] rounded-xl hover:border-[var(--brand-blue)] hover:bg-blue-50 transition-colors text-sm font-semibold text-slate-700"
+                      >
+                        + Add Line Item
+                      </button>
+                    </div>
+
+                    {/* Desktop: table view */}
+                    <div className="hidden sm:block">
+                      <div className="border border-[var(--brand-border)] rounded-2xl overflow-hidden shadow-sm">
+                        <table className="min-w-full divide-y divide-[var(--brand-border)]">
+                          <thead className="bg-[var(--brand-surface-muted)]">
+                            <tr>
+                              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Description</th>
+                              <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase">Quantity</th>
+                              <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase">Rate</th>
+                              <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase">Amount</th>
+                              <th className="px-4 py-3 text-center text-xs font-semibold text-slate-600 uppercase w-20">Action</th>
+                            </tr>
+                          </thead>
+                          <tbody className="bg-white divide-y divide-[var(--brand-border)]">
+                            {invoiceLines.map((line, index) => (
                             <tr key={index}>
                               <td className="px-4 py-3">
                                 <input
                                   type="text"
                                   value={line.description}
                                   onChange={(e) => updateInvoiceLine(index, "description", e.target.value)}
-                                className="w-full border border-[var(--brand-border)] rounded-lg px-3 py-2 text-sm"
+                                  className="w-full border border-[var(--brand-border)] rounded-lg px-3 py-2 text-sm"
                                   placeholder="Item description"
                                   required
                                 />
@@ -1886,7 +1982,7 @@ setLoading(false);
                                   type="number"
                                   value={line.quantity}
                                   onChange={(e) => updateInvoiceLine(index, "quantity", parseFloat(e.target.value) || 0)}
-                                className="w-full border border-[var(--brand-border)] rounded-lg px-3 py-2 text-sm text-right"
+                                  className="w-full border border-[var(--brand-border)] rounded-lg px-3 py-2 text-sm text-right"
                                   step="0.01"
                                   min="0"
                                   required
@@ -1897,7 +1993,7 @@ setLoading(false);
                                   type="number"
                                   value={line.rate}
                                   onChange={(e) => updateInvoiceLine(index, "rate", parseFloat(e.target.value) || 0)}
-                                className="w-full border border-[var(--brand-border)] rounded-lg px-3 py-2 text-sm text-right"
+                                  className="w-full border border-[var(--brand-border)] rounded-lg px-3 py-2 text-sm text-right"
                                   step="0.01"
                                   min="0"
                                   required
@@ -1918,54 +2014,55 @@ setLoading(false);
                                 )}
                               </td>
                             </tr>
-                          ))}
-                        </tbody>
-                        <tfoot className="bg-[var(--brand-surface-muted)]">
-                          <tr>
-                            <td colSpan={3} className="px-4 py-3 text-right font-semibold text-slate-700">
-                              Subtotal:
-                            </td>
-                            <td className="px-4 py-3 text-right font-semibold text-slate-900">
-                              {formatCurrency(calculateInvoiceSubtotal())}
-                            </td>
-                            <td></td>
-                          </tr>
-                          <tr>
-                            <td colSpan={3} className="px-4 py-3 text-right font-semibold text-slate-700">
-                              Shipping Fee:
-                            </td>
-                            <td className="px-4 py-3 text-right">
-                              <input
-                                type="number"
-                                value={shippingFee}
-                                onChange={(e) => setShippingFee(parseFloat(e.target.value) || 0)}
-                                className="w-32 border border-[var(--brand-border)] rounded-lg px-3 py-2 text-sm text-right"
-                                step="0.01"
-                                min="0"
-                                placeholder="0.00"
-                              />
-                            </td>
-                            <td></td>
-                          </tr>
-                          <tr className="bg-white">
-                            <td colSpan={3} className="px-4 py-3 text-right font-extrabold text-lg text-slate-900">
-                              Total:
-                            </td>
-                            <td className="px-4 py-3 text-right font-extrabold text-lg text-slate-900">
-                              {formatCurrency(calculateInvoiceTotal())}
-                            </td>
-                            <td></td>
-                          </tr>
-                        </tfoot>
-                      </table>
+                            ))}
+                          </tbody>
+                          <tfoot className="bg-[var(--brand-surface-muted)]">
+                            <tr>
+                              <td colSpan={3} className="px-4 py-3 text-right font-semibold text-slate-700">
+                                Subtotal:
+                              </td>
+                              <td className="px-4 py-3 text-right font-semibold text-slate-900">
+                                {formatCurrency(calculateInvoiceSubtotal())}
+                              </td>
+                              <td></td>
+                            </tr>
+                            <tr>
+                              <td colSpan={3} className="px-4 py-3 text-right font-semibold text-slate-700">
+                                Shipping Fee:
+                              </td>
+                              <td className="px-4 py-3 text-right">
+                                <input
+                                  type="number"
+                                  value={shippingFee}
+                                  onChange={(e) => setShippingFee(parseFloat(e.target.value) || 0)}
+                                  className="w-32 border border-[var(--brand-border)] rounded-lg px-3 py-2 text-sm text-right"
+                                  step="0.01"
+                                  min="0"
+                                  placeholder="0.00"
+                                />
+                              </td>
+                              <td></td>
+                            </tr>
+                            <tr className="bg-white">
+                              <td colSpan={3} className="px-4 py-3 text-right font-extrabold text-lg text-slate-900">
+                                Total:
+                              </td>
+                              <td className="px-4 py-3 text-right font-extrabold text-lg text-slate-900">
+                                {formatCurrency(calculateInvoiceTotal())}
+                              </td>
+                              <td></td>
+                            </tr>
+                          </tfoot>
+                        </table>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={addInvoiceLine}
+                        className="mt-3 inline-flex items-center gap-2 px-4 py-2 border-2 border-dashed border-[var(--brand-border)] rounded-xl hover:border-[var(--brand-blue)] hover:bg-blue-50 transition-colors text-sm font-semibold text-slate-700"
+                      >
+                        + Add Line Item
+                      </button>
                     </div>
-                    <button
-                      type="button"
-                      onClick={addInvoiceLine}
-                      className="mt-3 inline-flex items-center gap-2 px-4 py-2 border-2 border-dashed border-[var(--brand-border)] rounded-xl hover:border-[var(--brand-blue)] hover:bg-blue-50 transition-colors text-sm font-semibold text-slate-700"
-                    >
-                      + Add Line Item
-                    </button>
                   </div>
 
                   {/* Notes */}
