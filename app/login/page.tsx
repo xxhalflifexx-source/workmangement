@@ -161,9 +161,10 @@ export default function LoginPage() {
                 // Broadcast sign in to other tabs
                 broadcastSessionEvent("signin");
                 
-                // Use window.location.href for all devices - most reliable on iOS
-                // This ensures a full page reload which properly reads cookies
-                window.location.href = "/dashboard";
+                // Redirect to callback page first - this allows client-side session verification
+                // The callback page will then redirect to dashboard if session is confirmed
+                // This is more reliable on iOS Safari
+                window.location.href = "/auth/callback";
               } catch (err: any) {
                 console.error("[Login] Error:", err);
                 setError(err?.message || "An error occurred. Please try again.");
