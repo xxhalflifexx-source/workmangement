@@ -24,7 +24,7 @@ export const authOptions: NextAuthOptions = {
         httpOnly: true, // Prevents JavaScript access - secure storage
         sameSite: "lax", // CSRF protection - works globally, allows top-level navigation
         path: "/",
-        secure: process.env.NODE_ENV === "production", // HTTPS only in production
+        secure: true, // Always secure for iOS Safari compatibility
         maxAge: 30 * 24 * 60 * 60, // 30 days - matches session maxAge
         // No domain restriction - works from any location worldwide
       },
@@ -35,7 +35,7 @@ export const authOptions: NextAuthOptions = {
         httpOnly: true,
         sameSite: "lax", // Works globally
         path: "/",
-        secure: process.env.NODE_ENV === "production",
+        secure: true, // Always secure for iOS Safari compatibility
         // No domain restriction - works from any location worldwide
       },
     },
@@ -45,7 +45,7 @@ export const authOptions: NextAuthOptions = {
         httpOnly: true,
         sameSite: "lax", // Works globally
         path: "/",
-        secure: process.env.NODE_ENV === "production",
+        secure: true, // Always secure for iOS Safari compatibility
         // No domain restriction - works from any location worldwide
       },
     },

@@ -79,28 +79,50 @@ export default function LoginPage() {
                   return;
                 }
 
-                // Verify session was actually set (iOS/Brave can block cookies)
-                const sessionRes = await fetch("/api/auth/session");
-                const sessionJson = sessionRes.ok ? await sessionRes.json() : null;
-                if (!sessionJson?.user) {
-                  setError("Login failed. Please allow cookies and try again.");
+                // iOS Safari compatibility: Wait longer and verify session multiple times
+                // iOS Safari can be slow to set cookies, so we retry session verification
+                let sessionVerified = false;
+                for (let attempt = 0; attempt < 5; attempt++) {
+                  await new Promise(resolve => setTimeout(resolve, 300));
+                  try {
+                    const sessionRes = await fetch("/api/auth/session", {
+                      credentials: "include",
+                      cache: "no-store",
+                    });
+                    const sessionJson = sessionRes.ok ? await sessionRes.json() : null;
+                    if (sessionJson?.user) {
+                      sessionVerified = true;
+                      break;
+                    }
+                  } catch (err) {
+                    console.log(`[Login] Session check attempt ${attempt + 1} failed:`, err);
+                  }
+                }
+
+                if (!sessionVerified) {
+                  // Detect iOS and provide specific instructions
+                  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+                  const errorMsg = isIOS 
+                    ? "Login failed. Please enable cookies in Safari Settings > Safari > Privacy & Security, then try again."
+                    : "Login failed. Please allow cookies and try again.";
+                  setError(errorMsg);
                   setLoading(false);
                   return;
                 }
                 
-                // Get user info from session to store indicator
-                // Note: We can't get the full session immediately, but NextAuth will set the cookie
-                // The session indicator will be set by the SessionInitializer component
-                
                 // Broadcast sign in to other tabs
-                // This will trigger session restoration in other tabs
                 broadcastSessionEvent("signin");
                 
-                // Small delay to show the loading screen before redirect
-                await new Promise(resolve => setTimeout(resolve, 500));
-                
-                // Navigate to dashboard
-                router.replace("/dashboard");
+                // iOS Safari: Use full page reload instead of client-side navigation
+                // This ensures cookies are properly recognized
+                const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+                if (isIOS) {
+                  window.location.href = "/dashboard";
+                } else {
+                  // Small delay before redirect for other browsers
+                  await new Promise(resolve => setTimeout(resolve, 500));
+                  router.replace("/dashboard");
+                }
               } catch (err) {
                 setError("An error occurred. Please try again.");
                 setLoading(false);
