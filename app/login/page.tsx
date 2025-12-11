@@ -1,13 +1,10 @@
 "use client";
 
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { broadcastSessionEvent } from "@/lib/session-sync";
 import LoginLoadingOverlay from "./LoginLoadingOverlay";
 
 export default function LoginPage() {
-  const router = useRouter();
   const searchParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
   const verified = searchParams?.get("verified");
   const passwordReset = searchParams?.get("passwordReset");
@@ -69,7 +66,7 @@ export default function LoginPage() {
                 
                 // Use NextAuth's built-in redirect - this was the original working approach
                 // For iOS, NextAuth handles the redirect internally which is more reliable
-                const res = await signIn("credentials", {
+                await signIn("credentials", {
                   email,
                   password,
                   redirect: true,
