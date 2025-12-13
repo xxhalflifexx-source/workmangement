@@ -1,12 +1,12 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authOptions";
-import Link from "next/link";
 import { formatDateShort } from "@/lib/date-utils";
 import DashboardHeaderActions from "./DashboardHeaderActions";
-import { getNotifications } from "./notifications-actions";
+import { getNotifications, getUnreadCountsByModule } from "./notifications-actions";
 import { getUserPermissionsForSession } from "../admin/user-access-actions";
 import { hasPermission, ModulePermission } from "@/lib/permissions";
 import { redirect } from "next/navigation";
+import DashboardTabLink from "./DashboardTabLink";
 
 export default async function Dashboard() {
   const session = await getServerSession(authOptions);
@@ -35,6 +35,10 @@ export default async function Dashboard() {
   const notificationsRes = await getNotifications();
   const notifications = notificationsRes.ok && notificationsRes.notifications ? notificationsRes.notifications : [];
   const unreadCount = notificationsRes.ok ? (notificationsRes.unreadCount || 0) : 0;
+
+  // Get unread counts by module
+  const unreadCountsRes = await getUnreadCountsByModule();
+  const unreadCounts = unreadCountsRes.ok && unreadCountsRes.counts ? unreadCountsRes.counts : {};
 
   return (
     <main className="min-h-screen bg-gray-50">
@@ -85,122 +89,113 @@ export default async function Dashboard() {
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
           {/* Time Clock - Check permission */}
           {(role === "ADMIN" || (permissions && hasPermission(permissions, "timeClock"))) && (
-            <Link
+            <DashboardTabLink
               href="/time-clock"
-              className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 hover:shadow-lg transition-all duration-300 hover:border-blue-300 hover:-translate-y-1 active:scale-95 flex flex-col items-center justify-center text-center min-h-[100px] sm:min-h-[120px]"
-            >
-              <div className="text-3xl sm:text-4xl mb-2">⏰</div>
-              <div className="font-semibold text-sm sm:text-base text-gray-900">Time Clock</div>
-              <div className="text-xs text-gray-500 mt-1">Clock in/out</div>
-            </Link>
+              icon="⏰"
+              title="Time Clock"
+              description="Clock in/out"
+              notificationCount={unreadCounts["/time-clock"] || 0}
+            />
           )}
 
           {/* My Time Records - available to all roles */}
           {(role === "ADMIN" || role === "MANAGER" || role === "EMPLOYEE") && (
-            <Link
+            <DashboardTabLink
               href="/time-records"
-              className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 hover:shadow-lg transition-all duration-300 hover:border-blue-300 hover:-translate-y-1 active:scale-95 flex flex-col items-center justify-center text-center min-h-[100px] sm:min-h-[120px]"
-            >
-              <div className="text-3xl sm:text-4xl mb-2">📒</div>
-              <div className="font-semibold text-sm sm:text-base text-gray-900">My Time Records</div>
-              <div className="text-xs text-gray-500 mt-1">View logged hours</div>
-            </Link>
+              icon="📒"
+              title="My Time Records"
+              description="View logged hours"
+              notificationCount={unreadCounts["/time-records"] || 0}
+            />
           )}
 
           {/* Job Management - Check permission */}
           {(role === "ADMIN" || (permissions && hasPermission(permissions, "jobManagement"))) && (
-            <Link
+            <DashboardTabLink
               href="/jobs"
-              className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 hover:shadow-lg transition-all duration-300 hover:border-blue-300 hover:-translate-y-1 active:scale-95 flex flex-col items-center justify-center text-center min-h-[100px] sm:min-h-[120px]"
-            >
-              <div className="text-3xl sm:text-4xl mb-2">📋</div>
-              <div className="font-semibold text-sm sm:text-base text-gray-900">Job Management</div>
-              <div className="text-xs text-gray-500 mt-1">View & manage jobs</div>
-            </Link>
+              icon="📋"
+              title="Job Management"
+              description="View & manage jobs"
+              notificationCount={unreadCounts["/jobs"] || 0}
+            />
           )}
 
           {/* Quality Control - Check permission */}
           {(role === "ADMIN" || (permissions && hasPermission(permissions, "qualityControl"))) && (
-            <Link
+            <DashboardTabLink
               href="/qc"
-              className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 hover:shadow-lg transition-all duration-300 hover:border-blue-300 hover:-translate-y-1 active:scale-95 flex flex-col items-center justify-center text-center min-h-[100px] sm:min-h-[120px]"
-            >
-              <div className="text-3xl sm:text-4xl mb-2">✅</div>
-              <div className="font-semibold text-sm sm:text-base text-gray-900">Quality Control</div>
-              <div className="text-xs text-gray-500 mt-1">Review photos</div>
-            </Link>
+              icon="✅"
+              title="Quality Control"
+              description="Review photos"
+              notificationCount={unreadCounts["/qc"] || 0}
+            />
           )}
 
           {/* HR - Check permission */}
           {(role === "ADMIN" || (permissions && hasPermission(permissions, "hr"))) && (
-            <Link
+            <DashboardTabLink
               href="/hr"
-              className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 hover:shadow-lg transition-all duration-300 hover:border-blue-300 hover:-translate-y-1 active:scale-95 flex flex-col items-center justify-center text-center min-h-[100px] sm:min-h-[120px]"
-            >
-              <div className="text-3xl sm:text-4xl mb-2">👥</div>
-              <div className="font-semibold text-sm sm:text-base text-gray-900">HR</div>
-              <div className="text-xs text-gray-500 mt-1">Employee stats</div>
-            </Link>
+              icon="👥"
+              title="HR"
+              description="Employee stats"
+              notificationCount={unreadCounts["/hr"] || 0}
+            />
           )}
 
           {/* Finance - Check permission */}
           {(role === "ADMIN" || (permissions && hasPermission(permissions, "finance"))) && (
-            <Link
+            <DashboardTabLink
               href="/finance"
-              className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 hover:shadow-lg transition-all duration-300 hover:border-blue-300 hover:-translate-y-1 active:scale-95 flex flex-col items-center justify-center text-center min-h-[100px] sm:min-h-[120px]"
-            >
-              <div className="text-3xl sm:text-4xl mb-2">💰</div>
-              <div className="font-semibold text-sm sm:text-base text-gray-900">Finance</div>
-              <div className="text-xs text-gray-500 mt-1">Financial reports</div>
-            </Link>
+              icon="💰"
+              title="Finance"
+              description="Financial reports"
+              notificationCount={unreadCounts["/finance"] || 0}
+            />
           )}
 
           {/* Inventory - Check permission */}
           {(role === "ADMIN" || (permissions && hasPermission(permissions, "inventory"))) && (
-            <Link
+            <DashboardTabLink
               href="/inventory"
-              className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 hover:shadow-lg transition-all duration-300 hover:border-blue-300 hover:-translate-y-1 active:scale-95 flex flex-col items-center justify-center text-center min-h-[100px] sm:min-h-[120px]"
-            >
-              <div className="text-3xl sm:text-4xl mb-2">📦</div>
-              <div className="font-semibold text-sm sm:text-base text-gray-900">Inventory</div>
-              <div className="text-xs text-gray-500 mt-1">Materials & requests</div>
-            </Link>
+              icon="📦"
+              title="Inventory"
+              description="Materials & requests"
+              notificationCount={unreadCounts["/inventory"] || 0}
+            />
           )}
 
           {/* Admin Panel - Check permission */}
           {(role === "ADMIN" || (permissions && hasPermission(permissions, "adminPanel"))) && (
-            <Link
+            <DashboardTabLink
               href="/admin"
-              className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 hover:shadow-lg transition-all duration-300 hover:border-red-300 hover:-translate-y-1 active:scale-95 flex flex-col items-center justify-center text-center min-h-[100px] sm:min-h-[120px]"
-            >
-              <div className="text-3xl sm:text-4xl mb-2">⚙️</div>
-              <div className="font-semibold text-sm sm:text-base text-gray-900">Admin Panel</div>
-              <div className="text-xs text-gray-500 mt-1">System settings</div>
-            </Link>
+              icon="⚙️"
+              title="Admin Panel"
+              description="System settings"
+              notificationCount={unreadCounts["/admin"] || 0}
+              className="hover:border-red-300"
+            />
           )}
 
           {/* Employee Handbook - Check permission */}
           {(role === "ADMIN" || (permissions && hasPermission(permissions, "employeeHandbook"))) && (
-            <Link
+            <DashboardTabLink
               href="/handbook"
-              className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 hover:shadow-lg transition-all duration-300 hover:border-blue-300 hover:-translate-y-1 active:scale-95 flex flex-col items-center justify-center text-center min-h-[100px] sm:min-h-[120px]"
-            >
-              <div className="text-3xl sm:text-4xl mb-2">📖</div>
-              <div className="font-semibold text-sm sm:text-base text-gray-900">Employee Handbook</div>
-              <div className="text-xs text-gray-500 mt-1">Company policies</div>
-            </Link>
+              icon="📖"
+              title="Employee Handbook"
+              description="Company policies"
+              notificationCount={unreadCounts["/handbook"] || 0}
+            />
           )}
 
           {/* Manual - Visible to Employees, Managers, and Admin */}
           {(role === "ADMIN" || role === "MANAGER" || role === "EMPLOYEE") && (
-            <Link
+            <DashboardTabLink
               href="/manual"
-              className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 hover:shadow-lg transition-all duration-300 hover:border-blue-300 hover:-translate-y-1 active:scale-95 flex flex-col items-center justify-center text-center min-h-[100px] sm:min-h-[120px]"
-            >
-              <div className="text-3xl sm:text-4xl mb-2">📚</div>
-              <div className="font-semibold text-sm sm:text-base text-gray-900">Manual</div>
-              <div className="text-xs text-gray-500 mt-1">Standard Operating Procedures</div>
-            </Link>
+              icon="📚"
+              title="Manual"
+              description="Standard Operating Procedures"
+              notificationCount={unreadCounts["/manual"] || 0}
+            />
           )}
         </div>
       </div>

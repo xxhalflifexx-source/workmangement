@@ -128,3 +128,56 @@ export async function createNotification(
   }
 }
 
+// Get unread notification counts per module/tab
+export async function getUnreadCountsByModule() {
+  try {
+    const session = await getServerSession(authOptions);
+    
+    if (!session?.user) {
+      return { ok: false, error: "Not authenticated" };
+    }
+
+    const userId = (session.user as any).id;
+
+    // Get all unread notifications
+    const unreadNotifications = await prisma.notification.findMany({
+      where: { userId, isRead: false },
+      select: { linkUrl: true },
+    });
+
+    // Count notifications by module based on linkUrl
+    const counts: Record<string, number> = {
+      "/time-clock": 0,
+      "/time-records": 0,
+      "/jobs": 0,
+      "/qc": 0,
+      "/hr": 0,
+      "/finance": 0,
+      "/inventory": 0,
+      "/admin": 0,
+      "/handbook": 0,
+      "/manual": 0,
+    };
+
+    unreadNotifications.forEach((notification) => {
+      if (notification.linkUrl) {
+        // Match by exact path or path prefix
+        for (const path in counts) {
+          if (notification.linkUrl.startsWith(path)) {
+            counts[path]++;
+            break;
+          }
+        }
+      }
+    });
+
+    return {
+      ok: true,
+      counts,
+    };
+  } catch (error: any) {
+    console.error("Get unread counts by module error:", error);
+    return { ok: false, error: error?.message || "Failed to fetch unread counts" };
+  }
+}
+
