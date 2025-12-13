@@ -1,6 +1,18 @@
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/authOptions";
+import { redirect } from "next/navigation";
 import Link from "next/link";
 
-export default function Home() {
+export default async function Home() {
+  // Check if user is already logged in
+  const session = await getServerSession(authOptions);
+  
+  // If logged in, redirect to dashboard
+  if (session?.user) {
+    redirect("/dashboard");
+  }
+
+  // If not logged in, show welcome page
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-24">
       <div className="text-center space-y-6">

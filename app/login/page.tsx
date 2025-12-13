@@ -1,10 +1,13 @@
 "use client";
 
-import { signIn } from "next-auth/react";
-import { useState } from "react";
+import { signIn, useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
 import LoginLoadingOverlay from "./LoginLoadingOverlay";
 
 export default function LoginPage() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
   const searchParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
   const verified = searchParams?.get("verified");
   const passwordReset = searchParams?.get("passwordReset");
@@ -17,6 +20,27 @@ export default function LoginPage() {
       ? "Password reset successfully! You can now sign in with your new password."
       : undefined
   );
+
+  // Redirect to dashboard if already logged in
+  useEffect(() => {
+    if (status === "authenticated" && session?.user) {
+      router.replace("/dashboard");
+    }
+  }, [status, session, router]);
+
+  // Show loading while checking session
+  if (status === "loading") {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-white text-lg">Loading...</div>
+      </div>
+    );
+  }
+
+  // Don't render login form if already authenticated (redirect will happen)
+  if (status === "authenticated" && session?.user) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center relative">
