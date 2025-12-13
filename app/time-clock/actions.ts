@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authOptions";
 import { nowInCentral, centralToUTC } from "@/lib/date-utils";
+import { createNotification } from "@/app/dashboard/notifications-actions";
 
 // Set timezone for Node.js process
 if (typeof process !== "undefined") {
@@ -81,8 +82,38 @@ export async function clockIn(jobId?: string, notes?: string) {
     },
     include: {
       job: { select: { title: true, id: true } },
+      user: { select: { name: true } },
     },
   });
+
+  // Create notifications for HR/Admin/Manager users when employee clocks in
+  try {
+    const hrUsers = await prisma.user.findMany({
+      where: {
+        role: { in: ["ADMIN", "MANAGER"] },
+        isVerified: true,
+        status: "APPROVED",
+      },
+      select: { id: true },
+    });
+
+    const employeeName = entry.user.name || "An employee";
+    const jobTitle = entry.job?.title ? ` for job: ${entry.job.title}` : "";
+
+    // Create notification for each HR/Admin/Manager
+    for (const hrUser of hrUsers) {
+      await createNotification(
+        hrUser.id,
+        "Employee Clocked In",
+        `${employeeName} has clocked in${jobTitle}`,
+        "INFO",
+        "/hr"
+      );
+    }
+  } catch (error) {
+    // Don't fail clock-in if notification creation fails
+    console.error("Failed to create clock-in notifications:", error);
+  }
 
   return { ok: true, entry };
 }
