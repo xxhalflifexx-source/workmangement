@@ -190,17 +190,17 @@ export default function UserAccessControlPage() {
         {/* Users Table */}
         <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full divide-y divide-gray-200" style={{ minWidth: `${(modules.length + 2) * 140}px` }}>
+            <table className="w-full divide-y divide-gray-200" style={{ minWidth: `${(modules.length + 2) * 100}px` }}>
               <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
                 <tr>
-                  <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider sticky left-0 bg-gradient-to-r from-gray-50 to-gray-100 z-10">
+                  <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider sticky left-0 bg-gradient-to-r from-gray-50 to-gray-100 z-10">
                     Employee
                   </th>
                   {modules.map(({ key, label }) => {
                     return (
                       <th
                         key={key}
-                        className="px-3 sm:px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider min-w-[120px] whitespace-nowrap"
+                        className="px-2 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider min-w-[85px] whitespace-nowrap"
                       >
                         <div className="flex flex-col items-center gap-1">
                           <span>{label}</span>
@@ -208,7 +208,7 @@ export default function UserAccessControlPage() {
                       </th>
                     );
                   })}
-                  <th className="px-4 sm:px-6 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider sticky right-0 bg-gradient-to-r from-gray-50 to-gray-100 z-10">
+                  <th className="px-3 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider sticky right-0 bg-gradient-to-r from-gray-50 to-gray-100 z-10">
                     Actions
                   </th>
                 </tr>
@@ -227,7 +227,7 @@ export default function UserAccessControlPage() {
 
                     return (
                       <tr key={user.id} className="hover:bg-blue-50/50 transition-colors border-b border-gray-100">
-                        <td className="px-4 sm:px-6 py-4 whitespace-nowrap sticky left-0 bg-white z-10 border-r border-gray-200">
+                        <td className="px-3 py-4 whitespace-nowrap sticky left-0 bg-white z-10 border-r border-gray-200">
                           <div>
                             <div className="text-sm font-semibold text-gray-900">
                               {user.name || "Unknown"}
@@ -239,14 +239,14 @@ export default function UserAccessControlPage() {
                         {modules.map(({ key, label }) => {
                           const hasAccess = userPermissions[key] ?? false;
                           return (
-                            <td key={key} className="px-3 sm:px-4 py-4 whitespace-nowrap text-center">
+                            <td key={key} className="px-2 py-4 whitespace-nowrap text-center">
                               <button
                                 onClick={() => togglePermission(user.id, key)}
                                 disabled={saving[user.id]}
-                                className={`inline-flex items-center justify-center w-11 h-11 rounded-full transition-all duration-200 shadow-sm ${
+                                className={`inline-flex items-center justify-center w-8 h-8 transition-all duration-200 ${
                                   hasAccess
-                                    ? "bg-green-100 text-green-700 hover:bg-green-200 hover:shadow-md hover:scale-110"
-                                    : "bg-red-100 text-red-700 hover:bg-red-200 hover:shadow-md hover:scale-110"
+                                    ? "text-green-700 hover:text-green-800 hover:scale-110"
+                                    : "text-red-700 hover:text-red-800 hover:scale-110"
                                 } disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100`}
                                 title={`${label}: ${hasAccess ? "Allowed" : "Denied"}`}
                               >
@@ -255,7 +255,7 @@ export default function UserAccessControlPage() {
                             </td>
                           );
                         })}
-                        <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-center sticky right-0 bg-white z-10 border-l border-gray-200">
+                        <td className="px-3 py-4 whitespace-nowrap text-center sticky right-0 bg-white z-10 border-l border-gray-200">
                           <button
                             onClick={() => handleSave(user.id)}
                             disabled={saving[user.id] || !hasChanges}
