@@ -10,6 +10,7 @@ export interface QuotationPDFData {
   companyZipCode?: string;
   companyPhone?: string;
   companyEmail?: string;
+  logoDataUrl?: string;
   customerName: string;
   customerAddress?: string;
   customerPhone?: string;
@@ -39,10 +40,10 @@ export function generateQuotationPDF(data: QuotationPDFData): jsPDF {
   const contentWidth = pageWidth - 2 * margin;
   let yPos = margin;
 
-  // Set green color for quotations (RGB: 34, 197, 94) - different from invoice navy blue
-  const greenR = 34;
-  const greenG = 197;
-  const greenB = 94;
+  // Set navy blue color (RGB: 30, 58, 138) - matching invoice system colors
+  const navyBlueR = 30;
+  const navyBlueG = 58;
+  const navyBlueB = 138;
 
   // Header Section - QUOTATION title and details on left, logo on top right
   const headerY = yPos;
@@ -50,7 +51,7 @@ export function generateQuotationPDF(data: QuotationPDFData): jsPDF {
   // Left: QUOTATION title and details
   doc.setFontSize(32);
   doc.setFont("helvetica", "bold");
-  doc.setTextColor(greenR, greenG, greenB);
+  doc.setTextColor(50, 50, 50);
   doc.text("QUOTATION", margin, yPos);
   yPos += 10;
 
@@ -76,27 +77,37 @@ export function generateQuotationPDF(data: QuotationPDFData): jsPDF {
     doc.text(`Valid Until: ${validUntilFormatted}`, margin, yPos);
   }
   
-  // Top Right: Logo text - Large "TCB" above "METAL WORKS", centered as a unit, positioned on the right
-  doc.setFontSize(20);
-  doc.setFont("helvetica", "bold");
-  const tcbWidth = doc.getTextWidth("TCB");
-  
-  doc.setFontSize(11);
-  const metalWorksWidth = doc.getTextWidth("METAL WORKS");
-  
-  const logoWidth = Math.max(tcbWidth, metalWorksWidth);
-  const logoY = margin + 8;
-  const logoBlockCenterX = pageWidth - margin - (logoWidth / 2) - 10;
-  
-  // TCB - Larger text on top, centered relative to METAL WORKS
-  doc.setTextColor(greenR, greenG, greenB);
-  doc.setFontSize(20);
-  doc.setFont("helvetica", "bold");
-  doc.text("TCB", logoBlockCenterX, logoY, { align: "center" });
-  
-  // METAL WORKS - Smaller text below, centered relative to TCB
-  doc.setFontSize(11);
-  doc.text("METAL WORKS", logoBlockCenterX, logoY + 8, { align: "center" });
+  // Top Right: Logo image if provided, else fallback text logo
+  if (data.logoDataUrl) {
+    try {
+      const logoWidth = 40;
+      const logoHeight = 20;
+      const logoX = pageWidth - margin - logoWidth;
+      const logoY = margin;
+      doc.addImage(data.logoDataUrl, 'PNG', logoX, logoY, logoWidth, logoHeight);
+    } catch (error) {
+      console.error("Error adding logo to quotation PDF:", error);
+      // Fallback to text logo if image fails
+      doc.setFontSize(20);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(navyBlueR, navyBlueG, navyBlueB);
+      const logoY = margin + 8;
+      const logoBlockCenterX = pageWidth - margin - 30;
+      doc.text("TCB", logoBlockCenterX, logoY, { align: "center" });
+      doc.setFontSize(11);
+      doc.text("METAL WORKS", logoBlockCenterX, logoY + 8, { align: "center" });
+    }
+  } else {
+    // Fallback text logo
+    doc.setFontSize(20);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(navyBlueR, navyBlueG, navyBlueB);
+    const logoY = margin + 8;
+    const logoBlockCenterX = pageWidth - margin - 30;
+    doc.text("TCB", logoBlockCenterX, logoY, { align: "center" });
+    doc.setFontSize(11);
+    doc.text("METAL WORKS", logoBlockCenterX, logoY + 8, { align: "center" });
+  }
   
   yPos += 12;
 
@@ -186,8 +197,8 @@ export function generateQuotationPDF(data: QuotationPDFData): jsPDF {
   // Line Items Table
   const tableStartY = yPos;
   
-  // Table header with green background
-  doc.setFillColor(greenR, greenG, greenB);
+  // Table header with navy blue background
+  doc.setFillColor(navyBlueR, navyBlueG, navyBlueB);
   doc.rect(margin, yPos - 5, contentWidth, 7, "F");
   
   doc.setFont("helvetica", "bold");
@@ -205,7 +216,7 @@ export function generateQuotationPDF(data: QuotationPDFData): jsPDF {
   data.lineItems.forEach((item, index) => {
     // Alternate row colors
     if (index % 2 === 1) {
-      doc.setFillColor(240, 255, 240);
+      doc.setFillColor(245, 245, 245);
       doc.rect(margin, yPos - 3, contentWidth, 6, "F");
     } else {
       doc.setFillColor(255, 255, 255);
@@ -240,7 +251,7 @@ export function generateQuotationPDF(data: QuotationPDFData): jsPDF {
   // Left: Notes/Terms
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9);
-  doc.setTextColor(greenR, greenG, greenB);
+  doc.setTextColor(50, 50, 50);
   doc.text("TERMS & CONDITIONS:", margin, yPos);
   notesMaxY = yPos + 5;
   yPos += 5;
@@ -263,7 +274,7 @@ export function generateQuotationPDF(data: QuotationPDFData): jsPDF {
   const summaryWidth = pageWidth - summaryX - margin;
   
   // Sub-Total row
-  doc.setFillColor(240, 255, 240);
+  doc.setFillColor(240, 240, 240);
   doc.rect(summaryX, yPos - 3, summaryWidth, summaryRowHeight, "F");
   doc.setDrawColor(200, 200, 200);
   doc.rect(summaryX, yPos - 3, summaryWidth, summaryRowHeight);
@@ -282,8 +293,8 @@ export function generateQuotationPDF(data: QuotationPDFData): jsPDF {
   doc.text(`$${data.shippingFee.toFixed(2)}`, summaryX + summaryWidth - 2, yPos, { align: "right" });
   yPos += summaryRowHeight;
   
-  // Total row (highlighted with green)
-  doc.setFillColor(greenR, greenG, greenB);
+  // Total row (highlighted with navy blue)
+  doc.setFillColor(navyBlueR, navyBlueG, navyBlueB);
   doc.rect(summaryX, yPos - 3, summaryWidth, summaryRowHeight, "F");
   doc.setDrawColor(150, 150, 150);
   doc.setLineWidth(0.3);
@@ -349,9 +360,9 @@ export function generateQuotationPDF(data: QuotationPDFData): jsPDF {
     footerMaxY = Math.max(footerMaxY, yPos + 4);
   }
 
-  // Green border at bottom - positioned relative to footer
+  // Navy blue border at bottom - positioned relative to footer
   const borderY = footerMaxY + 5;
-  doc.setDrawColor(greenR, greenG, greenB);
+  doc.setDrawColor(navyBlueR, navyBlueG, navyBlueB);
   doc.setLineWidth(1);
   doc.line(margin, borderY, pageWidth - margin, borderY);
 

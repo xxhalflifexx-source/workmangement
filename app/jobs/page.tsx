@@ -1383,7 +1383,7 @@ function JobsPageContent() {
     }
   };
 
-  const handleDownloadQuotationPDF = () => {
+  const handleDownloadQuotationPDF = async () => {
     if (!selectedJobForQuotation || !companySettings) {
       setError("Job data or company settings not loaded");
       return;
@@ -1391,6 +1391,25 @@ function JobsPageContent() {
 
     const subtotal = calculateQuotationSubtotal();
     const total = calculateQuotationTotal();
+
+    // Attempt to fetch logo and convert to data URL for embedding
+    let logoDataUrl: string | undefined;
+    if (companySettings.logoUrl) {
+      try {
+        const resp = await fetch(companySettings.logoUrl);
+        if (resp.ok) {
+          const blob = await resp.blob();
+          const reader = new FileReader();
+          logoDataUrl = await new Promise<string>((resolve, reject) => {
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+          });
+        }
+      } catch (error) {
+        console.error("Error loading logo for quotation:", error);
+      }
+    }
 
     const pdfData: QuotationPDFData = {
       quotationDate: quotationDate,
@@ -1402,6 +1421,7 @@ function JobsPageContent() {
       companyZipCode: companySettings?.zipCode || undefined,
       companyPhone: companySettings?.phone || undefined,
       companyEmail: companySettings?.email || undefined,
+      logoDataUrl,
       customerName: quotationCustomerName || selectedJobForQuotation.customer?.name || "Customer",
       customerAddress: quotationCustomerAddress || selectedJobForQuotation.customer?.company || undefined,
       customerPhone: quotationCustomerPhone || selectedJobForQuotation.customer?.phone || undefined,
@@ -2652,7 +2672,26 @@ function JobsPageContent() {
                             Edit
                       </button>
                       <button
-                        onClick={() => {
+                        onClick={async () => {
+                              // Attempt to fetch logo and convert to data URL for embedding
+                              let logoDataUrl: string | undefined;
+                              if (companySettings?.logoUrl) {
+                                try {
+                                  const resp = await fetch(companySettings.logoUrl);
+                                  if (resp.ok) {
+                                    const blob = await resp.blob();
+                                    const reader = new FileReader();
+                                    logoDataUrl = await new Promise<string>((resolve, reject) => {
+                                      reader.onloadend = () => resolve(reader.result as string);
+                                      reader.onerror = reject;
+                                      reader.readAsDataURL(blob);
+                                    });
+                                  }
+                                } catch (error) {
+                                  console.error("Error loading logo for quotation:", error);
+                                }
+                              }
+
                               const pdfData: QuotationPDFData = {
                                 quotationDate: quo.issueDate ? formatDateInput(new Date(quo.issueDate)) : todayCentralISO(),
                                 validUntil: quo.validUntil ? formatDateInput(new Date(quo.validUntil)) : undefined,
@@ -2663,6 +2702,7 @@ function JobsPageContent() {
                                 companyZipCode: companySettings?.zipCode || undefined,
                                 companyPhone: companySettings?.phone || undefined,
                                 companyEmail: companySettings?.email || undefined,
+                                logoDataUrl,
                                 customerName: quo.customerName || "Customer",
                                 customerAddress: quo.customerAddress || undefined,
                                 customerPhone: quo.customerPhone || undefined,

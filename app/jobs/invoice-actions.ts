@@ -20,6 +20,7 @@ export async function getCompanySettingsForInvoice() {
         phone: "(555) 123-4567",
         email: "billing@company.com",
         website: "www.company.com",
+        logoUrl: "",
       };
     }
 
@@ -32,6 +33,7 @@ export async function getCompanySettingsForInvoice() {
       phone: settings.phone || "",
       email: settings.email || "",
       website: settings.website || "",
+      logoUrl: settings.logoUrl || "",
     };
   } catch (error) {
     console.error("Get company settings error:", error);
@@ -45,6 +47,7 @@ export async function getCompanySettingsForInvoice() {
       phone: "(555) 123-4567",
       email: "billing@company.com",
       website: "www.company.com",
+      logoUrl: "",
     };
   }
 }
