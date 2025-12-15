@@ -247,13 +247,13 @@ export function generateInvoicePDF(data: InvoicePDFData): jsPDF {
   // Line Items Table
   const tableStartY = yPos;
   
-  // Table header
-  doc.setFillColor(200, 200, 200);
+  // Table header with navy blue background
+  doc.setFillColor(navyBlueR, navyBlueG, navyBlueB);
   doc.rect(margin, yPos - 5, contentWidth, 7, "F");
   
   doc.setFont("helvetica", "bold");
   doc.setFontSize(8);
-  doc.setTextColor(50, 50, 50);
+  doc.setTextColor(255, 255, 255);
   doc.text("Item & Description", margin + 2, yPos);
   doc.text("Unit Price", margin + 95, yPos, { align: "right" });
   doc.text("Qty", margin + 120, yPos, { align: "center" });
@@ -340,14 +340,15 @@ export function generateInvoicePDF(data: InvoicePDFData): jsPDF {
   doc.text(`$${data.shippingFee.toFixed(2)}`, summaryX + summaryWidth - 2, yPos, { align: "right" });
   yPos += summaryRowHeight;
   
-  // Total row (highlighted)
-  doc.setFillColor(220, 220, 220);
+  // Total row (highlighted with navy blue)
+  doc.setFillColor(navyBlueR, navyBlueG, navyBlueB);
   doc.rect(summaryX, yPos - 3, summaryWidth, summaryRowHeight, "F");
   doc.setDrawColor(150, 150, 150);
   doc.setLineWidth(0.3);
   doc.rect(summaryX, yPos - 3, summaryWidth, summaryRowHeight);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9);
+  doc.setTextColor(255, 255, 255);
   doc.text("Total", summaryX + 2, yPos);
   doc.text(`$${data.total.toFixed(2)}`, summaryX + summaryWidth - 2, yPos, { align: "right" });
   const summaryMaxY = yPos + summaryRowHeight;
