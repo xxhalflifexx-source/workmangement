@@ -7,12 +7,7 @@ import {
   getAllUsersWithPermissions,
   updateUserPermissions,
 } from "../user-access-actions";
-import {
-  UserPermissions,
-  ModulePermission,
-  getModuleNames,
-  DEFAULT_PERMISSIONS,
-} from "@/lib/permissions";
+import { UserPermissions, ModulePermission, DEFAULT_PERMISSIONS } from "@/lib/permissions";
 
 interface UserWithPermissions {
   id: string;
@@ -34,18 +29,18 @@ export default function UserAccessControlPage() {
   const [saving, setSaving] = useState<Record<string, boolean>>({});
   const [permissions, setPermissions] = useState<Record<string, UserPermissions>>({});
 
-  const moduleNames = getModuleNames();
-  const modules: ModulePermission[] = [
-    "timeClock",
-    "jobManagement",
-    "qualityControl",
-    "hr",
-    "finance",
-    "inventory",
-    "adminPanel",
-    "employeeHandbook",
-    "manual",
-    "operationsCommon",
+  // Explicit ordered list with labels to ensure visibility of new modules
+  const modules: { key: ModulePermission; label: string }[] = [
+    { key: "timeClock", label: "Time Clock" },
+    { key: "jobManagement", label: "Job Management" },
+    { key: "qualityControl", label: "Quality Control" },
+    { key: "hr", label: "HR" },
+    { key: "finance", label: "Finance" },
+    { key: "inventory", label: "Inventory" },
+    { key: "adminPanel", label: "Admin Panel" },
+    { key: "employeeHandbook", label: "Employee Handbook" },
+    { key: "manual", label: "Manual" },
+    { key: "operationsCommon", label: "Operations Common" },
   ];
 
 
@@ -201,15 +196,14 @@ export default function UserAccessControlPage() {
                   <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider sticky left-0 bg-gradient-to-r from-gray-50 to-gray-100 z-10">
                     Employee
                   </th>
-                  {modules.map((module) => {
-                    const moduleName = moduleNames[module] || module;
+                  {modules.map(({ key, label }) => {
                     return (
                       <th
-                        key={module}
+                        key={key}
                         className="px-3 sm:px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider min-w-[120px] whitespace-nowrap"
                       >
                         <div className="flex flex-col items-center gap-1">
-                          <span>{moduleName}</span>
+                          <span>{label}</span>
                         </div>
                       </th>
                     );
@@ -242,19 +236,19 @@ export default function UserAccessControlPage() {
                             <div className="text-xs text-gray-400 mt-1 font-medium">{user.role}</div>
                           </div>
                         </td>
-                        {modules.map((module) => {
-                          const hasAccess = userPermissions[module] ?? false;
+                        {modules.map(({ key, label }) => {
+                          const hasAccess = userPermissions[key] ?? false;
                           return (
-                            <td key={module} className="px-3 sm:px-4 py-4 whitespace-nowrap text-center">
+                            <td key={key} className="px-3 sm:px-4 py-4 whitespace-nowrap text-center">
                               <button
-                                onClick={() => togglePermission(user.id, module)}
+                                onClick={() => togglePermission(user.id, key)}
                                 disabled={saving[user.id]}
                                 className={`inline-flex items-center justify-center w-11 h-11 rounded-full transition-all duration-200 shadow-sm ${
                                   hasAccess
                                     ? "bg-green-100 text-green-700 hover:bg-green-200 hover:shadow-md hover:scale-110"
                                     : "bg-red-100 text-red-700 hover:bg-red-200 hover:shadow-md hover:scale-110"
                                 } disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100`}
-                                title={`${moduleNames[module]}: ${hasAccess ? "Allowed" : "Denied"}`}
+                                title={`${label}: ${hasAccess ? "Allowed" : "Denied"}`}
                               >
                                 <span className="text-lg font-bold">{hasAccess ? "✓" : "✗"}</span>
                               </button>
