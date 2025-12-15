@@ -2,7 +2,7 @@ import { jsPDF } from "jspdf";
 
 export interface InvoicePDFData {
   invoiceNumber: string;
-  invoiceDate: string;
+  invoiceDate: string | Date;
   companyName: string;
   companyAddress?: string;
   companyCity?: string;
@@ -10,6 +10,7 @@ export interface InvoicePDFData {
   companyZipCode?: string;
   companyPhone?: string;
   companyEmail?: string;
+  logoDataUrl?: string;
   customerName: string;
   customerAddress?: string;
   customerPhone?: string;
@@ -67,32 +68,38 @@ export function generateInvoicePDF(data: InvoicePDFData): jsPDF {
   });
   doc.text(`Invoice Date: ${invoiceDateFormatted}`, margin, yPos);
   
-  // Top Right: Logo text - Large "TCB" above "METAL WORKS", centered as a unit, positioned on the right
-  // Calculate text widths to center them relative to each other
-  doc.setFontSize(20);
-  doc.setFont("helvetica", "bold");
-  const tcbWidth = doc.getTextWidth("TCB");
-  
-  doc.setFontSize(11);
-  const metalWorksWidth = doc.getTextWidth("METAL WORKS");
-  
-  // Use the wider text width to center both texts relative to each other
-  const logoWidth = Math.max(tcbWidth, metalWorksWidth);
-  
-  // Position the logo block on the right - center point of the logo block
-  const logoY = margin + 8;
-  // Position the center of the logo block near the right margin (with some padding)
-  const logoBlockCenterX = pageWidth - margin - (logoWidth / 2) - 10; // 10px padding from right
-  
-  // TCB - Larger text on top, centered relative to METAL WORKS
-  doc.setTextColor(navyBlueR, navyBlueG, navyBlueB);
-  doc.setFontSize(20);
-  doc.setFont("helvetica", "bold");
-  doc.text("TCB", logoBlockCenterX, logoY, { align: "center" });
-  
-  // METAL WORKS - Smaller text below, centered relative to TCB
-  doc.setFontSize(11);
-  doc.text("METAL WORKS", logoBlockCenterX, logoY + 8, { align: "center" });
+  // Top Right: Logo image if provided, else fallback text logo
+  if (data.logoDataUrl) {
+    try {
+      const logoWidth = 40;
+      const logoHeight = 20;
+      const logoX = pageWidth - margin - logoWidth;
+      const logoY = headerY - 2;
+      doc.addImage(data.logoDataUrl, "PNG", logoX, logoY, logoWidth, logoHeight, undefined, "FAST");
+    } catch (err) {
+      console.error("Failed to render logo in PDF:", err);
+    }
+  } else {
+    // Fallback text logo
+    doc.setFontSize(20);
+    doc.setFont("helvetica", "bold");
+    const tcbWidth = doc.getTextWidth("TCB");
+    
+    doc.setFontSize(11);
+    const metalWorksWidth = doc.getTextWidth("METAL WORKS");
+    
+    const logoWidth = Math.max(tcbWidth, metalWorksWidth);
+    const logoY = margin + 8;
+    const logoBlockCenterX = pageWidth - margin - (logoWidth / 2) - 10;
+    
+    doc.setTextColor(navyBlueR, navyBlueG, navyBlueB);
+    doc.setFontSize(20);
+    doc.setFont("helvetica", "bold");
+    doc.text("TCB", logoBlockCenterX, logoY, { align: "center" });
+    
+    doc.setFontSize(11);
+    doc.text("METAL WORKS", logoBlockCenterX, logoY + 8, { align: "center" });
+  }
   
   // Update yPos to continue with company info
   yPos += 12;

@@ -22,6 +22,7 @@ const companySettingsSchema = z.object({
   phone: z.string().optional(),
   email: z.string().email().optional(),
   website: z.string().optional(),
+  logoUrl: z.string().optional(),
 });
 
 export async function getAllUsersForAdmin() {
@@ -367,6 +368,7 @@ export async function getCompanySettings() {
           phone: "(555) 123-4567",
           email: "billing@company.com",
           website: "www.company.com",
+          logoUrl: "",
         },
       };
     }
@@ -382,6 +384,7 @@ export async function getCompanySettings() {
         phone: settings.phone || "",
         email: settings.email || "",
         website: settings.website || "",
+        logoUrl: settings.logoUrl || "",
       },
     };
   } catch (error) {
@@ -398,6 +401,7 @@ export async function getCompanySettings() {
         phone: "(555) 123-4567",
         email: "billing@company.com",
         website: "www.company.com",
+        logoUrl: "",
       },
     };
   }
@@ -425,6 +429,7 @@ export async function updateCompanySettings(formData: FormData) {
     phone: formData.get("phone"),
     email: formData.get("email"),
     website: formData.get("website"),
+    logoUrl: formData.get("logoUrl"),
   };
 
   const parsed = companySettingsSchema.safeParse(data);
@@ -450,6 +455,7 @@ export async function updateCompanySettings(formData: FormData) {
           phone: parsed.data.phone || null,
           email: parsed.data.email || null,
           website: parsed.data.website || null,
+          logoUrl: parsed.data.logoUrl || null,
         },
       });
     } else {
@@ -464,6 +470,7 @@ export async function updateCompanySettings(formData: FormData) {
           phone: parsed.data.phone || null,
           email: parsed.data.email || null,
           website: parsed.data.website || null,
+          logoUrl: parsed.data.logoUrl || null,
         },
       });
     }

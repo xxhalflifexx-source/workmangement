@@ -44,9 +44,26 @@ export async function GET(
       phone: null,
       email: null,
       website: null,
+      logoUrl: null,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
+  }
+
+  // Attempt to pull logo and convert to data URL for embedding
+  let logoDataUrl: string | undefined;
+  if (companySettings.logoUrl) {
+    try {
+      const resp = await fetch(companySettings.logoUrl);
+      if (resp.ok) {
+        const contentType = resp.headers.get("content-type") || "image/png";
+        const buffer = Buffer.from(await resp.arrayBuffer());
+        const base64 = buffer.toString("base64");
+        logoDataUrl = `data:${contentType};base64,${base64}`;
+      }
+    } catch (e) {
+      console.error("Failed to fetch logo for invoice PDF:", e);
+    }
   }
 
   // Calculate subtotal and shipping fee
@@ -82,6 +99,7 @@ export async function GET(
     paymentAccountNumber: undefined,
     preparedByName: undefined,
     preparedByTitle: undefined,
+    logoDataUrl,
   };
 
   const pdf = generateInvoicePDF(pdfData);

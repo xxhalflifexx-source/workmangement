@@ -51,6 +51,7 @@ interface CompanySettings {
   phone: string;
   email: string;
   website: string;
+  logoUrl?: string;
 }
 
 interface UserWithPermissions {
@@ -67,6 +68,8 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | undefined>();
   const [success, setSuccess] = useState<string | undefined>();
+  const [logoUrl, setLogoUrl] = useState<string>("");
+  const [logoUploading, setLogoUploading] = useState(false);
   const [activeTab, setActiveTab] = useState<"users" | "settings" | "registration-codes" | "user-access">("users");
   
   // User Access Control state
@@ -102,6 +105,7 @@ export default function AdminPage() {
 
     if (settingsRes.ok) {
       setSettings(settingsRes.settings as any);
+      setLogoUrl((settingsRes.settings as any).logoUrl || "");
     }
 
     setLoading(false);
@@ -238,6 +242,8 @@ export default function AdminPage() {
     setSuccess(undefined);
 
     const formData = new FormData(e.currentTarget);
+    // Persist current logoUrl alongside other settings
+    formData.set("logoUrl", logoUrl || "");
     const res = await updateCompanySettings(formData);
 
     if (!res.ok) {
@@ -245,7 +251,36 @@ export default function AdminPage() {
     } else {
       setSuccess(res.message);
     }
-  }, []);
+  }, [logoUrl]);
+
+  const handleLogoUpload = useCallback(
+    async (file: File) => {
+      setLogoUploading(true);
+      setError(undefined);
+      setSuccess(undefined);
+      try {
+        const formData = new FormData();
+        formData.append("file", file);
+        const res = await fetch("/api/company/logo", {
+          method: "POST",
+          body: formData,
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          setError(data.error || "Failed to upload logo");
+        } else {
+          setLogoUrl(data.logoUrl || "");
+          setSuccess("Logo updated successfully");
+        }
+      } catch (err: any) {
+        console.error("Logo upload failed", err);
+        setError("Failed to upload logo");
+      } finally {
+        setLogoUploading(false);
+      }
+    },
+    []
+  );
 
   const getRoleBadgeColor = useCallback((role: string) => {
     switch (role) {
@@ -846,7 +881,53 @@ export default function AdminPage() {
               </p>
             </div>
 
+            {/* Logo Upload */}
+            <div className="px-4 sm:px-6 pt-6">
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div className="flex items-center gap-4">
+                  <div className="w-24 h-24 bg-white border border-gray-200 rounded-lg flex items-center justify-center overflow-hidden">
+                    {logoUrl ? (
+                      <img src={logoUrl} alt="Company logo" className="max-h-full max-w-full object-contain" />
+                    ) : (
+                      <span className="text-xs text-gray-500 text-center px-2">No logo uploaded</span>
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">Logo</p>
+                    <p className="text-xs text-gray-600">Shown on invoices/quotations and headers. Max 2MB.</p>
+                  </div>
+                </div>
+                <div className="flex gap-2 items-center">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    disabled={logoUploading}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        handleLogoUpload(file);
+                        e.target.value = "";
+                      }
+                    }}
+                    className="hidden"
+                    id="logoUploadInput"
+                  />
+                  <label
+                    htmlFor="logoUploadInput"
+                    className={`px-4 py-2 rounded-lg text-sm font-medium min-h-[40px] cursor-pointer ${
+                      logoUploading
+                        ? "bg-gray-200 text-gray-500"
+                        : "bg-blue-600 text-white hover:bg-blue-700"
+                    }`}
+                  >
+                    {logoUploading ? "Uploading..." : logoUrl ? "Change Logo" : "Upload Logo"}
+                  </label>
+                </div>
+              </div>
+            </div>
+
             <form onSubmit={handleSettingsSubmit} className="p-4 sm:p-6 space-y-6">
+              <input type="hidden" name="logoUrl" value={logoUrl || ""} />
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
