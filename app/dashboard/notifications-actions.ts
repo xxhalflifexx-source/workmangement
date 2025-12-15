@@ -157,6 +157,7 @@ export async function getUnreadCountsByModule() {
       "/admin": 0,
       "/handbook": 0,
       "/manual": 0,
+      "/operations-common": 0,
     };
 
     unreadNotifications.forEach((notification) => {

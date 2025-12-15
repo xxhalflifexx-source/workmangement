@@ -45,6 +45,8 @@ model User {
   notifications        Notification[]
   manualFolders        ManualFolder[]
   manualFiles          ManualFile[]
+  operationsCommonFolders OperationsCommonFolder[]
+  operationsCommonFiles   OperationsCommonFile[]
 }
 
 model Account {
@@ -408,6 +410,38 @@ model ManualFile {
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
   folder      ManualFolder? @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  creator     User         @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+
+  @@index([folderId])
+}
+
+model OperationsCommonFolder {
+  id          String       @id @default(cuid())
+  name        String
+  parentId    String? // For nested folders
+  createdBy   String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  parent      OperationsCommonFolder? @relation("OperationsCommonFolderHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children    OperationsCommonFolder[] @relation("OperationsCommonFolderHierarchy")
+  files       OperationsCommonFile[]
+  creator     User         @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+
+  @@index([parentId])
+}
+
+model OperationsCommonFile {
+  id          String       @id @default(cuid())
+  name        String
+  originalName String
+  fileType    String // pdf, image, word, excel, cad, etc.
+  fileSize    Int // Size in bytes
+  fileUrl     String // URL to the file (Supabase or other storage)
+  folderId    String?
+  createdBy   String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  folder      OperationsCommonFolder? @relation(fields: [folderId], references: [id], onDelete: Cascade)
   creator     User         @relation(fields: [createdBy], references: [id], onDelete: Cascade)
 
   @@index([folderId])

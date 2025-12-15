@@ -197,6 +197,17 @@ export default async function Dashboard() {
               notificationCount={unreadCounts["/manual"] || 0}
             />
           )}
+
+          {/* Operations Common - Visible to Employees, Managers, and Admin */}
+          {(role === "ADMIN" || role === "MANAGER" || role === "EMPLOYEE") && (
+            <DashboardTabLink
+              href="/operations-common"
+              icon="🔧"
+              title="Operations Common"
+              description="Common operational documents"
+              notificationCount={unreadCounts["/operations-common"] || 0}
+            />
+          )}
         </div>
       </div>
     </main>
