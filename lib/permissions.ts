@@ -8,7 +8,9 @@ export type ModulePermission =
   | "finance"
   | "inventory"
   | "adminPanel"
-  | "employeeHandbook";
+  | "employeeHandbook"
+  | "manual"
+  | "operationsCommon";
 
 export interface UserPermissions {
   timeClock?: boolean;
@@ -19,6 +21,8 @@ export interface UserPermissions {
   inventory?: boolean;
   adminPanel?: boolean;
   employeeHandbook?: boolean;
+  manual?: boolean;
+  operationsCommon?: boolean;
 }
 
 export const DEFAULT_PERMISSIONS: UserPermissions = {
@@ -30,6 +34,8 @@ export const DEFAULT_PERMISSIONS: UserPermissions = {
   inventory: false,
   adminPanel: false,
   employeeHandbook: true,
+  manual: true,
+  operationsCommon: true,
 };
 
 export const MODULE_ROUTES: Record<ModulePermission, string[]> = {
@@ -41,6 +47,8 @@ export const MODULE_ROUTES: Record<ModulePermission, string[]> = {
   inventory: ["/inventory"],
   adminPanel: ["/admin"],
   employeeHandbook: ["/handbook"],
+  manual: ["/manual"],
+  operationsCommon: ["/operations-common"],
 };
 
 /**
@@ -90,6 +98,8 @@ export function getModuleNames(): Record<ModulePermission, string> {
     inventory: "Inventory",
     adminPanel: "Admin Panel",
     employeeHandbook: "Employee Handbook",
+    manual: "Manual",
+    operationsCommon: "Operations Common",
   };
 }
 

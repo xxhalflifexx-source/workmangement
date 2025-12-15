@@ -44,6 +44,8 @@ export default function UserAccessControlPage() {
     "inventory",
     "adminPanel",
     "employeeHandbook",
+    "manual",
+    "operationsCommon",
   ];
 
   useEffect(() => {
@@ -139,15 +141,15 @@ export default function UserAccessControlPage() {
 
   return (
     <main className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-sm border-b">
+      <header className="bg-gradient-to-r from-blue-600 to-indigo-600 shadow-sm border-b text-white">
         <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-24 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">🔐 User Access Control</h1>
-            <p className="text-xs sm:text-sm text-gray-500">Manage module access permissions for employees</p>
+            <h1 className="text-xl sm:text-2xl font-bold">🔐 User Access Control</h1>
+            <p className="text-xs sm:text-sm text-blue-100">Manage module access permissions for employees</p>
           </div>
           <Link
             href="/admin"
-            className="w-full sm:w-auto min-h-[44px] flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
+            className="w-full sm:w-auto min-h-[44px] flex items-center justify-center px-4 py-2 rounded-lg bg-white/15 hover:bg-white/25 text-sm font-medium backdrop-blur transition-colors text-white border border-white/30"
           >
             Back to Admin Panel
           </Link>
@@ -180,15 +182,17 @@ export default function UserAccessControlPage() {
         )}
 
         {/* Instructions */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-          <p className="text-sm text-blue-800">
-            <strong>Note:</strong> Toggle permissions for each employee and click "Save" to apply changes. 
-            Changes take effect immediately.
-          </p>
+        <div className="bg-white border border-blue-100 rounded-lg p-4 mb-6 shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="text-sm text-gray-700">
+            <strong className="text-blue-600">Tip:</strong> Toggle access per module, then click <span className="font-semibold">Save</span> to apply. Changes take effect immediately.
+          </div>
+          <div className="text-xs text-gray-500">
+            Green = Allowed • Red = Denied
+          </div>
         </div>
 
         {/* Users Table */}
-        <div className="bg-white rounded-xl shadow border border-gray-200 overflow-hidden">
+        <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
@@ -209,7 +213,7 @@ export default function UserAccessControlPage() {
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-white divide-y divide-gray-100">
                 {users.length === 0 ? (
                   <tr>
                     <td colSpan={modules.length + 2} className="px-6 py-8 text-center text-gray-500">
@@ -222,7 +226,7 @@ export default function UserAccessControlPage() {
                     const hasChanges = JSON.stringify(userPermissions) !== JSON.stringify(user.permissions);
 
                     return (
-                      <tr key={user.id} className="hover:bg-gray-50">
+                      <tr key={user.id} className="hover:bg-gray-50 transition-colors">
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div>
                             <div className="text-sm font-medium text-gray-900">
