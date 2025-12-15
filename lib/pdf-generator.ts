@@ -71,28 +71,67 @@ export function generateInvoicePDF(data: InvoicePDFData): jsPDF {
   // Top Right: Logo image if provided, else fallback text logo
   if (data.logoDataUrl) {
     try {
-      // Use a reasonable size that maintains aspect ratio
-      // Most logos are wider than tall, so we'll use a fixed width and let height scale
+      // Get image dimensions from base64 data (works in Node.js/server context)
+      let logoWidth = 50;
+      let logoHeight = 30;
+      
+      try {
+        // Extract base64 data from data URL
+        const base64Data = data.logoDataUrl.split(',')[1];
+        if (base64Data) {
+          const buffer = Buffer.from(base64Data, 'base64');
+          
+          // Parse PNG dimensions (PNG header format)
+          if (data.logoDataUrl.startsWith('data:image/png')) {
+            // PNG: bytes 16-23 contain width and height (4 bytes each, big-endian)
+            if (buffer.length > 24) {
+              logoWidth = buffer.readUInt32BE(16);
+              logoHeight = buffer.readUInt32BE(20);
+            }
+          }
+          // Parse JPEG dimensions (JPEG format)
+          else if (data.logoDataUrl.startsWith('data:image/jpeg') || data.logoDataUrl.startsWith('data:image/jpg')) {
+            // JPEG: Need to find SOF (Start of Frame) marker
+            let i = 2; // Skip initial 0xFF 0xD8
+            while (i < buffer.length - 9) {
+              if (buffer[i] === 0xFF && (buffer[i + 1] === 0xC0 || buffer[i + 1] === 0xC2)) {
+                // Found SOF marker, height and width are at offset +5 and +7 (2 bytes each, big-endian)
+                logoHeight = buffer.readUInt16BE(i + 5);
+                logoWidth = buffer.readUInt16BE(i + 7);
+                break;
+              }
+              i++;
+            }
+          }
+        }
+      } catch (parseError) {
+        console.warn("Could not parse image dimensions, using defaults:", parseError);
+        // Use default aspect ratio if parsing fails
+        const defaultAspectRatio = 2.5;
+        logoWidth = 50;
+        logoHeight = 50 / defaultAspectRatio;
+      }
+      
+      // Calculate dimensions preserving aspect ratio
       const maxWidth = 50;
       const maxHeight = 30;
+      const aspectRatio = logoWidth / logoHeight;
       
-      // Try to extract image dimensions from data URL if possible
-      // For now, use a standard aspect ratio (most logos are 2:1 or 3:1)
-      // We'll use a conservative 2.5:1 ratio which works well for most logos
-      const defaultAspectRatio = 2.5;
-      let logoWidth = maxWidth;
-      let logoHeight = maxWidth / defaultAspectRatio;
-      
-      // If height exceeds max, scale down proportionally
-      if (logoHeight > maxHeight) {
+      // Scale to fit within max dimensions while preserving aspect ratio
+      if (logoWidth / maxWidth > logoHeight / maxHeight) {
+        // Width is the limiting factor
+        logoWidth = maxWidth;
+        logoHeight = maxWidth / aspectRatio;
+      } else {
+        // Height is the limiting factor
         logoHeight = maxHeight;
-        logoWidth = logoHeight * defaultAspectRatio;
+        logoWidth = maxHeight * aspectRatio;
       }
       
       const logoX = pageWidth - margin - logoWidth;
       const logoY = headerY - 2;
       
-      // Use 'FAST' compression and let jsPDF handle aspect ratio preservation
+      // Use 'FAST' compression - jsPDF will preserve aspect ratio
       doc.addImage(data.logoDataUrl, "PNG", logoX, logoY, logoWidth, logoHeight, undefined, "FAST");
     } catch (err) {
       console.error("Failed to render logo in PDF:", err);
