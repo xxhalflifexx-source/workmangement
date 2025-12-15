@@ -48,6 +48,7 @@ export default function UserAccessControlPage() {
     "operationsCommon",
   ];
 
+
   useEffect(() => {
     if (isAdmin) {
       loadUsers();
@@ -194,7 +195,7 @@ export default function UserAccessControlPage() {
         {/* Users Table */}
         <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
+            <table className="w-full divide-y divide-gray-200" style={{ minWidth: `${(modules.length + 2) * 140}px` }}>
               <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
                 <tr>
                   <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider sticky left-0 bg-gradient-to-r from-gray-50 to-gray-100 z-10">
