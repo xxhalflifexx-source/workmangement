@@ -71,10 +71,28 @@ export function generateInvoicePDF(data: InvoicePDFData): jsPDF {
   // Top Right: Logo image if provided, else fallback text logo
   if (data.logoDataUrl) {
     try {
-      const logoWidth = 40;
-      const logoHeight = 20;
+      // Use a reasonable size that maintains aspect ratio
+      // Most logos are wider than tall, so we'll use a fixed width and let height scale
+      const maxWidth = 50;
+      const maxHeight = 30;
+      
+      // Try to extract image dimensions from data URL if possible
+      // For now, use a standard aspect ratio (most logos are 2:1 or 3:1)
+      // We'll use a conservative 2.5:1 ratio which works well for most logos
+      const defaultAspectRatio = 2.5;
+      let logoWidth = maxWidth;
+      let logoHeight = maxWidth / defaultAspectRatio;
+      
+      // If height exceeds max, scale down proportionally
+      if (logoHeight > maxHeight) {
+        logoHeight = maxHeight;
+        logoWidth = logoHeight * defaultAspectRatio;
+      }
+      
       const logoX = pageWidth - margin - logoWidth;
       const logoY = headerY - 2;
+      
+      // Use 'FAST' compression and let jsPDF handle aspect ratio preservation
       doc.addImage(data.logoDataUrl, "PNG", logoX, logoY, logoWidth, logoHeight, undefined, "FAST");
     } catch (err) {
       console.error("Failed to render logo in PDF:", err);

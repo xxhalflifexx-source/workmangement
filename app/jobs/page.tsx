@@ -1405,6 +1405,16 @@ function JobsPageContent() {
             reader.onerror = reject;
             reader.readAsDataURL(blob);
           });
+          
+          // Preload image to ensure dimensions are available
+          if (logoDataUrl) {
+            const img = new Image();
+            img.src = logoDataUrl;
+            await new Promise((resolve, reject) => {
+              img.onload = resolve;
+              img.onerror = reject;
+            });
+          }
         }
       } catch (error) {
         console.error("Error loading logo for quotation:", error);
@@ -1438,7 +1448,7 @@ function JobsPageContent() {
       preparedByTitle: quotationPreparedByTitle || undefined,
     };
 
-    const pdf = generateQuotationPDF(pdfData);
+    const pdf = await generateQuotationPDF(pdfData);
     const jobTitle = selectedJobForQuotation.title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
     pdf.save(`quotation-${jobTitle}-${todayCentralISO()}.pdf`);
   };
@@ -2718,7 +2728,7 @@ function JobsPageContent() {
                                 preparedByName: quo.preparedByName || undefined,
                                 preparedByTitle: quo.preparedByTitle || undefined,
                               };
-                              const pdf = generateQuotationPDF(pdfData);
+                              const pdf = await generateQuotationPDF(pdfData);
                               const jobTitle = selectedJobForQuotation?.title.replace(/[^a-z0-9]/gi, '_').toLowerCase() || 'quotation';
                               pdf.save(`quotation-${jobTitle}-${formatDateInput(new Date(quo.createdAt))}.pdf`);
                             }}

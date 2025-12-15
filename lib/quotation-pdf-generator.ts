@@ -32,7 +32,7 @@ export interface QuotationPDFData {
   preparedByTitle?: string;
 }
 
-export function generateQuotationPDF(data: QuotationPDFData): jsPDF {
+export async function generateQuotationPDF(data: QuotationPDFData): Promise<jsPDF> {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
@@ -80,11 +80,46 @@ export function generateQuotationPDF(data: QuotationPDFData): jsPDF {
   // Top Right: Logo image if provided, else fallback text logo
   if (data.logoDataUrl) {
     try {
-      const logoWidth = 40;
-      const logoHeight = 20;
+      // Load image to get actual dimensions and preserve aspect ratio
+      const img = new Image();
+      img.src = data.logoDataUrl;
+      
+      // Wait for image to load (should be fast since it's a data URL)
+      await new Promise<void>((resolve, reject) => {
+        if (img.complete && img.naturalWidth > 0) {
+          resolve();
+        } else {
+          img.onload = () => resolve();
+          img.onerror = () => reject(new Error("Failed to load image"));
+          // Timeout after 2 seconds
+          setTimeout(() => reject(new Error("Image load timeout")), 2000);
+        }
+      });
+      
+      // Calculate dimensions preserving aspect ratio
+      const maxWidth = 50;
+      const maxHeight = 30;
+      const aspectRatio = img.naturalWidth / img.naturalHeight;
+      
+      let logoWidth: number;
+      let logoHeight: number;
+      
+      // Scale to fit within max dimensions while preserving aspect ratio
+      if (img.naturalWidth / maxWidth > img.naturalHeight / maxHeight) {
+        // Width is the limiting factor
+        logoWidth = maxWidth;
+        logoHeight = maxWidth / aspectRatio;
+      } else {
+        // Height is the limiting factor
+        logoHeight = maxHeight;
+        logoWidth = maxHeight * aspectRatio;
+      }
+      
       const logoX = pageWidth - margin - logoWidth;
       const logoY = margin;
-      doc.addImage(data.logoDataUrl, 'PNG', logoX, logoY, logoWidth, logoHeight);
+      
+      // Use 'FAST' compression - jsPDF will preserve aspect ratio
+      doc.addImage(data.logoDataUrl, 'PNG', logoX, logoY, logoWidth, logoHeight, undefined, 'FAST');
     } catch (error) {
       console.error("Error adding logo to quotation PDF:", error);
       // Fallback to text logo if image fails
