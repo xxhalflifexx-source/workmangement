@@ -188,7 +188,7 @@ export default function UserAccessControlPage() {
             <strong className="text-blue-600">Tip:</strong> Toggle access per module, then click <span className="font-semibold">Save</span> to apply. Changes take effect immediately.
           </div>
           <div className="text-xs text-gray-500">
-            Green = Allowed • Red = Denied
+            Green = Allowed • Red = Denied • Total Modules: {modules.length}
           </div>
         </div>
 
@@ -201,16 +201,19 @@ export default function UserAccessControlPage() {
                   <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider sticky left-0 bg-gradient-to-r from-gray-50 to-gray-100 z-10">
                     Employee
                   </th>
-                  {modules.map((module) => (
-                    <th
-                      key={module}
-                      className="px-3 sm:px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider min-w-[120px]"
-                    >
-                      <div className="flex flex-col items-center gap-1">
-                        <span>{moduleNames[module]}</span>
-                      </div>
-                    </th>
-                  ))}
+                  {modules.map((module) => {
+                    const moduleName = moduleNames[module] || module;
+                    return (
+                      <th
+                        key={module}
+                        className="px-3 sm:px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider min-w-[120px] whitespace-nowrap"
+                      >
+                        <div className="flex flex-col items-center gap-1">
+                          <span>{moduleName}</span>
+                        </div>
+                      </th>
+                    );
+                  })}
                   <th className="px-4 sm:px-6 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider sticky right-0 bg-gradient-to-r from-gray-50 to-gray-100 z-10">
                     Actions
                   </th>
