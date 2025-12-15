@@ -496,7 +496,7 @@ setLoading(false);
     return calculateInvoiceSubtotal() + (shippingFee || 0);
   };
 
-  const handleDownloadPDF = () => {
+  const handleDownloadPDF = async () => {
     if (!selectedJobData || !companySettings) {
       setError("Job data or company settings not loaded");
       return;
@@ -505,15 +505,29 @@ setLoading(false);
     const subtotal = calculateInvoiceSubtotal();
     const total = calculateInvoiceTotal();
 
-    // Prepare line items including shipping fee if > 0
-    const allLines = [...invoiceLines];
-    if (shippingFee > 0) {
-      allLines.push({
-        description: "Shipping Fee",
-        quantity: 1,
-        rate: shippingFee,
-        amount: shippingFee,
-      });
+    // Don't add shipping fee as a line item - it should only appear in the summary section
+    // Filter out any existing "Shipping Fee" line items to avoid duplication
+    const regularLines = invoiceLines.filter(line => 
+      !line.description.toLowerCase().includes('shipping fee')
+    );
+
+    // Attempt to fetch logo and convert to data URL for embedding
+    let logoDataUrl: string | undefined;
+    if (companySettings.logoUrl) {
+      try {
+        const resp = await fetch(companySettings.logoUrl);
+        if (resp.ok) {
+          const blob = await resp.blob();
+          const reader = new FileReader();
+          logoDataUrl = await new Promise<string>((resolve, reject) => {
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+          });
+        }
+      } catch (error) {
+        console.error("Error loading logo for invoice:", error);
+      }
     }
 
     const pdfData: InvoicePDFData = {
@@ -526,11 +540,12 @@ setLoading(false);
       companyZipCode: companySettings?.zipCode || undefined,
       companyPhone: companySettings?.phone || undefined,
       companyEmail: companySettings?.email || undefined,
+      logoDataUrl,
       customerName: editableCustomerName || selectedJobData.customer?.name || "Customer",
       customerAddress: editableCustomerAddress || selectedJobData.customer?.company || undefined,
       customerPhone: editableCustomerPhone || selectedJobData.customer?.phone || undefined,
       customerEmail: editableCustomerEmail || selectedJobData.customer?.email || undefined,
-      lineItems: allLines,
+      lineItems: regularLines,
       subtotal: subtotal,
       shippingFee: shippingFee || 0,
       total: total,
@@ -542,7 +557,7 @@ setLoading(false);
       preparedByTitle: preparedByTitle || undefined,
     };
 
-    const pdf = generateInvoicePDF(pdfData);
+    const pdf = await generateInvoicePDF(pdfData);
     pdf.save(`${invoiceNumber || "INV"}-${todayCentralISO()}.pdf`);
   };
 
@@ -643,7 +658,7 @@ setLoading(false);
     return editLines.reduce((sum, line) => sum + line.amount, 0);
   };
 
-  const handleDownloadEditPDF = () => {
+  const handleDownloadEditPDF = async () => {
     if (!editingInvoice || !companySettings) {
       setError("Invoice data or company settings not loaded");
       return;
@@ -651,6 +666,25 @@ setLoading(false);
 
     const subtotal = calculateEditSubtotal();
     const total = subtotal;
+
+    // Attempt to fetch logo and convert to data URL for embedding
+    let logoDataUrl: string | undefined;
+    if (companySettings.logoUrl) {
+      try {
+        const resp = await fetch(companySettings.logoUrl);
+        if (resp.ok) {
+          const blob = await resp.blob();
+          const reader = new FileReader();
+          logoDataUrl = await new Promise<string>((resolve, reject) => {
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+          });
+        }
+      } catch (error) {
+        console.error("Error loading logo for invoice:", error);
+      }
+    }
 
     const pdfData: InvoicePDFData = {
       invoiceNumber: editingInvoice.invoiceNumber || "TEMP",
@@ -662,6 +696,7 @@ setLoading(false);
       companyZipCode: companySettings?.zipCode || undefined,
       companyPhone: companySettings?.phone || undefined,
       companyEmail: companySettings?.email || undefined,
+      logoDataUrl,
       customerName: editingInvoice.customer?.name || "Customer",
       customerAddress: undefined,
       customerPhone: undefined,
@@ -678,7 +713,7 @@ setLoading(false);
       preparedByTitle: editPreparedByTitle || undefined,
     };
 
-    const pdf = generateInvoicePDF(pdfData);
+    const pdf = await generateInvoicePDF(pdfData);
     pdf.save(`${editingInvoice.invoiceNumber || "INV"}-${todayCentralISO()}.pdf`);
   };
 

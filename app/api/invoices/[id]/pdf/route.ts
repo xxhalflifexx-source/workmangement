@@ -67,8 +67,16 @@ export async function GET(
   }
 
   // Calculate subtotal and shipping fee
-  const subtotal = invoice.lines.reduce((sum, line) => sum + line.amount, 0);
-  const shippingFee = invoice.total - subtotal;
+  // Filter out "Shipping Fee" line items - they should only appear in summary
+  const regularLines = invoice.lines.filter(line => 
+    !line.description.toLowerCase().includes('shipping fee')
+  );
+  const shippingLines = invoice.lines.filter(line => 
+    line.description.toLowerCase().includes('shipping fee')
+  );
+  
+  const subtotal = regularLines.reduce((sum, line) => sum + line.amount, 0);
+  const shippingFee = shippingLines.reduce((sum, line) => sum + line.amount, 0);
 
   const pdfData: InvoicePDFData = {
     invoiceNumber: invoice.invoiceNumber || invoice.id.slice(0, 8).toUpperCase(),
@@ -84,7 +92,7 @@ export async function GET(
     customerAddress: invoice.customer?.company || undefined,
     customerPhone: invoice.customer?.phone || undefined,
     customerEmail: invoice.customerEmail || invoice.customer?.email || undefined,
-    lineItems: invoice.lines.map(line => ({
+    lineItems: regularLines.map(line => ({
       description: line.description,
       quantity: line.quantity,
       rate: line.rate,
