@@ -195,20 +195,22 @@ export default function UserAccessControlPage() {
         <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+              <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider sticky left-0 bg-gradient-to-r from-gray-50 to-gray-100 z-10">
                     Employee
                   </th>
                   {modules.map((module) => (
                     <th
                       key={module}
-                      className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      className="px-3 sm:px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider min-w-[120px]"
                     >
-                      {moduleNames[module]}
+                      <div className="flex flex-col items-center gap-1">
+                        <span>{moduleNames[module]}</span>
+                      </div>
                     </th>
                   ))}
-                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 sm:px-6 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider sticky right-0 bg-gradient-to-r from-gray-50 to-gray-100 z-10">
                     Actions
                   </th>
                 </tr>
@@ -226,42 +228,42 @@ export default function UserAccessControlPage() {
                     const hasChanges = JSON.stringify(userPermissions) !== JSON.stringify(user.permissions);
 
                     return (
-                      <tr key={user.id} className="hover:bg-gray-50 transition-colors">
-                        <td className="px-6 py-4 whitespace-nowrap">
+                      <tr key={user.id} className="hover:bg-blue-50/50 transition-colors border-b border-gray-100">
+                        <td className="px-4 sm:px-6 py-4 whitespace-nowrap sticky left-0 bg-white z-10 border-r border-gray-200">
                           <div>
-                            <div className="text-sm font-medium text-gray-900">
+                            <div className="text-sm font-semibold text-gray-900">
                               {user.name || "Unknown"}
                             </div>
-                            <div className="text-sm text-gray-500">{user.email}</div>
-                            <div className="text-xs text-gray-400 mt-1">{user.role}</div>
+                            <div className="text-xs text-gray-600 mt-0.5">{user.email}</div>
+                            <div className="text-xs text-gray-400 mt-1 font-medium">{user.role}</div>
                           </div>
                         </td>
                         {modules.map((module) => {
                           const hasAccess = userPermissions[module] ?? false;
                           return (
-                            <td key={module} className="px-4 py-4 whitespace-nowrap text-center">
+                            <td key={module} className="px-3 sm:px-4 py-4 whitespace-nowrap text-center">
                               <button
                                 onClick={() => togglePermission(user.id, module)}
                                 disabled={saving[user.id]}
-                                className={`inline-flex items-center justify-center w-10 h-10 rounded-full transition-colors ${
+                                className={`inline-flex items-center justify-center w-11 h-11 rounded-full transition-all duration-200 shadow-sm ${
                                   hasAccess
-                                    ? "bg-green-100 text-green-700 hover:bg-green-200"
-                                    : "bg-red-100 text-red-700 hover:bg-red-200"
-                                } disabled:opacity-50 disabled:cursor-not-allowed`}
-                                title={hasAccess ? "Allowed" : "Denied"}
+                                    ? "bg-green-100 text-green-700 hover:bg-green-200 hover:shadow-md hover:scale-110"
+                                    : "bg-red-100 text-red-700 hover:bg-red-200 hover:shadow-md hover:scale-110"
+                                } disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100`}
+                                title={`${moduleNames[module]}: ${hasAccess ? "Allowed" : "Denied"}`}
                               >
-                                {hasAccess ? "✓" : "✗"}
+                                <span className="text-lg font-bold">{hasAccess ? "✓" : "✗"}</span>
                               </button>
                             </td>
                           );
                         })}
-                        <td className="px-6 py-4 whitespace-nowrap text-center">
+                        <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-center sticky right-0 bg-white z-10 border-l border-gray-200">
                           <button
                             onClick={() => handleSave(user.id)}
                             disabled={saving[user.id] || !hasChanges}
-                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors min-h-[44px] ${
+                            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 min-h-[44px] shadow-sm ${
                               hasChanges
-                                ? "bg-blue-600 text-white hover:bg-blue-700"
+                                ? "bg-blue-600 text-white hover:bg-blue-700 hover:shadow-md active:scale-95"
                                 : "bg-gray-200 text-gray-500 cursor-not-allowed"
                             } disabled:opacity-50 disabled:cursor-not-allowed`}
                           >
