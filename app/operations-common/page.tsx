@@ -517,7 +517,7 @@ export default function OperationsCommonPage() {
       <header className="bg-white shadow-sm border-b relative z-20">
         <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-24 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className="flex-1 min-w-0">
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">🔧 Operations Common</h1>
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">📁 Operations Common</h1>
             <p className="text-xs sm:text-sm text-gray-500">Common operational documents</p>
           </div>
           <Link

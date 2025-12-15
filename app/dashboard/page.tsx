@@ -202,7 +202,7 @@ export default async function Dashboard() {
           {(role === "ADMIN" || role === "MANAGER" || role === "EMPLOYEE") && (
             <DashboardTabLink
               href="/operations-common"
-              icon="🔧"
+              icon="📁"
               title="Operations Common"
               description="Common operational documents"
               notificationCount={unreadCounts["/operations-common"] || 0}
