@@ -1900,13 +1900,32 @@ setLoading(false);
                     </div>
                   )}
 
+                  {/* Shipping Fee */}
+                  <div className="bg-white border border-[var(--brand-border)] rounded-2xl p-4 sm:p-5">
+                    <label className="block text-sm font-semibold text-slate-800 mb-2">
+                      Shipping Fee
+                    </label>
+                    <div className="flex items-center gap-3">
+                      <span className="text-slate-600">$</span>
+                      <input
+                        type="number"
+                        value={shippingFee}
+                        onChange={(e) => setShippingFee(parseFloat(e.target.value) || 0)}
+                        className="flex-1 border border-[var(--brand-border)] rounded-lg px-3 py-2.5 text-base text-right"
+                        step="0.01"
+                        min="0"
+                        placeholder="0.00"
+                      />
+                    </div>
+                    <p className="text-xs text-slate-500 mt-2">Enter the shipping fee amount (if applicable)</p>
+                  </div>
+
                   {/* Invoice Lines */}
                   <div>
                     <div className="flex items-center justify-between mb-2">
                       <label className="block text-sm font-semibold text-slate-800">
                         Line Items
                       </label>
-                      <span className="text-xs text-slate-500">Taxes & shipping handled below</span>
                     </div>
 
                     {/* Mobile: stacked cards for full readability */}
