@@ -46,14 +46,13 @@ export default function UserMenu({ userName, userEmail, userRole, hideWhenNotifi
     await signOut({ callbackUrl: "/login" });
   };
 
-  // Hide UserMenu when notifications dropdown is open
-  if (hideWhenNotificationsOpen && notificationsOpen) {
-    return null;
-  }
+  // On mobile, hide UserMenu when notifications dropdown is open to save space
+  // On desktop, keep it visible
+  const shouldHideOnMobile = hideWhenNotificationsOpen && notificationsOpen;
 
   return (
     <>
-      <div className="relative z-30" ref={dropdownRef}>
+      <div className={`relative z-30 ${shouldHideOnMobile ? 'hidden sm:block' : ''}`} ref={dropdownRef}>
         <button
           ref={buttonRef}
           onClick={() => setShowDropdown(!showDropdown)}
