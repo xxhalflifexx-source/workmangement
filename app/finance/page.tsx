@@ -680,8 +680,12 @@ setLoading(false);
       return;
     }
 
+    // Filter out shipping fee from line items
+    const regularLines = editLines.filter(line => 
+      !line.description.toLowerCase().includes('shipping fee')
+    );
     const subtotal = calculateEditSubtotal();
-    const total = subtotal;
+    const total = calculateEditTotal();
 
     // Attempt to fetch logo and convert to data URL for embedding
     let logoDataUrl: string | undefined;
@@ -717,14 +721,10 @@ setLoading(false);
       customerAddress: undefined,
       customerPhone: undefined,
       customerEmail: undefined,
-      // Filter out shipping fee from line items
-      const regularLines = editLines.filter(line => 
-        !line.description.toLowerCase().includes('shipping fee')
-      );
       lineItems: regularLines,
-      subtotal: calculateEditSubtotal(),
+      subtotal: subtotal,
       shippingFee: editShippingFee || 0,
-      total: calculateEditTotal(),
+      total: total,
       notes: editNotes || undefined,
       paymentBank: editPaymentBank || undefined,
       paymentAccountName: editPaymentAccountName || undefined,
