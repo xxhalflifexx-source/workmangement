@@ -2859,55 +2859,6 @@ function JobsPageContent() {
                   </div>
                 </div>
 
-                {/* Payment Method */}
-                <div className="mb-8 no-print">
-                  <h3 className="text-sm font-bold text-gray-700 uppercase mb-3">Payment Method:</h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div>
-                      <label className="block text-xs text-gray-600 mb-1">Bank</label>
-                      <input
-                        type="text"
-                        value={quotationPaymentBank}
-                        onChange={(e) => {
-                          setQuotationPaymentBank(e.target.value);
-                          if (autoSaveTimeoutRef.current) clearTimeout(autoSaveTimeoutRef.current);
-                          autoSaveTimeoutRef.current = setTimeout(() => handleAutoSaveQuotation(), 2000);
-                        }}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-                        placeholder="Bank Name"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-gray-600 mb-1">Account Name</label>
-                      <input
-                        type="text"
-                        value={quotationPaymentAccountName}
-                        onChange={(e) => {
-                          setQuotationPaymentAccountName(e.target.value);
-                          if (autoSaveTimeoutRef.current) clearTimeout(autoSaveTimeoutRef.current);
-                          autoSaveTimeoutRef.current = setTimeout(() => handleAutoSaveQuotation(), 2000);
-                        }}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-                        placeholder="Account Name"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-gray-600 mb-1">Account Number</label>
-                      <input
-                        type="text"
-                        value={quotationPaymentAccountNumber}
-                        onChange={(e) => {
-                          setQuotationPaymentAccountNumber(e.target.value);
-                          if (autoSaveTimeoutRef.current) clearTimeout(autoSaveTimeoutRef.current);
-                          autoSaveTimeoutRef.current = setTimeout(() => handleAutoSaveQuotation(), 2000);
-                        }}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-                        placeholder="Account Number"
-                      />
-                    </div>
-                  </div>
-                </div>
-
                 {/* Prepared By */}
                 <div className="mb-8 no-print">
                   <h3 className="text-sm font-bold text-gray-700 uppercase mb-3">Prepared By:</h3>
