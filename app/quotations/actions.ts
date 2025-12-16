@@ -35,61 +35,76 @@ export async function createQuotation(formData: FormData) {
 	const role = (session.user as any).role;
 	if (role !== "ADMIN" && role !== "MANAGER") return { ok: false, error: "Unauthorized" };
 
-	const jobId = (formData.get("jobId") as string) || undefined;
-	const customerId = (formData.get("customerId") as string) || undefined;
-	const customerName = (formData.get("customerName") as string) || "";
-	const customerAddress = (formData.get("customerAddress") as string) || "";
-	const customerPhone = (formData.get("customerPhone") as string) || "";
-	const customerEmail = (formData.get("customerEmail") as string) || "";
-	const issueDate = formData.get("issueDate") as string;
-	const validUntil = (formData.get("validUntil") as string) || "";
-	const notes = (formData.get("notes") as string) || "";
-	const shippingFee = parseFloat((formData.get("shippingFee") as string) || "0");
-	const paymentBank = (formData.get("paymentBank") as string) || "";
-	const paymentAccountName = (formData.get("paymentAccountName") as string) || "";
-	const paymentAccountNumber = (formData.get("paymentAccountNumber") as string) || "";
-	const preparedByName = (formData.get("preparedByName") as string) || "";
-	const preparedByTitle = (formData.get("preparedByTitle") as string) || "";
+	try {
+		const jobId = (formData.get("jobId") as string) || undefined;
+		const customerId = (formData.get("customerId") as string) || undefined;
+		const customerName = (formData.get("customerName") as string) || "";
+		const customerAddress = (formData.get("customerAddress") as string) || "";
+		const customerPhone = (formData.get("customerPhone") as string) || "";
+		const customerEmail = (formData.get("customerEmail") as string) || "";
+		const issueDate = formData.get("issueDate") as string;
+		const validUntil = (formData.get("validUntil") as string) || "";
+		const notes = (formData.get("notes") as string) || "";
+		const shippingFee = parseFloat((formData.get("shippingFee") as string) || "0");
+		const paymentBank = (formData.get("paymentBank") as string) || "";
+		const paymentAccountName = (formData.get("paymentAccountName") as string) || "";
+		const paymentAccountNumber = (formData.get("paymentAccountNumber") as string) || "";
+		const preparedByName = (formData.get("preparedByName") as string) || "";
+		const preparedByTitle = (formData.get("preparedByTitle") as string) || "";
 
-	const linesJson = (formData.get("lines") as string) || "[]";
-	let lines: Array<{ description: string; quantity: number; rate: number; amount: number }> = [];
-	try { lines = JSON.parse(linesJson); } catch {}
+		const linesJson = (formData.get("lines") as string) || "[]";
+		let lines: Array<{ description: string; quantity: number; rate: number; amount: number }> = [];
+		try { 
+			lines = JSON.parse(linesJson); 
+		} catch (parseError) {
+			console.error("Error parsing lines JSON:", parseError);
+			return { ok: false, error: "Invalid line items format" };
+		}
 
-	const total = lines.reduce((s, l) => s + (l.amount || l.quantity * l.rate), 0) + shippingFee;
+		// Filter out empty line items (no description) and ensure all required fields have defaults
+		const validLines = lines
+			.filter((l) => l.description && l.description.trim() !== "")
+			.map((l) => ({
+				description: (l.description || "").trim() || "Item",
+				quantity: l.quantity || 0,
+				rate: l.rate || 0,
+				amount: l.amount || (l.quantity || 0) * (l.rate || 0),
+			}));
 
-	const quotation = await prisma.quotation.create({
-		data: {
-			quotationNumber: null, // No quotation numbers
-			jobId: jobId || null,
-			customerId: customerId || null,
-			customerName: customerName || null,
-			customerAddress: customerAddress || null,
-			customerPhone: customerPhone || null,
-			customerEmail: customerEmail || null,
-			status: "DRAFT",
-			issueDate: issueDate ? parseCentralDate(issueDate) : centralToUTC(nowInCentral().toDate()),
-			validUntil: validUntil ? parseCentralDate(validUntil) : null,
-			notes: notes || null,
-			shippingFee,
-			total,
-			paymentBank: paymentBank || null,
-			paymentAccountName: paymentAccountName || null,
-			paymentAccountNumber: paymentAccountNumber || null,
-			preparedByName: preparedByName || null,
-			preparedByTitle: preparedByTitle || null,
-			lines: {
-				create: lines.map((l) => ({
-					description: l.description,
-					quantity: l.quantity,
-					rate: l.rate,
-					amount: l.amount || l.quantity * l.rate,
-				})),
+		const total = validLines.reduce((s, l) => s + (l.amount || 0), 0) + shippingFee;
+
+		const quotation = await prisma.quotation.create({
+			data: {
+				quotationNumber: null, // No quotation numbers
+				jobId: jobId || null,
+				customerId: customerId || null,
+				customerName: customerName || null,
+				customerAddress: customerAddress || null,
+				customerPhone: customerPhone || null,
+				customerEmail: customerEmail || null,
+				status: "DRAFT",
+				issueDate: issueDate ? parseCentralDate(issueDate) : centralToUTC(nowInCentral().toDate()),
+				validUntil: validUntil ? parseCentralDate(validUntil) : null,
+				notes: notes || null,
+				shippingFee,
+				total,
+				paymentBank: paymentBank || null,
+				paymentAccountName: paymentAccountName || null,
+				paymentAccountNumber: paymentAccountNumber || null,
+				preparedByName: preparedByName || null,
+				preparedByTitle: preparedByTitle || null,
+				lines: {
+					create: validLines,
+				},
 			},
-		},
-		include: { lines: true, job: { select: { title: true, id: true } }, customer: true },
-	});
+			include: { lines: true, job: { select: { title: true, id: true } }, customer: true },
+		});
 
-	return { ok: true, quotation };
+		return { ok: true, quotation };
+	} catch (error: any) {
+		console.error("Create quotation error:", error);
+		return { ok: false, error: error?.message || "Failed to create quotation" };
+	}
 }
 
 export async function updateQuotation(formData: FormData) {
@@ -98,64 +113,79 @@ export async function updateQuotation(formData: FormData) {
 	const role = (session.user as any).role;
 	if (role !== "ADMIN" && role !== "MANAGER") return { ok: false, error: "Unauthorized" };
 
-	const quotationId = formData.get("quotationId") as string;
-	if (!quotationId) return { ok: false, error: "Quotation ID is required" };
+	try {
+		const quotationId = formData.get("quotationId") as string;
+		if (!quotationId) return { ok: false, error: "Quotation ID is required" };
 
-	const customerName = (formData.get("customerName") as string) || "";
-	const customerAddress = (formData.get("customerAddress") as string) || "";
-	const customerPhone = (formData.get("customerPhone") as string) || "";
-	const customerEmail = (formData.get("customerEmail") as string) || "";
-	const issueDate = formData.get("issueDate") as string;
-	const validUntil = (formData.get("validUntil") as string) || "";
-	const notes = (formData.get("notes") as string) || "";
-	const shippingFee = parseFloat((formData.get("shippingFee") as string) || "0");
-	const paymentBank = (formData.get("paymentBank") as string) || "";
-	const paymentAccountName = (formData.get("paymentAccountName") as string) || "";
-	const paymentAccountNumber = (formData.get("paymentAccountNumber") as string) || "";
-	const preparedByName = (formData.get("preparedByName") as string) || "";
-	const preparedByTitle = (formData.get("preparedByTitle") as string) || "";
+		const customerName = (formData.get("customerName") as string) || "";
+		const customerAddress = (formData.get("customerAddress") as string) || "";
+		const customerPhone = (formData.get("customerPhone") as string) || "";
+		const customerEmail = (formData.get("customerEmail") as string) || "";
+		const issueDate = formData.get("issueDate") as string;
+		const validUntil = (formData.get("validUntil") as string) || "";
+		const notes = (formData.get("notes") as string) || "";
+		const shippingFee = parseFloat((formData.get("shippingFee") as string) || "0");
+		const paymentBank = (formData.get("paymentBank") as string) || "";
+		const paymentAccountName = (formData.get("paymentAccountName") as string) || "";
+		const paymentAccountNumber = (formData.get("paymentAccountNumber") as string) || "";
+		const preparedByName = (formData.get("preparedByName") as string) || "";
+		const preparedByTitle = (formData.get("preparedByTitle") as string) || "";
 
-	const linesJson = (formData.get("lines") as string) || "[]";
-	let lines: Array<{ description: string; quantity: number; rate: number; amount: number }> = [];
-	try { lines = JSON.parse(linesJson); } catch {}
+		const linesJson = (formData.get("lines") as string) || "[]";
+		let lines: Array<{ description: string; quantity: number; rate: number; amount: number }> = [];
+		try { 
+			lines = JSON.parse(linesJson); 
+		} catch (parseError) {
+			console.error("Error parsing lines JSON:", parseError);
+			return { ok: false, error: "Invalid line items format" };
+		}
 
-	const total = lines.reduce((s, l) => s + (l.amount || l.quantity * l.rate), 0) + shippingFee;
+		// Filter out empty line items (no description) and ensure all required fields have defaults
+		const validLines = lines
+			.filter((l) => l.description && l.description.trim() !== "")
+			.map((l) => ({
+				description: (l.description || "").trim() || "Item",
+				quantity: l.quantity || 0,
+				rate: l.rate || 0,
+				amount: l.amount || (l.quantity || 0) * (l.rate || 0),
+			}));
 
-	// Delete existing lines and create new ones
-	await prisma.quotationLine.deleteMany({
-		where: { quotationId },
-	});
+		const total = validLines.reduce((s, l) => s + (l.amount || 0), 0) + shippingFee;
 
-	const quotation = await prisma.quotation.update({
-		where: { id: quotationId },
-		data: {
-			customerName: customerName || null,
-			customerAddress: customerAddress || null,
-			customerPhone: customerPhone || null,
-			customerEmail: customerEmail || null,
-			issueDate: issueDate ? parseCentralDate(issueDate) : centralToUTC(nowInCentral().toDate()),
-			validUntil: validUntil ? parseCentralDate(validUntil) : null,
-			notes: notes || null,
-			shippingFee,
-			total,
-			paymentBank: paymentBank || null,
-			paymentAccountName: paymentAccountName || null,
-			paymentAccountNumber: paymentAccountNumber || null,
-			preparedByName: preparedByName || null,
-			preparedByTitle: preparedByTitle || null,
-			lines: {
-				create: lines.map((l) => ({
-					description: l.description,
-					quantity: l.quantity,
-					rate: l.rate,
-					amount: l.amount || l.quantity * l.rate,
-				})),
+		// Delete existing lines and create new ones
+		await prisma.quotationLine.deleteMany({
+			where: { quotationId },
+		});
+
+		const quotation = await prisma.quotation.update({
+			where: { id: quotationId },
+			data: {
+				customerName: customerName || null,
+				customerAddress: customerAddress || null,
+				customerPhone: customerPhone || null,
+				customerEmail: customerEmail || null,
+				issueDate: issueDate ? parseCentralDate(issueDate) : centralToUTC(nowInCentral().toDate()),
+				validUntil: validUntil ? parseCentralDate(validUntil) : null,
+				notes: notes || null,
+				shippingFee,
+				total,
+				paymentBank: paymentBank || null,
+				paymentAccountName: paymentAccountName || null,
+				paymentAccountNumber: paymentAccountNumber || null,
+				preparedByName: preparedByName || null,
+				preparedByTitle: preparedByTitle || null,
+				lines: {
+					create: validLines,
+				},
 			},
-		},
-		include: { lines: true, job: { select: { title: true, id: true } }, customer: true },
-	});
+			include: { lines: true, job: { select: { title: true, id: true } }, customer: true },
+		});
 
-	return { ok: true, quotation };
+		return { ok: true, quotation };
+	} catch (error: any) {
+		console.error("Update quotation error:", error);
+		return { ok: false, error: error?.message || "Failed to update quotation" };
+	}
 }
 
 export async function getQuotation(id: string) {
