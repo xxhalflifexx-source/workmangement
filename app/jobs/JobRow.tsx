@@ -79,11 +79,11 @@ export default function JobRow({
   const getStatusColor = (status: string) => {
     switch (status) {
       case "COMPLETED":
-        return "bg-green-100 text-green-800";
+        return "bg-gray-100 text-gray-800";
       case "REWORK":
         return "bg-orange-100 text-orange-800";
       case "AWAITING_QC":
-        return "bg-purple-100 text-purple-800";
+        return "bg-blue-100 text-blue-800";
       case "IN_PROGRESS":
         return "bg-blue-100 text-blue-800";
       case "CANCELLED":
@@ -190,31 +190,31 @@ export default function JobRow({
 
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   {job.estimatedHours && (
-                    <div className="bg-blue-50 rounded-lg px-3 py-2">
-                      <p className="text-xs text-blue-700 font-medium uppercase tracking-wide">
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
+                      <p className="text-xs text-gray-600 font-medium uppercase tracking-wide">
                         Estimated Hours
                       </p>
-                      <p className="text-sm font-semibold text-blue-900">
+                      <p className="text-sm font-semibold text-gray-900">
                         {job.estimatedHours.toFixed(1)}
                       </p>
                     </div>
                   )}
                   {totalHours > 0 && (
-                    <div className="bg-indigo-50 rounded-lg px-3 py-2">
-                      <p className="text-xs text-indigo-700 font-medium uppercase tracking-wide">
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
+                      <p className="text-xs text-gray-600 font-medium uppercase tracking-wide">
                         Actual Hours
                       </p>
-                      <p className="text-sm font-semibold text-indigo-900">
+                      <p className="text-sm font-semibold text-gray-900">
                         {totalHours.toFixed(1)} h
                       </p>
                     </div>
                   )}
                   {job.estimatedPrice && (
-                    <div className="bg-green-50 rounded-lg px-3 py-2">
-                      <p className="text-xs text-green-700 font-medium uppercase tracking-wide">
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
+                      <p className="text-xs text-gray-600 font-medium uppercase tracking-wide">
                         Estimated Price
                       </p>
-                      <p className="text-sm font-semibold text-green-900">
+                      <p className="text-sm font-semibold text-gray-900">
                         ${job.estimatedPrice.toLocaleString("en-US", {
                           minimumFractionDigits: 2,
                           maximumFractionDigits: 2,
@@ -223,11 +223,11 @@ export default function JobRow({
                     </div>
                   )}
                   {job.finalPrice && (
-                    <div className="bg-green-50 rounded-lg px-3 py-2">
-                      <p className="text-xs text-green-700 font-medium uppercase tracking-wide">
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
+                      <p className="text-xs text-gray-600 font-medium uppercase tracking-wide">
                         Final Price
                       </p>
-                      <p className="text-sm font-semibold text-green-900">
+                      <p className="text-sm font-semibold text-gray-900">
                         ${job.finalPrice.toLocaleString("en-US", {
                           minimumFractionDigits: 2,
                           maximumFractionDigits: 2,
@@ -301,8 +301,8 @@ export default function JobRow({
                   
                   {/* Locked message when submitted to QC */}
                   {job.status === "AWAITING_QC" && (
-                    <div className="mb-3 p-3 bg-purple-50 border border-purple-200 rounded-lg">
-                      <p className="text-xs text-purple-800 font-medium">
+                    <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                      <p className="text-xs text-blue-800 font-medium">
                         🔒 This job has been submitted to QC. Editing is locked until returned for rework.
                       </p>
                     </div>
@@ -444,7 +444,7 @@ export default function JobRow({
                               onSubmitToQC(job.id);
                             }}
                             disabled={savingPhotos[job.id]}
-                            className={`px-4 py-3 sm:py-2 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium disabled:bg-gray-300 disabled:cursor-not-allowed min-h-[44px] ${
+                            className={`px-4 py-3 sm:py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:bg-gray-300 disabled:cursor-not-allowed min-h-[44px] ${
                               (jobPhotoFiles[job.id] || []).length > 0 ? "flex-1" : "w-full"
                             }`}
                           >
@@ -458,7 +458,7 @@ export default function JobRow({
               )}
 
               {/* Actions */}
-              <div className="border-t border-gray-100 pt-4 flex flex-wrap gap-2">
+              <div className="border-t border-gray-200 pt-4 flex flex-wrap gap-2">
                 {onActivity && (
                   <button
                     onClick={(e) => {
@@ -466,10 +466,11 @@ export default function JobRow({
                       onActivity(job);
                     }}
                     disabled={job.status === "AWAITING_QC" || job.status === "COMPLETED"}
-                    className="px-4 py-3 sm:py-2 text-sm border border-blue-300 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors font-medium disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed min-h-[44px] flex-1 sm:flex-initial"
+                    className="px-4 py-3 sm:py-2 text-sm bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed min-h-[44px] flex-1 sm:flex-initial flex items-center justify-center gap-2"
                     title={job.status === "AWAITING_QC" || job.status === "COMPLETED" ? "Job is locked - submitted to QC" : "View notes, photos, and updates for this job"}
                   >
-                    📝 Activity
+                    <span>📝</span>
+                    <span>Activity</span>
                   </button>
                 )}
                 {onMaterial && (
@@ -479,10 +480,11 @@ export default function JobRow({
                       onMaterial(job);
                     }}
                     disabled={job.status === "AWAITING_QC" || job.status === "COMPLETED"}
-                    className="px-4 py-3 sm:py-2 text-sm border border-green-300 text-green-600 rounded-lg hover:bg-green-50 transition-colors font-medium disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed min-h-[44px] flex-1 sm:flex-initial"
+                    className="px-4 py-3 sm:py-2 text-sm bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed min-h-[44px] flex-1 sm:flex-initial flex items-center justify-center gap-2"
                     title={job.status === "AWAITING_QC" || job.status === "COMPLETED" ? "Job is locked - submitted to QC" : "View and request materials for this job"}
                   >
-                    📦 Materials
+                    <span>📦</span>
+                    <span>Materials</span>
                   </button>
                 )}
                 {canManage && onQuotation && (
@@ -491,10 +493,11 @@ export default function JobRow({
                       e.stopPropagation();
                       onQuotation(job);
                     }}
-                    className="px-4 py-3 sm:py-2 text-sm border border-green-300 text-green-600 rounded-lg hover:bg-green-50 transition-colors font-medium min-h-[44px] flex-1 sm:flex-initial"
+                    className="px-4 py-3 sm:py-2 text-sm bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium min-h-[44px] flex-1 sm:flex-initial flex items-center justify-center gap-2"
                     title="Create quotation for this job"
                   >
-                    💰 Create Quotation
+                    <span>💰</span>
+                    <span>Create Quotation</span>
                   </button>
                 )}
                 {canManage && (
@@ -505,10 +508,11 @@ export default function JobRow({
                         onEdit(job);
                       }}
                       disabled={job.status === "AWAITING_QC" || job.status === "COMPLETED"}
-                      className="px-4 py-3 sm:py-2 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed min-h-[44px] flex-1 sm:flex-initial"
+                      className="px-4 py-3 sm:py-2 text-sm bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed min-h-[44px] flex-1 sm:flex-initial flex items-center justify-center gap-2"
                       title={job.status === "AWAITING_QC" || job.status === "COMPLETED" ? "Job is locked - submitted to QC" : "Edit job"}
                     >
-                      ✏️ Edit
+                      <span>✏️</span>
+                      <span>Edit</span>
                     </button>
                     <button
                       onClick={(e) => {
@@ -517,9 +521,10 @@ export default function JobRow({
                           onDelete(job.id);
                         }
                       }}
-                      className="px-4 py-3 sm:py-2 text-sm border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition-colors font-medium min-h-[44px] flex-1 sm:flex-initial"
+                      className="px-4 py-3 sm:py-2 text-sm bg-white border border-gray-300 text-red-600 rounded-lg hover:bg-red-50 transition-colors font-medium min-h-[44px] flex-1 sm:flex-initial flex items-center justify-center gap-2"
                     >
-                      🗑️ Delete
+                      <span>🗑️</span>
+                      <span>Delete</span>
                     </button>
                   </>
                 )}
