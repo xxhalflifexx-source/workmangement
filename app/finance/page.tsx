@@ -1900,26 +1900,6 @@ setLoading(false);
                     </div>
                   )}
 
-                  {/* Shipping Fee */}
-                  <div className="bg-white border border-[var(--brand-border)] rounded-2xl p-4 sm:p-5">
-                    <label className="block text-sm font-semibold text-slate-800 mb-2">
-                      Shipping Fee
-                    </label>
-                    <div className="flex items-center gap-3">
-                      <span className="text-slate-600">$</span>
-                      <input
-                        type="number"
-                        value={shippingFee}
-                        onChange={(e) => setShippingFee(parseFloat(e.target.value) || 0)}
-                        className="flex-1 border border-[var(--brand-border)] rounded-lg px-3 py-2.5 text-base text-right"
-                        step="0.01"
-                        min="0"
-                        placeholder="0.00"
-                      />
-                    </div>
-                    <p className="text-xs text-slate-500 mt-2">Enter the shipping fee amount (if applicable)</p>
-                  </div>
-
                   {/* Invoice Lines */}
                   <div>
                     <div className="flex items-center justify-between mb-2">
@@ -1990,28 +1970,6 @@ setLoading(false);
                           </div>
                         </div>
                       ))}
-                      <div className="rounded-2xl border border-[var(--brand-border)] bg-[var(--brand-surface-muted)] p-3 space-y-3">
-                        <div className="flex justify-between">
-                          <span className="text-sm font-semibold text-slate-700">Subtotal</span>
-                          <span className="text-lg font-extrabold text-slate-900">{formatCurrency(calculateInvoiceSubtotal())}</span>
-                        </div>
-                        <div className="flex items-center justify-between gap-3">
-                          <span className="text-sm font-semibold text-slate-700">Shipping Fee</span>
-                          <input
-                            type="number"
-                            value={shippingFee}
-                            onChange={(e) => setShippingFee(parseFloat(e.target.value) || 0)}
-                            className="w-32 border border-[var(--brand-border)] rounded-xl px-3 py-2 text-base text-right bg-white"
-                            step="0.01"
-                            min="0"
-                            placeholder="0.00"
-                          />
-                        </div>
-                        <div className="flex justify-between items-center border-t border-[var(--brand-border)] pt-2">
-                          <span className="text-base font-extrabold text-slate-900">Total</span>
-                          <span className="text-xl font-extrabold text-slate-900">{formatCurrency(calculateInvoiceTotal())}</span>
-                        </div>
-                      </div>
                       <button
                         type="button"
                         onClick={addInvoiceLine}
@@ -2019,6 +1977,31 @@ setLoading(false);
                       >
                         + Add Line Item
                       </button>
+                      
+                      {/* Summary Section - Similar to Quotation */}
+                      <div className="flex justify-end mt-4">
+                        <div className="w-64">
+                          <div className="flex justify-between py-2 border-b border-gray-300">
+                            <span className="font-semibold">Subtotal:</span>
+                            <span>{formatCurrency(calculateInvoiceSubtotal())}</span>
+                          </div>
+                          <div className="flex justify-between py-2 border-b border-gray-300">
+                            <span className="font-semibold">Shipping Fee:</span>
+                            <input
+                              type="number"
+                              value={shippingFee}
+                              onChange={(e) => setShippingFee(parseFloat(e.target.value) || 0)}
+                              className="w-20 text-right border-b border-gray-300 focus:border-blue-500 outline-none"
+                              step="0.01"
+                              min="0"
+                            />
+                          </div>
+                          <div className="flex justify-between py-3 border-t-2 border-blue-600">
+                            <span className="text-lg font-bold">Total:</span>
+                            <span className="text-lg font-bold text-blue-600">{formatCurrency(calculateInvoiceTotal())}</span>
+                          </div>
+                        </div>
+                      </div>
                     </div>
 
                     {/* Desktop: table view */}
@@ -2086,52 +2069,40 @@ setLoading(false);
                             </tr>
                             ))}
                           </tbody>
-                          <tfoot className="bg-[var(--brand-surface-muted)]">
-                            <tr>
-                              <td colSpan={3} className="px-4 py-3 text-right font-semibold text-slate-700">
-                                Subtotal:
-                              </td>
-                              <td className="px-4 py-3 text-right font-semibold text-slate-900">
-                                {formatCurrency(calculateInvoiceSubtotal())}
-                              </td>
-                              <td></td>
-                            </tr>
-                            <tr>
-                              <td colSpan={3} className="px-4 py-3 text-right font-semibold text-slate-700">
-                                Shipping Fee:
-                              </td>
-                              <td className="px-4 py-3 text-right">
-                                <input
-                                  type="number"
-                                  value={shippingFee}
-                                  onChange={(e) => setShippingFee(parseFloat(e.target.value) || 0)}
-                                  className="w-32 border border-[var(--brand-border)] rounded-lg px-3 py-2 text-sm text-right"
-                                  step="0.01"
-                                  min="0"
-                                  placeholder="0.00"
-                                />
-                              </td>
-                              <td></td>
-                            </tr>
-                            <tr className="bg-white">
-                              <td colSpan={3} className="px-4 py-3 text-right font-extrabold text-lg text-slate-900">
-                                Total:
-                              </td>
-                              <td className="px-4 py-3 text-right font-extrabold text-lg text-slate-900">
-                                {formatCurrency(calculateInvoiceTotal())}
-                              </td>
-                              <td></td>
-                            </tr>
-                          </tfoot>
                         </table>
                       </div>
                       <button
                         type="button"
                         onClick={addInvoiceLine}
-                        className="mt-3 inline-flex items-center gap-2 px-4 py-2 border-2 border-dashed border-[var(--brand-border)] rounded-xl hover:border-[var(--brand-blue)] hover:bg-blue-50 transition-colors text-sm font-semibold text-slate-700"
+                        className="mt-4 px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 transition-colors"
                       >
                         + Add Line Item
                       </button>
+                      
+                      {/* Summary Section - Similar to Quotation */}
+                      <div className="flex justify-end mt-4">
+                        <div className="w-64">
+                          <div className="flex justify-between py-2 border-b border-gray-300">
+                            <span className="font-semibold">Subtotal:</span>
+                            <span>{formatCurrency(calculateInvoiceSubtotal())}</span>
+                          </div>
+                          <div className="flex justify-between py-2 border-b border-gray-300">
+                            <span className="font-semibold">Shipping Fee:</span>
+                            <input
+                              type="number"
+                              value={shippingFee}
+                              onChange={(e) => setShippingFee(parseFloat(e.target.value) || 0)}
+                              className="w-20 text-right border-b border-gray-300 focus:border-blue-500 outline-none"
+                              step="0.01"
+                              min="0"
+                            />
+                          </div>
+                          <div className="flex justify-between py-3 border-t-2 border-blue-600">
+                            <span className="text-lg font-bold">Total:</span>
+                            <span className="text-lg font-bold text-blue-600">{formatCurrency(calculateInvoiceTotal())}</span>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
 
