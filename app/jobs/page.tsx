@@ -2664,17 +2664,10 @@ function JobsPageContent() {
                   </div>
                   <div className="flex gap-2">
                     <button
-                      onClick={handleSaveQuotation}
-                      disabled={savingQuotation}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:bg-gray-400 disabled:cursor-not-allowed"
-                    >
-                      {savingQuotation ? "Saving..." : "💾 Save"}
-                    </button>
-                    <button
                       onClick={handleDownloadQuotationPDF}
                       className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
                     >
-                      🖨️ Download PDF
+                      📥 Download PDF
                     </button>
                     <button
                       onClick={() => {
@@ -2683,9 +2676,9 @@ function JobsPageContent() {
                         setQuotationLineItems([]);
                         setCurrentQuotationId(null);
                       }}
-                      className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                      className="text-gray-400 hover:text-gray-600 text-2xl"
                     >
-                      Close
+                      ✕
                     </button>
                   </div>
                 </div>
@@ -2866,6 +2859,90 @@ function JobsPageContent() {
                   </div>
                 </div>
 
+                {/* Payment Method */}
+                <div className="mb-8 no-print">
+                  <h3 className="text-sm font-bold text-gray-700 uppercase mb-3">Payment Method:</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-xs text-gray-600 mb-1">Bank</label>
+                      <input
+                        type="text"
+                        value={quotationPaymentBank}
+                        onChange={(e) => {
+                          setQuotationPaymentBank(e.target.value);
+                          if (autoSaveTimeoutRef.current) clearTimeout(autoSaveTimeoutRef.current);
+                          autoSaveTimeoutRef.current = setTimeout(() => handleAutoSaveQuotation(), 2000);
+                        }}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                        placeholder="Bank Name"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-600 mb-1">Account Name</label>
+                      <input
+                        type="text"
+                        value={quotationPaymentAccountName}
+                        onChange={(e) => {
+                          setQuotationPaymentAccountName(e.target.value);
+                          if (autoSaveTimeoutRef.current) clearTimeout(autoSaveTimeoutRef.current);
+                          autoSaveTimeoutRef.current = setTimeout(() => handleAutoSaveQuotation(), 2000);
+                        }}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                        placeholder="Account Name"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-600 mb-1">Account Number</label>
+                      <input
+                        type="text"
+                        value={quotationPaymentAccountNumber}
+                        onChange={(e) => {
+                          setQuotationPaymentAccountNumber(e.target.value);
+                          if (autoSaveTimeoutRef.current) clearTimeout(autoSaveTimeoutRef.current);
+                          autoSaveTimeoutRef.current = setTimeout(() => handleAutoSaveQuotation(), 2000);
+                        }}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                        placeholder="Account Number"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Prepared By */}
+                <div className="mb-8 no-print">
+                  <h3 className="text-sm font-bold text-gray-700 uppercase mb-3">Prepared By:</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs text-gray-600 mb-1">Name</label>
+                      <input
+                        type="text"
+                        value={quotationPreparedByName}
+                        onChange={(e) => {
+                          setQuotationPreparedByName(e.target.value);
+                          if (autoSaveTimeoutRef.current) clearTimeout(autoSaveTimeoutRef.current);
+                          autoSaveTimeoutRef.current = setTimeout(() => handleAutoSaveQuotation(), 2000);
+                        }}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                        placeholder="Prepared By Name"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-600 mb-1">Title</label>
+                      <input
+                        type="text"
+                        value={quotationPreparedByTitle}
+                        onChange={(e) => {
+                          setQuotationPreparedByTitle(e.target.value);
+                          if (autoSaveTimeoutRef.current) clearTimeout(autoSaveTimeoutRef.current);
+                          autoSaveTimeoutRef.current = setTimeout(() => handleAutoSaveQuotation(), 2000);
+                        }}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                        placeholder="Title/Position"
+                      />
+                    </div>
+                  </div>
+                </div>
+
                 {/* Terms & Notes */}
                 <div className="mb-8">
                   <h3 className="text-sm font-bold text-gray-700 uppercase mb-2">Terms & Conditions:</h3>
@@ -2885,6 +2962,32 @@ function JobsPageContent() {
                 {/* Footer */}
                 <div className="text-center text-gray-500 text-sm border-t pt-6">
                   <p className="font-semibold">Thank you for your business!</p>
+                </div>
+              </div>
+
+              {/* Actions - Save and Cancel at bottom */}
+              <div className="p-6 border-t bg-gray-50 no-print">
+                <div className="flex flex-col sm:flex-row sm:justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowQuotationModal(false);
+                      setSelectedJobForQuotation(null);
+                      setQuotationLineItems([]);
+                      setCurrentQuotationId(null);
+                    }}
+                    className="px-4 py-2.5 border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors font-semibold text-gray-700"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSaveQuotation}
+                    disabled={savingQuotation}
+                    className="px-4 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-semibold disabled:bg-gray-300 disabled:cursor-not-allowed"
+                  >
+                    {savingQuotation ? "Saving..." : "Save Changes"}
+                  </button>
                 </div>
               </div>
             </div>
