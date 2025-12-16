@@ -107,6 +107,7 @@ export default function FinancePage() {
   const [editDueDate, setEditDueDate] = useState("");
   const [editNotes, setEditNotes] = useState("");
   const [editStatus, setEditStatus] = useState("");
+  const [editShippingFee, setEditShippingFee] = useState(0);
   const [editRemarks, setEditRemarks] = useState("");
   const [editPaymentBank, setEditPaymentBank] = useState("");
   const [editPaymentAccountName, setEditPaymentAccountName] = useState("");
@@ -632,7 +633,18 @@ setLoading(false);
 
   const handleEditInvoice = async (invoice: Invoice) => {
     setEditingInvoice(invoice);
-    setEditLines(invoice.lines || []);
+    
+    // Separate shipping fee from line items
+    const allLines = invoice.lines || [];
+    const shippingFeeLine = allLines.find(line => 
+      line.description.toLowerCase().includes('shipping fee')
+    );
+    const regularLines = allLines.filter(line => 
+      !line.description.toLowerCase().includes('shipping fee')
+    );
+    
+    setEditLines(regularLines);
+    setEditShippingFee(shippingFeeLine ? shippingFeeLine.amount : 0);
     setEditDueDate(invoice.dueDate ? formatDateInput(invoice.dueDate) : "");
     setEditNotes(invoice.notes || "");
     setEditRemarks(invoice.remarks || "");
@@ -656,6 +668,10 @@ setLoading(false);
 
   const calculateEditSubtotal = () => {
     return editLines.reduce((sum, line) => sum + line.amount, 0);
+  };
+
+  const calculateEditTotal = () => {
+    return calculateEditSubtotal() + (editShippingFee || 0);
   };
 
   const handleDownloadEditPDF = async () => {
@@ -701,10 +717,14 @@ setLoading(false);
       customerAddress: undefined,
       customerPhone: undefined,
       customerEmail: undefined,
-      lineItems: editLines,
-      subtotal: subtotal,
-      shippingFee: 0,
-      total: total,
+      // Filter out shipping fee from line items
+      const regularLines = editLines.filter(line => 
+        !line.description.toLowerCase().includes('shipping fee')
+      );
+      lineItems: regularLines,
+      subtotal: calculateEditSubtotal(),
+      shippingFee: editShippingFee || 0,
+      total: calculateEditTotal(),
       notes: editNotes || undefined,
       paymentBank: editPaymentBank || undefined,
       paymentAccountName: editPaymentAccountName || undefined,
@@ -745,6 +765,17 @@ setLoading(false);
     if (!editingInvoice) return;
 
     // Prepare edit data
+    // Add shipping fee as a line item if > 0
+    const lines = [...editLines];
+    if (editShippingFee > 0) {
+      lines.push({
+        description: "Shipping Fee",
+        quantity: 1,
+        rate: editShippingFee,
+        amount: editShippingFee,
+      });
+    }
+    
     const formData = new FormData();
     formData.append("invoiceId", editingInvoice.id);
     if (editDueDate) {
@@ -753,7 +784,7 @@ setLoading(false);
     formData.append("notes", editNotes || "");
     formData.append("remarks", editRemarks || "");
     formData.append("status", editStatus);
-    formData.append("lines", JSON.stringify(editLines));
+    formData.append("lines", JSON.stringify(lines));
 
     // Store pending data and show confirmation
     setPendingEditData(formData);
@@ -2362,12 +2393,6 @@ setLoading(false);
                           </div>
                         </div>
                       ))}
-                      <div className="rounded-2xl border border-[var(--brand-border)] bg-[var(--brand-surface-muted)] p-3 space-y-3">
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm font-semibold text-slate-700">Total</span>
-                          <span className="text-xl font-extrabold text-slate-900">{formatCurrency(editLines.reduce((sum, line) => sum + line.amount, 0))}</span>
-                        </div>
-                      </div>
                       <button
                         type="button"
                         onClick={addEditLine}
@@ -2375,6 +2400,31 @@ setLoading(false);
                       >
                         + Add Line Item
                       </button>
+                      
+                      {/* Summary Section - Similar to Quotation */}
+                      <div className="flex justify-end mt-4">
+                        <div className="w-64">
+                          <div className="flex justify-between py-2 border-b border-gray-300">
+                            <span className="font-semibold">Subtotal:</span>
+                            <span>{formatCurrency(calculateEditSubtotal())}</span>
+                          </div>
+                          <div className="flex justify-between py-2 border-b border-gray-300">
+                            <span className="font-semibold">Shipping Fee:</span>
+                            <input
+                              type="number"
+                              value={editShippingFee}
+                              onChange={(e) => setEditShippingFee(parseFloat(e.target.value) || 0)}
+                              className="w-20 text-right border-b border-gray-300 focus:border-blue-500 outline-none"
+                              step="0.01"
+                              min="0"
+                            />
+                          </div>
+                          <div className="flex justify-between py-3 border-t-2 border-blue-600">
+                            <span className="text-lg font-bold">Total:</span>
+                            <span className="text-lg font-bold text-blue-600">{formatCurrency(calculateEditTotal())}</span>
+                          </div>
+                        </div>
+                      </div>
                     </div>
 
                     {/* Desktop table */}
@@ -2441,26 +2491,40 @@ setLoading(false);
                               </tr>
                             ))}
                           </tbody>
-                          <tfoot>
-                            <tr className="bg-gray-50">
-                              <td colSpan={3} className="px-4 py-3 text-right font-semibold">
-                                Total:
-                              </td>
-                              <td className="px-4 py-3 text-right font-bold text-lg">
-                                {formatCurrency(editLines.reduce((sum, line) => sum + line.amount, 0))}
-                              </td>
-                              <td></td>
-                            </tr>
-                          </tfoot>
                         </table>
                       </div>
                       <button
                         type="button"
                         onClick={addEditLine}
-                        className="mt-2 px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-600 hover:bg-blue-50 transition-colors text-sm font-medium text-gray-600"
+                        className="mt-4 px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 transition-colors"
                       >
                         + Add Line Item
                       </button>
+                      
+                      {/* Summary Section - Similar to Quotation */}
+                      <div className="flex justify-end mt-4">
+                        <div className="w-64">
+                          <div className="flex justify-between py-2 border-b border-gray-300">
+                            <span className="font-semibold">Subtotal:</span>
+                            <span>{formatCurrency(calculateEditSubtotal())}</span>
+                          </div>
+                          <div className="flex justify-between py-2 border-b border-gray-300">
+                            <span className="font-semibold">Shipping Fee:</span>
+                            <input
+                              type="number"
+                              value={editShippingFee}
+                              onChange={(e) => setEditShippingFee(parseFloat(e.target.value) || 0)}
+                              className="w-20 text-right border-b border-gray-300 focus:border-blue-500 outline-none"
+                              step="0.01"
+                              min="0"
+                            />
+                          </div>
+                          <div className="flex justify-between py-3 border-t-2 border-blue-600">
+                            <span className="text-lg font-bold">Total:</span>
+                            <span className="text-lg font-bold text-blue-600">{formatCurrency(calculateEditTotal())}</span>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
 
