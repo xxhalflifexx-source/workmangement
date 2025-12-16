@@ -522,7 +522,7 @@ export default function TimeClockPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <button
                       onClick={() => setShowStartBreakConfirm(true)}
-                      disabled={loading || !!currentEntry?.breakStart && !currentEntry?.breakEnd}
+                      disabled={loading || !!currentEntry?.breakStart}
                       className="min-h-[44px] w-full bg-white border border-gray-300 text-gray-800 py-3 rounded-xl font-semibold text-sm sm:text-base hover:bg-gray-50 transition-colors disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed shadow-sm"
                     >
                       Start Break
