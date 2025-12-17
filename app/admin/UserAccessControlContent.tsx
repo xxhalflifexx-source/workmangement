@@ -109,14 +109,14 @@ export default function UserAccessControlContent({
                           <button
                             onClick={() => onToggle(user.id, module)}
                             disabled={saving[user.id]}
-                            className={`inline-flex items-center justify-center w-8 h-8 transition-all duration-200 font-sans ${
+                            className={`inline-flex items-center justify-center w-8 h-8 rounded transition-all duration-200 ${
                               hasAccess
-                                ? "text-green-700 hover:text-green-800 hover:scale-110"
-                                : "text-red-700 hover:text-red-800 hover:scale-110"
-                            } disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100`}
+                                ? "bg-blue-600 text-white hover:bg-blue-700"
+                                : "bg-gray-300 text-white hover:bg-gray-400"
+                            } disabled:opacity-50 disabled:cursor-not-allowed`}
                             title={hasAccess ? "Allowed" : "Denied"}
                           >
-                            <span className="text-base font-medium leading-none">{hasAccess ? "✓" : "✗"}</span>
+                            <span className="text-sm font-medium leading-none">{hasAccess ? "✓" : "✗"}</span>
                           </button>
                         </td>
                       );
