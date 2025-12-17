@@ -43,6 +43,8 @@ export default function UserAccessControlContent({
     "inventory",
     "adminPanel",
     "employeeHandbook",
+    "manual",
+    "operationsCommon",
   ];
 
   if (loading) {
