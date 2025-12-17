@@ -195,26 +195,64 @@ export default function UserAccessControlPage() {
         </div>
 
         {/* Users Table */}
-        <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
-          <div className="overflow-x-auto" style={{ width: "100%" }}>
-            <table className="divide-y divide-gray-200" style={{ minWidth: "1320px", width: "100%" }}>
+        <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-visible">
+          <div className="overflow-x-auto overflow-y-visible" style={{ width: "100%", maxWidth: "100%" }}>
+            <table className="divide-y divide-gray-200" style={{ minWidth: "1400px", width: "max-content" }}>
               <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
                 <tr>
                   <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider sticky left-0 bg-gradient-to-r from-gray-50 to-gray-100 z-10 min-w-[180px]">
                     Employee
                   </th>
-                  {modules.map(({ key, label }) => {
-                    return (
-                      <th
-                        key={`header-${key}`}
-                        className="px-2 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider min-w-[100px] whitespace-nowrap"
-                      >
-                        <div className="flex flex-col items-center gap-1">
-                          <span className="leading-tight">{label}</span>
-                        </div>
-                      </th>
-                    );
-                  })}
+                  <th key="header-timeClock" className="px-2 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider min-w-[100px] whitespace-nowrap">
+                    <div className="flex flex-col items-center gap-1">
+                      <span className="leading-tight">Time Clock</span>
+                    </div>
+                  </th>
+                  <th key="header-jobManagement" className="px-2 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider min-w-[100px] whitespace-nowrap">
+                    <div className="flex flex-col items-center gap-1">
+                      <span className="leading-tight">Job Management</span>
+                    </div>
+                  </th>
+                  <th key="header-qualityControl" className="px-2 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider min-w-[100px] whitespace-nowrap">
+                    <div className="flex flex-col items-center gap-1">
+                      <span className="leading-tight">Quality Control</span>
+                    </div>
+                  </th>
+                  <th key="header-hr" className="px-2 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider min-w-[100px] whitespace-nowrap">
+                    <div className="flex flex-col items-center gap-1">
+                      <span className="leading-tight">HR</span>
+                    </div>
+                  </th>
+                  <th key="header-finance" className="px-2 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider min-w-[100px] whitespace-nowrap">
+                    <div className="flex flex-col items-center gap-1">
+                      <span className="leading-tight">Finance</span>
+                    </div>
+                  </th>
+                  <th key="header-inventory" className="px-2 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider min-w-[100px] whitespace-nowrap">
+                    <div className="flex flex-col items-center gap-1">
+                      <span className="leading-tight">Inventory</span>
+                    </div>
+                  </th>
+                  <th key="header-adminPanel" className="px-2 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider min-w-[100px] whitespace-nowrap">
+                    <div className="flex flex-col items-center gap-1">
+                      <span className="leading-tight">Admin Panel</span>
+                    </div>
+                  </th>
+                  <th key="header-employeeHandbook" className="px-2 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider min-w-[100px] whitespace-nowrap">
+                    <div className="flex flex-col items-center gap-1">
+                      <span className="leading-tight">Employee Handbook</span>
+                    </div>
+                  </th>
+                  <th key="header-manual" className="px-2 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider min-w-[100px] whitespace-nowrap">
+                    <div className="flex flex-col items-center gap-1">
+                      <span className="leading-tight">Manual</span>
+                    </div>
+                  </th>
+                  <th key="header-operationsCommon" className="px-2 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider min-w-[100px] whitespace-nowrap">
+                    <div className="flex flex-col items-center gap-1">
+                      <span className="leading-tight">Operations Common</span>
+                    </div>
+                  </th>
                   <th className="px-3 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider sticky right-0 bg-gradient-to-r from-gray-50 to-gray-100 z-10 min-w-[100px]">
                     Actions
                   </th>
@@ -243,25 +281,146 @@ export default function UserAccessControlPage() {
                             <div className="text-xs text-gray-400 mt-1 font-medium">{user.role}</div>
                           </div>
                         </td>
-                        {modules.map(({ key, label }) => {
-                          const hasAccess = userPermissions[key] ?? false;
-                          return (
-                            <td key={`${user.id}-${key}`} className="px-2 py-4 whitespace-nowrap text-center min-w-[100px]">
-                              <button
-                                onClick={() => togglePermission(user.id, key)}
-                                disabled={saving[user.id]}
-                                className={`inline-flex items-center justify-center w-8 h-8 transition-all duration-200 ${
-                                  hasAccess
-                                    ? "text-green-700 hover:text-green-800 hover:scale-110"
-                                    : "text-red-700 hover:text-red-800 hover:scale-110"
-                                } disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100`}
-                                title={`${label}: ${hasAccess ? "Allowed" : "Denied"}`}
-                              >
-                                <span className="text-lg font-bold">{hasAccess ? "✓" : "✗"}</span>
-                              </button>
-                            </td>
-                          );
-                        })}
+                        <td key={`${user.id}-timeClock`} className="px-2 py-4 whitespace-nowrap text-center min-w-[100px]">
+                          <button
+                            onClick={() => togglePermission(user.id, "timeClock")}
+                            disabled={saving[user.id]}
+                            className={`inline-flex items-center justify-center w-8 h-8 transition-all duration-200 ${
+                              (userPermissions.timeClock ?? false)
+                                ? "text-green-700 hover:text-green-800 hover:scale-110"
+                                : "text-red-700 hover:text-red-800 hover:scale-110"
+                            } disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100`}
+                            title={`Time Clock: ${(userPermissions.timeClock ?? false) ? "Allowed" : "Denied"}`}
+                          >
+                            <span className="text-lg font-bold">{(userPermissions.timeClock ?? false) ? "✓" : "✗"}</span>
+                          </button>
+                        </td>
+                        <td key={`${user.id}-jobManagement`} className="px-2 py-4 whitespace-nowrap text-center min-w-[100px]">
+                          <button
+                            onClick={() => togglePermission(user.id, "jobManagement")}
+                            disabled={saving[user.id]}
+                            className={`inline-flex items-center justify-center w-8 h-8 transition-all duration-200 ${
+                              (userPermissions.jobManagement ?? false)
+                                ? "text-green-700 hover:text-green-800 hover:scale-110"
+                                : "text-red-700 hover:text-red-800 hover:scale-110"
+                            } disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100`}
+                            title={`Job Management: ${(userPermissions.jobManagement ?? false) ? "Allowed" : "Denied"}`}
+                          >
+                            <span className="text-lg font-bold">{(userPermissions.jobManagement ?? false) ? "✓" : "✗"}</span>
+                          </button>
+                        </td>
+                        <td key={`${user.id}-qualityControl`} className="px-2 py-4 whitespace-nowrap text-center min-w-[100px]">
+                          <button
+                            onClick={() => togglePermission(user.id, "qualityControl")}
+                            disabled={saving[user.id]}
+                            className={`inline-flex items-center justify-center w-8 h-8 transition-all duration-200 ${
+                              (userPermissions.qualityControl ?? false)
+                                ? "text-green-700 hover:text-green-800 hover:scale-110"
+                                : "text-red-700 hover:text-red-800 hover:scale-110"
+                            } disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100`}
+                            title={`Quality Control: ${(userPermissions.qualityControl ?? false) ? "Allowed" : "Denied"}`}
+                          >
+                            <span className="text-lg font-bold">{(userPermissions.qualityControl ?? false) ? "✓" : "✗"}</span>
+                          </button>
+                        </td>
+                        <td key={`${user.id}-hr`} className="px-2 py-4 whitespace-nowrap text-center min-w-[100px]">
+                          <button
+                            onClick={() => togglePermission(user.id, "hr")}
+                            disabled={saving[user.id]}
+                            className={`inline-flex items-center justify-center w-8 h-8 transition-all duration-200 ${
+                              (userPermissions.hr ?? false)
+                                ? "text-green-700 hover:text-green-800 hover:scale-110"
+                                : "text-red-700 hover:text-red-800 hover:scale-110"
+                            } disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100`}
+                            title={`HR: ${(userPermissions.hr ?? false) ? "Allowed" : "Denied"}`}
+                          >
+                            <span className="text-lg font-bold">{(userPermissions.hr ?? false) ? "✓" : "✗"}</span>
+                          </button>
+                        </td>
+                        <td key={`${user.id}-finance`} className="px-2 py-4 whitespace-nowrap text-center min-w-[100px]">
+                          <button
+                            onClick={() => togglePermission(user.id, "finance")}
+                            disabled={saving[user.id]}
+                            className={`inline-flex items-center justify-center w-8 h-8 transition-all duration-200 ${
+                              (userPermissions.finance ?? false)
+                                ? "text-green-700 hover:text-green-800 hover:scale-110"
+                                : "text-red-700 hover:text-red-800 hover:scale-110"
+                            } disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100`}
+                            title={`Finance: ${(userPermissions.finance ?? false) ? "Allowed" : "Denied"}`}
+                          >
+                            <span className="text-lg font-bold">{(userPermissions.finance ?? false) ? "✓" : "✗"}</span>
+                          </button>
+                        </td>
+                        <td key={`${user.id}-inventory`} className="px-2 py-4 whitespace-nowrap text-center min-w-[100px]">
+                          <button
+                            onClick={() => togglePermission(user.id, "inventory")}
+                            disabled={saving[user.id]}
+                            className={`inline-flex items-center justify-center w-8 h-8 transition-all duration-200 ${
+                              (userPermissions.inventory ?? false)
+                                ? "text-green-700 hover:text-green-800 hover:scale-110"
+                                : "text-red-700 hover:text-red-800 hover:scale-110"
+                            } disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100`}
+                            title={`Inventory: ${(userPermissions.inventory ?? false) ? "Allowed" : "Denied"}`}
+                          >
+                            <span className="text-lg font-bold">{(userPermissions.inventory ?? false) ? "✓" : "✗"}</span>
+                          </button>
+                        </td>
+                        <td key={`${user.id}-adminPanel`} className="px-2 py-4 whitespace-nowrap text-center min-w-[100px]">
+                          <button
+                            onClick={() => togglePermission(user.id, "adminPanel")}
+                            disabled={saving[user.id]}
+                            className={`inline-flex items-center justify-center w-8 h-8 transition-all duration-200 ${
+                              (userPermissions.adminPanel ?? false)
+                                ? "text-green-700 hover:text-green-800 hover:scale-110"
+                                : "text-red-700 hover:text-red-800 hover:scale-110"
+                            } disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100`}
+                            title={`Admin Panel: ${(userPermissions.adminPanel ?? false) ? "Allowed" : "Denied"}`}
+                          >
+                            <span className="text-lg font-bold">{(userPermissions.adminPanel ?? false) ? "✓" : "✗"}</span>
+                          </button>
+                        </td>
+                        <td key={`${user.id}-employeeHandbook`} className="px-2 py-4 whitespace-nowrap text-center min-w-[100px]">
+                          <button
+                            onClick={() => togglePermission(user.id, "employeeHandbook")}
+                            disabled={saving[user.id]}
+                            className={`inline-flex items-center justify-center w-8 h-8 transition-all duration-200 ${
+                              (userPermissions.employeeHandbook ?? false)
+                                ? "text-green-700 hover:text-green-800 hover:scale-110"
+                                : "text-red-700 hover:text-red-800 hover:scale-110"
+                            } disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100`}
+                            title={`Employee Handbook: ${(userPermissions.employeeHandbook ?? false) ? "Allowed" : "Denied"}`}
+                          >
+                            <span className="text-lg font-bold">{(userPermissions.employeeHandbook ?? false) ? "✓" : "✗"}</span>
+                          </button>
+                        </td>
+                        <td key={`${user.id}-manual`} className="px-2 py-4 whitespace-nowrap text-center min-w-[100px]">
+                          <button
+                            onClick={() => togglePermission(user.id, "manual")}
+                            disabled={saving[user.id]}
+                            className={`inline-flex items-center justify-center w-8 h-8 transition-all duration-200 ${
+                              (userPermissions.manual ?? false)
+                                ? "text-green-700 hover:text-green-800 hover:scale-110"
+                                : "text-red-700 hover:text-red-800 hover:scale-110"
+                            } disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100`}
+                            title={`Manual: ${(userPermissions.manual ?? false) ? "Allowed" : "Denied"}`}
+                          >
+                            <span className="text-lg font-bold">{(userPermissions.manual ?? false) ? "✓" : "✗"}</span>
+                          </button>
+                        </td>
+                        <td key={`${user.id}-operationsCommon`} className="px-2 py-4 whitespace-nowrap text-center min-w-[100px]">
+                          <button
+                            onClick={() => togglePermission(user.id, "operationsCommon")}
+                            disabled={saving[user.id]}
+                            className={`inline-flex items-center justify-center w-8 h-8 transition-all duration-200 ${
+                              (userPermissions.operationsCommon ?? false)
+                                ? "text-green-700 hover:text-green-800 hover:scale-110"
+                                : "text-red-700 hover:text-red-800 hover:scale-110"
+                            } disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100`}
+                            title={`Operations Common: ${(userPermissions.operationsCommon ?? false) ? "Allowed" : "Denied"}`}
+                          >
+                            <span className="text-lg font-bold">{(userPermissions.operationsCommon ?? false) ? "✓" : "✗"}</span>
+                          </button>
+                        </td>
                         <td className="px-3 py-4 whitespace-nowrap text-center sticky right-0 bg-white z-10 border-l border-gray-200 min-w-[100px]">
                           <button
                             onClick={() => handleSave(user.id)}
