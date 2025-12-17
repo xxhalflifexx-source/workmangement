@@ -30,6 +30,7 @@ export default function UserAccessControlPage() {
   const [permissions, setPermissions] = useState<Record<string, UserPermissions>>({});
 
   // Explicit ordered list with labels to ensure visibility of new modules
+  // IMPORTANT: All 10 modules must be included here for the table to display correctly
   const modules: { key: ModulePermission; label: string }[] = [
     { key: "timeClock", label: "Time Clock" },
     { key: "jobManagement", label: "Job Management" },
@@ -42,6 +43,14 @@ export default function UserAccessControlPage() {
     { key: "manual", label: "Manual" },
     { key: "operationsCommon", label: "Operations Common" },
   ];
+
+  // Debug: Log modules to verify they're loaded
+  useEffect(() => {
+    if (isAdmin && !loading) {
+      console.log("User Access Control - Total modules:", modules.length);
+      console.log("User Access Control - Module labels:", modules.map(m => m.label).join(", "));
+    }
+  }, [isAdmin, loading, modules.length]);
 
 
   useEffect(() => {
@@ -190,25 +199,25 @@ export default function UserAccessControlPage() {
         {/* Users Table */}
         <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full divide-y divide-gray-200" style={{ minWidth: `${(modules.length + 2) * 100}px` }}>
+            <table className="w-full divide-y divide-gray-200" style={{ minWidth: `${(modules.length + 2) * 110}px` }}>
               <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
                 <tr>
-                  <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider sticky left-0 bg-gradient-to-r from-gray-50 to-gray-100 z-10">
+                  <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider sticky left-0 bg-gradient-to-r from-gray-50 to-gray-100 z-10 min-w-[180px]">
                     Employee
                   </th>
                   {modules.map(({ key, label }) => {
                     return (
                       <th
                         key={key}
-                        className="px-2 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider min-w-[85px] whitespace-nowrap"
+                        className="px-2 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider min-w-[100px] whitespace-nowrap"
                       >
                         <div className="flex flex-col items-center gap-1">
-                          <span>{label}</span>
+                          <span className="leading-tight">{label}</span>
                         </div>
                       </th>
                     );
                   })}
-                  <th className="px-3 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider sticky right-0 bg-gradient-to-r from-gray-50 to-gray-100 z-10">
+                  <th className="px-3 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider sticky right-0 bg-gradient-to-r from-gray-50 to-gray-100 z-10 min-w-[100px]">
                     Actions
                   </th>
                 </tr>
@@ -227,7 +236,7 @@ export default function UserAccessControlPage() {
 
                     return (
                       <tr key={user.id} className="hover:bg-blue-50/50 transition-colors border-b border-gray-100">
-                        <td className="px-3 py-4 whitespace-nowrap sticky left-0 bg-white z-10 border-r border-gray-200">
+                        <td className="px-3 py-4 whitespace-nowrap sticky left-0 bg-white z-10 border-r border-gray-200 min-w-[180px]">
                           <div>
                             <div className="text-sm font-semibold text-gray-900">
                               {user.name || "Unknown"}
@@ -239,7 +248,7 @@ export default function UserAccessControlPage() {
                         {modules.map(({ key, label }) => {
                           const hasAccess = userPermissions[key] ?? false;
                           return (
-                            <td key={key} className="px-2 py-4 whitespace-nowrap text-center">
+                            <td key={key} className="px-2 py-4 whitespace-nowrap text-center min-w-[100px]">
                               <button
                                 onClick={() => togglePermission(user.id, key)}
                                 disabled={saving[user.id]}
@@ -255,7 +264,7 @@ export default function UserAccessControlPage() {
                             </td>
                           );
                         })}
-                        <td className="px-3 py-4 whitespace-nowrap text-center sticky right-0 bg-white z-10 border-l border-gray-200">
+                        <td className="px-3 py-4 whitespace-nowrap text-center sticky right-0 bg-white z-10 border-l border-gray-200 min-w-[100px]">
                           <button
                             onClick={() => handleSave(user.id)}
                             disabled={saving[user.id] || !hasChanges}
