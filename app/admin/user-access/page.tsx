@@ -44,13 +44,6 @@ export default function UserAccessControlPage() {
     { key: "operationsCommon", label: "Operations Common" },
   ];
 
-  // Debug: Log modules to verify they're loaded
-  useEffect(() => {
-    if (isAdmin && !loading) {
-      console.log("User Access Control - Total modules:", modules.length);
-      console.log("User Access Control - Module labels:", modules.map(m => m.label).join(", "));
-    }
-  }, [isAdmin, loading, modules.length]);
 
 
   useEffect(() => {
@@ -187,19 +180,24 @@ export default function UserAccessControlPage() {
         )}
 
         {/* Instructions */}
-        <div className="bg-white border border-blue-100 rounded-lg p-4 mb-6 shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div className="text-sm text-gray-700">
-            <strong className="text-blue-600">Tip:</strong> Toggle access per module, then click <span className="font-semibold">Save</span> to apply. Changes take effect immediately.
+        <div className="bg-white border border-blue-100 rounded-lg p-4 mb-6 shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-2">
+            <div className="text-sm text-gray-700">
+              <strong className="text-blue-600">Tip:</strong> Toggle access per module, then click <span className="font-semibold">Save</span> to apply. Changes take effect immediately.
+            </div>
+            <div className="text-xs text-gray-500">
+              Green = Allowed • Red = Denied • Total Modules: {modules.length}
+            </div>
           </div>
-          <div className="text-xs text-gray-500">
-            Green = Allowed • Red = Denied • Total Modules: {modules.length}
+          <div className="text-xs text-gray-600 bg-blue-50 p-2 rounded border border-blue-200">
+            <strong>Expected columns:</strong> Employee, {modules.map(m => m.label).join(", ")}, Actions
           </div>
         </div>
 
         {/* Users Table */}
         <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full divide-y divide-gray-200" style={{ minWidth: `${(modules.length + 2) * 110}px` }}>
+          <div className="overflow-x-auto" style={{ width: "100%" }}>
+            <table className="divide-y divide-gray-200" style={{ minWidth: "1320px", width: "100%" }}>
               <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
                 <tr>
                   <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider sticky left-0 bg-gradient-to-r from-gray-50 to-gray-100 z-10 min-w-[180px]">
@@ -208,7 +206,7 @@ export default function UserAccessControlPage() {
                   {modules.map(({ key, label }) => {
                     return (
                       <th
-                        key={key}
+                        key={`header-${key}`}
                         className="px-2 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider min-w-[100px] whitespace-nowrap"
                       >
                         <div className="flex flex-col items-center gap-1">
@@ -248,7 +246,7 @@ export default function UserAccessControlPage() {
                         {modules.map(({ key, label }) => {
                           const hasAccess = userPermissions[key] ?? false;
                           return (
-                            <td key={key} className="px-2 py-4 whitespace-nowrap text-center min-w-[100px]">
+                            <td key={`${user.id}-${key}`} className="px-2 py-4 whitespace-nowrap text-center min-w-[100px]">
                               <button
                                 onClick={() => togglePermission(user.id, key)}
                                 disabled={saving[user.id]}
