@@ -76,6 +76,18 @@ export function formatDateInput(date: Date | string | number | dayjs.Dayjs | nul
 }
 
 /**
+ * Format a date-only value for date input fields (YYYY-MM-DD)
+ * This is for date-only fields like birth dates where timezone conversion shouldn't shift the date
+ */
+export function formatDateOnlyInput(date: Date | string | number | dayjs.Dayjs | null | undefined): string {
+  if (!date) return "";
+  // For date-only values, extract just the date part without timezone conversion
+  // This prevents the date from shifting when converting between UTC and Central Time
+  const dateObj = dayjs(date);
+  return dateObj.format("YYYY-MM-DD");
+}
+
+/**
  * Format a date for display (short format) in Central Time
  * Format: MMM DD, YYYY
  */
@@ -109,6 +121,16 @@ export function formatDateTimeFull(date: Date | string | number | dayjs.Dayjs | 
 export function parseCentralDate(dateString: string): Date {
   // Parse as if it's in Central Time, then convert to UTC for storage
   return dayjs.tz(dateString, CENTRAL_TIMEZONE).utc().toDate();
+}
+
+/**
+ * Parse a date-only string (YYYY-MM-DD) and store as UTC date at midnight
+ * This is for date-only fields like birth dates where we want to preserve the exact date
+ */
+export function parseDateOnly(dateString: string): Date {
+  // Parse the date string and set it to midnight UTC to preserve the date
+  // This prevents timezone conversion from shifting the date
+  return dayjs.utc(dateString).startOf("day").toDate();
 }
 
 /**

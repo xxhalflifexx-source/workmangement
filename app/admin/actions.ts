@@ -6,7 +6,7 @@ import { authOptions } from "@/lib/authOptions";
 import { z } from "zod";
 import { hash } from "bcryptjs";
 import { randomBytes } from "crypto";
-import { parseCentralDate, nowInCentral } from "@/lib/date-utils";
+import { parseCentralDate, parseDateOnly, nowInCentral } from "@/lib/date-utils";
 
 // Set timezone for Node.js process
 if (typeof process !== "undefined") {
@@ -126,7 +126,7 @@ export async function createUserByAdmin(formData: FormData) {
         passwordHash,
         role: parsed.data.role,
         gender: parsed.data.gender || null,
-        birthDate: parsed.data.birthDate ? parseCentralDate(parsed.data.birthDate) : null,
+        birthDate: parsed.data.birthDate ? parseDateOnly(parsed.data.birthDate) : null,
         isVerified: true,
       },
     });
@@ -283,7 +283,7 @@ export async function updateUserProfileDetails(
     data.gender = gender && gender.trim().length > 0 ? gender : null;
   }
   if (typeof birthDate !== "undefined") {
-    data.birthDate = birthDate ? parseCentralDate(birthDate) : null;
+    data.birthDate = birthDate ? parseDateOnly(birthDate) : null;
   }
   if (typeof status !== "undefined") {
     data.status = status || null;

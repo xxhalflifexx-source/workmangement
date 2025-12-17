@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { hash } from "bcryptjs";
 import { z } from "zod";
 import { generateVerificationCode, sendVerificationEmail, generateResetToken, sendPasswordResetEmail } from "@/lib/email";
+import { parseDateOnly } from "@/lib/date-utils";
 
 const schema = z.object({
   name: z.string().min(1),
@@ -42,8 +43,8 @@ export async function registerUser(formData: FormData) {
     const { name, email, password, gender, birthDate, registrationCode } = parsed.data;
     // confirmPassword is validated but not needed after validation
     
-    // Parse birthDate string to Date object
-    const birthDateObj = birthDate ? new Date(birthDate) : null;
+    // Parse birthDate string to Date object (date-only, no timezone shift)
+    const birthDateObj = birthDate ? parseDateOnly(birthDate) : null;
     
     const exists = await prisma.user.findUnique({ where: { email } });
     

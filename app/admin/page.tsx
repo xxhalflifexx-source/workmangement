@@ -14,7 +14,7 @@ import {
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import RegistrationCodes from "../dashboard/RegistrationCodes";
-import { formatDateShort, formatDateInput, todayCentralISO, nowInCentral, utcToCentral } from "@/lib/date-utils";
+import { formatDateShort, formatDateInput, formatDateOnlyInput, todayCentralISO, nowInCentral, utcToCentral } from "@/lib/date-utils";
 import {
   getAllUsersWithPermissions,
   updateUserPermissions,
@@ -576,7 +576,7 @@ export default function AdminPage() {
                         type="date"
                         value={
                           user.birthDate
-                            ? formatDateInput(user.birthDate as string)
+                            ? formatDateOnlyInput(user.birthDate as string)
                             : ""
                         }
                         onChange={(e) => handleBirthDateChange(user.id, e.target.value)}
@@ -758,7 +758,7 @@ export default function AdminPage() {
                               type="date"
                               value={
                                 user.birthDate
-                                  ? formatDateInput(user.birthDate as string)
+                                  ? formatDateOnlyInput(user.birthDate as string)
                                   : ""
                               }
                               onChange={(e) => handleBirthDateChange(user.id, e.target.value)}
