@@ -18,6 +18,9 @@ export async function listInvoices() {
 
 	try {
 		const invoices = await prisma.invoice.findMany({
+			where: {
+				deletedAt: null, // Exclude soft-deleted invoices
+			},
 			include: { payments: true, lines: true, customer: true, job: { select: { title: true, id: true } } },
 			orderBy: { createdAt: "desc" },
 		});
@@ -36,6 +39,9 @@ export async function listInvoices() {
 			// Try to fetch without pdfFiles by using select
 			try {
 				const invoices = await prisma.invoice.findMany({
+					where: {
+						deletedAt: null, // Exclude soft-deleted invoices
+					},
 					select: {
 						id: true,
 						invoiceNumber: true,
@@ -91,14 +97,19 @@ export async function getInvoice(id: string) {
 
 // Helper function to generate next invoice number
 export async function getNextInvoiceNumber(): Promise<string> {
-	const currentYear = 2025;
+	// Get current year in Central Time (system timezone)
+	const { nowInCentral } = await import("@/lib/date-utils");
+	const currentYear = nowInCentral().year();
 	
-	// Find all invoices with invoice numbers matching INV-2025-#### pattern
-	const invoices2025 = await prisma.invoice.findMany({
+	// Find all invoices with invoice numbers matching INV-YYYY-#### pattern for current year
+	// Include deleted invoices to prevent number reuse (soft delete preserves invoice numbers)
+	const invoicesForYear = await prisma.invoice.findMany({
 		where: {
 			invoiceNumber: {
 				startsWith: `INV-${currentYear}-`,
 			},
+			// Don't filter by deletedAt - we want to check ALL invoices including deleted ones
+			// to ensure invoice numbers are never reused
 		},
 		select: {
 			invoiceNumber: true,
@@ -110,24 +121,25 @@ export async function getNextInvoiceNumber(): Promise<string> {
 
 	let nextSequence = 1; // Start at 0001
 
-	if (invoices2025.length > 0) {
-		// Extract sequence numbers from all 2025 invoices
-		const sequences = invoices2025
+	if (invoicesForYear.length > 0) {
+		// Extract sequence numbers from all invoices for this year
+		const sequences = invoicesForYear
 			.map((inv) => {
-				// Match pattern INV-2025-#### and extract the 4-digit sequence
-				const match = inv.invoiceNumber?.match(/INV-2025-(\d{4})$/);
+				// Match pattern INV-YYYY-#### and extract the 4-digit sequence
+				const match = inv.invoiceNumber?.match(new RegExp(`INV-${currentYear}-(\\d{4})$`));
 				return match ? parseInt(match[1], 10) : 0;
 			})
 			.filter((seq) => seq > 0);
 
 		if (sequences.length > 0) {
 			// Find the highest sequence number and increment
+			// This ensures we never reuse a number, even if invoices are deleted
 			const maxSequence = Math.max(...sequences);
 			nextSequence = maxSequence + 1;
 		}
 	}
 
-	// Format as INV-2025-#### with 4-digit sequence padded with zeros
+	// Format as INV-YYYY-#### with 4-digit sequence padded with zeros
 	return `INV-${currentYear}-${nextSequence.toString().padStart(4, "0")}`;
 }
 
@@ -147,7 +159,10 @@ export async function createInvoice(formData: FormData) {
 	// Prevent duplicate invoices for the same job
 	if (jobId) {
 		const existingInvoice = await prisma.invoice.findFirst({
-			where: { jobId },
+			where: { 
+				jobId,
+				deletedAt: null, // Only check non-deleted invoices
+			},
 		});
 		if (existingInvoice) {
 			return { ok: false, error: "An invoice already exists for this job. Please edit the existing invoice instead." };
@@ -242,7 +257,9 @@ export async function getInvoiceStatistics(startDate?: string, endDate?: string)
 	const role = (session.user as any).role;
 	if (role !== "ADMIN" && role !== "MANAGER") return { ok: false, error: "Unauthorized" };
 
-	const where: any = {};
+	const where: any = {
+		deletedAt: null, // Exclude soft-deleted invoices
+	};
 	if (startDate || endDate) {
 		where.issueDate = {};
 		if (startDate) where.issueDate.gte = new Date(startDate);
@@ -339,7 +356,10 @@ export async function filterInvoices(filters: {
 	}
 
 	const invoices = await prisma.invoice.findMany({
-		where,
+		where: {
+			...where,
+			deletedAt: null, // Exclude soft-deleted invoices
+		},
 		include: { payments: true, lines: true, customer: true, job: { select: { title: true, id: true } } },
 		orderBy: { issueDate: "desc" },
 	});
@@ -375,6 +395,7 @@ export async function getUninvoicedJobs() {
 		const jobsWithInvoices = await prisma.invoice.findMany({
 			where: {
 				jobId: { not: null },
+				deletedAt: null, // Exclude soft-deleted invoices
 			},
 			select: {
 				jobId: true,
@@ -507,9 +528,13 @@ export async function deleteInvoice(invoiceId: string) {
 	if (role !== "ADMIN" && role !== "MANAGER") return { ok: false, error: "Unauthorized" };
 
 	try {
-		// Delete related records first (lines and payments are cascade deleted)
-		await prisma.invoice.delete({
+		// Soft delete - mark as deleted but preserve invoice number to prevent reuse
+		await prisma.invoice.update({
 			where: { id: invoiceId },
+			data: {
+				deletedAt: new Date(),
+				status: "VOID", // Mark as void when deleted
+			},
 		});
 		return { ok: true };
 	} catch (error: any) {

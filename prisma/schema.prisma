@@ -275,7 +275,7 @@ model ReworkEntry {
 
 model Invoice {
   id             String        @id @default(cuid())
-  invoiceNumber  String?       @unique // Auto-generated: INV-250001, INV-250002, etc.
+  invoiceNumber  String?       @unique // Auto-generated: INV-YYYY-####, e.g., INV-2025-0001
   jobId          String?
   customerId     String?
   customerName   String?
@@ -292,6 +292,7 @@ model Invoice {
   notes          String?
   remarks        String? // Admin notes/remarks
   pdfFiles       String? // JSON array of PDF file URLs
+  deletedAt      DateTime? // Soft delete - invoice number is preserved to prevent reuse
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
   job            Job?          @relation(fields: [jobId], references: [id], onDelete: SetNull)
