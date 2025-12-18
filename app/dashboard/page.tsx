@@ -85,7 +85,7 @@ export default async function Dashboard() {
                 <img 
                   src={companyLogoUrl} 
                   alt="Company Logo" 
-                  className="h-full w-auto object-contain filter brightness-0 invert"
+                  className="h-full w-auto object-contain"
                 />
               </div>
             ) : (
