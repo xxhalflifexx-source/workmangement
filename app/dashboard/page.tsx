@@ -86,94 +86,8 @@ export default async function Dashboard() {
       {/* Main Content - Mobile Optimized */}
       <div className="max-w-full mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-          {/* Left Column - Notifications */}
-          <div className="lg:col-span-1 order-2 lg:order-1">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-5">
-              <h2 className="text-base sm:text-lg font-bold text-gray-900 mb-3 sm:mb-4 pb-2 border-b border-gray-300">
-                NOTIFICATIONS
-              </h2>
-              <div className="space-y-2.5 sm:space-y-3">
-                {/* Pending/In Route */}
-                <Link 
-                  href="/notifications?filter=pending"
-                  className="block bg-orange-500 active:bg-orange-600 rounded-lg p-3.5 sm:p-4 text-white transition-colors touch-manipulation"
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
-                      <div className="text-xl sm:text-2xl flex-shrink-0">⬇️</div>
-                      <div className="min-w-0 flex-1">
-                        <div className="font-semibold text-xs sm:text-sm truncate">IN ROUTE</div>
-                        <div className="text-[10px] sm:text-xs text-orange-100 line-clamp-1">Items waiting for checking</div>
-                      </div>
-                    </div>
-                    <div className="bg-white text-orange-600 rounded px-2.5 sm:px-3 py-1 font-bold text-xs sm:text-sm min-w-[28px] sm:min-w-[32px] text-center flex-shrink-0">
-                      {pendingNotifications}
-                    </div>
-                  </div>
-                </Link>
-
-                {/* Rejected/Cancelled */}
-                <Link 
-                  href="/notifications?filter=rejected"
-                  className="block bg-gray-800 active:bg-gray-900 rounded-lg p-3.5 sm:p-4 text-white transition-colors touch-manipulation"
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
-                      <div className="text-xl sm:text-2xl flex-shrink-0">⬇️</div>
-                      <div className="min-w-0 flex-1">
-                        <div className="font-semibold text-xs sm:text-sm truncate">DISAPPROVED/CANCELLED</div>
-                        <div className="text-[10px] sm:text-xs text-gray-300 line-clamp-1">Disapproved items</div>
-                      </div>
-                    </div>
-                    <div className="bg-white text-gray-800 rounded px-2.5 sm:px-3 py-1 font-bold text-xs sm:text-sm min-w-[28px] sm:min-w-[32px] text-center flex-shrink-0">
-                      {rejectedNotifications}
-                    </div>
-                  </div>
-                </Link>
-
-                {/* Drafts/Return */}
-                <Link 
-                  href="/notifications?filter=draft"
-                  className="block bg-red-600 active:bg-red-700 rounded-lg p-3.5 sm:p-4 text-white transition-colors touch-manipulation"
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
-                      <div className="text-xl sm:text-2xl flex-shrink-0">⬇️</div>
-                      <div className="min-w-0 flex-1">
-                        <div className="font-semibold text-xs sm:text-sm truncate">DRAFTS/RETURN</div>
-                        <div className="text-[10px] sm:text-xs text-red-100 line-clamp-1">Return items from checker</div>
-                      </div>
-                    </div>
-                    <div className="bg-white text-red-600 rounded px-2.5 sm:px-3 py-1 font-bold text-xs sm:text-sm min-w-[28px] sm:min-w-[32px] text-center flex-shrink-0">
-                      {draftNotifications}
-                    </div>
-                  </div>
-                </Link>
-
-                {/* Approved */}
-                <Link 
-                  href="/notifications?filter=approved"
-                  className="block bg-green-600 active:bg-green-700 rounded-lg p-3.5 sm:p-4 text-white transition-colors touch-manipulation"
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
-                      <div className="text-xl sm:text-2xl flex-shrink-0">⬇️</div>
-                      <div className="min-w-0 flex-1">
-                        <div className="font-semibold text-xs sm:text-sm truncate">APPROVED</div>
-                        <div className="text-[10px] sm:text-xs text-green-100 line-clamp-1">Approved Items</div>
-                      </div>
-                    </div>
-                    <div className="bg-white text-green-600 rounded px-2.5 sm:px-3 py-1 font-bold text-xs sm:text-sm min-w-[28px] sm:min-w-[32px] text-center flex-shrink-0">
-                      {approvedNotifications}
-                    </div>
-                  </div>
-                </Link>
-              </div>
-            </div>
-          </div>
-
-          {/* Right Column - Quick Actions/Modules */}
-          <div className="lg:col-span-2 order-1 lg:order-2">
+          {/* Left Column - Quick Actions/Modules */}
+          <div className="lg:col-span-2 order-1 lg:order-1">
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-5 mb-4 sm:mb-6">
               <h2 className="text-base sm:text-lg font-bold text-gray-900 mb-3 sm:mb-4 pb-2 border-b border-gray-300">
                 QUICK ACTIONS
@@ -289,6 +203,92 @@ export default async function Dashboard() {
                     notificationCount={unreadCounts["/operations-common"] || 0}
                   />
                 )}
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column - Notifications */}
+          <div className="lg:col-span-1 order-2 lg:order-2">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-5">
+              <h2 className="text-base sm:text-lg font-bold text-gray-900 mb-3 sm:mb-4 pb-2 border-b border-gray-300">
+                NOTIFICATIONS
+              </h2>
+              <div className="space-y-2.5 sm:space-y-3">
+                {/* Pending/In Route */}
+                <Link 
+                  href="/notifications?filter=pending"
+                  className="block bg-orange-500 active:bg-orange-600 rounded-lg p-3.5 sm:p-4 text-white transition-colors touch-manipulation"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
+                      <div className="text-xl sm:text-2xl flex-shrink-0">⬇️</div>
+                      <div className="min-w-0 flex-1">
+                        <div className="font-semibold text-xs sm:text-sm truncate">IN ROUTE</div>
+                        <div className="text-[10px] sm:text-xs text-orange-100 line-clamp-1">Items waiting for checking</div>
+                      </div>
+                    </div>
+                    <div className="bg-white text-orange-600 rounded px-2.5 sm:px-3 py-1 font-bold text-xs sm:text-sm min-w-[28px] sm:min-w-[32px] text-center flex-shrink-0">
+                      {pendingNotifications}
+                    </div>
+                  </div>
+                </Link>
+
+                {/* Rejected/Cancelled */}
+                <Link 
+                  href="/notifications?filter=rejected"
+                  className="block bg-gray-800 active:bg-gray-900 rounded-lg p-3.5 sm:p-4 text-white transition-colors touch-manipulation"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
+                      <div className="text-xl sm:text-2xl flex-shrink-0">⬇️</div>
+                      <div className="min-w-0 flex-1">
+                        <div className="font-semibold text-xs sm:text-sm truncate">DISAPPROVED/CANCELLED</div>
+                        <div className="text-[10px] sm:text-xs text-gray-300 line-clamp-1">Disapproved items</div>
+                      </div>
+                    </div>
+                    <div className="bg-white text-gray-800 rounded px-2.5 sm:px-3 py-1 font-bold text-xs sm:text-sm min-w-[28px] sm:min-w-[32px] text-center flex-shrink-0">
+                      {rejectedNotifications}
+                    </div>
+                  </div>
+                </Link>
+
+                {/* Drafts/Return */}
+                <Link 
+                  href="/notifications?filter=draft"
+                  className="block bg-red-600 active:bg-red-700 rounded-lg p-3.5 sm:p-4 text-white transition-colors touch-manipulation"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
+                      <div className="text-xl sm:text-2xl flex-shrink-0">⬇️</div>
+                      <div className="min-w-0 flex-1">
+                        <div className="font-semibold text-xs sm:text-sm truncate">DRAFTS/RETURN</div>
+                        <div className="text-[10px] sm:text-xs text-red-100 line-clamp-1">Return items from checker</div>
+                      </div>
+                    </div>
+                    <div className="bg-white text-red-600 rounded px-2.5 sm:px-3 py-1 font-bold text-xs sm:text-sm min-w-[28px] sm:min-w-[32px] text-center flex-shrink-0">
+                      {draftNotifications}
+                    </div>
+                  </div>
+                </Link>
+
+                {/* Approved */}
+                <Link 
+                  href="/notifications?filter=approved"
+                  className="block bg-green-600 active:bg-green-700 rounded-lg p-3.5 sm:p-4 text-white transition-colors touch-manipulation"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
+                      <div className="text-xl sm:text-2xl flex-shrink-0">⬇️</div>
+                      <div className="min-w-0 flex-1">
+                        <div className="font-semibold text-xs sm:text-sm truncate">APPROVED</div>
+                        <div className="text-[10px] sm:text-xs text-green-100 line-clamp-1">Approved Items</div>
+                      </div>
+                    </div>
+                    <div className="bg-white text-green-600 rounded px-2.5 sm:px-3 py-1 font-bold text-xs sm:text-sm min-w-[28px] sm:min-w-[32px] text-center flex-shrink-0">
+                      {approvedNotifications}
+                    </div>
+                  </div>
+                </Link>
               </div>
             </div>
           </div>
