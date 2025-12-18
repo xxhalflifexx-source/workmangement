@@ -197,14 +197,14 @@ export default function NotificationsDropdown({
             }}
           />
           {/* Dropdown - Maximized for mobile, larger for desktop */}
-          <div className="fixed sm:absolute right-4 sm:right-0 top-[72px] sm:top-auto sm:mt-2 left-4 sm:left-auto w-[calc(100vw-2rem)] sm:w-[420px] md:w-[480px] lg:w-[520px] max-w-full bg-white rounded-xl shadow-2xl border-2 border-gray-200 z-[50] sm:z-[1000] max-h-[calc(100vh-88px)] sm:max-h-[600px] lg:max-h-[700px] flex flex-col dropdown-enter">
+          <div className="fixed sm:absolute right-4 sm:right-0 top-[72px] sm:top-full sm:mt-2 left-4 sm:left-auto w-[calc(100vw-2rem)] sm:w-[420px] md:w-[480px] lg:w-[520px] max-w-full bg-white rounded-xl shadow-2xl border-2 border-gray-200 z-[50] sm:z-[1000] max-h-[calc(100vh-88px)] sm:max-h-[600px] lg:max-h-[700px] flex flex-col dropdown-enter">
           {/* Header */}
-          <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-gray-900">Notifications</h3>
+          <div className="px-4 py-3 sm:py-4 border-b-2 border-gray-200 flex items-center justify-between flex-shrink-0 bg-gray-50">
+            <h3 className="text-base sm:text-lg font-bold text-gray-900 uppercase tracking-wide whitespace-nowrap">Notifications</h3>
             {unreadCount > 0 && (
               <button
                 onClick={handleMarkAllAsRead}
-                className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                className="text-xs sm:text-sm text-blue-600 hover:text-blue-700 font-semibold whitespace-nowrap px-2 py-1 rounded hover:bg-blue-50 transition-colors"
               >
                 Mark all as read
               </button>
@@ -212,7 +212,7 @@ export default function NotificationsDropdown({
           </div>
 
           {/* Notifications List */}
-          <div className="overflow-y-auto flex-1">
+          <div className="overflow-y-auto flex-1 min-h-0">
             {loading ? (
               <div className="p-8 text-center text-gray-500 text-sm">Loading...</div>
             ) : notifications.length === 0 ? (
@@ -220,40 +220,40 @@ export default function NotificationsDropdown({
                 No notifications
               </div>
             ) : (
-              <div className="divide-y divide-gray-100">
+              <div className="divide-y divide-gray-200">
                 {notifications.map((notification) => (
                   <button
                     key={notification.id}
                     onClick={() => handleNotificationClick(notification)}
-                    className={`w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors ${
-                      !notification.isRead ? "bg-blue-50" : ""
+                    className={`w-full text-left px-4 py-3 sm:py-4 hover:bg-gray-50 active:bg-gray-100 transition-colors touch-manipulation ${
+                      !notification.isRead ? "bg-blue-50/50" : "bg-white"
                     }`}
                   >
                     <div className="flex items-start gap-3">
-                      <span className="text-xl flex-shrink-0 mt-0.5">
+                      <span className="text-xl sm:text-2xl flex-shrink-0 mt-0.5">
                         {getNotificationIcon(notification.type)}
                       </span>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-2">
                           <p
-                            className={`text-sm ${
+                            className={`text-sm sm:text-base break-words ${
                               !notification.isRead
-                                ? "font-semibold text-gray-900"
-                                : "font-medium text-gray-700"
+                                ? "font-bold text-gray-900"
+                                : "font-semibold text-gray-700"
                             }`}
                           >
                             {notification.title}
                           </p>
                           {!notification.isRead && (
-                            <span className="w-2 h-2 bg-blue-600 rounded-full flex-shrink-0 mt-1.5" />
+                            <span className="w-2.5 h-2.5 bg-blue-600 rounded-full flex-shrink-0 mt-1.5" />
                           )}
                         </div>
                         {notification.message && (
-                          <p className="text-xs text-gray-600 mt-1 line-clamp-2 break-words" title={notification.message || undefined}>
+                          <p className="text-xs sm:text-sm text-gray-600 mt-1.5 line-clamp-2 break-words" title={notification.message || undefined}>
                             {notification.message}
                           </p>
                         )}
-                        <p className="text-xs text-gray-400 mt-1">
+                        <p className="text-xs text-gray-500 mt-1.5 font-medium">
                           {formatTimeAgo(notification.createdAt)}
                         </p>
                       </div>
