@@ -10,6 +10,7 @@ interface DashboardHeaderActionsProps {
   userRole?: string;
   initialNotifications?: any[];
   initialUnreadCount?: number;
+  showOnlyNotifications?: boolean;
 }
 
 export default function DashboardHeaderActions({
@@ -18,8 +19,21 @@ export default function DashboardHeaderActions({
   userRole,
   initialNotifications,
   initialUnreadCount,
+  showOnlyNotifications = false,
 }: DashboardHeaderActionsProps) {
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+
+  if (showOnlyNotifications) {
+    return (
+      <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0 relative z-30">
+        <NotificationsDropdown 
+          initialNotifications={initialNotifications}
+          initialUnreadCount={initialUnreadCount}
+          onOpenChange={setNotificationsOpen}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0 relative z-30">

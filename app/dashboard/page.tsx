@@ -1,7 +1,8 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authOptions";
 import { formatDateShort } from "@/lib/date-utils";
-import DashboardHeaderActions from "./DashboardHeaderActions";
+import HeaderLeft from "./HeaderLeft";
+import HeaderRight from "./HeaderRight";
 import { getNotifications, getUnreadCountsByModule } from "./notifications-actions";
 import { getUserPermissionsForSession } from "../admin/user-access-actions";
 import { hasPermission, ModulePermission } from "@/lib/permissions";
@@ -71,15 +72,17 @@ export default async function Dashboard() {
       <header className="bg-black border-b-2 border-[#001f3f] shadow-lg sticky top-0 z-50">
         <div className="max-w-full mx-auto px-3 sm:px-4 lg:px-8 py-3 sm:py-4 flex justify-between items-center">
           <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-            <DashboardHeaderActions
-              userName={user?.name}
+            <HeaderLeft 
+              userName={user?.name} 
               userEmail={user?.email}
               userRole={role}
-              initialNotifications={notifications as any}
-              initialUnreadCount={unreadCount}
             />
           </div>
           <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1 justify-end">
+            <HeaderRight 
+              initialNotifications={notifications as any}
+              initialUnreadCount={unreadCount}
+            />
             {companyLogoUrl ? (
               <div className="h-10 sm:h-14 lg:h-18 w-auto max-w-[180px] sm:max-w-[240px] lg:max-w-[300px] flex-shrink-0">
                 <img 
