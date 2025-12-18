@@ -70,15 +70,15 @@ export default async function Dashboard() {
     <main className="min-h-screen bg-gray-50">
       {/* Top Header Bar - Black Background */}
       <header className="bg-black border-b-2 border-[#001f3f] shadow-lg sticky top-0 z-50">
-        <div className="max-w-full mx-auto px-3 sm:px-4 lg:px-8 py-3 sm:py-4 lg:py-5 flex justify-between items-center">
-          <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0 min-w-0">
+        <div className="max-w-full mx-auto px-2 sm:px-4 lg:px-8 py-2.5 sm:py-3 lg:py-4 flex justify-between items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3 flex-shrink-0 min-w-0">
             <HeaderLeft 
               userName={user?.name} 
               userEmail={user?.email}
               userRole={role}
             />
           </div>
-          <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1 justify-end">
+          <div className="flex items-center gap-2 sm:gap-3 md:gap-4 min-w-0 flex-1 justify-end">
             <div className="flex-shrink-0">
               <HeaderRight 
                 initialNotifications={notifications as any}
@@ -86,7 +86,7 @@ export default async function Dashboard() {
               />
             </div>
             {companyLogoUrl ? (
-              <div className="h-12 sm:h-18 lg:h-22 xl:h-26 w-auto max-w-[200px] sm:max-w-[280px] lg:max-w-[360px] xl:max-w-[440px] flex-shrink-0">
+              <div className="h-14 sm:h-20 md:h-24 lg:h-28 xl:h-32 w-auto max-w-[240px] sm:max-w-[320px] md:max-w-[400px] lg:max-w-[480px] xl:max-w-[560px] flex-shrink-0">
                 <img 
                   src={companyLogoUrl} 
                   alt="Company Logo" 
@@ -94,7 +94,7 @@ export default async function Dashboard() {
                 />
               </div>
             ) : (
-              <h1 className="text-base sm:text-lg lg:text-xl font-semibold text-white truncate">{companyName}</h1>
+              <h1 className="text-base sm:text-lg md:text-xl lg:text-2xl font-semibold text-white truncate">{companyName}</h1>
             )}
           </div>
         </div>
