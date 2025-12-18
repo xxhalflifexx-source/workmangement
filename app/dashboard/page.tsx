@@ -44,7 +44,22 @@ export default async function Dashboard() {
     console.error("Error fetching company settings:", error);
   }
 
-  // Categorize notifications for display
+  // Categorize notifications by their module/responsibility (linkUrl)
+  const getNotificationsByModule = (modulePath: string) => {
+    return notifications.filter((n: any) => !n.isRead && n.linkUrl && n.linkUrl.startsWith(modulePath)).length;
+  };
+
+  // Count notifications by module
+  const jobNotifications = getNotificationsByModule("/jobs");
+  const financeNotifications = getNotificationsByModule("/finance");
+  const inventoryNotifications = getNotificationsByModule("/inventory");
+  const qcNotifications = getNotificationsByModule("/qc");
+  const hrNotifications = getNotificationsByModule("/hr");
+  const timeClockNotifications = getNotificationsByModule("/time-clock");
+  const timeRecordsNotifications = getNotificationsByModule("/time-records");
+  const adminNotifications = getNotificationsByModule("/admin");
+  
+  // Total counts for each category
   const pendingNotifications = notifications.filter((n: any) => !n.isRead && n.type === "PENDING").length;
   const approvedNotifications = notifications.filter((n: any) => !n.isRead && n.type === "APPROVED").length;
   const rejectedNotifications = notifications.filter((n: any) => !n.isRead && (n.type === "REJECTED" || n.type === "CANCELLED")).length;
@@ -211,81 +226,182 @@ export default async function Dashboard() {
                 NOTIFICATIONS
               </h2>
               <div className="space-y-2.5 sm:space-y-3">
-                {/* Pending/In Route */}
-                <Link 
-                  href="/notifications?filter=pending"
-                  className="block bg-orange-500 active:bg-orange-600 rounded-lg p-3.5 sm:p-4 text-white transition-colors touch-manipulation"
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
-                      <div className="text-xl sm:text-2xl flex-shrink-0">⬇️</div>
-                      <div className="min-w-0 flex-1">
-                        <div className="font-semibold text-xs sm:text-sm truncate">IN ROUTE</div>
-                        <div className="text-[10px] sm:text-xs text-orange-100 line-clamp-1">Items waiting for checking</div>
+                {/* Job Management Notifications */}
+                {(role === "ADMIN" || (permissions && hasPermission(permissions, "jobManagement"))) && jobNotifications > 0 && (
+                  <Link 
+                    href="/jobs"
+                    className="block bg-blue-600 active:bg-blue-700 rounded-lg p-3.5 sm:p-4 text-white transition-colors touch-manipulation"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
+                        <div className="text-xl sm:text-2xl flex-shrink-0">📋</div>
+                        <div className="min-w-0 flex-1">
+                          <div className="font-semibold text-xs sm:text-sm truncate">JOB MANAGEMENT</div>
+                          <div className="text-[10px] sm:text-xs text-blue-100 line-clamp-1">Job-related notifications</div>
+                        </div>
+                      </div>
+                      <div className="bg-white text-blue-600 rounded px-2.5 sm:px-3 py-1 font-bold text-xs sm:text-sm min-w-[28px] sm:min-w-[32px] text-center flex-shrink-0">
+                        {jobNotifications}
                       </div>
                     </div>
-                    <div className="bg-white text-orange-600 rounded px-2.5 sm:px-3 py-1 font-bold text-xs sm:text-sm min-w-[28px] sm:min-w-[32px] text-center flex-shrink-0">
-                      {pendingNotifications}
-                    </div>
-                  </div>
-                </Link>
+                  </Link>
+                )}
 
-                {/* Rejected/Cancelled */}
-                <Link 
-                  href="/notifications?filter=rejected"
-                  className="block bg-gray-800 active:bg-gray-900 rounded-lg p-3.5 sm:p-4 text-white transition-colors touch-manipulation"
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
-                      <div className="text-xl sm:text-2xl flex-shrink-0">⬇️</div>
-                      <div className="min-w-0 flex-1">
-                        <div className="font-semibold text-xs sm:text-sm truncate">DISAPPROVED/CANCELLED</div>
-                        <div className="text-[10px] sm:text-xs text-gray-300 line-clamp-1">Disapproved items</div>
+                {/* Finance Notifications */}
+                {(role === "ADMIN" || (permissions && hasPermission(permissions, "finance"))) && financeNotifications > 0 && (
+                  <Link 
+                    href="/finance"
+                    className="block bg-green-600 active:bg-green-700 rounded-lg p-3.5 sm:p-4 text-white transition-colors touch-manipulation"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
+                        <div className="text-xl sm:text-2xl flex-shrink-0">💰</div>
+                        <div className="min-w-0 flex-1">
+                          <div className="font-semibold text-xs sm:text-sm truncate">FINANCE</div>
+                          <div className="text-[10px] sm:text-xs text-green-100 line-clamp-1">Invoice & payment notifications</div>
+                        </div>
+                      </div>
+                      <div className="bg-white text-green-600 rounded px-2.5 sm:px-3 py-1 font-bold text-xs sm:text-sm min-w-[28px] sm:min-w-[32px] text-center flex-shrink-0">
+                        {financeNotifications}
                       </div>
                     </div>
-                    <div className="bg-white text-gray-800 rounded px-2.5 sm:px-3 py-1 font-bold text-xs sm:text-sm min-w-[28px] sm:min-w-[32px] text-center flex-shrink-0">
-                      {rejectedNotifications}
-                    </div>
-                  </div>
-                </Link>
+                  </Link>
+                )}
 
-                {/* Drafts/Return */}
-                <Link 
-                  href="/notifications?filter=draft"
-                  className="block bg-red-600 active:bg-red-700 rounded-lg p-3.5 sm:p-4 text-white transition-colors touch-manipulation"
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
-                      <div className="text-xl sm:text-2xl flex-shrink-0">⬇️</div>
-                      <div className="min-w-0 flex-1">
-                        <div className="font-semibold text-xs sm:text-sm truncate">DRAFTS/RETURN</div>
-                        <div className="text-[10px] sm:text-xs text-red-100 line-clamp-1">Return items from checker</div>
+                {/* Inventory Notifications */}
+                {(role === "ADMIN" || (permissions && hasPermission(permissions, "inventory"))) && inventoryNotifications > 0 && (
+                  <Link 
+                    href="/inventory"
+                    className="block bg-orange-500 active:bg-orange-600 rounded-lg p-3.5 sm:p-4 text-white transition-colors touch-manipulation"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
+                        <div className="text-xl sm:text-2xl flex-shrink-0">📦</div>
+                        <div className="min-w-0 flex-1">
+                          <div className="font-semibold text-xs sm:text-sm truncate">INVENTORY</div>
+                          <div className="text-[10px] sm:text-xs text-orange-100 line-clamp-1">Material request notifications</div>
+                        </div>
+                      </div>
+                      <div className="bg-white text-orange-600 rounded px-2.5 sm:px-3 py-1 font-bold text-xs sm:text-sm min-w-[28px] sm:min-w-[32px] text-center flex-shrink-0">
+                        {inventoryNotifications}
                       </div>
                     </div>
-                    <div className="bg-white text-red-600 rounded px-2.5 sm:px-3 py-1 font-bold text-xs sm:text-sm min-w-[28px] sm:min-w-[32px] text-center flex-shrink-0">
-                      {draftNotifications}
-                    </div>
-                  </div>
-                </Link>
+                  </Link>
+                )}
 
-                {/* Approved */}
-                <Link 
-                  href="/notifications?filter=approved"
-                  className="block bg-green-600 active:bg-green-700 rounded-lg p-3.5 sm:p-4 text-white transition-colors touch-manipulation"
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
-                      <div className="text-xl sm:text-2xl flex-shrink-0">⬇️</div>
-                      <div className="min-w-0 flex-1">
-                        <div className="font-semibold text-xs sm:text-sm truncate">APPROVED</div>
-                        <div className="text-[10px] sm:text-xs text-green-100 line-clamp-1">Approved Items</div>
+                {/* Quality Control Notifications */}
+                {(role === "ADMIN" || (permissions && hasPermission(permissions, "qualityControl"))) && qcNotifications > 0 && (
+                  <Link 
+                    href="/qc"
+                    className="block bg-purple-600 active:bg-purple-700 rounded-lg p-3.5 sm:p-4 text-white transition-colors touch-manipulation"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
+                        <div className="text-xl sm:text-2xl flex-shrink-0">✅</div>
+                        <div className="min-w-0 flex-1">
+                          <div className="font-semibold text-xs sm:text-sm truncate">QUALITY CONTROL</div>
+                          <div className="text-[10px] sm:text-xs text-purple-100 line-clamp-1">QC review notifications</div>
+                        </div>
+                      </div>
+                      <div className="bg-white text-purple-600 rounded px-2.5 sm:px-3 py-1 font-bold text-xs sm:text-sm min-w-[28px] sm:min-w-[32px] text-center flex-shrink-0">
+                        {qcNotifications}
                       </div>
                     </div>
-                    <div className="bg-white text-green-600 rounded px-2.5 sm:px-3 py-1 font-bold text-xs sm:text-sm min-w-[28px] sm:min-w-[32px] text-center flex-shrink-0">
-                      {approvedNotifications}
+                  </Link>
+                )}
+
+                {/* HR Notifications */}
+                {(role === "ADMIN" || (permissions && hasPermission(permissions, "hr"))) && hrNotifications > 0 && (
+                  <Link 
+                    href="/hr"
+                    className="block bg-indigo-600 active:bg-indigo-700 rounded-lg p-3.5 sm:p-4 text-white transition-colors touch-manipulation"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
+                        <div className="text-xl sm:text-2xl flex-shrink-0">👥</div>
+                        <div className="min-w-0 flex-1">
+                          <div className="font-semibold text-xs sm:text-sm truncate">HR</div>
+                          <div className="text-[10px] sm:text-xs text-indigo-100 line-clamp-1">HR-related notifications</div>
+                        </div>
+                      </div>
+                      <div className="bg-white text-indigo-600 rounded px-2.5 sm:px-3 py-1 font-bold text-xs sm:text-sm min-w-[28px] sm:min-w-[32px] text-center flex-shrink-0">
+                        {hrNotifications}
+                      </div>
                     </div>
+                  </Link>
+                )}
+
+                {/* Time Clock Notifications */}
+                {(role === "ADMIN" || (permissions && hasPermission(permissions, "timeClock"))) && timeClockNotifications > 0 && (
+                  <Link 
+                    href="/time-clock"
+                    className="block bg-teal-600 active:bg-teal-700 rounded-lg p-3.5 sm:p-4 text-white transition-colors touch-manipulation"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
+                        <div className="text-xl sm:text-2xl flex-shrink-0">⏰</div>
+                        <div className="min-w-0 flex-1">
+                          <div className="font-semibold text-xs sm:text-sm truncate">TIME CLOCK</div>
+                          <div className="text-[10px] sm:text-xs text-teal-100 line-clamp-1">Time clock notifications</div>
+                        </div>
+                      </div>
+                      <div className="bg-white text-teal-600 rounded px-2.5 sm:px-3 py-1 font-bold text-xs sm:text-sm min-w-[28px] sm:min-w-[32px] text-center flex-shrink-0">
+                        {timeClockNotifications}
+                      </div>
+                    </div>
+                  </Link>
+                )}
+
+                {/* Time Records Notifications */}
+                {(role === "ADMIN" || role === "MANAGER" || role === "EMPLOYEE") && timeRecordsNotifications > 0 && (
+                  <Link 
+                    href="/time-records"
+                    className="block bg-cyan-600 active:bg-cyan-700 rounded-lg p-3.5 sm:p-4 text-white transition-colors touch-manipulation"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
+                        <div className="text-xl sm:text-2xl flex-shrink-0">📒</div>
+                        <div className="min-w-0 flex-1">
+                          <div className="font-semibold text-xs sm:text-sm truncate">TIME RECORDS</div>
+                          <div className="text-[10px] sm:text-xs text-cyan-100 line-clamp-1">Time record notifications</div>
+                        </div>
+                      </div>
+                      <div className="bg-white text-cyan-600 rounded px-2.5 sm:px-3 py-1 font-bold text-xs sm:text-sm min-w-[28px] sm:min-w-[32px] text-center flex-shrink-0">
+                        {timeRecordsNotifications}
+                      </div>
+                    </div>
+                  </Link>
+                )}
+
+                {/* Admin Panel Notifications */}
+                {(role === "ADMIN" || (permissions && hasPermission(permissions, "adminPanel"))) && adminNotifications > 0 && (
+                  <Link 
+                    href="/admin"
+                    className="block bg-gray-800 active:bg-gray-900 rounded-lg p-3.5 sm:p-4 text-white transition-colors touch-manipulation"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
+                        <div className="text-xl sm:text-2xl flex-shrink-0">⚙️</div>
+                        <div className="min-w-0 flex-1">
+                          <div className="font-semibold text-xs sm:text-sm truncate">ADMIN PANEL</div>
+                          <div className="text-[10px] sm:text-xs text-gray-300 line-clamp-1">Admin notifications</div>
+                        </div>
+                      </div>
+                      <div className="bg-white text-gray-800 rounded px-2.5 sm:px-3 py-1 font-bold text-xs sm:text-sm min-w-[28px] sm:min-w-[32px] text-center flex-shrink-0">
+                        {adminNotifications}
+                      </div>
+                    </div>
+                  </Link>
+                )}
+
+                {/* Show message if no notifications */}
+                {jobNotifications === 0 && financeNotifications === 0 && inventoryNotifications === 0 && 
+                 qcNotifications === 0 && hrNotifications === 0 && timeClockNotifications === 0 && 
+                 timeRecordsNotifications === 0 && adminNotifications === 0 && (
+                  <div className="text-center py-6 text-gray-500 text-sm">
+                    No unread notifications
                   </div>
-                </Link>
+                )}
               </div>
             </div>
           </div>
