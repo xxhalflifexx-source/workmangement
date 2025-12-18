@@ -23,17 +23,17 @@ export default function DashboardTabLink({
   return (
     <Link
       href={href}
-      className={`group bg-white rounded-xl shadow-md border border-gray-200 p-5 sm:p-6 hover:shadow-xl transition-all duration-300 hover:border-blue-400 hover:-translate-y-1.5 active:scale-[0.98] flex flex-col items-center justify-center text-center min-h-[110px] sm:min-h-[130px] relative overflow-hidden ${className}`}
+      className={`group bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-all duration-200 hover:border-blue-400 hover:-translate-y-0.5 active:scale-[0.98] flex flex-col items-center justify-center text-center min-h-[100px] relative overflow-hidden ${className}`}
     >
       {/* Subtle gradient overlay on hover */}
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-50/0 to-blue-50/0 group-hover:from-blue-50/50 group-hover:to-transparent transition-all duration-300"></div>
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-50/0 to-blue-50/0 group-hover:from-blue-50/30 group-hover:to-transparent transition-all duration-200"></div>
       
       <div className="relative z-10 inline-block">
-        <div className="text-3xl sm:text-4xl mb-3 transform group-hover:scale-110 transition-transform duration-300">{icon}</div>
+        <div className="text-2xl sm:text-3xl mb-2 transform group-hover:scale-105 transition-transform duration-200">{icon}</div>
         <NotificationBadge count={notificationCount} />
       </div>
-      <div className="relative z-10 font-bold text-sm sm:text-base text-gray-900 group-hover:text-blue-700 transition-colors duration-300">{title}</div>
-      <div className="relative z-10 text-xs text-gray-600 mt-1.5 group-hover:text-gray-700 transition-colors duration-300">{description}</div>
+      <div className="relative z-10 font-semibold text-xs sm:text-sm text-gray-900 group-hover:text-blue-700 transition-colors duration-200">{title}</div>
+      <div className="relative z-10 text-xs text-gray-500 mt-1 group-hover:text-gray-600 transition-colors duration-200">{description}</div>
     </Link>
   );
 }
