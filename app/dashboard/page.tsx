@@ -7,6 +7,7 @@ import { getUserPermissionsForSession } from "../admin/user-access-actions";
 import { hasPermission, ModulePermission } from "@/lib/permissions";
 import { redirect } from "next/navigation";
 import DashboardTabLink from "./DashboardTabLink";
+import { prisma } from "@/lib/prisma";
 
 export default async function Dashboard() {
   const session = await getServerSession(authOptions);
@@ -40,14 +41,39 @@ export default async function Dashboard() {
   const unreadCountsRes = await getUnreadCountsByModule();
   const unreadCounts = unreadCountsRes.ok && unreadCountsRes.counts ? unreadCountsRes.counts : {};
 
+  // Get company settings for logo
+  let companyLogoUrl = "";
+  try {
+    const companySettings = await prisma.companySettings.findFirst();
+    companyLogoUrl = companySettings?.logoUrl || "";
+  } catch (error) {
+    console.error("Error fetching company settings:", error);
+  }
+
   return (
-    <main className="min-h-screen bg-gray-50">
+    <main className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-50">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b relative z-20">
+      <header className="bg-white shadow-md border-b border-gray-200 relative z-20">
         <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-24 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div className="flex-1 min-w-0">
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Employee Portal</h1>
-            <p className="text-xs sm:text-sm text-gray-500 truncate">Welcome back, {user?.name}</p>
+          <div className="flex items-center gap-4 flex-1 min-w-0">
+            {/* Company Logo */}
+            {companyLogoUrl ? (
+              <div className="flex-shrink-0 h-12 w-auto max-w-[200px]">
+                <img 
+                  src={companyLogoUrl} 
+                  alt="Company Logo" 
+                  className="h-full w-auto object-contain"
+                />
+              </div>
+            ) : (
+              <div className="flex-shrink-0 h-12 w-12 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold text-xl">EP</span>
+              </div>
+            )}
+            <div className="flex-1 min-w-0">
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Employee Portal</h1>
+              <p className="text-xs sm:text-sm text-gray-500 truncate">Welcome back, {user?.name}</p>
+            </div>
           </div>
           <DashboardHeaderActions
             userName={user?.name}
@@ -62,31 +88,35 @@ export default async function Dashboard() {
       {/* Main Content */}
       <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-24 py-6 sm:py-8 relative z-0 page-transition">
         {/* Welcome Message */}
-        <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl shadow-lg p-4 sm:p-6 lg:p-8 mb-6 sm:mb-8 text-white relative z-0 transition-all duration-300 hover:shadow-xl">
-          <div className="flex items-start justify-between gap-4">
+        <div className="bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-700 rounded-2xl shadow-xl p-6 sm:p-8 lg:p-10 mb-8 text-white relative overflow-hidden">
+          {/* Decorative background elements */}
+          <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32"></div>
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full -ml-24 -mb-24"></div>
+          
+          <div className="relative z-10 flex items-start justify-between gap-6">
             <div className="flex-1 min-w-0">
-              <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-2 break-words">
+              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-3 break-words">
                 {greeting}, {user?.name}! 👋
               </h2>
-              <p className="text-blue-100 text-sm sm:text-base lg:text-lg mb-3 sm:mb-4">
+              <p className="text-blue-100 text-base sm:text-lg lg:text-xl mb-4 font-medium">
                 Ready to make today productive?
               </p>
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="px-2 sm:px-3 py-1 bg-white/20 rounded-full text-xs sm:text-sm font-medium">
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="px-4 py-1.5 bg-white/20 backdrop-blur-sm rounded-full text-sm font-semibold border border-white/30">
                   {role}
                 </span>
-                <span className="text-blue-100 hidden sm:inline">•</span>
-                <span className="text-blue-100 text-xs sm:text-sm break-all">{user?.email}</span>
+                <span className="text-blue-100 hidden sm:inline text-lg">•</span>
+                <span className="text-blue-100 text-sm sm:text-base break-all">{user?.email}</span>
               </div>
             </div>
-            <div className="text-3xl sm:text-4xl lg:text-6xl flex-shrink-0">
+            <div className="text-4xl sm:text-5xl lg:text-7xl flex-shrink-0 opacity-90">
               {role === "ADMIN" ? "👑" : role === "MANAGER" ? "📊" : "💼"}
             </div>
           </div>
         </div>
 
         {/* Quick Actions Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5 mb-6 sm:mb-8">
           {/* Time Clock - Check permission */}
           {(role === "ADMIN" || (permissions && hasPermission(permissions, "timeClock"))) && (
             <DashboardTabLink
