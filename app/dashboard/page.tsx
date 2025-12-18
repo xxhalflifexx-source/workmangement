@@ -69,9 +69,6 @@ export default async function Dashboard() {
             )}
           </div>
           <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-            <span className="hidden sm:inline text-xs sm:text-sm text-gray-700 font-medium">
-              Welcome {user?.name?.toUpperCase()}!
-            </span>
             <DashboardHeaderActions
               userName={user?.name}
               userEmail={user?.email}
