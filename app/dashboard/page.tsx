@@ -70,9 +70,18 @@ export default async function Dashboard() {
       {/* Top Header Bar - Mobile Optimized */}
       <header className="bg-white border-b-2 border-[#001f3f] shadow-sm sticky top-0 z-50">
         <div className="max-w-full mx-auto px-3 sm:px-4 lg:px-8 py-2.5 sm:py-3 flex justify-between items-center">
-          <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+          <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+            <DashboardHeaderActions
+              userName={user?.name}
+              userEmail={user?.email}
+              userRole={role}
+              initialNotifications={notifications as any}
+              initialUnreadCount={unreadCount}
+            />
+          </div>
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1 justify-end">
             {companyLogoUrl ? (
-              <div className="h-8 sm:h-10 w-auto max-w-[140px] sm:max-w-[180px] flex-shrink-0">
+              <div className="h-12 sm:h-16 lg:h-20 w-auto max-w-[200px] sm:max-w-[280px] lg:max-w-[350px] flex-shrink-0">
                 <img 
                   src={companyLogoUrl} 
                   alt="Company Logo" 
@@ -82,15 +91,6 @@ export default async function Dashboard() {
             ) : (
               <h1 className="text-base sm:text-lg font-semibold text-gray-900 truncate">{companyName}</h1>
             )}
-          </div>
-          <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-            <DashboardHeaderActions
-              userName={user?.name}
-              userEmail={user?.email}
-              userRole={role}
-              initialNotifications={notifications as any}
-              initialUnreadCount={unreadCount}
-            />
           </div>
         </div>
       </header>
