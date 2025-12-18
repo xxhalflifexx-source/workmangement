@@ -372,12 +372,20 @@ export default function TimeClockPage() {
               </div>
             </div>
           </div>
-          <Link
-            href="/dashboard"
-            className="w-full sm:w-auto min-h-[44px] flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
-          >
-            Back to Dashboard
-          </Link>
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
+            <Link
+              href="/time-records"
+              className="w-full sm:w-auto min-h-[44px] flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+            >
+              View Time Records
+            </Link>
+            <Link
+              href="/dashboard"
+              className="w-full sm:w-auto min-h-[44px] flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
+            >
+              Back to Dashboard
+            </Link>
+          </div>
         </div>
       </header>
 

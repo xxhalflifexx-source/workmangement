@@ -119,17 +119,6 @@ export default async function Dashboard() {
                   />
                 )}
 
-                {/* My Time Records - available to all roles */}
-                {(role === "ADMIN" || role === "MANAGER" || role === "EMPLOYEE") && (
-                  <DashboardTabLink
-                    href="/time-records"
-                    icon="📒"
-                    title="My Time Records"
-                    description="View logged hours"
-                    notificationCount={unreadCounts["/time-records"] || 0}
-                  />
-                )}
-
                 {/* Job Management - Check permission */}
                 {(role === "ADMIN" || (permissions && hasPermission(permissions, "jobManagement"))) && (
                   <DashboardTabLink
