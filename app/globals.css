@@ -28,6 +28,14 @@
   
   body {
     overflow-x: hidden;
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  /* Mobile touch optimization */
+  .touch-manipulation {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
+  }
     word-wrap: break-word;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;

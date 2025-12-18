@@ -52,12 +52,12 @@ export default async function Dashboard() {
 
   return (
     <main className="min-h-screen bg-gray-50">
-      {/* Top Header Bar */}
-      <header className="bg-white border-b border-gray-300 shadow-sm">
-        <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-3 flex justify-between items-center">
-          <div className="flex items-center gap-3">
+      {/* Top Header Bar - Mobile Optimized */}
+      <header className="bg-white border-b border-gray-300 shadow-sm sticky top-0 z-50">
+        <div className="max-w-full mx-auto px-3 sm:px-4 lg:px-8 py-2.5 sm:py-3 flex justify-between items-center">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
             {companyLogoUrl ? (
-              <div className="h-10 w-auto max-w-[180px]">
+              <div className="h-8 sm:h-10 w-auto max-w-[140px] sm:max-w-[180px] flex-shrink-0">
                 <img 
                   src={companyLogoUrl} 
                   alt="Company Logo" 
@@ -65,11 +65,11 @@ export default async function Dashboard() {
                 />
               </div>
             ) : (
-              <h1 className="text-lg font-semibold text-gray-900">{companyName}</h1>
+              <h1 className="text-base sm:text-lg font-semibold text-gray-900 truncate">{companyName}</h1>
             )}
           </div>
-          <div className="flex items-center gap-3">
-            <span className="text-sm text-gray-700 font-medium">
+          <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+            <span className="hidden sm:inline text-xs sm:text-sm text-gray-700 font-medium">
               Welcome {user?.name?.toUpperCase()}!
             </span>
             <DashboardHeaderActions
@@ -83,30 +83,30 @@ export default async function Dashboard() {
         </div>
       </header>
 
-      {/* Main Content - Two Column Layout */}
-      <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Main Content - Mobile Optimized */}
+      <div className="max-w-full mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
           {/* Left Column - Notifications */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
-              <h2 className="text-lg font-bold text-gray-900 mb-4 pb-2 border-b border-gray-300">
+          <div className="lg:col-span-1 order-2 lg:order-1">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-5">
+              <h2 className="text-base sm:text-lg font-bold text-gray-900 mb-3 sm:mb-4 pb-2 border-b border-gray-300">
                 NOTIFICATIONS
               </h2>
-              <div className="space-y-3">
+              <div className="space-y-2.5 sm:space-y-3">
                 {/* Pending/In Route */}
                 <Link 
                   href="/notifications?filter=pending"
-                  className="block bg-orange-500 hover:bg-orange-600 rounded-lg p-4 text-white transition-colors"
+                  className="block bg-orange-500 active:bg-orange-600 rounded-lg p-3.5 sm:p-4 text-white transition-colors touch-manipulation"
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="text-2xl">⬇️</div>
-                      <div>
-                        <div className="font-semibold text-sm">IN ROUTE</div>
-                        <div className="text-xs text-orange-100">Items waiting for checking</div>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
+                      <div className="text-xl sm:text-2xl flex-shrink-0">⬇️</div>
+                      <div className="min-w-0 flex-1">
+                        <div className="font-semibold text-xs sm:text-sm truncate">IN ROUTE</div>
+                        <div className="text-[10px] sm:text-xs text-orange-100 line-clamp-1">Items waiting for checking</div>
                       </div>
                     </div>
-                    <div className="bg-white text-orange-600 rounded px-3 py-1 font-bold text-sm min-w-[32px] text-center">
+                    <div className="bg-white text-orange-600 rounded px-2.5 sm:px-3 py-1 font-bold text-xs sm:text-sm min-w-[28px] sm:min-w-[32px] text-center flex-shrink-0">
                       {pendingNotifications}
                     </div>
                   </div>
@@ -115,17 +115,17 @@ export default async function Dashboard() {
                 {/* Rejected/Cancelled */}
                 <Link 
                   href="/notifications?filter=rejected"
-                  className="block bg-gray-800 hover:bg-gray-900 rounded-lg p-4 text-white transition-colors"
+                  className="block bg-gray-800 active:bg-gray-900 rounded-lg p-3.5 sm:p-4 text-white transition-colors touch-manipulation"
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="text-2xl">⬇️</div>
-                      <div>
-                        <div className="font-semibold text-sm">DISAPPROVED/CANCELLED</div>
-                        <div className="text-xs text-gray-300">Disapproved items</div>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
+                      <div className="text-xl sm:text-2xl flex-shrink-0">⬇️</div>
+                      <div className="min-w-0 flex-1">
+                        <div className="font-semibold text-xs sm:text-sm truncate">DISAPPROVED/CANCELLED</div>
+                        <div className="text-[10px] sm:text-xs text-gray-300 line-clamp-1">Disapproved items</div>
                       </div>
                     </div>
-                    <div className="bg-white text-gray-800 rounded px-3 py-1 font-bold text-sm min-w-[32px] text-center">
+                    <div className="bg-white text-gray-800 rounded px-2.5 sm:px-3 py-1 font-bold text-xs sm:text-sm min-w-[28px] sm:min-w-[32px] text-center flex-shrink-0">
                       {rejectedNotifications}
                     </div>
                   </div>
@@ -134,17 +134,17 @@ export default async function Dashboard() {
                 {/* Drafts/Return */}
                 <Link 
                   href="/notifications?filter=draft"
-                  className="block bg-red-600 hover:bg-red-700 rounded-lg p-4 text-white transition-colors"
+                  className="block bg-red-600 active:bg-red-700 rounded-lg p-3.5 sm:p-4 text-white transition-colors touch-manipulation"
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="text-2xl">⬇️</div>
-                      <div>
-                        <div className="font-semibold text-sm">DRAFTS/RETURN</div>
-                        <div className="text-xs text-red-100">Return items from checker</div>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
+                      <div className="text-xl sm:text-2xl flex-shrink-0">⬇️</div>
+                      <div className="min-w-0 flex-1">
+                        <div className="font-semibold text-xs sm:text-sm truncate">DRAFTS/RETURN</div>
+                        <div className="text-[10px] sm:text-xs text-red-100 line-clamp-1">Return items from checker</div>
                       </div>
                     </div>
-                    <div className="bg-white text-red-600 rounded px-3 py-1 font-bold text-sm min-w-[32px] text-center">
+                    <div className="bg-white text-red-600 rounded px-2.5 sm:px-3 py-1 font-bold text-xs sm:text-sm min-w-[28px] sm:min-w-[32px] text-center flex-shrink-0">
                       {draftNotifications}
                     </div>
                   </div>
@@ -153,17 +153,17 @@ export default async function Dashboard() {
                 {/* Approved */}
                 <Link 
                   href="/notifications?filter=approved"
-                  className="block bg-green-600 hover:bg-green-700 rounded-lg p-4 text-white transition-colors"
+                  className="block bg-green-600 active:bg-green-700 rounded-lg p-3.5 sm:p-4 text-white transition-colors touch-manipulation"
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="text-2xl">⬇️</div>
-                      <div>
-                        <div className="font-semibold text-sm">APPROVED</div>
-                        <div className="text-xs text-green-100">Approved Items</div>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
+                      <div className="text-xl sm:text-2xl flex-shrink-0">⬇️</div>
+                      <div className="min-w-0 flex-1">
+                        <div className="font-semibold text-xs sm:text-sm truncate">APPROVED</div>
+                        <div className="text-[10px] sm:text-xs text-green-100 line-clamp-1">Approved Items</div>
                       </div>
                     </div>
-                    <div className="bg-white text-green-600 rounded px-3 py-1 font-bold text-sm min-w-[32px] text-center">
+                    <div className="bg-white text-green-600 rounded px-2.5 sm:px-3 py-1 font-bold text-xs sm:text-sm min-w-[28px] sm:min-w-[32px] text-center flex-shrink-0">
                       {approvedNotifications}
                     </div>
                   </div>
@@ -173,12 +173,12 @@ export default async function Dashboard() {
           </div>
 
           {/* Right Column - Quick Actions/Modules */}
-          <div className="lg:col-span-2">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5 mb-6">
-              <h2 className="text-lg font-bold text-gray-900 mb-4 pb-2 border-b border-gray-300">
+          <div className="lg:col-span-2 order-1 lg:order-2">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-5 mb-4 sm:mb-6">
+              <h2 className="text-base sm:text-lg font-bold text-gray-900 mb-3 sm:mb-4 pb-2 border-b border-gray-300">
                 QUICK ACTIONS
               </h2>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
                 {/* Time Clock - Check permission */}
                 {(role === "ADMIN" || (permissions && hasPermission(permissions, "timeClock"))) && (
                   <DashboardTabLink
