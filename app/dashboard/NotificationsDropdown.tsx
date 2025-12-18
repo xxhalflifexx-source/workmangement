@@ -161,7 +161,7 @@ export default function NotificationsDropdown({
             onUserMenuClose();
           }
         }}
-        className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors text-gray-700 min-h-[44px] min-w-[44px] flex items-center justify-center"
+        className="relative p-2 rounded-lg hover:bg-gray-800 transition-colors text-white min-h-[44px] min-w-[44px] flex items-center justify-center"
         aria-label="Notifications"
       >
         <svg
@@ -196,8 +196,8 @@ export default function NotificationsDropdown({
               }
             }}
           />
-          {/* Dropdown - Use fixed positioning on mobile to avoid overlap issues */}
-          <div className="fixed sm:absolute right-4 sm:right-0 top-[72px] sm:top-auto sm:mt-2 left-4 sm:left-auto w-[calc(100vw-2rem)] sm:w-80 md:w-96 max-w-sm bg-white rounded-lg shadow-xl border border-gray-200 z-[50] sm:z-[1000] max-h-[calc(100vh-88px)] sm:max-h-[500px] flex flex-col dropdown-enter">
+          {/* Dropdown - Maximized for mobile, larger for desktop */}
+          <div className="fixed sm:absolute right-4 sm:right-0 top-[72px] sm:top-auto sm:mt-2 left-4 sm:left-auto w-[calc(100vw-2rem)] sm:w-[420px] md:w-[480px] lg:w-[520px] max-w-full bg-white rounded-xl shadow-2xl border-2 border-gray-200 z-[50] sm:z-[1000] max-h-[calc(100vh-88px)] sm:max-h-[600px] lg:max-h-[700px] flex flex-col dropdown-enter">
           {/* Header */}
           <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
             <h3 className="text-sm font-semibold text-gray-900">Notifications</h3>

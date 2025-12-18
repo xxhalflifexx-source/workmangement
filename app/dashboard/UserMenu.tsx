@@ -56,15 +56,15 @@ export default function UserMenu({ userName, userEmail, userRole, hideWhenNotifi
         <button
           ref={buttonRef}
           onClick={() => setShowDropdown(!showDropdown)}
-          className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors text-sm font-medium text-gray-700 min-h-[44px]"
+          className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-800 transition-colors text-sm font-medium text-white min-h-[44px]"
           aria-label="User menu"
         >
           <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
             {userName?.charAt(0).toUpperCase() || "U"}
           </div>
-          <span className="hidden sm:inline text-gray-900 truncate">{userName || "User"}</span>
+          <span className="hidden sm:inline text-white truncate">{userName || "User"}</span>
           <svg
-            className={`w-4 h-4 text-gray-500 transition-transform flex-shrink-0 ${showDropdown ? "rotate-180" : ""}`}
+            className={`w-4 h-4 text-gray-300 transition-transform flex-shrink-0 ${showDropdown ? "rotate-180" : ""}`}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"

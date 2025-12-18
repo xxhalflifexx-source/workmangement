@@ -22,18 +22,18 @@ export default function DashboardHeaderActions({
   const [notificationsOpen, setNotificationsOpen] = useState(false);
 
   return (
-    <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0 relative z-30">
-      <NotificationsDropdown 
-        initialNotifications={initialNotifications}
-        initialUnreadCount={initialUnreadCount}
-        onOpenChange={setNotificationsOpen}
-      />
+    <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0 relative z-30">
       <UserMenu 
         userName={userName} 
         userEmail={userEmail}
         userRole={userRole}
         hideWhenNotificationsOpen={true}
         notificationsOpen={notificationsOpen}
+      />
+      <NotificationsDropdown 
+        initialNotifications={initialNotifications}
+        initialUnreadCount={initialUnreadCount}
+        onOpenChange={setNotificationsOpen}
       />
     </div>
   );
