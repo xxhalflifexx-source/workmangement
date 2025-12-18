@@ -84,7 +84,7 @@ export default async function Dashboard() {
               initialUnreadCount={unreadCount}
             />
             {companyLogoUrl ? (
-              <div className="h-10 sm:h-14 lg:h-18 w-auto max-w-[180px] sm:max-w-[240px] lg:max-w-[300px] flex-shrink-0">
+              <div className="h-14 sm:h-20 lg:h-24 xl:h-28 w-auto max-w-[240px] sm:max-w-[320px] lg:max-w-[400px] xl:max-w-[480px] flex-shrink-0">
                 <img 
                   src={companyLogoUrl} 
                   alt="Company Logo" 
