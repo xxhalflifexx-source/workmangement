@@ -28,10 +28,6 @@ export default async function Dashboard() {
   const permissionsRes = await getUserPermissionsForSession();
   const permissions = permissionsRes.ok ? permissionsRes.permissions : null;
 
-  // Get current time for greeting
-  const hour = new Date().getHours();
-  const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
-
   // Load notifications
   const notificationsRes = await getNotifications();
   const notifications = notificationsRes.ok && notificationsRes.notifications ? notificationsRes.notifications : [];
@@ -87,34 +83,6 @@ export default async function Dashboard() {
 
       {/* Main Content */}
       <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-24 py-6 sm:py-8 relative z-0 page-transition">
-        {/* Welcome Message */}
-        <div className="bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-700 rounded-2xl shadow-xl p-6 sm:p-8 lg:p-10 mb-8 text-white relative overflow-hidden">
-          {/* Decorative background elements */}
-          <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32"></div>
-          <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full -ml-24 -mb-24"></div>
-          
-          <div className="relative z-10 flex items-start justify-between gap-6">
-            <div className="flex-1 min-w-0">
-              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-3 break-words">
-                {greeting}, {user?.name}! 👋
-              </h2>
-              <p className="text-blue-100 text-base sm:text-lg lg:text-xl mb-4 font-medium">
-                Ready to make today productive?
-              </p>
-              <div className="flex flex-wrap items-center gap-3">
-                <span className="px-4 py-1.5 bg-white/20 backdrop-blur-sm rounded-full text-sm font-semibold border border-white/30">
-                  {role}
-                </span>
-                <span className="text-blue-100 hidden sm:inline text-lg">•</span>
-                <span className="text-blue-100 text-sm sm:text-base break-all">{user?.email}</span>
-              </div>
-            </div>
-            <div className="text-4xl sm:text-5xl lg:text-7xl flex-shrink-0 opacity-90">
-              {role === "ADMIN" ? "👑" : role === "MANAGER" ? "📊" : "💼"}
-            </div>
-          </div>
-        </div>
-
         {/* Quick Actions Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5 mb-6 sm:mb-8">
           {/* Time Clock - Check permission */}
