@@ -197,14 +197,14 @@ export default function NotificationsDropdown({
             }}
           />
           {/* Dropdown - Maximized for mobile, larger for desktop */}
-          <div className="fixed sm:absolute right-4 sm:right-0 top-[72px] sm:top-full sm:mt-2 left-4 sm:left-auto w-[calc(100vw-2rem)] sm:w-[420px] md:w-[480px] lg:w-[520px] max-w-full bg-white rounded-xl shadow-2xl border-2 border-gray-200 z-[50] sm:z-[1000] max-h-[calc(100vh-88px)] sm:max-h-[600px] lg:max-h-[700px] flex flex-col dropdown-enter">
+          <div className="fixed sm:absolute right-4 sm:right-0 top-[72px] sm:top-full sm:mt-2 left-4 sm:left-auto w-[calc(100vw-2rem)] sm:w-[420px] md:w-[480px] lg:w-[520px] bg-white rounded-xl shadow-2xl border-2 border-gray-200 z-[50] sm:z-[1000] max-h-[calc(100vh-88px)] sm:max-h-[600px] lg:max-h-[700px] flex flex-col dropdown-enter">
           {/* Header */}
-          <div className="px-4 py-3 sm:py-4 border-b-2 border-gray-200 flex items-center justify-between flex-shrink-0 bg-gray-50">
-            <h3 className="text-base sm:text-lg font-bold text-gray-900 uppercase tracking-wide whitespace-nowrap">Notifications</h3>
+          <div className="px-4 py-3 sm:py-4 border-b-2 border-gray-200 flex flex-row items-center justify-between flex-shrink-0 bg-gray-50">
+            <h3 className="text-base sm:text-lg font-bold text-gray-900 uppercase tracking-wide">Notifications</h3>
             {unreadCount > 0 && (
               <button
                 onClick={handleMarkAllAsRead}
-                className="text-xs sm:text-sm text-blue-600 hover:text-blue-700 font-semibold whitespace-nowrap px-2 py-1 rounded hover:bg-blue-50 transition-colors"
+                className="text-xs sm:text-sm text-blue-600 hover:text-blue-700 font-semibold px-2 py-1 rounded hover:bg-blue-50 transition-colors flex-shrink-0 ml-3"
               >
                 Mark all as read
               </button>
