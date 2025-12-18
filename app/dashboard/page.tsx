@@ -53,7 +53,7 @@ export default async function Dashboard() {
   return (
     <main className="min-h-screen bg-gray-50">
       {/* Top Header Bar - Mobile Optimized */}
-      <header className="bg-white border-b border-gray-300 shadow-sm sticky top-0 z-50">
+      <header className="bg-white border-b-2 border-[#001f3f] shadow-sm sticky top-0 z-50">
         <div className="max-w-full mx-auto px-3 sm:px-4 lg:px-8 py-2.5 sm:py-3 flex justify-between items-center">
           <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
             {companyLogoUrl ? (
@@ -86,7 +86,7 @@ export default async function Dashboard() {
           {/* Left Column - Quick Actions/Modules */}
           <div className="lg:col-span-2 order-1 lg:order-1">
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-5 mb-4 sm:mb-6">
-              <h2 className="text-base sm:text-lg font-bold text-gray-900 mb-3 sm:mb-4 pb-2 border-b border-gray-300">
+              <h2 className="text-base sm:text-lg font-bold text-gray-900 mb-3 sm:mb-4 pb-2 border-b-2 border-[#001f3f]">
                 QUICK ACTIONS
               </h2>
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
@@ -207,7 +207,7 @@ export default async function Dashboard() {
           {/* Right Column - Notifications */}
           <div className="lg:col-span-1 order-2 lg:order-2">
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-5">
-              <h2 className="text-base sm:text-lg font-bold text-gray-900 mb-3 sm:mb-4 pb-2 border-b border-gray-300">
+              <h2 className="text-base sm:text-lg font-bold text-gray-900 mb-3 sm:mb-4 pb-2 border-b-2 border-[#001f3f]">
                 NOTIFICATIONS
               </h2>
               <div className="space-y-2.5 sm:space-y-3">
