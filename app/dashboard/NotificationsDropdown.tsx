@@ -197,7 +197,7 @@ export default function NotificationsDropdown({
             }}
           />
           {/* Dropdown - Matching UserMenu style */}
-          <div className="fixed sm:absolute right-4 sm:right-0 top-[72px] sm:top-full sm:mt-2 left-4 sm:left-auto w-[calc(100vw-2rem)] sm:w-72 max-w-[320px] sm:max-w-none max-h-[calc(100vh-88px)] sm:max-h-none bg-white rounded-xl shadow-2xl border-2 border-gray-200 py-2 z-[50] sm:z-[1000] dropdown-enter flex flex-col">
+          <div className="fixed sm:absolute right-4 sm:right-0 top-[72px] sm:top-full sm:mt-2 left-4 sm:left-auto w-[calc(100vw-2rem)] sm:w-72 max-w-[320px] sm:max-w-none bg-white rounded-xl shadow-2xl border-2 border-gray-200 z-[50] sm:z-[1000] dropdown-enter flex flex-col" style={{ maxHeight: 'calc(100vh - 100px)' }}>
             {/* Header */}
             <div className="px-4 py-3 border-b border-gray-200 flex-shrink-0">
               <div className="flex items-center justify-between mb-2">
@@ -219,7 +219,7 @@ export default function NotificationsDropdown({
             </div>
 
             {/* Notifications List */}
-            <div className="overflow-y-auto flex-1 min-h-0 max-h-[calc(100vh-200px)] sm:max-h-[500px]">
+            <div className="overflow-y-auto flex-1 min-h-0" style={{ WebkitOverflowScrolling: 'touch' }}>
               {loading ? (
                 <div className="p-8 text-center text-gray-500 text-sm">Loading...</div>
               ) : notifications.length === 0 ? (
