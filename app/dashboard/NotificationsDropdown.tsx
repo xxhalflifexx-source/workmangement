@@ -161,11 +161,11 @@ export default function NotificationsDropdown({
             onUserMenuClose();
           }
         }}
-        className="relative p-2 rounded-lg hover:bg-gray-800 transition-colors text-white min-h-[44px] min-w-[44px] flex items-center justify-center"
+        className="relative p-2.5 sm:p-3 rounded-lg hover:bg-gray-800 transition-colors text-white min-h-[48px] sm:min-h-[52px] min-w-[48px] sm:min-w-[52px] flex items-center justify-center"
         aria-label="Notifications"
       >
         <svg
-          className="w-6 h-6"
+          className="w-7 h-7 sm:w-8 sm:h-8"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -178,7 +178,7 @@ export default function NotificationsDropdown({
           />
         </svg>
         {unreadCount > 0 && (
-          <span className="absolute top-1 right-1 bg-red-600 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+          <span className="absolute top-0.5 right-0.5 sm:top-1 sm:right-1 bg-red-600 text-white text-xs sm:text-sm font-bold rounded-full h-6 w-6 sm:h-7 sm:w-7 flex items-center justify-center">
             {unreadCount > 9 ? "9+" : unreadCount}
           </span>
         )}

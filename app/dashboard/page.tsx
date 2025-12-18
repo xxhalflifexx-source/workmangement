@@ -70,21 +70,23 @@ export default async function Dashboard() {
     <main className="min-h-screen bg-gray-50">
       {/* Top Header Bar - Black Background */}
       <header className="bg-black border-b-2 border-[#001f3f] shadow-lg sticky top-0 z-50">
-        <div className="max-w-full mx-auto px-3 sm:px-4 lg:px-8 py-3 sm:py-4 flex justify-between items-center">
-          <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+        <div className="max-w-full mx-auto px-3 sm:px-4 lg:px-8 py-3 sm:py-4 lg:py-5 flex justify-between items-center">
+          <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0 min-w-0">
             <HeaderLeft 
               userName={user?.name} 
               userEmail={user?.email}
               userRole={role}
             />
           </div>
-          <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1 justify-end">
-            <HeaderRight 
-              initialNotifications={notifications as any}
-              initialUnreadCount={unreadCount}
-            />
+          <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1 justify-end">
+            <div className="flex-shrink-0">
+              <HeaderRight 
+                initialNotifications={notifications as any}
+                initialUnreadCount={unreadCount}
+              />
+            </div>
             {companyLogoUrl ? (
-              <div className="h-14 sm:h-20 lg:h-24 xl:h-28 w-auto max-w-[240px] sm:max-w-[320px] lg:max-w-[400px] xl:max-w-[480px] flex-shrink-0">
+              <div className="h-12 sm:h-18 lg:h-22 xl:h-26 w-auto max-w-[200px] sm:max-w-[280px] lg:max-w-[360px] xl:max-w-[440px] flex-shrink-0">
                 <img 
                   src={companyLogoUrl} 
                   alt="Company Logo" 
@@ -92,7 +94,7 @@ export default async function Dashboard() {
                 />
               </div>
             ) : (
-              <h1 className="text-base sm:text-lg font-semibold text-white truncate">{companyName}</h1>
+              <h1 className="text-base sm:text-lg lg:text-xl font-semibold text-white truncate">{companyName}</h1>
             )}
           </div>
         </div>
