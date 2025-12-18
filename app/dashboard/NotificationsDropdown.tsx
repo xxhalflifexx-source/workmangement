@@ -197,10 +197,10 @@ export default function NotificationsDropdown({
             }}
           />
           {/* Dropdown - Exact same structure as UserMenu */}
-          <div className="fixed sm:absolute right-4 sm:right-0 top-[72px] sm:top-full sm:mt-2 left-4 sm:left-auto w-[calc(100vw-2rem)] sm:w-72 max-w-[320px] sm:max-w-none max-h-[calc(100vh-88px)] sm:max-h-none bg-white rounded-xl shadow-2xl border-2 border-gray-200 py-2 z-[50] sm:z-[1000] dropdown-enter">
+          <div className="fixed sm:absolute right-4 sm:right-0 top-[72px] sm:top-full sm:mt-2 left-4 sm:left-auto w-[calc(100vw-2rem)] sm:w-72 max-w-[320px] sm:max-w-none max-h-[calc(100vh-88px)] sm:max-h-none bg-white rounded-xl shadow-2xl border-2 border-gray-200 py-2 z-[50] sm:z-[1000] dropdown-enter overflow-hidden">
             {/* Header */}
-            <div className="px-4 py-3 border-b border-gray-200">
-              <div className="flex items-center justify-between mb-2">
+            <div className="px-4 py-3">
+              <div className="flex items-center justify-between mb-2 pb-2 border-b border-gray-200">
                 <h3 className="text-sm font-bold text-gray-900">Notifications</h3>
                 {unreadCount > 0 && (
                   <button
@@ -212,7 +212,7 @@ export default function NotificationsDropdown({
                 )}
               </div>
               {unreadCount > 0 && (
-                <p className="text-xs text-gray-600 break-all">
+                <p className="text-xs text-gray-600 break-all mt-2">
                   {unreadCount} unread notification{unreadCount !== 1 ? 's' : ''}
                 </p>
               )}
