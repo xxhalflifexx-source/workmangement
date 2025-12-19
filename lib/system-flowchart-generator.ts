@@ -141,240 +141,246 @@ export function generateSystemFlowchartPDF(): jsPDF {
   drawArrow(dashboardCenterX, dashboardBottomY, modulesX + (moduleBoxWidth + boxSpacing) * 3 + moduleBoxWidth / 2, moduleRow1Y);
 
   // ========== PAGE 2: Job Management Workflow ==========
-  doc.addPage();
-  yPos = margin;
+  {
+    doc.addPage();
+    yPos = margin;
 
-  doc.setFontSize(16);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(navyBlue[0], navyBlue[1], navyBlue[2]);
-  doc.text("Job Management Workflow", pageWidth / 2, yPos, { align: "center" });
-  yPos += 12;
+    doc.setFontSize(16);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(navyBlue[0], navyBlue[1], navyBlue[2]);
+    doc.text("Job Management Workflow", pageWidth / 2, yPos, { align: "center" });
+    yPos += 12;
 
-  // Create Job
-  const createJobY = yPos;
-  drawBox(pageWidth / 2 - boxWidth / 2, yPos, boxWidth, boxHeight, "Create Job\n(Manager/Admin)", orange, [255, 255, 255]);
-  const createJobBottomY = yPos + boxHeight;
-  yPos = createJobBottomY + arrowLength;
+    // Create Job
+    const createJobY = yPos;
+    drawBox(pageWidth / 2 - boxWidth / 2, yPos, boxWidth, boxHeight, "Create Job\n(Manager/Admin)", orange, [255, 255, 255]);
+    const createJobBottomY = yPos + boxHeight;
+    yPos = createJobBottomY + arrowLength;
 
-  // Assign Workers
-  const assignWorkersY = yPos;
-  drawBox(pageWidth / 2 - boxWidth / 2, yPos, boxWidth, boxHeight, "Assign Workers\n(Multiple)", lightBlue, [255, 255, 255]);
-  const assignWorkersBottomY = yPos + boxHeight;
-  yPos = assignWorkersBottomY + arrowLength;
+    // Assign Workers
+    const assignWorkersY = yPos;
+    drawBox(pageWidth / 2 - boxWidth / 2, yPos, boxWidth, boxHeight, "Assign Workers\n(Multiple)", lightBlue, [255, 255, 255]);
+    const assignWorkersBottomY = yPos + boxHeight;
+    yPos = assignWorkersBottomY + arrowLength;
 
-  // Time Clock and Photos (side by side)
-  const timeClockX = pageWidth / 2 - boxWidth - boxSpacing / 2;
-  const photoX = pageWidth / 2 + boxSpacing / 2;
-  const clockInY = yPos;
-  drawBox(timeClockX, yPos, boxWidth, boxHeight, "Clock In\n(Employee)", green, [255, 255, 255]);
-  drawBox(photoX, yPos, boxWidth, boxHeight, "Add Photos\n(Employee)", lightBlue, [255, 255, 255]);
-  const clockInBottomY = yPos + boxHeight;
-  yPos = clockInBottomY + arrowLength;
+    // Time Clock and Photos (side by side)
+    const timeClockX = pageWidth / 2 - boxWidth - boxSpacing / 2;
+    const photoX = pageWidth / 2 + boxSpacing / 2;
+    const clockInY = yPos;
+    drawBox(timeClockX, yPos, boxWidth, boxHeight, "Clock In\n(Employee)", green, [255, 255, 255]);
+    drawBox(photoX, yPos, boxWidth, boxHeight, "Add Photos\n(Employee)", lightBlue, [255, 255, 255]);
+    const clockInBottomY = yPos + boxHeight;
+    yPos = clockInBottomY + arrowLength;
 
-  // Work on Job
-  const workOnJobY = yPos;
-  drawBox(pageWidth / 2 - boxWidth / 2, yPos, boxWidth, boxHeight, "Work on Job", gray, [255, 255, 255]);
-  const workOnJobBottomY = yPos + boxHeight;
-  yPos = workOnJobBottomY + arrowLength;
+    // Work on Job
+    const workOnJobY = yPos;
+    drawBox(pageWidth / 2 - boxWidth / 2, yPos, boxWidth, boxHeight, "Work on Job", gray, [255, 255, 255]);
+    const workOnJobBottomY = yPos + boxHeight;
+    yPos = workOnJobBottomY + arrowLength;
 
-  // Clock Out
-  const clockOutY = yPos;
-  drawBox(pageWidth / 2 - boxWidth / 2, yPos, boxWidth, boxHeight, "Clock Out\n(Employee)", green, [255, 255, 255]);
-  const clockOutBottomY = yPos + boxHeight;
-  yPos = clockOutBottomY + arrowLength;
+    // Clock Out
+    const clockOutY = yPos;
+    drawBox(pageWidth / 2 - boxWidth / 2, yPos, boxWidth, boxHeight, "Clock Out\n(Employee)", green, [255, 255, 255]);
+    const clockOutBottomY = yPos + boxHeight;
+    yPos = clockOutBottomY + arrowLength;
 
-  // Submit to QC
-  const submitQCY = yPos;
-  drawBox(pageWidth / 2 - boxWidth / 2, yPos, boxWidth, boxHeight, "Submit to QC\n(Employee)", [59, 130, 246], [255, 255, 255]);
-  const submitQCBottomY = yPos + boxHeight;
-  yPos = submitQCBottomY + arrowLength;
+    // Submit to QC
+    const submitQCY = yPos;
+    drawBox(pageWidth / 2 - boxWidth / 2, yPos, boxWidth, boxHeight, "Submit to QC\n(Employee)", [59, 130, 246], [255, 255, 255]);
+    const submitQCBottomY = yPos + boxHeight;
+    yPos = submitQCBottomY + arrowLength;
 
-  // QC Review (side by side)
-  const qcPassX = pageWidth / 2 - boxWidth - boxSpacing / 2;
-  const qcFailX = pageWidth / 2 + boxSpacing / 2;
-  const qcReviewY = yPos;
-  drawBox(qcPassX, yPos, boxWidth, boxHeight, "QC PASS\n(Manager/Admin)", green, [255, 255, 255]);
-  drawBox(qcFailX, yPos, boxWidth, boxHeight, "QC FAIL\n(Manager/Admin)", [239, 68, 68], [255, 255, 255]);
-  const qcReviewBottomY = yPos + boxHeight;
-  yPos = qcReviewBottomY + arrowLength;
+    // QC Review (side by side)
+    const qcPassX = pageWidth / 2 - boxWidth - boxSpacing / 2;
+    const qcFailX = pageWidth / 2 + boxSpacing / 2;
+    const qcReviewY = yPos;
+    drawBox(qcPassX, yPos, boxWidth, boxHeight, "QC PASS\n(Manager/Admin)", green, [255, 255, 255]);
+    drawBox(qcFailX, yPos, boxWidth, boxHeight, "QC FAIL\n(Manager/Admin)", [239, 68, 68], [255, 255, 255]);
+    const qcReviewBottomY = yPos + boxHeight;
+    yPos = qcReviewBottomY + arrowLength;
 
-  // Outcomes
-  const completeX = pageWidth / 2 - boxWidth - boxSpacing / 2;
-  const reworkX = pageWidth / 2 + boxSpacing / 2;
-  const outcomesY = yPos;
-  drawBox(completeX, yPos, boxWidth, boxHeight, "Job\nCompleted", green, [255, 255, 255]);
-  drawBox(reworkX, yPos, boxWidth, boxHeight, "Rework\n(Back to Work)", orange, [255, 255, 255]);
+    // Outcomes
+    const completeX = pageWidth / 2 - boxWidth - boxSpacing / 2;
+    const reworkX = pageWidth / 2 + boxSpacing / 2;
+    const outcomesY = yPos;
+    drawBox(completeX, yPos, boxWidth, boxHeight, "Job\nCompleted", green, [255, 255, 255]);
+    drawBox(reworkX, yPos, boxWidth, boxHeight, "Rework\n(Back to Work)", orange, [255, 255, 255]);
 
-  // Draw arrows
-  const centerX = pageWidth / 2;
-  drawArrow(centerX, createJobBottomY, centerX, assignWorkersY);
-  drawArrow(centerX, assignWorkersBottomY, centerX, clockInY);
-  drawArrow(centerX, assignWorkersBottomY, timeClockX + boxWidth / 2, clockInY);
-  drawArrow(centerX, assignWorkersBottomY, photoX + boxWidth / 2, clockInY);
-  drawArrow(timeClockX + boxWidth / 2, clockInBottomY, centerX, workOnJobY);
-  drawArrow(photoX + boxWidth / 2, clockInBottomY, centerX, workOnJobY);
-  drawArrow(centerX, workOnJobBottomY, centerX, clockOutY);
-  drawArrow(centerX, clockOutBottomY, centerX, submitQCY);
-  drawArrow(centerX, submitQCBottomY, centerX, qcReviewY);
-  drawArrow(centerX, submitQCBottomY, qcPassX + boxWidth / 2, qcReviewY);
-  drawArrow(centerX, submitQCBottomY, qcFailX + boxWidth / 2, qcReviewY);
-  drawArrow(qcPassX + boxWidth / 2, qcReviewBottomY, completeX + boxWidth / 2, outcomesY);
-  drawArrow(qcFailX + boxWidth / 2, qcReviewBottomY, reworkX + boxWidth / 2, outcomesY);
+    // Draw arrows
+    const centerX = pageWidth / 2;
+    drawArrow(centerX, createJobBottomY, centerX, assignWorkersY);
+    drawArrow(centerX, assignWorkersBottomY, centerX, clockInY);
+    drawArrow(centerX, assignWorkersBottomY, timeClockX + boxWidth / 2, clockInY);
+    drawArrow(centerX, assignWorkersBottomY, photoX + boxWidth / 2, clockInY);
+    drawArrow(timeClockX + boxWidth / 2, clockInBottomY, centerX, workOnJobY);
+    drawArrow(photoX + boxWidth / 2, clockInBottomY, centerX, workOnJobY);
+    drawArrow(centerX, workOnJobBottomY, centerX, clockOutY);
+    drawArrow(centerX, clockOutBottomY, centerX, submitQCY);
+    drawArrow(centerX, submitQCBottomY, centerX, qcReviewY);
+    drawArrow(centerX, submitQCBottomY, qcPassX + boxWidth / 2, qcReviewY);
+    drawArrow(centerX, submitQCBottomY, qcFailX + boxWidth / 2, qcReviewY);
+    drawArrow(qcPassX + boxWidth / 2, qcReviewBottomY, completeX + boxWidth / 2, outcomesY);
+    drawArrow(qcFailX + boxWidth / 2, qcReviewBottomY, reworkX + boxWidth / 2, outcomesY);
+  }
 
   // ========== PAGE 3: Invoice & Quotation Workflow ==========
-  doc.addPage();
-  yPos = margin;
+  {
+    doc.addPage();
+    yPos = margin;
 
-  doc.setFontSize(16);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(navyBlue[0], navyBlue[1], navyBlue[2]);
-  doc.text("Invoice & Quotation Workflow", pageWidth / 2, yPos, { align: "center" });
-  yPos += 12;
+    doc.setFontSize(16);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(navyBlue[0], navyBlue[1], navyBlue[2]);
+    doc.text("Invoice & Quotation Workflow", pageWidth / 2, yPos, { align: "center" });
+    yPos += 12;
 
-  // From Job
-  const jobCreatedY = yPos;
-  drawBox(pageWidth / 2 - boxWidth / 2, yPos, boxWidth, boxHeight, "Job Created", lightBlue, [255, 255, 255]);
-  const jobCreatedBottomY = yPos + boxHeight;
-  yPos = jobCreatedBottomY + arrowLength;
+    // From Job
+    const jobCreatedY = yPos;
+    drawBox(pageWidth / 2 - boxWidth / 2, yPos, boxWidth, boxHeight, "Job Created", lightBlue, [255, 255, 255]);
+    const jobCreatedBottomY = yPos + boxHeight;
+    yPos = jobCreatedBottomY + arrowLength;
 
-  // Create Quotation
-  const createQuotationY = yPos;
-  drawBox(pageWidth / 2 - boxWidth / 2, yPos, boxWidth, boxHeight, "Create Quotation\n(Manager/Admin)", orange, [255, 255, 255]);
-  const createQuotationBottomY = yPos + boxHeight;
-  yPos = createQuotationBottomY + arrowLength;
+    // Create Quotation
+    const createQuotationY = yPos;
+    drawBox(pageWidth / 2 - boxWidth / 2, yPos, boxWidth, boxHeight, "Create Quotation\n(Manager/Admin)", orange, [255, 255, 255]);
+    const createQuotationBottomY = yPos + boxHeight;
+    yPos = createQuotationBottomY + arrowLength;
 
-  // Send to Customer
-  const sendCustomerY = yPos;
-  drawBox(pageWidth / 2 - boxWidth / 2, yPos, boxWidth, boxHeight, "Send to Customer", green, [255, 255, 255]);
-  const sendCustomerBottomY = yPos + boxHeight;
-  yPos = sendCustomerBottomY + arrowLength + 10;
+    // Send to Customer
+    const sendCustomerY = yPos;
+    drawBox(pageWidth / 2 - boxWidth / 2, yPos, boxWidth, boxHeight, "Send to Customer", green, [255, 255, 255]);
+    const sendCustomerBottomY = yPos + boxHeight;
+    yPos = sendCustomerBottomY + arrowLength + 10;
 
-  // Create Invoice (alternative path)
-  const invoiceX = pageWidth / 2 - boxWidth / 2;
-  const createInvoiceY = yPos;
-  drawBox(invoiceX, yPos, boxWidth, boxHeight, "Create Invoice\n(Manager/Admin)", orange, [255, 255, 255]);
-  const createInvoiceBottomY = yPos + boxHeight;
-  yPos = createInvoiceBottomY + arrowLength;
+    // Create Invoice (alternative path)
+    const invoiceX = pageWidth / 2 - boxWidth / 2;
+    const createInvoiceY = yPos;
+    drawBox(invoiceX, yPos, boxWidth, boxHeight, "Create Invoice\n(Manager/Admin)", orange, [255, 255, 255]);
+    const createInvoiceBottomY = yPos + boxHeight;
+    yPos = createInvoiceBottomY + arrowLength;
 
-  // Add Line Items
-  const addLineItemsY = yPos;
-  drawBox(invoiceX, yPos, boxWidth, boxHeight, "Add Line Items\n& Details", lightBlue, [255, 255, 255]);
-  const addLineItemsBottomY = yPos + boxHeight;
-  yPos = addLineItemsBottomY + arrowLength;
+    // Add Line Items
+    const addLineItemsY = yPos;
+    drawBox(invoiceX, yPos, boxWidth, boxHeight, "Add Line Items\n& Details", lightBlue, [255, 255, 255]);
+    const addLineItemsBottomY = yPos + boxHeight;
+    yPos = addLineItemsBottomY + arrowLength;
 
-  // Generate PDF
-  const generatePDFY = yPos;
-  drawBox(invoiceX, yPos, boxWidth, boxHeight, "Generate PDF", navyBlue, [255, 255, 255]);
-  const generatePDFBottomY = yPos + boxHeight;
-  yPos = generatePDFBottomY + arrowLength;
+    // Generate PDF
+    const generatePDFY = yPos;
+    drawBox(invoiceX, yPos, boxWidth, boxHeight, "Generate PDF", navyBlue, [255, 255, 255]);
+    const generatePDFBottomY = yPos + boxHeight;
+    yPos = generatePDFBottomY + arrowLength;
 
-  // Send/Record Payment
-  const sendX = pageWidth / 2 - boxWidth - boxSpacing / 2;
-  const paymentX = pageWidth / 2 + boxSpacing / 2;
-  const finalActionsY = yPos;
-  drawBox(sendX, yPos, boxWidth, boxHeight, "Send Invoice", green, [255, 255, 255]);
-  drawBox(paymentX, yPos, boxWidth, boxHeight, "Record Payment", [34, 197, 94], [255, 255, 255]);
+    // Send/Record Payment
+    const sendX = pageWidth / 2 - boxWidth - boxSpacing / 2;
+    const paymentX = pageWidth / 2 + boxSpacing / 2;
+    const finalActionsY = yPos;
+    drawBox(sendX, yPos, boxWidth, boxHeight, "Send Invoice", green, [255, 255, 255]);
+    drawBox(paymentX, yPos, boxWidth, boxHeight, "Record Payment", [34, 197, 94], [255, 255, 255]);
 
-  // Draw arrows
-  const centerX = pageWidth / 2;
-  drawArrow(centerX, jobCreatedBottomY, centerX, createQuotationY);
-  drawArrow(centerX, createQuotationBottomY, centerX, sendCustomerY);
-  drawArrow(centerX, sendCustomerBottomY, invoiceX + boxWidth / 2, createInvoiceY);
-  drawArrow(invoiceX + boxWidth / 2, createInvoiceBottomY, invoiceX + boxWidth / 2, addLineItemsY);
-  drawArrow(invoiceX + boxWidth / 2, addLineItemsBottomY, invoiceX + boxWidth / 2, generatePDFY);
-  drawArrow(invoiceX + boxWidth / 2, generatePDFBottomY, sendX + boxWidth / 2, finalActionsY);
-  drawArrow(invoiceX + boxWidth / 2, generatePDFBottomY, paymentX + boxWidth / 2, finalActionsY);
+    // Draw arrows
+    const centerX = pageWidth / 2;
+    drawArrow(centerX, jobCreatedBottomY, centerX, createQuotationY);
+    drawArrow(centerX, createQuotationBottomY, centerX, sendCustomerY);
+    drawArrow(centerX, sendCustomerBottomY, invoiceX + boxWidth / 2, createInvoiceY);
+    drawArrow(invoiceX + boxWidth / 2, createInvoiceBottomY, invoiceX + boxWidth / 2, addLineItemsY);
+    drawArrow(invoiceX + boxWidth / 2, addLineItemsBottomY, invoiceX + boxWidth / 2, generatePDFY);
+    drawArrow(invoiceX + boxWidth / 2, generatePDFBottomY, sendX + boxWidth / 2, finalActionsY);
+    drawArrow(invoiceX + boxWidth / 2, generatePDFBottomY, paymentX + boxWidth / 2, finalActionsY);
+  }
 
   // ========== PAGE 4: Time Tracking & Material Requests ==========
-  doc.addPage();
-  yPos = margin;
+  {
+    doc.addPage();
+    yPos = margin;
 
-  doc.setFontSize(16);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(navyBlue[0], navyBlue[1], navyBlue[2]);
-  doc.text("Time Tracking & Material Requests", pageWidth / 2, yPos, { align: "center" });
-  yPos += 12;
+    doc.setFontSize(16);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(navyBlue[0], navyBlue[1], navyBlue[2]);
+    doc.text("Time Tracking & Material Requests", pageWidth / 2, yPos, { align: "center" });
+    yPos += 12;
 
-  // Time Clock Flow
-  doc.setFontSize(11);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(navyBlue[0], navyBlue[1], navyBlue[2]);
-  doc.text("Time Clock Process:", margin, yPos);
-  yPos += 8;
+    // Time Clock Flow
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(navyBlue[0], navyBlue[1], navyBlue[2]);
+    doc.text("Time Clock Process:", margin, yPos);
+    yPos += 8;
 
-  const timeBoxWidth = 32;
-  const selectJobY = yPos;
-  drawBox(margin, yPos, timeBoxWidth, boxHeight, "Select Job\n(Optional)", lightBlue, [255, 255, 255]);
-  const selectJobBottomY = yPos + boxHeight;
-  yPos = selectJobBottomY + arrowLength;
+    const timeBoxWidth = 32;
+    const selectJobY = yPos;
+    drawBox(margin, yPos, timeBoxWidth, boxHeight, "Select Job\n(Optional)", lightBlue, [255, 255, 255]);
+    const selectJobBottomY = yPos + boxHeight;
+    yPos = selectJobBottomY + arrowLength;
 
-  const clockInY = yPos;
-  drawBox(margin, yPos, timeBoxWidth, boxHeight, "Clock In", green, [255, 255, 255]);
-  const clockInBottomY = yPos + boxHeight;
-  yPos = clockInBottomY + arrowLength;
+    const clockInY = yPos;
+    drawBox(margin, yPos, timeBoxWidth, boxHeight, "Clock In", green, [255, 255, 255]);
+    const clockInBottomY = yPos + boxHeight;
+    yPos = clockInBottomY + arrowLength;
 
-  const workOnJobY = yPos;
-  drawBox(margin, yPos, timeBoxWidth, boxHeight, "Work on Job", gray, [255, 255, 255]);
-  const workOnJobBottomY = yPos + boxHeight;
-  yPos = workOnJobBottomY + arrowLength;
+    const workOnJobY = yPos;
+    drawBox(margin, yPos, timeBoxWidth, boxHeight, "Work on Job", gray, [255, 255, 255]);
+    const workOnJobBottomY = yPos + boxHeight;
+    yPos = workOnJobBottomY + arrowLength;
 
-  const breakX = margin;
-  const clockOutX = margin + timeBoxWidth + boxSpacing;
-  const breakClockOutY = yPos;
-  drawBox(breakX, yPos, timeBoxWidth, boxHeight, "Take Break\n(Optional)", orange, [255, 255, 255]);
-  drawBox(clockOutX, yPos, timeBoxWidth, boxHeight, "Clock Out", green, [255, 255, 255]);
-  const breakClockOutBottomY = yPos + boxHeight;
-  yPos = breakClockOutBottomY + arrowLength + 5;
+    const breakX = margin;
+    const clockOutX = margin + timeBoxWidth + boxSpacing;
+    const breakClockOutY = yPos;
+    drawBox(breakX, yPos, timeBoxWidth, boxHeight, "Take Break\n(Optional)", orange, [255, 255, 255]);
+    drawBox(clockOutX, yPos, timeBoxWidth, boxHeight, "Clock Out", green, [255, 255, 255]);
+    const breakClockOutBottomY = yPos + boxHeight;
+    yPos = breakClockOutBottomY + arrowLength + 5;
 
-  // View Time Records
-  const viewRecordsY = yPos;
-  drawBox(margin, yPos, timeBoxWidth, boxHeight, "View Time Records", lightBlue, [255, 255, 255]);
-  yPos = viewRecordsY + boxHeight + arrowLength + 10;
+    // View Time Records
+    const viewRecordsY = yPos;
+    drawBox(margin, yPos, timeBoxWidth, boxHeight, "View Time Records", lightBlue, [255, 255, 255]);
+    yPos = viewRecordsY + boxHeight + arrowLength + 10;
 
-  // Material Request Flow
-  doc.setFontSize(11);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(navyBlue[0], navyBlue[1], navyBlue[2]);
-  doc.text("Material Request Process:", margin, yPos);
-  yPos += 8;
+    // Material Request Flow
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(navyBlue[0], navyBlue[1], navyBlue[2]);
+    doc.text("Material Request Process:", margin, yPos);
+    yPos += 8;
 
-  const matBoxWidth = 32;
-  const requestMaterialY = yPos;
-  drawBox(margin, yPos, matBoxWidth, boxHeight, "Request Material\n(Employee)", lightBlue, [255, 255, 255]);
-  const requestMaterialBottomY = yPos + boxHeight;
-  yPos = requestMaterialBottomY + arrowLength;
+    const matBoxWidth = 32;
+    const requestMaterialY = yPos;
+    drawBox(margin, yPos, matBoxWidth, boxHeight, "Request Material\n(Employee)", lightBlue, [255, 255, 255]);
+    const requestMaterialBottomY = yPos + boxHeight;
+    yPos = requestMaterialBottomY + arrowLength;
 
-  const reviewRequestY = yPos;
-  drawBox(margin, yPos, matBoxWidth, boxHeight, "Review Request\n(Manager/Admin)", orange, [255, 255, 255]);
-  const reviewRequestBottomY = yPos + boxHeight;
-  yPos = reviewRequestBottomY + arrowLength;
+    const reviewRequestY = yPos;
+    drawBox(margin, yPos, matBoxWidth, boxHeight, "Review Request\n(Manager/Admin)", orange, [255, 255, 255]);
+    const reviewRequestBottomY = yPos + boxHeight;
+    yPos = reviewRequestBottomY + arrowLength;
 
-  const approveX = margin;
-  const rejectX = margin + matBoxWidth + boxSpacing;
-  const approveRejectY = yPos;
-  drawBox(approveX, yPos, matBoxWidth, boxHeight, "Approve", green, [255, 255, 255]);
-  drawBox(rejectX, yPos, matBoxWidth, boxHeight, "Reject", [239, 68, 68], [255, 255, 255]);
-  const approveRejectBottomY = yPos + boxHeight;
-  yPos = approveRejectBottomY + arrowLength;
+    const approveX = margin;
+    const rejectX = margin + matBoxWidth + boxSpacing;
+    const approveRejectY = yPos;
+    drawBox(approveX, yPos, matBoxWidth, boxHeight, "Approve", green, [255, 255, 255]);
+    drawBox(rejectX, yPos, matBoxWidth, boxHeight, "Reject", [239, 68, 68], [255, 255, 255]);
+    const approveRejectBottomY = yPos + boxHeight;
+    yPos = approveRejectBottomY + arrowLength;
 
-  const fulfillY = yPos;
-  drawBox(margin, yPos, matBoxWidth, boxHeight, "Fulfill Request", [34, 197, 94], [255, 255, 255]);
+    const fulfillY = yPos;
+    drawBox(margin, yPos, matBoxWidth, boxHeight, "Fulfill Request", [34, 197, 94], [255, 255, 255]);
 
-  // Draw arrows for time clock
-  const timeCenterX = margin + timeBoxWidth / 2;
-  drawArrow(timeCenterX, selectJobBottomY, timeCenterX, clockInY);
-  drawArrow(timeCenterX, clockInBottomY, timeCenterX, workOnJobY);
-  drawArrow(timeCenterX, workOnJobBottomY, breakX + timeBoxWidth / 2, breakClockOutY);
-  drawArrow(timeCenterX, workOnJobBottomY, clockOutX + timeBoxWidth / 2, breakClockOutY);
-  drawArrow(breakX + timeBoxWidth / 2, breakClockOutBottomY, clockOutX + timeBoxWidth / 2, breakClockOutY);
-  drawArrow(clockOutX + timeBoxWidth / 2, breakClockOutBottomY, timeCenterX, viewRecordsY);
+    // Draw arrows for time clock
+    const timeCenterX = margin + timeBoxWidth / 2;
+    drawArrow(timeCenterX, selectJobBottomY, timeCenterX, clockInY);
+    drawArrow(timeCenterX, clockInBottomY, timeCenterX, workOnJobY);
+    drawArrow(timeCenterX, workOnJobBottomY, breakX + timeBoxWidth / 2, breakClockOutY);
+    drawArrow(timeCenterX, workOnJobBottomY, clockOutX + timeBoxWidth / 2, breakClockOutY);
+    drawArrow(breakX + timeBoxWidth / 2, breakClockOutBottomY, clockOutX + timeBoxWidth / 2, breakClockOutY);
+    drawArrow(clockOutX + timeBoxWidth / 2, breakClockOutBottomY, timeCenterX, viewRecordsY);
 
-  // Draw arrows for material requests
-  const matCenterX = margin + matBoxWidth / 2;
-  drawArrow(matCenterX, requestMaterialBottomY, matCenterX, reviewRequestY);
-  drawArrow(matCenterX, reviewRequestBottomY, approveX + matBoxWidth / 2, approveRejectY);
-  drawArrow(matCenterX, reviewRequestBottomY, rejectX + matBoxWidth / 2, approveRejectY);
-  drawArrow(approveX + matBoxWidth / 2, approveRejectBottomY, matCenterX, fulfillY);
+    // Draw arrows for material requests
+    const matCenterX = margin + matBoxWidth / 2;
+    drawArrow(matCenterX, requestMaterialBottomY, matCenterX, reviewRequestY);
+    drawArrow(matCenterX, reviewRequestBottomY, approveX + matBoxWidth / 2, approveRejectY);
+    drawArrow(matCenterX, reviewRequestBottomY, rejectX + matBoxWidth / 2, approveRejectY);
+    drawArrow(approveX + matBoxWidth / 2, approveRejectBottomY, matCenterX, fulfillY);
+  }
 
   // ========== PAGE 5: User Roles & Permissions ==========
   doc.addPage();
