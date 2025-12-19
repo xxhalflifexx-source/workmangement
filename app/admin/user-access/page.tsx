@@ -116,10 +116,10 @@ export default function UserAccessControlPage() {
             Only administrators can access this page.
           </p>
           <Link
-            href="/dashboard"
+            href="/admin"
             className="inline-flex items-center px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors"
           >
-            Back to Dashboard
+            ← Back to Admin Panel
           </Link>
         </div>
       </main>

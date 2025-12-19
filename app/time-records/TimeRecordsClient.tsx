@@ -171,10 +171,10 @@ export default function TimeRecordsClient({ entries, userName }: Props) {
         </div>
         <div className="flex gap-2 w-full sm:w-auto">
           <Link
-            href="/dashboard"
+            href="/time-clock"
             className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2 border border-gray-200 rounded-lg text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors min-h-[44px] bg-white shadow-sm"
           >
-            ← Back to dashboard
+            ← Back to Time Clock
           </Link>
         </div>
       </div>
