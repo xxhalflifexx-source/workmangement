@@ -23,9 +23,9 @@ export function generateSystemFlowchartPDF(): jsPDF {
     doc.setFontSize(9);
     doc.setFont("helvetica", "bold");
     
-    // Clean text - remove emojis and other problematic Unicode characters but keep normal text
-    // This regex removes emojis and other non-printable characters while preserving ASCII and common extended characters
-    const cleanText = text.replace(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu, '').trim();
+    // Clean text - remove any remaining problematic characters
+    // Since we've already removed emojis from the source strings, just ensure clean text
+    const cleanText = text.trim();
     
     // Split text into multiple lines if needed
     const lines = doc.splitTextToSize(cleanText, width - 4);
