@@ -162,7 +162,7 @@ export default function TimeRecordsClient({ entries, userName }: Props) {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <>
       <header className="bg-black border-b-2 border-[#001f3f] shadow-lg sticky top-0 z-50">
         <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-24 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
@@ -178,8 +178,7 @@ export default function TimeRecordsClient({ entries, userName }: Props) {
         </div>
       </header>
       <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-24 py-6 sm:py-8">
-
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
         {[
           { label: "Total hours", value: `${totals.totalHours}h`, sub: "Filtered range" },
           { label: "Shifts", value: totals.totalShifts.toString(), sub: `Completed: ${totals.completed}` },
@@ -597,7 +596,8 @@ export default function TimeRecordsClient({ entries, userName }: Props) {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 }
 
