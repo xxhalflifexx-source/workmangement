@@ -446,11 +446,12 @@ export default function JobRow({
                               onSubmitToQC(job.id);
                             }}
                             disabled={savingPhotos[job.id]}
-                            className={`px-4 py-3 sm:py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:bg-gray-300 disabled:cursor-not-allowed min-h-[44px] ${
+                            className={`px-4 py-3 sm:py-2 text-sm bg-white border-2 border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors font-medium disabled:bg-gray-100 disabled:border-gray-300 disabled:text-gray-400 disabled:cursor-not-allowed min-h-[44px] flex items-center justify-center gap-2 ${
                               (jobPhotoFiles[job.id] || []).length > 0 ? "flex-1" : "w-full"
                             }`}
                           >
-                            {savingPhotos[job.id] ? "Submitting..." : "Submit to QC"}
+                            <span>✓</span>
+                            <span>{savingPhotos[job.id] ? "Submitting..." : "Submit to QC"}</span>
                           </button>
                         )}
                       </div>
