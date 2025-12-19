@@ -247,6 +247,9 @@ function JobsPageContent() {
   const [showCustomerUpdateConfirm, setShowCustomerUpdateConfirm] = useState(false);
   const [pendingCustomerUpdate, setPendingCustomerUpdate] = useState<{customerId: string, formData: FormData} | null>(null);
   
+  // Multiple worker assignments - array of selected user IDs
+  const [assignedWorkerIds, setAssignedWorkerIds] = useState<string[]>([]);
+  
   const [showActivityModal, setShowActivityModal] = useState(false);
   const [selectedJobForActivity, setSelectedJobForActivity] = useState<Job | null>(null);
   const [jobActivities, setJobActivities] = useState<JobActivity[]>([]);
@@ -571,6 +574,13 @@ function JobsPageContent() {
       formData.set("customerId", selectedCustomerId);
     }
 
+    // Add assigned workers to formData (filter out empty strings)
+    assignedWorkerIds.forEach((workerId) => {
+      if (workerId && workerId.trim() !== "") {
+        formData.append("assignedUsers", workerId);
+      }
+    });
+
     // Handle customer update if editing existing customer
     if (selectedCustomerId && canManage) {
       const customer = customers.find(c => c.id === selectedCustomerId);
@@ -623,6 +633,8 @@ function JobsPageContent() {
     setEditableCustomerPhone("");
     setEditableCustomerEmail("");
     setEditableCustomerCompany("");
+    // Reset assigned workers
+    setAssignedWorkerIds([""]);
     loadData();
   };
 
@@ -688,6 +700,8 @@ function JobsPageContent() {
     setEditableCustomerPhone("");
     setEditableCustomerEmail("");
     setEditableCustomerCompany("");
+    // Reset assigned workers
+    setAssignedWorkerIds([""]);
     loadData();
   };
 
@@ -718,6 +732,8 @@ function JobsPageContent() {
     setEditableCustomerPhone("");
     setEditableCustomerEmail("");
     setEditableCustomerCompany("");
+    // Reset assigned workers
+    setAssignedWorkerIds([""]);
     setShowModal(true);
   };
 
@@ -746,6 +762,14 @@ function JobsPageContent() {
       setEditableCustomerPhone("");
       setEditableCustomerEmail("");
       setEditableCustomerCompany("");
+    }
+    // Populate assigned workers
+    if (job.assignments && job.assignments.length > 0) {
+      setAssignedWorkerIds(job.assignments.map(a => a.user.id));
+    } else if (job.assignee) {
+      setAssignedWorkerIds([(job as any).assignedTo]);
+    } else {
+      setAssignedWorkerIds([""]);
     }
     setShowModal(true);
   };
@@ -1870,31 +1894,56 @@ function JobsPageContent() {
                   <>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Assign to (Multiple Workers)
+                        Assign to Workers
                       </label>
-                      <select
-                        name="assignedUsers"
-                        multiple
-                        size={Math.min(users.length + 1, 6)}
-                        defaultValue={
-                          editingJob?.assignments && editingJob.assignments.length > 0
-                            ? editingJob.assignments.map(a => a.user.id)
-                            : editingJob?.assignee
-                            ? [(editingJob as any).assignedTo]
-                            : []
-                        }
-                        disabled={isLocked || isEmployee}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 disabled:bg-gray-100 disabled:cursor-not-allowed min-h-[120px]"
-                      >
-                        {users.map((user) => (
-                          <option key={user.id} value={user.id}>
-                            {user.name} ({user.role})
-                          </option>
+                      <div className="space-y-2">
+                        {assignedWorkerIds.map((workerId, index) => (
+                          <div key={index} className="flex gap-2 items-start">
+                            <select
+                              value={workerId}
+                              onChange={(e) => {
+                                const newIds = [...assignedWorkerIds];
+                                newIds[index] = e.target.value;
+                                setAssignedWorkerIds(newIds);
+                              }}
+                              disabled={isLocked || isEmployee}
+                              className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm sm:text-base disabled:bg-gray-100 disabled:cursor-not-allowed min-h-[44px]"
+                            >
+                              <option value="">Select worker...</option>
+                              {users.map((user) => (
+                                <option key={user.id} value={user.id}>
+                                  {user.name} ({user.role})
+                                </option>
+                              ))}
+                            </select>
+                            {assignedWorkerIds.length > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const newIds = assignedWorkerIds.filter((_, i) => i !== index);
+                                  setAssignedWorkerIds(newIds.length > 0 ? newIds : [""]);
+                                }}
+                                disabled={isLocked || isEmployee}
+                                className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg border border-red-300 disabled:opacity-50 disabled:cursor-not-allowed min-w-[44px] min-h-[44px] flex items-center justify-center text-lg font-bold"
+                                title="Remove worker"
+                              >
+                                ×
+                              </button>
+                            )}
+                          </div>
                         ))}
-                      </select>
-                      <p className="text-xs text-gray-500 mt-1">
-                        Hold Ctrl (Windows) or Cmd (Mac) to select multiple workers
-                      </p>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setAssignedWorkerIds([...assignedWorkerIds, ""]);
+                          }}
+                          disabled={isLocked || isEmployee}
+                          className="w-full sm:w-auto px-4 py-2 text-sm sm:text-base bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed min-h-[44px] flex items-center justify-center gap-2 font-medium"
+                        >
+                          <span className="text-lg">+</span>
+                          <span>Add Worker</span>
+                        </button>
+                      </div>
                     </div>
 
                     <div>
