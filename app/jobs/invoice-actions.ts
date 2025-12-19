@@ -121,11 +121,17 @@ export async function getJobForInvoice(jobId: string) {
       return { ok: false, error: "Job not found" };
     }
 
+    // Check if user is assigned via JobAssignment
+    const userAssignment = await prisma.jobAssignment.findFirst({
+      where: { jobId: job.id, userId },
+    });
+
     // Check access permissions
     if (
       userRole !== "ADMIN" &&
       userRole !== "MANAGER" &&
       job.assignedTo !== userId &&
+      !userAssignment &&
       job.createdBy !== userId
     ) {
       return { ok: false, error: "Access denied" };

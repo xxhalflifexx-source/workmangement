@@ -26,6 +26,10 @@ interface Job {
   estimatedHours: number | null;
   dueDate: string | null;
   assignee: { id: string; name: string; email: string } | null;
+  assignments?: Array<{
+    id: string;
+    user: { id: string; name: string | null; email: string | null; role: string };
+  }>;
   creator: { name: string };
   customer: { id: string; name: string; phone: string | null; email: string | null; company: string | null } | null;
   createdAt: string;
@@ -1866,21 +1870,31 @@ function JobsPageContent() {
                   <>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Assign to
+                        Assign to (Multiple Workers)
                       </label>
                       <select
-                        name="assignedTo"
-                        defaultValue={editingJob?.assignee ? (editingJob as any).assignedTo : ""}
+                        name="assignedUsers"
+                        multiple
+                        size={Math.min(users.length + 1, 6)}
+                        defaultValue={
+                          editingJob?.assignments && editingJob.assignments.length > 0
+                            ? editingJob.assignments.map(a => a.user.id)
+                            : editingJob?.assignee
+                            ? [(editingJob as any).assignedTo]
+                            : []
+                        }
                         disabled={isLocked || isEmployee}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 disabled:bg-gray-100 disabled:cursor-not-allowed min-h-[120px]"
                       >
-                        <option value="">Unassigned</option>
                         {users.map((user) => (
                           <option key={user.id} value={user.id}>
                             {user.name} ({user.role})
                           </option>
                         ))}
                       </select>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Hold Ctrl (Windows) or Cmd (Mac) to select multiple workers
+                      </p>
                     </div>
 
                     <div>

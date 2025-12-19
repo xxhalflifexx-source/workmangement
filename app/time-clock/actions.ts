@@ -363,7 +363,13 @@ export async function getAvailableJobs() {
     where:
       userRole === "ADMIN" || userRole === "MANAGER"
         ? { status: { in: allowedStatuses } }
-        : { assignedTo: userId, status: { in: allowedStatuses } },
+        : {
+            OR: [
+              { assignedTo: userId }, // Old single assignment
+              { assignments: { some: { userId } } }, // New multiple assignments
+            ],
+            status: { in: allowedStatuses },
+          },
     select: {
       id: true,
       title: true,
@@ -387,10 +393,13 @@ export async function getAssignedJobs() {
 
   const userId = (session.user as any).id;
 
-  // Get jobs specifically assigned to this user
+  // Get jobs specifically assigned to this user (via old or new system)
   const jobs = await prisma.job.findMany({
     where: {
-      assignedTo: userId,
+      OR: [
+        { assignedTo: userId }, // Old single assignment
+        { assignments: { some: { userId } } }, // New multiple assignments
+      ],
       status: { in: ["NOT_STARTED", "PENDING", "IN_PROGRESS", "REWORK"] },
     },
     select: {

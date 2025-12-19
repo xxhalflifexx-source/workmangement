@@ -328,11 +328,17 @@ export async function getJobMaterialRequests(jobId: string) {
     return { ok: false, error: "Job not found" };
   }
 
-  // Only allow access if user is assigned, creator, or manager/admin
+  // Check if user is assigned via JobAssignment
+  const userAssignment = await prisma.jobAssignment.findFirst({
+    where: { jobId, userId },
+  });
+
+  // Only allow access if user is assigned (via old or new system), creator, or manager/admin
   if (
     userRole !== "ADMIN" &&
     userRole !== "MANAGER" &&
     job.assignedTo !== userId &&
+    !userAssignment &&
     job.createdBy !== userId
   ) {
     return { ok: false, error: "Access denied" };

@@ -90,7 +90,8 @@ export async function getJobsAwaitingQC(
       ...(workerId
         ? {
             OR: [
-              { assignedTo: workerId },
+              { assignedTo: workerId }, // Old single assignment
+              { assignments: { some: { userId: workerId } } }, // New multiple assignments
               {
                 timeEntries: {
                   some: {
@@ -250,12 +251,25 @@ export async function submitQCReview(formData: FormData) {
 
   // If QC failed, create one ReworkEntry per responsible worker
   if (qcStatusRaw === "FAIL") {
+    // Get assigned user IDs from new assignments if no specific responsible users
+    let assignedUserIds: string[] = [];
+    if (responsibleUserIds.length === 0) {
+      if (job.assignedTo) {
+        assignedUserIds = [job.assignedTo];
+      } else {
+        // Get from JobAssignment table
+        const assignments = await prisma.jobAssignment.findMany({
+          where: { jobId },
+          select: { userId: true },
+        });
+        assignedUserIds = assignments.map(a => a.userId);
+      }
+    }
+    
     const targetIds =
       responsibleUserIds.length > 0
         ? responsibleUserIds
-        : job.assignedTo
-        ? [job.assignedTo]
-        : [];
+        : assignedUserIds;
 
     if (targetIds.length === 0) {
       // Still record at least one entry with no specific responsible worker

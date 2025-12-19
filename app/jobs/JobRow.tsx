@@ -58,8 +58,10 @@ export default function JobRow({
   const startDate = formatDateShort(job.createdAt);
   const deadline = job.dueDate ? formatDateShort(job.dueDate) : "—";
 
-  // Get assigned workers (could be multiple if there are time entries)
-  const assignedWorkers = job.assignee
+  // Get assigned workers from new assignments array, fallback to old assignee, then time entries
+  const assignedWorkers = job.assignments && job.assignments.length > 0
+    ? job.assignments.map((a: any) => a.user?.name).filter((name: string | null) => name)
+    : job.assignee
     ? [job.assignee.name]
     : job.timeEntries
     ? Array.from(

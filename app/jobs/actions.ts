@@ -72,13 +72,17 @@ export async function createJob(formData: FormData) {
     return { ok: false, error: parsed.error.errors[0].message };
   }
 
+  // Get assigned user IDs from form (can be multiple)
+  const assignedUserIds = formData.getAll("assignedUsers") as string[];
+  const validAssignedUserIds = assignedUserIds.filter(id => id && id.trim() !== "");
+
   const job = await prisma.job.create({
     data: {
       title: parsed.data.title,
       description: parsed.data.description || null,
       status: parsed.data.status,
       priority: parsed.data.priority,
-      assignedTo: parsed.data.assignedTo || null,
+      assignedTo: parsed.data.assignedTo || null, // Keep for backward compatibility
       customerId: parsed.data.customerId || null,
       createdBy: userId,
       pricingType: parsed.data.pricingType || "FIXED",
@@ -86,11 +90,19 @@ export async function createJob(formData: FormData) {
       finalPrice: parsed.data.finalPrice ? parseFloat(parsed.data.finalPrice) : null,
       estimatedHours: parsed.data.estimatedHours ? parseFloat(parsed.data.estimatedHours) : null,
       dueDate: parsed.data.dueDate ? parseCentralDate(parsed.data.dueDate) : null,
+      assignments: validAssignedUserIds.length > 0 ? {
+        create: validAssignedUserIds.map(userId => ({ userId }))
+      } : undefined,
     },
     include: {
       assignee: { select: { name: true, email: true } },
       creator: { select: { name: true } },
       customer: { select: { id: true, name: true, phone: true, email: true, company: true } },
+      assignments: {
+        include: {
+          user: { select: { id: true, name: true, email: true, role: true } }
+        }
+      },
     },
   });
 
@@ -113,10 +125,16 @@ export async function updateJob(jobId: string, formData: FormData) {
     return { ok: false, error: "Job not found" };
   }
 
-  // Only creator, assigned user, managers, and admins can update
+  // Check if user is assigned via JobAssignment
+  const userAssignment = await prisma.jobAssignment.findFirst({
+    where: { jobId, userId },
+  });
+
+  // Only creator, assigned user (via old or new system), managers, and admins can update
   if (
     job.createdBy !== userId &&
     job.assignedTo !== userId &&
+    !userAssignment &&
     userRole !== "MANAGER" &&
     userRole !== "ADMIN"
   ) {
@@ -143,6 +161,26 @@ export async function updateJob(jobId: string, formData: FormData) {
     return { ok: false, error: parsed.error.errors[0].message };
   }
 
+  // Get assigned user IDs from form (can be multiple)
+  const assignedUserIds = formData.getAll("assignedUsers") as string[];
+  const validAssignedUserIds = assignedUserIds.filter(id => id && id.trim() !== "");
+
+  // First, delete all existing assignments
+  await prisma.jobAssignment.deleteMany({
+    where: { jobId },
+  });
+
+  // Then create new assignments if any
+  if (validAssignedUserIds.length > 0) {
+    await prisma.jobAssignment.createMany({
+      data: validAssignedUserIds.map(userId => ({
+        jobId,
+        userId,
+      })),
+      skipDuplicates: true,
+    });
+  }
+
   const updated = await prisma.job.update({
     where: { id: jobId },
     data: {
@@ -150,7 +188,7 @@ export async function updateJob(jobId: string, formData: FormData) {
       description: parsed.data.description || null,
       status: parsed.data.status,
       priority: parsed.data.priority,
-      assignedTo: parsed.data.assignedTo || null,
+      assignedTo: parsed.data.assignedTo || null, // Keep for backward compatibility
       customerId: parsed.data.customerId || null,
       pricingType: parsed.data.pricingType || "FIXED",
       estimatedPrice: parsed.data.estimatedPrice ? parseFloat(parsed.data.estimatedPrice) : null,
@@ -162,6 +200,11 @@ export async function updateJob(jobId: string, formData: FormData) {
       assignee: { select: { name: true, email: true } },
       creator: { select: { name: true } },
       customer: { select: { id: true, name: true, phone: true, email: true, company: true } },
+      assignments: {
+        include: {
+          user: { select: { id: true, name: true, email: true, role: true } }
+        }
+      },
     },
   });
 
@@ -230,7 +273,12 @@ export async function getJobs(params: GetJobsParams = {}) {
   const baseWhere: any =
       userRole === "ADMIN" || userRole === "MANAGER"
       ? {} // Admins/managers see all jobs
-      : { assignedTo: userId }; // Employees only see jobs assigned to them
+      : {
+          OR: [
+            { assignedTo: userId }, // Old single assignment
+            { assignments: { some: { userId } } }, // New multiple assignments
+          ],
+        }; // Employees only see jobs assigned to them
 
   // Build filter conditions
   const whereClause: any = { ...baseWhere };
@@ -248,7 +296,9 @@ export async function getJobs(params: GetJobsParams = {}) {
   // Worker filter (assigned to worker OR has time entries from worker)
   if (workerId) {
     whereClause.OR = [
-      { assignedTo: workerId },
+      ...(whereClause.OR || []),
+      { assignedTo: workerId }, // Old single assignment
+      { assignments: { some: { userId: workerId } } }, // New multiple assignments
       { timeEntries: { some: { userId: workerId } } },
     ];
   }
@@ -296,6 +346,11 @@ export async function getJobs(params: GetJobsParams = {}) {
         assignee: { select: { name: true, email: true, id: true } },
         creator: { select: { name: true } },
         customer: { select: { id: true, name: true, phone: true, email: true, company: true } },
+        assignments: {
+          include: {
+            user: { select: { id: true, name: true, email: true, role: true } }
+          }
+        },
         // Only fetch activities with images for photo thumbnails (limit to 5 most recent)
         activities: {
           where: {
@@ -363,10 +418,13 @@ export async function getJobAlertsForCurrentUser() {
 
   const userId = (session.user as any).id;
 
-  // Jobs where this user is assigned, and status is noteworthy
+  // Jobs where this user is assigned (via old or new system), and status is noteworthy
   const jobs = await prisma.job.findMany({
     where: {
-      assignedTo: userId,
+      OR: [
+        { assignedTo: userId }, // Old single assignment
+        { assignments: { some: { userId } } }, // New multiple assignments
+      ],
       status: {
         in: ["AWAITING_QC", "REWORK", "COMPLETED"],
       },
@@ -682,11 +740,17 @@ export async function getJobTimeEntries(jobId: string) {
       return { ok: false, error: "Job not found" };
     }
 
-    // Only allow access if user is assigned, creator, or manager/admin
+    // Check if user is assigned via JobAssignment
+    const userAssignment = await prisma.jobAssignment.findFirst({
+      where: { jobId, userId },
+    });
+
+    // Only allow access if user is assigned (via old or new system), creator, or manager/admin
     if (
       userRole !== "ADMIN" &&
       userRole !== "MANAGER" &&
       job.assignedTo !== userId &&
+      !userAssignment &&
       job.createdBy !== userId
     ) {
       return { ok: false, error: "Access denied" };
@@ -739,11 +803,17 @@ export async function getJobActivities(jobId: string) {
       return { ok: false, error: "Job not found" };
     }
 
-    // Only allow access if user is assigned, creator, or manager/admin
+    // Check if user is assigned via JobAssignment
+    const userAssignment = await prisma.jobAssignment.findFirst({
+      where: { jobId, userId },
+    });
+
+    // Only allow access if user is assigned (via old or new system), creator, or manager/admin
     if (
       userRole !== "ADMIN" &&
       userRole !== "MANAGER" &&
       job.assignedTo !== userId &&
+      !userAssignment &&
       job.createdBy !== userId
     ) {
       return { ok: false, error: "Access denied" };
