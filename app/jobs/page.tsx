@@ -1554,20 +1554,20 @@ function JobsPageContent() {
 
         {/* Search Bar */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-6">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-1">
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search by job title, description, customer, or job number..."
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm flex-1 min-w-0 sm:min-w-[200px] min-h-[44px]"
+              className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 text-sm flex-1 min-w-0 sm:min-w-[200px] min-h-[44px] focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all bg-white shadow-sm"
             />
           </div>
           {canManage && (
             <button
               type="button"
               onClick={openCreateModal}
-              className="w-full md:w-auto min-h-[44px] bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+              className="w-full md:w-auto min-h-[44px] bg-gradient-to-r from-indigo-600 to-blue-600 text-white px-6 py-3 rounded-xl hover:from-indigo-700 hover:to-blue-700 transition-all font-semibold shadow-md hover:shadow-lg"
             >
               + Create Job
             </button>
@@ -1648,34 +1648,34 @@ function JobsPageContent() {
             )}
           </div>
         ) : (
-          <div className="bg-white rounded-xl shadow border border-gray-200 overflow-hidden">
+          <div className="bg-white rounded-2xl shadow-lg border-2 border-indigo-100 overflow-hidden">
             <div className="overflow-x-auto -mx-4 sm:mx-0">
               <div className="inline-block min-w-full align-middle px-4 sm:px-0">
                 <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+                <thead className="bg-gradient-to-r from-indigo-600 to-blue-600">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
                       Job Number
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
                       Job Title
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
                       Client
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
                       Assigned Workers
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
                       Status
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
                       Start Date
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
                       Deadline
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 sm:px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider">
                       Details
                     </th>
                   </tr>
@@ -1730,7 +1730,7 @@ function JobsPageContent() {
             
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="bg-gray-50 px-6 py-4 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="bg-gradient-to-r from-indigo-50 to-blue-50 px-6 py-4 border-t-2 border-indigo-200 flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div className="text-sm text-gray-700">
                   Showing {((currentPage - 1) * pageSize) + 1} to {Math.min(currentPage * pageSize, totalCount)} of {totalCount} jobs
                 </div>
@@ -1742,7 +1742,7 @@ function JobsPageContent() {
                       loadData(newPage);
                     }}
                     disabled={currentPage === 1 || loading}
-                    className="px-3 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
+                    className="px-4 py-2 text-sm border-2 border-gray-300 rounded-xl hover:bg-white hover:border-indigo-300 transition-all disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px] font-medium bg-white"
                   >
                     Previous
                   </button>
@@ -1766,10 +1766,10 @@ function JobsPageContent() {
                             loadData(pageNum);
                           }}
                           disabled={loading}
-                          className={`px-3 py-2 text-sm border rounded-lg min-h-[44px] ${
+                          className={`px-4 py-2 text-sm border-2 rounded-xl min-h-[44px] font-semibold transition-all ${
                             currentPage === pageNum
-                              ? "bg-blue-600 text-white border-blue-600"
-                              : "border-gray-300 hover:bg-gray-50"
+                              ? "bg-gradient-to-r from-indigo-600 to-blue-600 text-white border-indigo-600 shadow-md"
+                              : "border-gray-300 hover:bg-white hover:border-indigo-300 bg-white"
                           } disabled:opacity-50 disabled:cursor-not-allowed`}
                         >
                           {pageNum}
@@ -1784,7 +1784,7 @@ function JobsPageContent() {
                       loadData(newPage);
                     }}
                     disabled={currentPage === totalPages || loading}
-                    className="px-3 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
+                    className="px-4 py-2 text-sm border-2 border-gray-300 rounded-xl hover:bg-white hover:border-indigo-300 transition-all disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px] font-medium bg-white"
                   >
                     Next
                   </button>
