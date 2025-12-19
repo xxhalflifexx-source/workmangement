@@ -1932,17 +1932,31 @@ function JobsPageContent() {
                             )}
                           </div>
                         ))}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setAssignedWorkerIds([...assignedWorkerIds, ""]);
-                          }}
-                          disabled={isLocked || isEmployee}
-                          className="w-full sm:w-auto px-4 py-2 text-sm sm:text-base bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed min-h-[44px] flex items-center justify-center gap-2 font-medium"
-                        >
-                          <span className="text-lg">+</span>
-                          <span>Add Worker</span>
-                        </button>
+                        <div className="flex flex-col sm:flex-row gap-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setAssignedWorkerIds([...assignedWorkerIds, ""]);
+                            }}
+                            disabled={isLocked || isEmployee}
+                            className="w-full sm:w-auto px-4 py-2 text-sm sm:text-base bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed min-h-[44px] flex items-center justify-center gap-2 font-medium"
+                          >
+                            <span className="text-lg">+</span>
+                            <span>Add Worker</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const allUserIds = users.map(user => user.id);
+                              setAssignedWorkerIds(allUserIds.length > 0 ? allUserIds : [""]);
+                            }}
+                            disabled={isLocked || isEmployee || users.length === 0}
+                            className="w-full sm:w-auto px-4 py-2 text-sm sm:text-base bg-gray-600 text-white rounded-lg hover:bg-gray-700 disabled:bg-gray-300 disabled:cursor-not-allowed min-h-[44px] flex items-center justify-center gap-2 font-medium"
+                          >
+                            <span>✓</span>
+                            <span>Assign to All</span>
+                          </button>
+                        </div>
                       </div>
                     </div>
 
