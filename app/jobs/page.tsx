@@ -1682,28 +1682,28 @@ function JobsPageContent() {
                 <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gradient-to-r from-indigo-600 to-blue-600">
                   <tr>
-                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap">
                       Job Number
                     </th>
-                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap">
                       Job Title
                     </th>
-                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap">
                       Client
                     </th>
-                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap">
                       Assigned Workers
                     </th>
-                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap">
                       Status
                     </th>
-                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap">
                       Start Date
                     </th>
-                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap">
                       Deadline
                     </th>
-                    <th className="px-4 sm:px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">
+                    <th className="px-4 sm:px-6 py-4 text-center text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap">
                       Details
                     </th>
                   </tr>
@@ -2798,11 +2798,11 @@ function JobsPageContent() {
                   <table className="w-full border-collapse">
                     <thead>
                       <tr className="bg-gradient-to-r from-indigo-600 to-blue-600">
-                        <th className="border border-gray-300 px-4 py-3 text-left text-sm font-bold text-white uppercase tracking-wider whitespace-nowrap">Description</th>
-                        <th className="border border-gray-300 px-4 py-3 text-center text-sm font-bold text-white uppercase tracking-wider whitespace-nowrap w-24">Qty</th>
-                        <th className="border border-gray-300 px-4 py-3 text-right text-sm font-bold text-white uppercase tracking-wider whitespace-nowrap w-32">Rate</th>
-                        <th className="border border-gray-300 px-4 py-3 text-right text-sm font-bold text-white uppercase tracking-wider whitespace-nowrap w-32">Amount</th>
-                        <th className="border border-gray-300 px-4 py-3 text-center text-sm font-bold text-white uppercase tracking-wider whitespace-nowrap w-20 no-print">Action</th>
+                        <th className="border border-gray-300 px-4 py-3 text-left text-sm font-bold text-black uppercase tracking-wider whitespace-nowrap">Description</th>
+                        <th className="border border-gray-300 px-4 py-3 text-center text-sm font-bold text-black uppercase tracking-wider whitespace-nowrap w-24">Qty</th>
+                        <th className="border border-gray-300 px-4 py-3 text-right text-sm font-bold text-black uppercase tracking-wider whitespace-nowrap w-32">Rate</th>
+                        <th className="border border-gray-300 px-4 py-3 text-right text-sm font-bold text-black uppercase tracking-wider whitespace-nowrap w-32">Amount</th>
+                        <th className="border border-gray-300 px-4 py-3 text-center text-sm font-bold text-black uppercase tracking-wider whitespace-nowrap w-20 no-print">Action</th>
                       </tr>
                     </thead>
                     <tbody>

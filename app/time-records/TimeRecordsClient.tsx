@@ -366,15 +366,15 @@ export default function TimeRecordsClient({ entries, userName }: Props) {
               <table className="min-w-full divide-y divide-gray-200 text-sm">
                 <thead className="bg-gradient-to-r from-indigo-600 to-blue-600">
                   <tr>
-                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">Date</th>
-                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">Job / Task</th>
-                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">Clock in</th>
-                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">Clock out</th>
-                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">Break start</th>
-                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">Break end</th>
-                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">Duration</th>
-                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">Notes</th>
-                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">Type</th>
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap">Date</th>
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap">Job / Task</th>
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap">Clock in</th>
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap">Clock out</th>
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap">Break start</th>
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap">Break end</th>
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap">Duration</th>
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap">Notes</th>
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap">Type</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200 bg-white">

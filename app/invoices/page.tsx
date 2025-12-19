@@ -325,19 +325,19 @@ export default function InvoicesPage() {
 						<table className="min-w-full">
 							<thead className="bg-gradient-to-r from-indigo-600 to-blue-600">
 								<tr>
-									<th className="px-4 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">#</th>
-									<th className="px-4 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">Invoice #</th>
-									<th className="px-4 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">Client Name</th>
-									<th className="px-4 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">Description</th>
-									<th className="px-4 py-4 text-right text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">Amount</th>
-									<th className="px-4 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">Invoice Date</th>
-									<th className="px-4 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">Collection Date</th>
-									<th className="px-4 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">Elapsed</th>
-									<th className="px-4 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">Due Date</th>
-									<th className="px-4 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">Sent Date</th>
-									<th className="px-4 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">Release Date</th>
-									<th className="px-4 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">Credit</th>
-									<th className="px-4 py-4 text-center text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">Actions</th>
+									<th className="px-4 py-4 text-left text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap">#</th>
+									<th className="px-4 py-4 text-left text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap">Invoice #</th>
+									<th className="px-4 py-4 text-left text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap">Client Name</th>
+									<th className="px-4 py-4 text-left text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap">Description</th>
+									<th className="px-4 py-4 text-right text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap">Amount</th>
+									<th className="px-4 py-4 text-left text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap">Invoice Date</th>
+									<th className="px-4 py-4 text-left text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap">Collection Date</th>
+									<th className="px-4 py-4 text-left text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap">Elapsed</th>
+									<th className="px-4 py-4 text-left text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap">Due Date</th>
+									<th className="px-4 py-4 text-left text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap">Sent Date</th>
+									<th className="px-4 py-4 text-left text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap">Release Date</th>
+									<th className="px-4 py-4 text-left text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap">Credit</th>
+									<th className="px-4 py-4 text-center text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap">Actions</th>
 								</tr>
 							</thead>
 							<tbody className="bg-white divide-y divide-gray-200">

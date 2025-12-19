@@ -1151,7 +1151,7 @@ setLoading(false);
                     <thead className="bg-gradient-to-r from-indigo-600 to-blue-600">
                       <tr>
                         <th
-                          className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap cursor-pointer hover:bg-indigo-700 transition-colors"
+                          className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap cursor-pointer hover:bg-indigo-700 transition-colors"
                           onClick={() => handleSort("invoiceNumber")}
                         >
                           <div className="flex items-center gap-2">
@@ -1162,7 +1162,7 @@ setLoading(false);
                           </div>
                         </th>
                         <th
-                          className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap cursor-pointer hover:bg-indigo-700 transition-colors"
+                          className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap cursor-pointer hover:bg-indigo-700 transition-colors"
                           onClick={() => handleSort("job")}
                         >
                           <div className="flex items-center gap-2">
@@ -1173,12 +1173,12 @@ setLoading(false);
                           </div>
                         </th>
                         <th
-                          className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap"
+                          className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap"
                         >
                           Job Title
                         </th>
                         <th
-                          className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap cursor-pointer hover:bg-indigo-700 transition-colors"
+                          className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap cursor-pointer hover:bg-indigo-700 transition-colors"
                           onClick={() => handleSort("customer")}
                         >
                           <div className="flex items-center gap-2">
@@ -1189,7 +1189,7 @@ setLoading(false);
                           </div>
                         </th>
                         <th
-                          className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap cursor-pointer hover:bg-indigo-700 transition-colors"
+                          className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap cursor-pointer hover:bg-indigo-700 transition-colors"
                           onClick={() => handleSort("total")}
                         >
                           <div className="flex items-center gap-2">
@@ -1200,7 +1200,7 @@ setLoading(false);
                           </div>
                         </th>
                         <th
-                          className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap cursor-pointer hover:bg-indigo-700 transition-colors"
+                          className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap cursor-pointer hover:bg-indigo-700 transition-colors"
                           onClick={() => handleSort("status")}
                         >
                           <div className="flex items-center gap-2">
@@ -1211,7 +1211,7 @@ setLoading(false);
                           </div>
                         </th>
                         <th
-                          className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap cursor-pointer hover:bg-indigo-700 transition-colors"
+                          className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap cursor-pointer hover:bg-indigo-700 transition-colors"
                           onClick={() => handleSort("createdAt")}
                         >
                           <div className="flex items-center gap-2">
@@ -1222,7 +1222,7 @@ setLoading(false);
                           </div>
                         </th>
                         <th
-                          className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap cursor-pointer hover:bg-indigo-700 transition-colors"
+                          className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap cursor-pointer hover:bg-indigo-700 transition-colors"
                           onClick={() => handleSort("updatedAt")}
                         >
                           <div className="flex items-center gap-2">
@@ -1232,13 +1232,13 @@ setLoading(false);
                             )}
                           </div>
                         </th>
-                        <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">
+                        <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap">
                           Remarks
                         </th>
-                        <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">
+                        <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap">
                           PDF Files
                         </th>
-                        <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">
+                        <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap">
                           Actions
                         </th>
                       </tr>
@@ -1648,16 +1648,16 @@ setLoading(false);
                       <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gradient-to-r from-indigo-600 to-blue-600">
                           <tr>
-                            <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">
+                            <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap">
                               Description
                             </th>
-                            <th className="px-4 sm:px-6 py-4 text-right text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">
+                            <th className="px-4 sm:px-6 py-4 text-right text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap">
                               Quantity
                             </th>
-                            <th className="px-4 sm:px-6 py-4 text-right text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">
+                            <th className="px-4 sm:px-6 py-4 text-right text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap">
                               Rate
                             </th>
-                            <th className="px-4 sm:px-6 py-4 text-right text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">
+                            <th className="px-4 sm:px-6 py-4 text-right text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap">
                               Amount
                             </th>
                           </tr>
@@ -1693,13 +1693,13 @@ setLoading(false);
                       <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gradient-to-r from-indigo-600 to-blue-600">
                           <tr>
-                            <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">
+                            <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap">
                               Date
                             </th>
-                            <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">
+                            <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap">
                               Method
                             </th>
-                            <th className="px-4 sm:px-6 py-4 text-right text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">
+                            <th className="px-4 sm:px-6 py-4 text-right text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap">
                               Amount
                             </th>
                           </tr>
@@ -2041,11 +2041,11 @@ setLoading(false);
                         <table className="min-w-full divide-y divide-[var(--brand-border)]">
                           <thead className="bg-gradient-to-r from-indigo-600 to-blue-600">
                             <tr>
-                              <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">Description</th>
-                              <th className="px-4 sm:px-6 py-4 text-right text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">Quantity</th>
-                              <th className="px-4 sm:px-6 py-4 text-right text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">Rate</th>
-                              <th className="px-4 sm:px-6 py-4 text-right text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">Amount</th>
-                              <th className="px-4 sm:px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap w-20">Action</th>
+                              <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap">Description</th>
+                              <th className="px-4 sm:px-6 py-4 text-right text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap">Quantity</th>
+                              <th className="px-4 sm:px-6 py-4 text-right text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap">Rate</th>
+                              <th className="px-4 sm:px-6 py-4 text-right text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap">Amount</th>
+                              <th className="px-4 sm:px-6 py-4 text-center text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap w-20">Action</th>
                             </tr>
                           </thead>
                           <tbody className="bg-white divide-y divide-[var(--brand-border)]">
@@ -2433,11 +2433,11 @@ setLoading(false);
                         <table className="min-w-full divide-y divide-gray-200">
                           <thead className="bg-gradient-to-r from-indigo-600 to-blue-600">
                             <tr>
-                              <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">Description</th>
-                              <th className="px-4 sm:px-6 py-4 text-right text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">Quantity</th>
-                              <th className="px-4 sm:px-6 py-4 text-right text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">Rate</th>
-                              <th className="px-4 sm:px-6 py-4 text-right text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">Amount</th>
-                              <th className="px-4 sm:px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap w-20">Action</th>
+                              <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap">Description</th>
+                              <th className="px-4 sm:px-6 py-4 text-right text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap">Quantity</th>
+                              <th className="px-4 sm:px-6 py-4 text-right text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap">Rate</th>
+                              <th className="px-4 sm:px-6 py-4 text-right text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap">Amount</th>
+                              <th className="px-4 sm:px-6 py-4 text-center text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap w-20">Action</th>
                             </tr>
                           </thead>
                           <tbody className="bg-white divide-y divide-gray-200">

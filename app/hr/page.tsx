@@ -572,22 +572,22 @@ export default function HRPage() {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gradient-to-r from-indigo-600 to-blue-600">
                 <tr>
-                  <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">
+                  <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap">
                     Employee
                   </th>
-                  <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">
+                  <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap">
                     Role
                   </th>
-                  <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">
+                  <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap">
                     Status
                   </th>
-                  <th className="px-4 sm:px-6 py-4 text-right text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">
+                  <th className="px-4 sm:px-6 py-4 text-right text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap">
                     Hours (Selected Range)
                   </th>
-                  <th className="px-4 sm:px-6 py-4 text-right text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">
+                  <th className="px-4 sm:px-6 py-4 text-right text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap">
                     Shifts
                   </th>
-                  <th className="px-4 sm:px-6 py-4 text-right text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">
+                  <th className="px-4 sm:px-6 py-4 text-right text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap">
                     Actions
                   </th>
                 </tr>

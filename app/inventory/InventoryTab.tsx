@@ -178,7 +178,7 @@ export default function InventoryTab({
                 <thead className="bg-gradient-to-r from-indigo-600 to-blue-600">
                   <tr>
                     <th
-                      className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap cursor-pointer hover:bg-indigo-700 transition-colors"
+                      className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap cursor-pointer hover:bg-indigo-700 transition-colors"
                       onClick={() => {
                         setSortField("name");
                         setSortDirection(sortField === "name" && sortDirection === "asc" ? "desc" : "asc");
@@ -191,11 +191,11 @@ export default function InventoryTab({
                         )}
                       </div>
                     </th>
-                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap">
                       Category
                     </th>
                     <th
-                      className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap cursor-pointer hover:bg-indigo-700 transition-colors"
+                      className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap cursor-pointer hover:bg-indigo-700 transition-colors"
                       onClick={() => {
                         setSortField("quantity");
                         setSortDirection(sortField === "quantity" && sortDirection === "asc" ? "desc" : "asc");
@@ -208,11 +208,11 @@ export default function InventoryTab({
                         )}
                       </div>
                     </th>
-                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap">
                       Unit
                     </th>
                     <th
-                      className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap cursor-pointer hover:bg-indigo-700 transition-colors"
+                      className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap cursor-pointer hover:bg-indigo-700 transition-colors"
                       onClick={() => {
                         setSortField("location");
                         setSortDirection(sortField === "location" && sortDirection === "asc" ? "desc" : "asc");
@@ -225,11 +225,11 @@ export default function InventoryTab({
                         )}
                       </div>
                     </th>
-                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap">
                       Status
                     </th>
                     <th
-                      className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap cursor-pointer hover:bg-indigo-700 transition-colors"
+                      className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap cursor-pointer hover:bg-indigo-700 transition-colors"
                       onClick={() => {
                         setSortField("updatedAt");
                         setSortDirection(sortField === "updatedAt" && sortDirection === "asc" ? "desc" : "asc");
@@ -242,7 +242,7 @@ export default function InventoryTab({
                         )}
                       </div>
                     </th>
-                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap">
                       Actions
                     </th>
                   </tr>
