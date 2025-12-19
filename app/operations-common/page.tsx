@@ -560,25 +560,45 @@ export default function OperationsCommonPage() {
           </div>
         )}
 
-        {/* Breadcrumb */}
-        <div className="mb-4 flex items-center gap-2 flex-wrap">
-          <button
-            onClick={() => handleBreadcrumbClick(-1)}
-            className="text-blue-600 hover:text-blue-800 text-sm font-medium min-h-[44px] px-2 py-1 rounded hover:bg-blue-50 transition-all duration-200"
-          >
-            Root
-          </button>
-          {folderPath.map((folder, index) => (
-            <div key={folder.id} className="flex items-center gap-2">
-              <span className="text-gray-400 text-sm">/</span>
-              <button
-                onClick={() => handleBreadcrumbClick(index)}
-                className="text-blue-600 hover:text-blue-800 text-sm font-medium min-h-[44px] px-2 py-1 rounded hover:bg-blue-50 transition-all duration-200 break-words"
-              >
-                {folder.name}
-              </button>
-            </div>
-          ))}
+        {/* Breadcrumb with Back Button */}
+        <div className="mb-4 flex items-center gap-3 flex-wrap">
+          {(currentFolderId || folderPath.length > 0) && (
+            <button
+              onClick={() => {
+                if (folderPath.length > 1) {
+                  // Go back to parent folder
+                  const parentIndex = folderPath.length - 2;
+                  handleBreadcrumbClick(parentIndex);
+                } else {
+                  // Go back to root
+                  handleBreadcrumbClick(-1);
+                }
+              }}
+              className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors min-h-[44px]"
+            >
+              <span>←</span>
+              <span>Back</span>
+            </button>
+          )}
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              onClick={() => handleBreadcrumbClick(-1)}
+              className="text-blue-600 hover:text-blue-800 text-sm font-medium min-h-[44px] px-2 py-1 rounded hover:bg-blue-50 transition-all duration-200"
+            >
+              Root
+            </button>
+            {folderPath.map((folder, index) => (
+              <div key={folder.id} className="flex items-center gap-2">
+                <span className="text-gray-400 text-sm">/</span>
+                <button
+                  onClick={() => handleBreadcrumbClick(index)}
+                  className="text-blue-600 hover:text-blue-800 text-sm font-medium min-h-[44px] px-2 py-1 rounded hover:bg-blue-50 transition-all duration-200 break-words"
+                >
+                  {folder.name}
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Actions Bar */}
