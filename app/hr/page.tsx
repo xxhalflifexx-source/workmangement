@@ -309,7 +309,7 @@ export default function HRPage() {
               href="/dashboard"
               className="w-full sm:w-auto px-4 py-2.5 sm:py-2 border border-gray-400 rounded-lg hover:bg-gray-800 transition-colors text-sm font-medium whitespace-nowrap min-h-[44px] flex items-center justify-center text-white"
             >
-              Back to Dashboard
+              ← Back to Dashboard
             </Link>
           </div>
         </div>

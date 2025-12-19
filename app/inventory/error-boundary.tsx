@@ -106,7 +106,7 @@ export class InventoryErrorBoundary extends React.Component<ErrorBoundaryProps, 
                 }}
                 className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
               >
-                Back to Dashboard
+                ← Back to Dashboard
               </button>
             </div>
           </div>
