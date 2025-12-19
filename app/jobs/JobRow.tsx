@@ -489,7 +489,7 @@ export default function JobRow({
                     <span>Materials</span>
                   </button>
                 )}
-                {onQuotation && (
+                {canManage && onQuotation && (
                   <button
                     onClick={(e) => {
                       e.stopPropagation();

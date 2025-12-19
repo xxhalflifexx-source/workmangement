@@ -9,31 +9,9 @@ export async function getQuotationsByJobId(jobId: string) {
 	const session = await getServerSession(authOptions);
 	if (!session?.user) return { ok: false, error: "Not authenticated" };
 	const role = (session.user as any).role;
-	const userId = (session.user as any).id;
+	if (role !== "ADMIN" && role !== "MANAGER") return { ok: false, error: "Unauthorized" };
 
 	try {
-		// If employee, check if they're assigned to the job
-		if (role === "EMPLOYEE") {
-			const job = await prisma.job.findUnique({
-				where: { id: jobId },
-				select: { assignedTo: true, createdBy: true },
-			});
-			
-			if (!job) {
-				return { ok: false, error: "Job not found" };
-			}
-			
-			// Check if user is assigned via JobAssignment
-			const userAssignment = await prisma.jobAssignment.findFirst({
-				where: { jobId, userId },
-			});
-			
-			// Employees can only view quotations for jobs they're assigned to or created
-			if (job.assignedTo !== userId && !userAssignment && job.createdBy !== userId) {
-				return { ok: false, error: "Unauthorized: You can only view quotations for jobs assigned to you" };
-			}
-		}
-
 		const quotations = await prisma.quotation.findMany({
 			where: { jobId },
 			include: {
@@ -55,32 +33,10 @@ export async function createQuotation(formData: FormData) {
 	const session = await getServerSession(authOptions);
 	if (!session?.user) return { ok: false, error: "Not authenticated" };
 	const role = (session.user as any).role;
-	const userId = (session.user as any).id;
+	if (role !== "ADMIN" && role !== "MANAGER") return { ok: false, error: "Unauthorized" };
 
 	try {
 		const jobId = (formData.get("jobId") as string) || undefined;
-		
-		// If jobId is provided, check if employee is assigned to the job
-		if (jobId && role === "EMPLOYEE") {
-			const job = await prisma.job.findUnique({
-				where: { id: jobId },
-				select: { assignedTo: true, createdBy: true },
-			});
-			
-			if (!job) {
-				return { ok: false, error: "Job not found" };
-			}
-			
-			// Check if user is assigned via JobAssignment
-			const userAssignment = await prisma.jobAssignment.findFirst({
-				where: { jobId, userId },
-			});
-			
-			// Employees can only create quotations for jobs they're assigned to or created
-			if (job.assignedTo !== userId && !userAssignment && job.createdBy !== userId) {
-				return { ok: false, error: "Unauthorized: You can only create quotations for jobs assigned to you" };
-			}
-		}
 		const customerId = (formData.get("customerId") as string) || undefined;
 		const customerName = (formData.get("customerName") as string) || "";
 		const customerAddress = (formData.get("customerAddress") as string) || "";
