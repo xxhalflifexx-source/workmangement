@@ -17,7 +17,7 @@
     --brand-border: #e2e8f0;
     --brand-surface: #ffffff;
     --brand-surface-muted: #f7f9fc;
-    --brand-bg: #f4f6fb;
+    --brand-bg: #e5e7eb;
   }
 
   html {
@@ -32,7 +32,7 @@
     word-wrap: break-word;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    background: radial-gradient(120% 80% at 20% 20%, #f8fbff 0%, #f5f7fb 45%, #eef2f8 100%);
+    background: radial-gradient(120% 80% at 20% 20%, #e8eaed 0%, #e0e4e8 45%, #d1d5db 100%);
     color: var(--brand-gray);
     font-family: "Inter", "Segoe UI", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
     letter-spacing: -0.01em;
