@@ -23,8 +23,12 @@ export function generateSystemFlowchartPDF(): jsPDF {
     doc.setFontSize(9);
     doc.setFont("helvetica", "bold");
     
+    // Clean text - remove emojis and other problematic Unicode characters but keep normal text
+    // This regex removes emojis and other non-printable characters while preserving ASCII and common extended characters
+    const cleanText = text.replace(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu, '').trim();
+    
     // Split text into multiple lines if needed
-    const lines = doc.splitTextToSize(text, width - 4);
+    const lines = doc.splitTextToSize(cleanText, width - 4);
     const lineHeight = 5;
     const totalHeight = lines.length * lineHeight;
     const startY = y + (height - totalHeight) / 2 + 4;
@@ -95,25 +99,25 @@ export function generateSystemFlowchartPDF(): jsPDF {
 
   // Row 1: Time Clock, Job Management, QC, HR
   yPos += 5;
-  drawBox(moduleX, yPos, moduleBoxWidth, moduleBoxHeight, "Time Clock\n⏰", lightBlue, [255, 255, 255]);
+  drawBox(moduleX, yPos, moduleBoxWidth, moduleBoxHeight, "Time Clock", lightBlue, [255, 255, 255]);
   moduleX += moduleBoxWidth + boxSpacing;
-  drawBox(moduleX, yPos, moduleBoxWidth, moduleBoxHeight, "Job Management\n📋", orange, [255, 255, 255]);
+  drawBox(moduleX, yPos, moduleBoxWidth, moduleBoxHeight, "Job Management", orange, [255, 255, 255]);
   moduleX += moduleBoxWidth + boxSpacing;
-  drawBox(moduleX, yPos, moduleBoxWidth, moduleBoxHeight, "Quality Control\n✅", green, [255, 255, 255]);
+  drawBox(moduleX, yPos, moduleBoxWidth, moduleBoxHeight, "Quality Control", green, [255, 255, 255]);
   moduleX += moduleBoxWidth + boxSpacing;
-  drawBox(moduleX, yPos, moduleBoxWidth, moduleBoxHeight, "HR\n👥", [147, 51, 234], [255, 255, 255]);
+  drawBox(moduleX, yPos, moduleBoxWidth, moduleBoxHeight, "HR", [147, 51, 234], [255, 255, 255]);
 
   yPos += moduleBoxHeight + arrowLength + 5;
   moduleX = modulesX;
 
   // Row 2: Finance, Inventory, Admin, Handbook
-  drawBox(moduleX, yPos, moduleBoxWidth, moduleBoxHeight, "Finance\n💰", orange, [255, 255, 255]);
+  drawBox(moduleX, yPos, moduleBoxWidth, moduleBoxHeight, "Finance", orange, [255, 255, 255]);
   moduleX += moduleBoxWidth + boxSpacing;
-  drawBox(moduleX, yPos, moduleBoxWidth, moduleBoxHeight, "Inventory\n📦", [139, 69, 19], [255, 255, 255]);
+  drawBox(moduleX, yPos, moduleBoxWidth, moduleBoxHeight, "Inventory", [139, 69, 19], [255, 255, 255]);
   moduleX += moduleBoxWidth + boxSpacing;
-  drawBox(moduleX, yPos, moduleBoxWidth, moduleBoxHeight, "Admin Panel\n⚙️", [168, 85, 247], [255, 255, 255]);
+  drawBox(moduleX, yPos, moduleBoxWidth, moduleBoxHeight, "Admin Panel", [168, 85, 247], [255, 255, 255]);
   moduleX += moduleBoxWidth + boxSpacing;
-  drawBox(moduleX, yPos, moduleBoxWidth, moduleBoxHeight, "Handbook\n📖", lightBlue, [255, 255, 255]);
+  drawBox(moduleX, yPos, moduleBoxWidth, moduleBoxHeight, "Handbook", lightBlue, [255, 255, 255]);
 
   // Draw arrows from Dashboard to modules
   const dashboardCenterX = pageWidth / 2;
@@ -354,15 +358,15 @@ export function generateSystemFlowchartPDF(): jsPDF {
   const roleSpacing = 5;
 
   // Employee
-  drawBox(margin, yPos, roleBoxWidth, roleBoxHeight, "EMPLOYEE\n\n• Time Clock\n• View Assigned Jobs\n• Submit to QC\n• View Time Records\n• Request Materials", lightBlue, [255, 255, 255]);
+  drawBox(margin, yPos, roleBoxWidth, roleBoxHeight, "EMPLOYEE\n\n- Time Clock\n- View Assigned Jobs\n- Submit to QC\n- View Time Records\n- Request Materials", lightBlue, [255, 255, 255]);
   
   // Manager
   const managerX = margin + roleBoxWidth + roleSpacing;
-  drawBox(managerX, yPos, roleBoxWidth, roleBoxHeight, "MANAGER\n\n• All Employee features\n• Create/Edit Jobs\n• QC Review\n• Create Invoices\n• Create Quotations\n• Manage Inventory", orange, [255, 255, 255]);
+  drawBox(managerX, yPos, roleBoxWidth, roleBoxHeight, "MANAGER\n\n- All Employee features\n- Create/Edit Jobs\n- QC Review\n- Create Invoices\n- Create Quotations\n- Manage Inventory", orange, [255, 255, 255]);
   
   // Admin
   const adminX = managerX + roleBoxWidth + roleSpacing;
-  drawBox(adminX, yPos, roleBoxWidth, roleBoxHeight, "ADMIN\n\n• All Manager features\n• User Management\n• Access Control\n• Company Settings\n• System Configuration", [168, 85, 247], [255, 255, 255]);
+  drawBox(adminX, yPos, roleBoxWidth, roleBoxHeight, "ADMIN\n\n- All Manager features\n- User Management\n- Access Control\n- Company Settings\n- System Configuration", [168, 85, 247], [255, 255, 255]);
 
   yPos += roleBoxHeight + 15;
 
@@ -390,17 +394,13 @@ export function generateSystemFlowchartPDF(): jsPDF {
 
   modules.forEach((module, index) => {
     const modY = yPos + (index * 5);
-    doc.text(`• ${module}:`, margin, modY);
-    doc.setFont("helvetica", "bold");
-    doc.text("Employee", margin + 30, modY);
+    doc.text(`- ${module}:`, margin, modY);
     doc.setFont("helvetica", "normal");
-    doc.text("|", margin + 45, modY);
-    doc.setFont("helvetica", "bold");
-    doc.text("Manager", margin + 50, modY);
-    doc.setFont("helvetica", "normal");
-    doc.text("|", margin + 70, modY);
-    doc.setFont("helvetica", "bold");
-    doc.text("Admin", margin + 75, modY);
+    doc.text("Employee", margin + 35, modY);
+    doc.text("|", margin + 52, modY);
+    doc.text("Manager", margin + 57, modY);
+    doc.text("|", margin + 72, modY);
+    doc.text("Admin", margin + 77, modY);
   });
 
   // Footer on last page
