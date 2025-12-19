@@ -116,7 +116,11 @@ export default function JobRow({
   return (
     <>
       <tr
-        className="cursor-pointer hover:bg-gray-50 transition-colors"
+        className={`cursor-pointer transition-colors ${
+          isExpanded 
+            ? "bg-blue-50 hover:bg-blue-100 border-l-4 border-l-blue-600" 
+            : "hover:bg-gray-50"
+        }`}
         onClick={() => setIsExpanded(!isExpanded)}
       >
         <td className="px-6 py-4 text-sm font-medium text-gray-900">
