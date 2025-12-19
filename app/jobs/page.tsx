@@ -1169,11 +1169,6 @@ function JobsPageContent() {
 
   // Quotation Functions
   const openQuotationModal = async (job: Job) => {
-    if (!canManage) {
-      setError("Only managers and admins can create quotations");
-      return;
-    }
-
     setSelectedJobForQuotation(job);
     setShowQuotationModal(true);
     
