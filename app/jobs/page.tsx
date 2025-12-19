@@ -2797,12 +2797,12 @@ function JobsPageContent() {
                 <div className="mb-8">
                   <table className="w-full border-collapse">
                     <thead>
-                      <tr className="bg-gray-100">
-                        <th className="border border-gray-300 px-4 py-3 text-left text-sm font-semibold">Description</th>
-                        <th className="border border-gray-300 px-4 py-3 text-center text-sm font-semibold w-24">Qty</th>
-                        <th className="border border-gray-300 px-4 py-3 text-right text-sm font-semibold w-32">Rate</th>
-                        <th className="border border-gray-300 px-4 py-3 text-right text-sm font-semibold w-32">Amount</th>
-                        <th className="border border-gray-300 px-4 py-3 text-center w-20 no-print">Action</th>
+                      <tr className="bg-gradient-to-r from-indigo-600 to-blue-600">
+                        <th className="border border-gray-300 px-4 py-3 text-left text-sm font-bold text-white uppercase tracking-wider whitespace-nowrap">Description</th>
+                        <th className="border border-gray-300 px-4 py-3 text-center text-sm font-bold text-white uppercase tracking-wider whitespace-nowrap w-24">Qty</th>
+                        <th className="border border-gray-300 px-4 py-3 text-right text-sm font-bold text-white uppercase tracking-wider whitespace-nowrap w-32">Rate</th>
+                        <th className="border border-gray-300 px-4 py-3 text-right text-sm font-bold text-white uppercase tracking-wider whitespace-nowrap w-32">Amount</th>
+                        <th className="border border-gray-300 px-4 py-3 text-center text-sm font-bold text-white uppercase tracking-wider whitespace-nowrap w-20 no-print">Action</th>
                       </tr>
                     </thead>
                     <tbody>
