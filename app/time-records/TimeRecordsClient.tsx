@@ -162,22 +162,22 @@ export default function TimeRecordsClient({ entries, userName }: Props) {
   };
 
   return (
-    <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-24 py-6 sm:py-8 bg-gray-50">
-      <div className="mb-6 sm:mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="text-xs sm:text-sm text-gray-500">Welcome back</p>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">My Time Records</h1>
-          <p className="text-sm text-gray-600 mt-1">Viewing your own clock-ins and hours</p>
-        </div>
-        <div className="flex gap-2 w-full sm:w-auto">
+    <div className="min-h-screen bg-gray-50">
+      <header className="bg-black border-b-2 border-[#001f3f] shadow-lg sticky top-0 z-50">
+        <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-24 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h1 className="text-xl sm:text-2xl font-bold text-white">My Time Records</h1>
+            <p className="text-xs sm:text-sm text-gray-300">Viewing your own clock-ins and hours</p>
+          </div>
           <Link
             href="/time-clock"
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2 border border-gray-200 rounded-lg text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors min-h-[44px] bg-white shadow-sm"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2 border border-gray-400 rounded-lg text-sm font-medium text-white hover:bg-gray-800 transition-colors min-h-[44px]"
           >
             ← Back to Time Clock
           </Link>
         </div>
-      </div>
+      </header>
+      <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-24 py-6 sm:py-8">
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
         {[

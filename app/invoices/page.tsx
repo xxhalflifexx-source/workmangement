@@ -164,20 +164,20 @@ export default function InvoicesPage() {
 
 	return (
 		<main className="min-h-screen bg-gray-50">
-			<header className="bg-white shadow-sm border-b">
-				<div className="max-w-full mx-auto px-24 py-4 flex justify-between items-center">
+			<header className="bg-black border-b-2 border-[#001f3f] shadow-lg sticky top-0 z-50">
+				<div className="max-w-full mx-auto px-4 sm:px-6 lg:px-24 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
 					<div className="flex items-center gap-3">
 						<span className="text-2xl">📄</span>
 						<div>
-							<h1 className="text-2xl font-bold text-gray-900">Invoices Monitoring</h1>
-							<p className="text-sm text-gray-500">Track and manage all invoices</p>
+							<h1 className="text-xl sm:text-2xl font-bold text-white">Invoices Monitoring</h1>
+							<p className="text-xs sm:text-sm text-gray-300">Track and manage all invoices</p>
 						</div>
 					</div>
-					<div className="flex items-center gap-3">
-						<button onClick={() => setShowCreate(true)} className="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-purple-700">
+					<div className="flex items-center gap-2 sm:gap-3">
+						<button onClick={() => setShowCreate(true)} className="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-purple-700 min-h-[44px]">
 							+ New Invoice
 						</button>
-						<Link href="/dashboard" className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium">
+						<Link href="/dashboard" className="px-4 py-2 border border-gray-400 rounded-lg hover:bg-gray-800 transition-colors text-sm font-medium text-white min-h-[44px] flex items-center">
 							← Back
 						</Link>
 					</div>

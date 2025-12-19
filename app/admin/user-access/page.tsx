@@ -139,17 +139,17 @@ export default function UserAccessControlPage() {
 
   return (
     <main className="min-h-screen bg-gray-50">
-      <header className="bg-gradient-to-r from-blue-600 to-indigo-600 shadow-sm border-b text-white">
+      <header className="bg-black border-b-2 border-[#001f3f] shadow-lg sticky top-0 z-50">
         <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-24 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold">🔐 User Access Control</h1>
-            <p className="text-xs sm:text-sm text-blue-100">Manage module access permissions for employees</p>
+            <h1 className="text-xl sm:text-2xl font-bold text-white">🔐 User Access Control</h1>
+            <p className="text-xs sm:text-sm text-gray-300">Manage module access permissions for employees</p>
           </div>
           <Link
             href="/admin"
-            className="w-full sm:w-auto min-h-[44px] flex items-center justify-center px-4 py-2 rounded-lg bg-white/15 hover:bg-white/25 text-sm font-medium backdrop-blur transition-colors text-white border border-white/30"
+            className="w-full sm:w-auto min-h-[44px] flex items-center justify-center px-4 py-2 border border-gray-400 rounded-lg hover:bg-gray-800 transition-colors text-sm font-medium text-white"
           >
-            Back to Admin Panel
+            ← Back to Admin Panel
           </Link>
         </div>
       </header>

@@ -298,16 +298,16 @@ export default function HRPage() {
 
   return (
     <main className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-sm border-b">
+      <header className="bg-black border-b-2 border-[#001f3f] shadow-lg sticky top-0 z-50">
         <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-24 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">HR Management</h1>
-            <p className="text-xs sm:text-sm text-gray-500">Employee time tracking and statistics</p>
+            <h1 className="text-xl sm:text-2xl font-bold text-white">HR Management</h1>
+            <p className="text-xs sm:text-sm text-gray-300">Employee time tracking and statistics</p>
           </div>
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
             <Link
               href="/dashboard"
-              className="w-full sm:w-auto px-4 py-2.5 sm:py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium whitespace-nowrap min-h-[44px] flex items-center justify-center"
+              className="w-full sm:w-auto px-4 py-2.5 sm:py-2 border border-gray-400 rounded-lg hover:bg-gray-800 transition-colors text-sm font-medium whitespace-nowrap min-h-[44px] flex items-center justify-center text-white"
             >
               Back to Dashboard
             </Link>
