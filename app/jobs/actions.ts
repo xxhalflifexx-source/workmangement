@@ -381,6 +381,26 @@ export async function getJobs(params: GetJobsParams = {}) {
           orderBy: { clockIn: "desc" },
           take: 10, // Limit to 10 most recent time entries
         },
+        // Fetch all expenses for profit calculation
+        expenses: {
+          select: {
+            id: true,
+            amount: true,
+            category: true,
+            description: true,
+            quantity: true,
+            unit: true,
+            notes: true,
+            expenseDate: true,
+            createdAt: true,
+            user: {
+              select: {
+                name: true,
+              },
+            },
+          },
+          orderBy: { expenseDate: "desc" },
+        },
       },
       orderBy: { createdAt: "desc" },
     });

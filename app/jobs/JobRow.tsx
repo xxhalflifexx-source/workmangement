@@ -15,6 +15,8 @@ interface JobRowProps {
   onActivity?: (job: any) => void;
   onMaterial?: (job: any) => void;
   onQuotation?: (job: any) => void;
+  onExpenses?: (job: any) => void;
+  jobExpenses?: any[];
   onPhotoSelect?: (jobId: string, e: React.ChangeEvent<HTMLInputElement>) => void;
   onSavePhotos?: (jobId: string) => void;
   onSubmitToQC?: (jobId: string) => void;
@@ -37,6 +39,8 @@ export default function JobRow({
   onActivity,
   onMaterial,
   onQuotation,
+  onExpenses,
+  jobExpenses = [],
   onPhotoSelect,
   onSavePhotos,
   onSubmitToQC,
@@ -126,10 +130,8 @@ export default function JobRow({
         onClick={() => setIsExpanded(!isExpanded)}
       >
         <td className="px-4 sm:px-6 py-4">
-          <div className="flex items-center gap-2">
-            <div className="text-xs font-mono font-semibold text-indigo-600 bg-indigo-50 px-2 py-1 rounded border border-indigo-200">
-              {jobNumber}
-            </div>
+          <div className="text-sm font-mono font-medium text-gray-900">
+            {jobNumber}
           </div>
         </td>
         <td className="px-4 sm:px-6 py-4">
@@ -261,6 +263,70 @@ export default function JobRow({
                   )}
                 </div>
               </div>
+
+              {/* Expenses & Profit Summary */}
+              {canManage && (job.finalPrice || job.estimatedPrice) && (
+                <div className="border-t-2 border-indigo-100 pt-6">
+                  <h3 className="text-base font-bold text-gray-900 mb-4 flex items-center gap-2">
+                    <span className="w-1 h-5 bg-indigo-600 rounded-full"></span>
+                    Financial Summary
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    {(() => {
+                      const totalExpenses = (jobExpenses || []).reduce((sum: number, exp: any) => sum + (exp.amount || 0), 0);
+                      const revenue = job.finalPrice || job.estimatedPrice || 0;
+                      const profit = revenue - totalExpenses;
+                      const profitMargin = revenue > 0 ? ((profit / revenue) * 100) : 0;
+                      
+                      return (
+                        <>
+                          <div className="bg-gradient-to-br from-red-50 to-rose-50 border-2 border-red-100 rounded-xl px-4 py-3 shadow-sm">
+                            <p className="text-xs text-red-600 font-semibold uppercase tracking-wider mb-1">
+                              Total Expenses
+                            </p>
+                            <p className="text-lg font-bold text-red-900">
+                              ${totalExpenses.toLocaleString("en-US", {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
+                              })}
+                            </p>
+                          </div>
+                          <div className="bg-gradient-to-br from-blue-50 to-cyan-50 border-2 border-blue-100 rounded-xl px-4 py-3 shadow-sm">
+                            <p className="text-xs text-blue-600 font-semibold uppercase tracking-wider mb-1">
+                              Revenue
+                            </p>
+                            <p className="text-lg font-bold text-blue-900">
+                              ${revenue.toLocaleString("en-US", {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
+                              })}
+                            </p>
+                          </div>
+                          <div className={`bg-gradient-to-br border-2 rounded-xl px-4 py-3 shadow-sm ${
+                            profit >= 0 
+                              ? "from-emerald-50 to-teal-50 border-emerald-100" 
+                              : "from-red-50 to-rose-50 border-red-100"
+                          }`}>
+                            <p className={`text-xs font-semibold uppercase tracking-wider mb-1 ${
+                              profit >= 0 ? "text-emerald-600" : "text-red-600"
+                            }`}>
+                              Profit ({profitMargin >= 0 ? "+" : ""}{profitMargin.toFixed(1)}%)
+                            </p>
+                            <p className={`text-lg font-bold ${
+                              profit >= 0 ? "text-emerald-900" : "text-red-900"
+                            }`}>
+                              ${profit.toLocaleString("en-US", {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
+                              })}
+                            </p>
+                          </div>
+                        </>
+                      );
+                    })()}
+                  </div>
+                </div>
+              )}
 
               {/* Time Entries */}
               {job.timeEntries && job.timeEntries.length > 0 && (
@@ -498,8 +564,8 @@ export default function JobRow({
                       className="px-5 py-3 text-sm bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 text-blue-700 rounded-xl hover:from-blue-100 hover:to-indigo-100 hover:border-blue-300 transition-all font-semibold disabled:bg-gray-100 disabled:border-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed min-h-[44px] flex items-center justify-center gap-2 shadow-sm"
                       title={job.status === "AWAITING_QC" || job.status === "COMPLETED" ? "Job is locked - submitted to QC" : "View notes, photos, and updates for this job"}
                     >
-                      <span className="text-base">📝</span>
-                      <span>Activity</span>
+                      <span className="text-base">📋</span>
+                      <span>History</span>
                     </button>
                   )}
                   {onMaterial && (
@@ -527,6 +593,19 @@ export default function JobRow({
                     >
                       <span className="text-base">💰</span>
                       <span>Create Quotation</span>
+                    </button>
+                  )}
+                  {canManage && onExpenses && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onExpenses(job);
+                      }}
+                      className="px-5 py-3 text-sm bg-gradient-to-r from-rose-50 to-pink-50 border-2 border-rose-200 text-rose-700 rounded-xl hover:from-rose-100 hover:to-pink-100 hover:border-rose-300 transition-all font-semibold min-h-[44px] flex items-center justify-center gap-2 shadow-sm"
+                      title="Manage expenses for this job"
+                    >
+                      <span className="text-base">💵</span>
+                      <span>Expenses</span>
                     </button>
                   )}
                   {canManage && (

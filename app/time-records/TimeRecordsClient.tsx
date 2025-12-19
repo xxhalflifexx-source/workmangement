@@ -364,20 +364,20 @@ export default function TimeRecordsClient({ entries, userName }: Props) {
           <div className="inline-block min-w-full align-middle px-4 sm:px-6 lg:px-8">
             <div className="overflow-hidden border border-gray-200 rounded-lg">
               <table className="min-w-full divide-y divide-gray-200 text-sm">
-                <thead className="bg-gray-50">
+                <thead className="bg-gradient-to-r from-indigo-600 to-blue-600">
                   <tr>
-                    <th className="px-4 py-3 text-left font-semibold text-gray-700">Date</th>
-                    <th className="px-4 py-3 text-left font-semibold text-gray-700">Job / Task</th>
-                    <th className="px-4 py-3 text-left font-semibold text-gray-700">Clock in</th>
-                    <th className="px-4 py-3 text-left font-semibold text-gray-700">Clock out</th>
-                    <th className="px-4 py-3 text-left font-semibold text-gray-700">Break start</th>
-                    <th className="px-4 py-3 text-left font-semibold text-gray-700">Break end</th>
-                    <th className="px-4 py-3 text-left font-semibold text-gray-700">Duration</th>
-                    <th className="px-4 py-3 text-left font-semibold text-gray-700">Notes</th>
-                    <th className="px-4 py-3 text-left font-semibold text-gray-700">Type</th>
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">Date</th>
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">Job / Task</th>
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">Clock in</th>
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">Clock out</th>
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">Break start</th>
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">Break end</th>
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">Duration</th>
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">Notes</th>
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">Type</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100 bg-white">
+                <tbody className="divide-y divide-gray-200 bg-white">
                   {filtered.length === 0 && (
                     <tr>
                       <td colSpan={7} className="px-4 py-6 text-center text-gray-500">
@@ -391,7 +391,7 @@ export default function TimeRecordsClient({ entries, userName }: Props) {
                     return (
                       <tr
                         key={entry.id}
-                        className={`hover:bg-gray-50 transition-colors ${rowIdx % 2 === 1 ? "bg-gray-50/50" : ""}`}
+                        className={`hover:bg-indigo-50/50 transition-colors ${rowIdx % 2 === 1 ? "bg-indigo-50/30" : ""}`}
                       >
                         <td className="px-4 py-3 text-gray-900 font-medium whitespace-nowrap">
                           {formatDateShort(entry.clockIn)}

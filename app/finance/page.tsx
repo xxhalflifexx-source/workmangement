@@ -1148,10 +1148,10 @@ setLoading(false);
                 <div className="overflow-x-auto -mx-4 sm:mx-0">
                   <div className="inline-block min-w-full align-middle px-4 sm:px-0">
                     <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
+                    <thead className="bg-gradient-to-r from-indigo-600 to-blue-600">
                       <tr>
                         <th
-                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                          className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap cursor-pointer hover:bg-indigo-700 transition-colors"
                           onClick={() => handleSort("invoiceNumber")}
                         >
                           <div className="flex items-center gap-2">
@@ -1162,7 +1162,7 @@ setLoading(false);
                           </div>
                         </th>
                         <th
-                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                          className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap cursor-pointer hover:bg-indigo-700 transition-colors"
                           onClick={() => handleSort("job")}
                         >
                           <div className="flex items-center gap-2">
@@ -1173,12 +1173,12 @@ setLoading(false);
                           </div>
                         </th>
                         <th
-                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                          className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap"
                         >
                           Job Title
                         </th>
                         <th
-                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                          className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap cursor-pointer hover:bg-indigo-700 transition-colors"
                           onClick={() => handleSort("customer")}
                         >
                           <div className="flex items-center gap-2">
@@ -1189,7 +1189,7 @@ setLoading(false);
                           </div>
                         </th>
                         <th
-                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                          className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap cursor-pointer hover:bg-indigo-700 transition-colors"
                           onClick={() => handleSort("total")}
                         >
                           <div className="flex items-center gap-2">
@@ -1200,7 +1200,7 @@ setLoading(false);
                           </div>
                         </th>
                         <th
-                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                          className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap cursor-pointer hover:bg-indigo-700 transition-colors"
                           onClick={() => handleSort("status")}
                         >
                           <div className="flex items-center gap-2">
@@ -1211,7 +1211,7 @@ setLoading(false);
                           </div>
                         </th>
                         <th
-                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                          className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap cursor-pointer hover:bg-indigo-700 transition-colors"
                           onClick={() => handleSort("createdAt")}
                         >
                           <div className="flex items-center gap-2">
@@ -1222,7 +1222,7 @@ setLoading(false);
                           </div>
                         </th>
                         <th
-                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                          className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap cursor-pointer hover:bg-indigo-700 transition-colors"
                           onClick={() => handleSort("updatedAt")}
                         >
                           <div className="flex items-center gap-2">
@@ -1232,13 +1232,13 @@ setLoading(false);
                             )}
                           </div>
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">
                           Remarks
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">
                           PDF Files
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">
                           Actions
                         </th>
                       </tr>
@@ -1247,7 +1247,7 @@ setLoading(false);
                   {filteredInvoices.map((invoice) => (
                     <tr
                       key={invoice.id}
-                      className="hover:bg-gray-50 cursor-pointer"
+                      className="hover:bg-indigo-50/50 transition-colors cursor-pointer"
                       onClick={() => {
                         setSelectedInvoice(invoice);
                         setShowDetails(true);
@@ -1646,18 +1646,18 @@ setLoading(false);
                     </h3>
                     <div className="border border-gray-200 rounded-lg overflow-hidden">
                       <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
+                        <thead className="bg-gradient-to-r from-indigo-600 to-blue-600">
                           <tr>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                            <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">
                               Description
                             </th>
-                            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                            <th className="px-4 sm:px-6 py-4 text-right text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">
                               Quantity
                             </th>
-                            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                            <th className="px-4 sm:px-6 py-4 text-right text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">
                               Rate
                             </th>
-                            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                            <th className="px-4 sm:px-6 py-4 text-right text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">
                               Amount
                             </th>
                           </tr>
@@ -1691,15 +1691,15 @@ setLoading(false);
                     </h3>
                     <div className="border border-gray-200 rounded-lg overflow-hidden">
                       <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
+                        <thead className="bg-gradient-to-r from-indigo-600 to-blue-600">
                           <tr>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                            <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">
                               Date
                             </th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                            <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">
                               Method
                             </th>
-                            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                            <th className="px-4 sm:px-6 py-4 text-right text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">
                               Amount
                             </th>
                           </tr>
@@ -2039,13 +2039,13 @@ setLoading(false);
                     <div className="hidden sm:block">
                       <div className="border border-[var(--brand-border)] rounded-2xl overflow-hidden shadow-sm">
                         <table className="min-w-full divide-y divide-[var(--brand-border)]">
-                          <thead className="bg-[var(--brand-surface-muted)]">
+                          <thead className="bg-gradient-to-r from-indigo-600 to-blue-600">
                             <tr>
-                              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Description</th>
-                              <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase">Quantity</th>
-                              <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase">Rate</th>
-                              <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase">Amount</th>
-                              <th className="px-4 py-3 text-center text-xs font-semibold text-slate-600 uppercase w-20">Action</th>
+                              <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">Description</th>
+                              <th className="px-4 sm:px-6 py-4 text-right text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">Quantity</th>
+                              <th className="px-4 sm:px-6 py-4 text-right text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">Rate</th>
+                              <th className="px-4 sm:px-6 py-4 text-right text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">Amount</th>
+                              <th className="px-4 sm:px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap w-20">Action</th>
                             </tr>
                           </thead>
                           <tbody className="bg-white divide-y divide-[var(--brand-border)]">
@@ -2431,13 +2431,13 @@ setLoading(false);
                     <div className="hidden sm:block">
                       <div className="border border-gray-300 rounded-lg overflow-hidden">
                         <table className="min-w-full divide-y divide-gray-200">
-                          <thead className="bg-gray-50">
+                          <thead className="bg-gradient-to-r from-indigo-600 to-blue-600">
                             <tr>
-                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
-                              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Quantity</th>
-                              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Rate</th>
-                              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Amount</th>
-                              <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase w-20">Action</th>
+                              <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">Description</th>
+                              <th className="px-4 sm:px-6 py-4 text-right text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">Quantity</th>
+                              <th className="px-4 sm:px-6 py-4 text-right text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">Rate</th>
+                              <th className="px-4 sm:px-6 py-4 text-right text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">Amount</th>
+                              <th className="px-4 sm:px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap w-20">Action</th>
                             </tr>
                           </thead>
                           <tbody className="bg-white divide-y divide-gray-200">

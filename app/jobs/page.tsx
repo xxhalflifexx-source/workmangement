@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef, Suspense, useMemo, useCallback } from "react";
-import { getJobs, getAllUsers, createJob, updateJob, deleteJob, getJobActivities, addJobActivity, getAllCustomers, createCustomer, updateCustomer, saveJobPhotos, submitJobPhotosToQC, getJobPhotos, removeJobPhoto as removeJobPhotoFromDB } from "./actions";
+import { getJobs, getAllUsers, createJob, updateJob, deleteJob, getJobActivities, addJobActivity, getAllCustomers, createCustomer, updateCustomer, saveJobPhotos, submitJobPhotosToQC, getJobPhotos, removeJobPhoto as removeJobPhotoFromDB, getJobExpenses, addJobExpense, deleteJobExpense } from "./actions";
 import { createMaterialRequest, getJobMaterialRequests } from "../material-requests/actions";
 import { getCompanySettingsForInvoice } from "./invoice-actions";
 import { createQuotation, updateQuotation, getQuotationsByJobId, getQuotation } from "../quotations/actions";
@@ -47,6 +47,20 @@ interface Job {
     id: string;
     images: string | null;
     createdAt: string;
+  }>;
+  expenses?: Array<{
+    id: string;
+    amount: number;
+    category: string;
+    description: string;
+    quantity: number;
+    unit: string | null;
+    notes: string | null;
+    expenseDate: string;
+    createdAt: string;
+    user: {
+      name: string | null;
+    };
   }>;
 }
 
@@ -255,9 +269,18 @@ function JobsPageContent() {
   const [jobActivities, setJobActivities] = useState<JobActivity[]>([]);
   const [loadingActivities, setLoadingActivities] = useState(false);
   
-  const [newActivityNotes, setNewActivityNotes] = useState("");
-  const [newActivityFiles, setNewActivityFiles] = useState<File[]>([]);
-  const [addingActivity, setAddingActivity] = useState(false);
+  // Expenses state
+  const [showExpensesModal, setShowExpensesModal] = useState(false);
+  const [selectedJobForExpenses, setSelectedJobForExpenses] = useState<Job | null>(null);
+  const [jobExpenses, setJobExpenses] = useState<any[]>([]);
+  const [loadingExpenses, setLoadingExpenses] = useState(false);
+  const [expenseCategory, setExpenseCategory] = useState("Materials");
+  const [expenseDescription, setExpenseDescription] = useState("");
+  const [expenseAmount, setExpenseAmount] = useState("");
+  const [expenseQuantity, setExpenseQuantity] = useState("1");
+  const [expenseUnit, setExpenseUnit] = useState("");
+  const [expenseNotes, setExpenseNotes] = useState("");
+  const [addingExpense, setAddingExpense] = useState(false);
   
   // Photo upload states per job
   const [jobPhotoFiles, setJobPhotoFiles] = useState<Record<string, File[]>>({});
@@ -793,69 +816,74 @@ function JobsPageContent() {
     setLoadingActivities(false);
   };
 
-  const handleAddActivity = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedJobForActivity) return;
-
-    // Prevent adding activities if job is locked
-    if (selectedJobForActivity.status === "AWAITING_QC" || selectedJobForActivity.status === "COMPLETED") {
-      setError("This job has been submitted to QC and cannot be edited until returned for rework.");
+  // Expenses handlers
+  const openExpensesModal = async (job: Job) => {
+    if (!canManage) {
+      setError("Only managers and admins can manage expenses");
       return;
     }
+    setSelectedJobForExpenses(job);
+    setShowExpensesModal(true);
+    setLoadingExpenses(true);
+    
+    const res = await getJobExpenses(job.id);
+    if (res.ok && res.expenses) {
+      setJobExpenses(res.expenses);
+    } else {
+      setError(res.error || "Failed to load expenses");
+    }
+    setLoadingExpenses(false);
+  };
 
-    setAddingActivity(true);
+  const handleAddExpense = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedJobForExpenses) return;
+
+    setAddingExpense(true);
     setError(undefined);
 
-    let imagePaths: string[] = [];
-
-    // Upload images if any selected
-    if (newActivityFiles.length > 0) {
-      try {
-        const formData = new FormData();
-        newActivityFiles.forEach((file) => formData.append("files", file));
-
-        const uploadRes = await fetch("/api/upload", {
-          method: "POST",
-          body: formData,
-        });
-
-        if (uploadRes.ok) {
-          const data = await uploadRes.json();
-          imagePaths = data.paths || [];
-        }
-      } catch (err) {
-        console.error("Upload error:", err);
-      }
-    }
-
     const formData = new FormData();
-    formData.append("jobId", selectedJobForActivity.id);
-    formData.append("notes", newActivityNotes);
-    if (imagePaths.length > 0) {
-      formData.append("images", JSON.stringify(imagePaths));
-    }
+    formData.append("jobId", selectedJobForExpenses.id);
+    formData.append("category", expenseCategory);
+    formData.append("description", expenseDescription);
+    formData.append("amount", expenseAmount);
+    formData.append("quantity", expenseQuantity);
+    formData.append("unit", expenseUnit);
+    formData.append("notes", expenseNotes);
 
-    const res = await addJobActivity(formData);
+    const res = await addJobExpense(formData);
     if (res.ok) {
-      setNewActivityNotes("");
-      setNewActivityFiles([]);
-      setSuccess("Activity added successfully!");
-      // Refresh activities
-      openActivityModal(selectedJobForActivity);
+      setSuccess("Expense added successfully!");
+      setExpenseCategory("Materials");
+      setExpenseDescription("");
+      setExpenseAmount("");
+      setExpenseQuantity("1");
+      setExpenseUnit("");
+      setExpenseNotes("");
+      // Refresh expenses
+      openExpensesModal(selectedJobForExpenses);
+      await loadData(); // Refresh jobs to update profit calculations
     } else {
-      setError(res.error);
+      setError(res.error || "Failed to add expense");
     }
 
-    setAddingActivity(false);
+    setAddingExpense(false);
   };
 
-  const handleActivityFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    setNewActivityFiles((prev) => [...prev, ...files]);
-  };
+  const handleDeleteExpense = async (expenseId: string) => {
+    if (!confirm("Are you sure you want to delete this expense?")) return;
 
-  const removeActivityFile = (index: number) => {
-    setNewActivityFiles((prev) => prev.filter((_, i) => i !== index));
+    setError(undefined);
+    const res = await deleteJobExpense(expenseId);
+    if (res.ok) {
+      setSuccess("Expense deleted successfully!");
+      if (selectedJobForExpenses) {
+        openExpensesModal(selectedJobForExpenses);
+        await loadData(); // Refresh jobs to update profit calculations
+      }
+    } else {
+      setError(res.error || "Failed to delete expense");
+    }
   };
 
   const handleJobPhotoSelect = (jobId: string, e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1654,28 +1682,28 @@ function JobsPageContent() {
                 <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gradient-to-r from-indigo-600 to-blue-600">
                   <tr>
-                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">
                       Job Number
                     </th>
-                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">
                       Job Title
                     </th>
-                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">
                       Client
                     </th>
-                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">
                       Assigned Workers
                     </th>
-                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">
                       Status
                     </th>
-                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">
                       Start Date
                     </th>
-                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">
                       Deadline
                     </th>
-                    <th className="px-4 sm:px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider">
+                    <th className="px-4 sm:px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">
                       Details
                     </th>
                   </tr>
@@ -1704,6 +1732,8 @@ function JobsPageContent() {
                           onActivity={openActivityModal}
                           onMaterial={openMaterialModal}
                           onQuotation={openQuotationModal}
+                          onExpenses={openExpensesModal}
+                          jobExpenses={job.expenses || []}
                           onPhotoSelect={handleJobPhotoSelect}
                           onSavePhotos={handleSavePhotos}
                           onSubmitToQC={handleSubmitToQC}
@@ -2282,7 +2312,7 @@ function JobsPageContent() {
             {/* Header */}
             <div className="sticky top-0 bg-white border-b px-4 sm:px-6 py-3 sm:py-4 flex justify-between items-center z-[1]">
               <div>
-                <h2 className="text-2xl font-bold text-gray-900">📝 Job Activity & Notes</h2>
+                <h2 className="text-2xl font-bold text-gray-900">📋 History</h2>
                 <p className="text-sm text-gray-600 mt-1">{selectedJobForActivity.title}</p>
               </div>
               <button
@@ -2290,8 +2320,6 @@ function JobsPageContent() {
                   setShowActivityModal(false);
                   setSelectedJobForActivity(null);
                   setJobActivities([]);
-                  setNewActivityNotes("");
-                  setNewActivityFiles([]);
                 }}
                 className="text-gray-400 hover:text-gray-600 text-2xl"
               >
@@ -2310,85 +2338,9 @@ function JobsPageContent() {
                 </div>
               )}
 
-              {/* Add Activity Form */}
-              <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-6">
-                <h3 className="text-lg font-bold text-gray-900 mb-4">➕ Add Update</h3>
-                <form onSubmit={handleAddActivity} className="space-y-4">
-                  <textarea
-                    value={newActivityNotes}
-                    onChange={(e) => setNewActivityNotes(e.target.value)}
-                    placeholder="Add notes, updates, or progress report..."
-                    className="w-full border border-gray-300 rounded-lg p-3 text-sm resize-none disabled:bg-gray-100 disabled:cursor-not-allowed"
-                    rows={3}
-                    required={newActivityFiles.length === 0}
-                    disabled={selectedJobForActivity ? (selectedJobForActivity.status === "AWAITING_QC" || selectedJobForActivity.status === "COMPLETED") : false}
-                  />
-
-                  {/* Photo Upload */}
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 bg-white">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      onChange={handleActivityFileSelect}
-                      className="hidden"
-                      id="activity-photo-upload"
-                      disabled={selectedJobForActivity ? (selectedJobForActivity.status === "AWAITING_QC" || selectedJobForActivity.status === "COMPLETED") : false}
-                    />
-                    <label
-                      htmlFor="activity-photo-upload"
-                      className={`inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 ${
-                        selectedJobForActivity && (selectedJobForActivity.status === "AWAITING_QC" || selectedJobForActivity.status === "COMPLETED")
-                          ? "opacity-50 cursor-not-allowed"
-                          : "cursor-pointer hover:bg-gray-50"
-                      }`}
-                    >
-                      <span>📷</span>
-                      Attach Photos
-                    </label>
-
-                    {newActivityFiles.length > 0 && (
-                      <div className="mt-3 grid grid-cols-2 gap-2">
-                        {newActivityFiles.map((file, index) => (
-                          <div key={index} className="relative bg-gray-100 border border-gray-200 rounded p-2 flex items-center gap-2">
-                            <div className="w-10 h-10 bg-gray-200 rounded overflow-hidden">
-                              <img
-                                src={URL.createObjectURL(file)}
-                                alt={`Preview ${index + 1}`}
-                                className="w-full h-full object-cover"
-                              />
-                            </div>
-                            <p className="text-xs flex-1 truncate">{file.name}</p>
-                            <button
-                              onClick={() => removeActivityFile(index)}
-                              type="button"
-                              className="text-red-500 hover:text-red-700"
-                            >
-                              ✕
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={
-                      addingActivity ||
-                      (!newActivityNotes && newActivityFiles.length === 0) ||
-                      (selectedJobForActivity ? (selectedJobForActivity.status === "AWAITING_QC" || selectedJobForActivity.status === "COMPLETED") : false)
-                    }
-                    className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
-                  >
-                    {addingActivity ? "Adding..." : "Add Update"}
-                  </button>
-                </form>
-              </div>
-
-              {/* Activity Feed */}
+              {/* History Feed */}
               <div>
-                <h3 className="text-lg font-bold text-gray-900 mb-4">📋 Activity History</h3>
+                <h3 className="text-lg font-bold text-gray-900 mb-4">📋 History</h3>
                 {loadingActivities ? (
                   <div className="text-center py-12">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
@@ -3107,6 +3059,226 @@ function JobsPageContent() {
           }
         }
       `}</style>
+
+      {/* Expenses Modal */}
+      {showExpensesModal && selectedJobForExpenses && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl my-4 max-h-[calc(100vh-2rem)] overflow-y-auto">
+            {/* Header */}
+            <div className="sticky top-0 bg-white border-b px-4 sm:px-6 py-3 sm:py-4 flex justify-between items-center z-[1]">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">💵 Expenses</h2>
+                <p className="text-sm text-gray-600 mt-1">{selectedJobForExpenses.title}</p>
+              </div>
+              <button
+                onClick={() => {
+                  setShowExpensesModal(false);
+                  setSelectedJobForExpenses(null);
+                  setJobExpenses([]);
+                  setExpenseCategory("Materials");
+                  setExpenseDescription("");
+                  setExpenseAmount("");
+                  setExpenseQuantity("1");
+                  setExpenseUnit("");
+                  setExpenseNotes("");
+                }}
+                className="text-gray-400 hover:text-gray-600 text-2xl"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 space-y-6">
+              {/* Add Expense Form */}
+              <div className="bg-rose-50 border-2 border-rose-200 rounded-xl p-6">
+                <h3 className="text-lg font-bold text-gray-900 mb-4">➕ Add Expense</h3>
+                <form onSubmit={handleAddExpense} className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Category *
+                      </label>
+                      <select
+                        value={expenseCategory}
+                        onChange={(e) => setExpenseCategory(e.target.value)}
+                        className="w-full border-2 border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-colors bg-white min-h-[44px]"
+                        required
+                      >
+                        <option value="Materials">Materials</option>
+                        <option value="Equipment">Equipment</option>
+                        <option value="Subcontractor">Subcontractor</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Amount *
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-2.5 text-gray-500">$</span>
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={expenseAmount}
+                          onChange={(e) => setExpenseAmount(e.target.value)}
+                          placeholder="0.00"
+                          className="w-full border-2 border-gray-300 rounded-xl pl-7 pr-3 py-2.5 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-colors bg-white min-h-[44px]"
+                          required
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Description *
+                    </label>
+                    <input
+                      type="text"
+                      value={expenseDescription}
+                      onChange={(e) => setExpenseDescription(e.target.value)}
+                      placeholder="e.g., Steel bars, Welding supplies"
+                      className="w-full border-2 border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-colors bg-white min-h-[44px]"
+                      required
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Quantity
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={expenseQuantity}
+                        onChange={(e) => setExpenseQuantity(e.target.value)}
+                        placeholder="1"
+                        className="w-full border-2 border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-colors bg-white min-h-[44px]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Unit
+                      </label>
+                      <input
+                        type="text"
+                        value={expenseUnit}
+                        onChange={(e) => setExpenseUnit(e.target.value)}
+                        placeholder="pcs, kg, lbs, hours"
+                        className="w-full border-2 border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-colors bg-white min-h-[44px]"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Notes
+                    </label>
+                    <textarea
+                      value={expenseNotes}
+                      onChange={(e) => setExpenseNotes(e.target.value)}
+                      placeholder="Additional notes about this expense..."
+                      rows={3}
+                      className="w-full border-2 border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-colors bg-white resize-none"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={addingExpense || !expenseDescription || !expenseAmount}
+                    className="w-full bg-gradient-to-r from-rose-600 to-pink-600 text-white py-3 rounded-xl font-semibold hover:from-rose-700 hover:to-pink-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all shadow-md min-h-[44px]"
+                  >
+                    {addingExpense ? "Adding..." : "Add Expense"}
+                  </button>
+                </form>
+              </div>
+
+              {/* Expenses List */}
+              <div>
+                <h3 className="text-lg font-bold text-gray-900 mb-4">📋 Expense History</h3>
+                {loadingExpenses ? (
+                  <div className="text-center py-12">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-rose-600 mx-auto"></div>
+                    <p className="text-gray-600 mt-4">Loading expenses...</p>
+                  </div>
+                ) : jobExpenses.length === 0 ? (
+                  <div className="text-center py-12 bg-gray-50 rounded-xl">
+                    <div className="text-4xl mb-3">💵</div>
+                    <p className="text-gray-600">No expenses recorded yet for this job</p>
+                    <p className="text-gray-500 text-sm mt-1">Add your first expense above</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {(() => {
+                      const totalExpenses = jobExpenses.reduce((sum: number, exp: any) => sum + (exp.amount || 0), 0);
+                      const revenue = selectedJobForExpenses.finalPrice || selectedJobForExpenses.estimatedPrice || 0;
+                      const profit = revenue - totalExpenses;
+                      
+                      return (
+                        <>
+                          <div className="bg-gradient-to-r from-indigo-50 to-blue-50 border-2 border-indigo-200 rounded-xl p-4 mb-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                              <div>
+                                <p className="text-xs text-indigo-600 font-semibold uppercase tracking-wider mb-1">Total Expenses</p>
+                                <p className="text-xl font-bold text-indigo-900">${totalExpenses.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                              </div>
+                              <div>
+                                <p className="text-xs text-blue-600 font-semibold uppercase tracking-wider mb-1">Revenue</p>
+                                <p className="text-xl font-bold text-blue-900">${revenue.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                              </div>
+                              <div>
+                                <p className={`text-xs font-semibold uppercase tracking-wider mb-1 ${profit >= 0 ? "text-emerald-600" : "text-red-600"}`}>Profit</p>
+                                <p className={`text-xl font-bold ${profit >= 0 ? "text-emerald-900" : "text-red-900"}`}>${profit.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                              </div>
+                            </div>
+                          </div>
+                          {jobExpenses.map((expense: any) => (
+                            <div key={expense.id} className="bg-white border-2 border-gray-200 rounded-xl p-4 hover:border-indigo-300 transition-colors shadow-sm">
+                              <div className="flex justify-between items-start mb-2">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <p className="font-semibold text-gray-900">{expense.description}</p>
+                                    <span className="text-xs px-2 py-1 rounded-full font-medium bg-rose-100 text-rose-700">
+                                      {expense.category}
+                                    </span>
+                                  </div>
+                                  <p className="text-sm text-gray-600">
+                                    {expense.quantity && expense.quantity !== 1 && (
+                                      <span>{expense.quantity} {expense.unit || ""} × </span>
+                                    )}
+                                    <span className="font-semibold text-gray-900">${expense.amount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                  </p>
+                                  {expense.notes && (
+                                    <p className="text-sm text-gray-600 mt-1 italic">"{expense.notes}"</p>
+                                  )}
+                                  <p className="text-xs text-gray-500 mt-1">
+                                    Added by {expense.user?.name || "Unknown"} • {formatDateTime(expense.expenseDate || expense.createdAt)}
+                                  </p>
+                                </div>
+                                <button
+                                  onClick={() => handleDeleteExpense(expense.id)}
+                                  className="ml-4 px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg border border-red-200 transition-colors text-sm font-medium min-h-[44px]"
+                                  title="Delete expense"
+                                >
+                                  🗑️
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </>
+                      );
+                    })()}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Photo Viewer Modal */}
       {showPhotoViewer && (

@@ -321,31 +321,31 @@ export default function InvoicesPage() {
 						<p className="text-gray-600">Create your first invoice to get started.</p>
 					</div>
 				) : (
-					<div className="bg-white rounded-xl shadow overflow-x-auto border border-gray-200">
+					<div className="bg-white rounded-2xl shadow-lg overflow-x-auto border-2 border-indigo-100">
 						<table className="min-w-full">
-							<thead className="bg-gray-50 text-xs">
+							<thead className="bg-gradient-to-r from-indigo-600 to-blue-600">
 								<tr>
-									<th className="px-4 py-3 text-left border-b font-semibold text-gray-700">#</th>
-									<th className="px-4 py-3 text-left border-b font-semibold text-gray-700">Invoice #</th>
-									<th className="px-4 py-3 text-left border-b font-semibold text-gray-700">Client Name</th>
-									<th className="px-4 py-3 text-left border-b font-semibold text-gray-700">Description</th>
-									<th className="px-4 py-3 text-right border-b font-semibold text-gray-700">Amount</th>
-									<th className="px-4 py-3 text-left border-b font-semibold text-gray-700">Invoice Date</th>
-									<th className="px-4 py-3 text-left border-b font-semibold text-gray-700">Collection Date</th>
-									<th className="px-4 py-3 text-left border-b font-semibold text-gray-700">Elapsed</th>
-									<th className="px-4 py-3 text-left border-b font-semibold text-gray-700">Due Date</th>
-									<th className="px-4 py-3 text-left border-b font-semibold text-gray-700">Sent Date</th>
-									<th className="px-4 py-3 text-left border-b font-semibold text-gray-700">Release Date</th>
-									<th className="px-4 py-3 text-left border-b font-semibold text-gray-700">Credit</th>
-									<th className="px-4 py-3 text-center border-b font-semibold text-gray-700">Actions</th>
+									<th className="px-4 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">#</th>
+									<th className="px-4 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">Invoice #</th>
+									<th className="px-4 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">Client Name</th>
+									<th className="px-4 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">Description</th>
+									<th className="px-4 py-4 text-right text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">Amount</th>
+									<th className="px-4 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">Invoice Date</th>
+									<th className="px-4 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">Collection Date</th>
+									<th className="px-4 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">Elapsed</th>
+									<th className="px-4 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">Due Date</th>
+									<th className="px-4 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">Sent Date</th>
+									<th className="px-4 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">Release Date</th>
+									<th className="px-4 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">Credit</th>
+									<th className="px-4 py-4 text-center text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">Actions</th>
 								</tr>
 							</thead>
-							<tbody className="divide-y divide-gray-200">
+							<tbody className="bg-white divide-y divide-gray-200">
 								{invoices.map((inv, idx) => {
 									const description = inv.lines[0]?.description || "N/A";
 									const shortDesc = description.length > 20 ? description.substring(0, 17) + "..." : description;
 									return (
-										<tr key={inv.id} className="hover:bg-gray-50 text-sm">
+										<tr key={inv.id} className="hover:bg-gray-50 text-sm transition-colors">
 											<td className="px-4 py-3 border-b">{idx + 1}</td>
 											<td className="px-4 py-3 border-b font-medium">{inv.invoiceNumber || inv.id.slice(0, 8).toUpperCase()}</td>
 											<td className="px-4 py-3 border-b">{inv.customerName || inv.customer?.name || "--"}</td>

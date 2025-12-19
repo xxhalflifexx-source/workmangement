@@ -175,10 +175,10 @@ export default function InventoryTab({
           <div className="overflow-x-auto -mx-4 sm:mx-0">
             <div className="inline-block min-w-full align-middle px-4 sm:px-0">
               <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+                <thead className="bg-gradient-to-r from-indigo-600 to-blue-600">
                   <tr>
                     <th
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                      className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap cursor-pointer hover:bg-indigo-700 transition-colors"
                       onClick={() => {
                         setSortField("name");
                         setSortDirection(sortField === "name" && sortDirection === "asc" ? "desc" : "asc");
@@ -191,11 +191,11 @@ export default function InventoryTab({
                         )}
                       </div>
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">
                       Category
                     </th>
                     <th
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                      className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap cursor-pointer hover:bg-indigo-700 transition-colors"
                       onClick={() => {
                         setSortField("quantity");
                         setSortDirection(sortField === "quantity" && sortDirection === "asc" ? "desc" : "asc");
@@ -208,11 +208,11 @@ export default function InventoryTab({
                         )}
                       </div>
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">
                       Unit
                     </th>
                     <th
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                      className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap cursor-pointer hover:bg-indigo-700 transition-colors"
                       onClick={() => {
                         setSortField("location");
                         setSortDirection(sortField === "location" && sortDirection === "asc" ? "desc" : "asc");
@@ -225,11 +225,11 @@ export default function InventoryTab({
                         )}
                       </div>
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">
                       Status
                     </th>
                     <th
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                      className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap cursor-pointer hover:bg-indigo-700 transition-colors"
                       onClick={() => {
                         setSortField("updatedAt");
                         setSortDirection(sortField === "updatedAt" && sortDirection === "asc" ? "desc" : "asc");
@@ -242,7 +242,7 @@ export default function InventoryTab({
                         )}
                       </div>
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">
                       Actions
                     </th>
                   </tr>
@@ -251,7 +251,7 @@ export default function InventoryTab({
                   {paginatedItems.map((item) => {
                     const stockStatus = getStockStatus(item);
                     return (
-                          <tr key={item.id} className="hover:bg-gray-50">
+                          <tr key={item.id} className="hover:bg-indigo-50/50 transition-colors">
                         <td className="px-6 py-4 text-sm font-medium text-gray-900">
                           <div>{item.name}</div>
                           {item.sku && (
