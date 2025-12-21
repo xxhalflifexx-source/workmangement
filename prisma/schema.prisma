@@ -434,6 +434,7 @@ model OperationsCommonFolder {
   parent      OperationsCommonFolder? @relation("OperationsCommonFolderHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
   children    OperationsCommonFolder[] @relation("OperationsCommonFolderHierarchy")
   files       OperationsCommonFile[]
+  sopDocuments SOPDocument[]
   creator     User         @relation(fields: [createdBy], references: [id], onDelete: Cascade)
 
   @@index([parentId])
