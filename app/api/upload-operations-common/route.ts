@@ -13,8 +13,8 @@ export async function POST(request: NextRequest) {
 		}
 
 		const userRole = (session.user as any).role;
-		if (userRole !== "ADMIN") {
-			return NextResponse.json({ error: "Unauthorized: Only admins can upload files" }, { status: 403 });
+		if (userRole !== "ADMIN" && userRole !== "MANAGER") {
+			return NextResponse.json({ error: "Unauthorized: Only admins and managers can upload files" }, { status: 403 });
 		}
 
 		const supabaseUrl = process.env.SUPABASE_URL;

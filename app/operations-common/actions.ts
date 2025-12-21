@@ -84,8 +84,8 @@ export async function createFolder(name: string, parentId?: string | null) {
   }
 
   const userRole = (session.user as any).role;
-  if (userRole !== "ADMIN") {
-    return { ok: false, error: "Unauthorized: Only admins can create folders" };
+  if (userRole !== "ADMIN" && userRole !== "MANAGER") {
+    return { ok: false, error: "Unauthorized: Only admins and managers can create folders" };
   }
 
   if (!name || name.trim().length === 0) {
@@ -130,8 +130,8 @@ export async function updateFolder(folderId: string, name: string) {
   }
 
   const userRole = (session.user as any).role;
-  if (userRole !== "ADMIN") {
-    return { ok: false, error: "Unauthorized: Only admins can update folders" };
+  if (userRole !== "ADMIN" && userRole !== "MANAGER") {
+    return { ok: false, error: "Unauthorized: Only admins and managers can update folders" };
   }
 
   if (!name || name.trim().length === 0) {
@@ -175,8 +175,8 @@ export async function deleteFolder(folderId: string) {
   }
 
   const userRole = (session.user as any).role;
-  if (userRole !== "ADMIN") {
-    return { ok: false, error: "Unauthorized: Only admins can delete folders" };
+  if (userRole !== "ADMIN" && userRole !== "MANAGER") {
+    return { ok: false, error: "Unauthorized: Only admins and managers can delete folders" };
   }
 
   try {
@@ -224,8 +224,8 @@ export async function createFile(
   }
 
   const userRole = (session.user as any).role;
-  if (userRole !== "ADMIN") {
-    return { ok: false, error: "Unauthorized: Only admins can upload files" };
+  if (userRole !== "ADMIN" && userRole !== "MANAGER") {
+    return { ok: false, error: "Unauthorized: Only admins and managers can upload files" };
   }
 
   if (!name || name.trim().length === 0) {
@@ -278,8 +278,8 @@ export async function updateFile(fileId: string, name?: string, folderId?: strin
   }
 
   const userRole = (session.user as any).role;
-  if (userRole !== "ADMIN") {
-    return { ok: false, error: "Unauthorized: Only admins can update files" };
+  if (userRole !== "ADMIN" && userRole !== "MANAGER") {
+    return { ok: false, error: "Unauthorized: Only admins and managers can update files" };
   }
 
   try {
@@ -325,8 +325,8 @@ export async function deleteFile(fileId: string) {
   }
 
   const userRole = (session.user as any).role;
-  if (userRole !== "ADMIN") {
-    return { ok: false, error: "Unauthorized: Only admins can delete files" };
+  if (userRole !== "ADMIN" && userRole !== "MANAGER") {
+    return { ok: false, error: "Unauthorized: Only admins and managers can delete files" };
   }
 
   try {
