@@ -96,44 +96,39 @@ export function extractAmountFromText(text: string, format?: ReceiptFormat | nul
     filterTopPercent = 50; // Default: filter top 50%
   }
 
-  // Build keyword pattern from format if available, otherwise use default
-  const totalKeywordPattern = format
-    ? new RegExp(`(?:^|\\s)(?:${format.patterns.totalKeywords.join("|")})[:\s]*\$?\\s*(\\d+\\.\\d{2})`, "i")
-    : /(?:^|\s)(?:total|grand\s*total|final\s*total)[:\s]*\$?\s*(\d+\.\d{2})/i;
-
-  // Priority 1: Lines containing "Total" or format-specific keywords (highest priority)
-  // Prioritize amounts in bottom section of receipt
+  // Priority 1: Lines containing "Total" - Extract amount next to "total" keyword
+  // This is the most reliable method - find "total" and get the amount near it
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     const isBottomSection = i >= bottomThreshold;
     
-    // Use format-specific pattern or default
-    const totalMatch = line.match(totalKeywordPattern);
-    if (totalMatch) {
-      const amount = parseFloat(totalMatch[1]);
-      // Apply format-specific amount range if available
-      const minAmount = format ? format.extractionRules.minAmount : 0;
-      const maxAmount = format ? format.extractionRules.maxAmount : 1000000;
+    // Look for "total" keyword (case insensitive, flexible spacing)
+    const totalKeywordMatch = line.match(/\b(total|grand\s*total|final\s*total|amount\s*total)\b/i);
+    if (totalKeywordMatch) {
+      // Try multiple patterns to find amount next to "total"
       
-      if (!isNaN(amount) && amount > minAmount && amount < maxAmount) {
-        amountCandidates.push({
-          amount,
-          line,
-          priority: isBottomSection ? 12 : 10, // Higher priority if in bottom section
-          keyword: "total",
-          lineIndex: i,
-          isBottomSection,
-        });
+      // Pattern 1: "Total $XX.XX" or "Total: $XX.XX" or "Total XX.XX"
+      const pattern1 = line.match(/\btotal\b[:\s]*\$?\s*(\d+\.\d{2})/i);
+      if (pattern1) {
+        const amount = parseFloat(pattern1[1]);
+        const minAmount = format ? format.extractionRules.minAmount : 0;
+        const maxAmount = format ? format.extractionRules.maxAmount : 1000000;
+        
+        if (!isNaN(amount) && amount > minAmount && amount < maxAmount) {
+          amountCandidates.push({
+            amount,
+            line,
+            priority: isBottomSection ? 15 : 13, // Very high priority
+            keyword: "total",
+            lineIndex: i,
+            isBottomSection,
+          });
+        }
       }
-    }
-
-    // Also check for amount at end of line with "total" keyword
-    const totalKeywordTest = format
-      ? new RegExp(format.patterns.totalKeywords.join("|"), "i")
-      : /total|grand\s*total/i;
       
-    if (totalKeywordTest.test(line)) {
-      const endMatch = line.match(/(\d+\.\d{2})\s*$/);
+      // Pattern 2: Amount at end of line after "total" keyword
+      // "Total                   20.53" or "Total 20.53"
+      const endMatch = line.match(/\btotal\b.*?(\d+\.\d{2})\s*$/i);
       if (endMatch) {
         const amount = parseFloat(endMatch[1]);
         const minAmount = format ? format.extractionRules.minAmount : 0;
@@ -143,11 +138,39 @@ export function extractAmountFromText(text: string, format?: ReceiptFormat | nul
           amountCandidates.push({
             amount,
             line,
-            priority: isBottomSection ? 12 : 10,
+            priority: isBottomSection ? 15 : 13,
             keyword: "total",
             lineIndex: i,
             isBottomSection,
           });
+        }
+      }
+      
+      // Pattern 3: Amount anywhere on the line with "total" (fallback)
+      // Extract all amounts from the line and prefer the largest reasonable one
+      const allAmountsOnLine = Array.from(line.matchAll(/(\d+\.\d{2})/g));
+      for (const match of allAmountsOnLine) {
+        const amount = parseFloat(match[1]);
+        const minAmount = format ? format.extractionRules.minAmount : 1;
+        const maxAmount = format ? format.extractionRules.maxAmount : 1000000;
+        
+        // Prefer amounts that are reasonable (not too small, not too large)
+        if (!isNaN(amount) && amount >= minAmount && amount < maxAmount) {
+          // Check if amount is near the "total" keyword (within 30 chars)
+          const totalIndex = line.toLowerCase().indexOf("total");
+          const amountIndex = match.index || 0;
+          const distance = Math.abs(amountIndex - totalIndex);
+          
+          if (distance < 30) {
+            amountCandidates.push({
+              amount,
+              line,
+              priority: isBottomSection ? 14 : 12, // High priority if close to "total"
+              keyword: "total",
+              lineIndex: i,
+              isBottomSection,
+            });
+          }
         }
       }
     }
