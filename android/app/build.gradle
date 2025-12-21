@@ -16,6 +16,16 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    
+    // Ensure annotation processing is enabled for Capacitor plugins
+    defaultConfig {
+        javaCompileOptions {
+            annotationProcessorOptions {
+                arguments = [:]
+            }
+        }
+    }
+    
     buildTypes {
         release {
             minifyEnabled false
