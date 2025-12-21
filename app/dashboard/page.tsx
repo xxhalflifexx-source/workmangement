@@ -10,7 +10,6 @@ import { redirect } from "next/navigation";
 import DashboardTabLink from "./DashboardTabLink";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
-import FlowchartDownloadButton from "./FlowchartDownloadButton";
 
 export default async function Dashboard() {
   const session = await getServerSession(authOptions);
@@ -208,9 +207,6 @@ export default async function Dashboard() {
                     notificationCount={unreadCounts["/operations-common"] || 0}
                   />
                 )}
-
-                {/* System Flowchart - Available to all users */}
-                <FlowchartDownloadButton />
               </div>
             </div>
       </div>
