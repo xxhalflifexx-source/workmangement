@@ -292,7 +292,7 @@ export function getLearnedPatterns(): LearnedPattern[] {
   }
 
   // Calculate success rates
-  for (const pattern of patterns.values()) {
+  for (const pattern of Array.from(patterns.values())) {
     const total = pattern.successCount + pattern.failureCount;
     pattern.successRate = total > 0 ? pattern.successCount / total : 0;
   }
