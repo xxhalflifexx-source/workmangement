@@ -48,6 +48,8 @@ model User {
   manualFiles          ManualFile[]
   operationsCommonFolders OperationsCommonFolder[]
   operationsCommonFiles   OperationsCommonFile[]
+  sopDocuments         SOPDocument[]
+  sopTemplates         SOPTemplate[]
 }
 
 model Account {
@@ -452,4 +454,31 @@ model OperationsCommonFile {
   creator     User         @relation(fields: [createdBy], references: [id], onDelete: Cascade)
 
   @@index([folderId])
+}
+
+// SOP Documents for Operations Common
+model SOPDocument {
+  id          String       @id @default(cuid())
+  title       String
+  content     String       @db.Text // HTML content from rich text editor
+  folderId    String?
+  createdBy   String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  folder      OperationsCommonFolder? @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  creator     User         @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+
+  @@index([folderId])
+}
+
+// Templates for SOP Documents
+model SOPTemplate {
+  id          String       @id @default(cuid())
+  name        String
+  description String?
+  content     String       @db.Text // HTML template content
+  createdBy   String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  creator     User         @relation(fields: [createdBy], references: [id], onDelete: Cascade)
 }

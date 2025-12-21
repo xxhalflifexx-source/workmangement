@@ -14,7 +14,20 @@ import {
   deleteFile,
   getFile,
 } from "./actions";
+import {
+  getSOPDocuments,
+  getSOPDocument,
+  createSOPDocument,
+  updateSOPDocument,
+  deleteSOPDocument,
+  getSOPTemplates,
+  createSOPTemplate,
+} from "./sop-actions";
 import { formatDateTime, formatDateShort } from "@/lib/date-utils";
+import dynamic from "next/dynamic";
+
+const SOPEditor = dynamic(() => import("@/components/SOPEditor"), { ssr: false });
+const SOPViewer = dynamic(() => import("@/components/SOPViewer"), { ssr: false });
 
 interface Folder {
   id: string;
@@ -52,6 +65,34 @@ interface File {
   } | null;
 }
 
+interface SOPDocument {
+  id: string;
+  title: string;
+  content: string;
+  folderId: string | null;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+  creator: {
+    id: string;
+    name: string | null;
+    email: string | null;
+  };
+}
+
+interface SOPTemplate {
+  id: string;
+  name: string;
+  description: string | null;
+  content: string;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+  creator: {
+    id: string;
+    name: string | null;
+    email: string | null;
+  };
+}
+
 type ViewMode = "folders" | "files" | "mixed";
 type SortField = "name" | "dateModified" | "type" | "size";
 type SortDirection = "asc" | "desc";
@@ -73,6 +114,16 @@ export default function OperationsCommonPage() {
   // Data
   const [folders, setFolders] = useState<Folder[]>([]);
   const [files, setFiles] = useState<File[]>([]);
+  const [sopDocuments, setSOPDocuments] = useState<SOPDocument[]>([]);
+  const [sopTemplates, setSOPTemplates] = useState<SOPTemplate[]>([]);
+
+  // SOP Document states
+  const [showSOPEditor, setShowSOPEditor] = useState(false);
+  const [showSOPViewer, setShowSOPViewer] = useState(false);
+  const [editingDocument, setEditingDocument] = useState<SOPDocument | null>(null);
+  const [viewingDocument, setViewingDocument] = useState<SOPDocument | null>(null);
+  const [showDeleteDocModal, setShowDeleteDocModal] = useState(false);
+  const [deletingDocument, setDeletingDocument] = useState<SOPDocument | null>(null);
 
   // View mode
   const [viewMode, setViewMode] = useState<ViewMode>("mixed");
@@ -116,9 +167,11 @@ export default function OperationsCommonPage() {
     setError(undefined);
 
     try {
-      const [foldersRes, filesRes] = await Promise.all([
+      const [foldersRes, filesRes, docsRes, templatesRes] = await Promise.all([
         getFolders(currentFolderId),
         getFiles(currentFolderId),
+        getSOPDocuments(currentFolderId),
+        getSOPTemplates(),
       ]);
 
       if (foldersRes.ok) {
@@ -131,6 +184,14 @@ export default function OperationsCommonPage() {
         setFiles(filesRes.files || []);
       } else {
         setError(filesRes.error);
+      }
+
+      if (docsRes.ok) {
+        setSOPDocuments(docsRes.documents || []);
+      }
+
+      if (templatesRes.ok) {
+        setSOPTemplates(templatesRes.templates || []);
       }
     } catch (err: any) {
       setError(err?.message || "Failed to load data");
@@ -734,6 +795,15 @@ export default function OperationsCommonPage() {
                 </button>
                 <button
                   onClick={() => {
+                    setEditingDocument(null);
+                    setShowSOPEditor(true);
+                  }}
+                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-all duration-200 text-sm font-medium min-h-[44px] shadow-sm hover:shadow-md active:scale-95"
+                >
+                  📝 New Document
+                </button>
+                <button
+                  onClick={() => {
                     setUploadingFiles([]);
                     setShowUploadModal(true);
                   }}
@@ -1018,14 +1088,89 @@ export default function OperationsCommonPage() {
                     </tr>
                   ))}
 
+                  {/* SOP Documents */}
+                  {sopDocuments
+                    .filter(doc => !searchQuery || doc.title.toLowerCase().includes(searchQuery.toLowerCase()))
+                    .map((doc) => (
+                    <tr
+                      key={`doc-${doc.id}`}
+                      className="hover:bg-purple-50 cursor-pointer transition-colors"
+                      onClick={() => {
+                        setViewingDocument(doc);
+                        setShowSOPViewer(true);
+                      }}
+                    >
+                      <td className="px-4 sm:px-6 py-4">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xl sm:text-2xl flex-shrink-0">📄</span>
+                          <div className="min-w-0 flex-1">
+                            <div className="text-sm font-medium text-gray-900 break-words">
+                              {doc.title}
+                            </div>
+                            <div className="text-xs text-purple-600">
+                              SOP Document
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-purple-600 font-medium">
+                        DOC
+                      </td>
+                      <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {formatDateShort(doc.updatedAt.toString())}
+                      </td>
+                      <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        -
+                      </td>
+                      <td className="px-4 sm:px-6 py-4 text-sm" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex gap-1.5 sm:gap-2 flex-wrap">
+                          <button
+                            onClick={() => {
+                              setViewingDocument(doc);
+                              setShowSOPViewer(true);
+                            }}
+                            className="px-3 py-1 text-purple-600 hover:text-purple-900 hover:bg-purple-50 rounded-md transition-all duration-200 text-xs font-medium min-h-[44px]"
+                            title="View document"
+                          >
+                            View
+                          </button>
+                          {isAdmin && (
+                            <>
+                              <button
+                                onClick={() => {
+                                  setEditingDocument(doc);
+                                  setShowSOPEditor(true);
+                                }}
+                                className="px-3 py-1 text-indigo-600 hover:text-indigo-900 hover:bg-indigo-50 rounded-md transition-all duration-200 text-xs font-medium min-h-[44px]"
+                                title="Edit document"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setDeletingDocument(doc);
+                                  setShowDeleteDocModal(true);
+                                }}
+                                className="px-3 py-1 text-red-600 hover:text-red-900 hover:bg-red-50 rounded-md transition-all duration-200 text-xs font-medium min-h-[44px]"
+                                title="Delete document"
+                              >
+                                Delete
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+
                   {/* Empty State */}
-                  {filteredAndSorted.folders.length === 0 && filteredAndSorted.files.length === 0 && (
+                  {filteredAndSorted.folders.length === 0 && filteredAndSorted.files.length === 0 && sopDocuments.length === 0 && (
                     <tr>
                       <td colSpan={5} className="px-4 sm:px-6 py-12 text-center">
                         <p className="text-gray-500 text-sm break-words px-4">
                           {searchQuery || filterType !== "ALL"
-                            ? "No files or folders match your search criteria."
-                            : "No files or folders yet. " + (isAdmin ? "Create a folder or upload files to get started." : "")}
+                            ? "No files, folders, or documents match your search criteria."
+                            : "No files, folders, or documents yet. " + (isAdmin ? "Create a folder, document, or upload files to get started." : "")}
                         </p>
                       </td>
                     </tr>
@@ -1430,6 +1575,125 @@ export default function OperationsCommonPage() {
                 </div>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* Delete Document Modal */}
+        {showDeleteDocModal && deletingDocument && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
+            <div className="bg-white rounded-xl shadow-2xl max-w-md w-full animate-scale-in">
+              <div className="p-4 sm:p-6 border-b border-gray-200">
+                <h2 className="text-lg sm:text-xl font-bold text-gray-900">Delete Document</h2>
+              </div>
+              <div className="p-4 sm:p-6 space-y-4">
+                <p className="text-gray-600 break-words text-sm">
+                  Are you sure you want to delete &ldquo;{deletingDocument.title}&rdquo;? This action cannot be undone.
+                </p>
+                <div className="flex gap-3 justify-end">
+                  <button
+                    onClick={() => {
+                      setShowDeleteDocModal(false);
+                      setDeletingDocument(null);
+                    }}
+                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-all duration-200 text-sm font-medium min-h-[44px] active:scale-95"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={async () => {
+                      const res = await deleteSOPDocument(deletingDocument.id);
+                      if (res.ok) {
+                        setSuccess("Document deleted successfully");
+                        setShowDeleteDocModal(false);
+                        setDeletingDocument(null);
+                        loadData();
+                      } else {
+                        setError(res.error);
+                      }
+                    }}
+                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all duration-200 text-sm font-medium min-h-[44px] shadow-sm hover:shadow-md active:scale-95"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* SOP Editor */}
+        {showSOPEditor && (
+          <div className="fixed inset-0 z-50 bg-white dark:bg-gray-900">
+            <SOPEditor
+              initialTitle={editingDocument?.title || ""}
+              initialContent={editingDocument?.content || ""}
+              isNew={!editingDocument}
+              templates={sopTemplates}
+              onSave={async (title, content) => {
+                if (editingDocument) {
+                  const res = await updateSOPDocument(editingDocument.id, title, content);
+                  if (res.ok) {
+                    setSuccess("Document updated successfully");
+                    setShowSOPEditor(false);
+                    setEditingDocument(null);
+                    loadData();
+                  } else {
+                    throw new Error(res.error);
+                  }
+                } else {
+                  const res = await createSOPDocument(title, content, currentFolderId);
+                  if (res.ok) {
+                    setSuccess("Document created successfully");
+                    setShowSOPEditor(false);
+                    loadData();
+                  } else {
+                    throw new Error(res.error);
+                  }
+                }
+              }}
+              onCancel={() => {
+                setShowSOPEditor(false);
+                setEditingDocument(null);
+              }}
+              onSaveAsTemplate={async (name, content, description) => {
+                const res = await createSOPTemplate(name, content, description);
+                if (res.ok) {
+                  setSuccess("Template saved successfully");
+                  loadData();
+                } else {
+                  throw new Error(res.error);
+                }
+              }}
+            />
+          </div>
+        )}
+
+        {/* SOP Viewer */}
+        {showSOPViewer && viewingDocument && (
+          <div className="fixed inset-0 z-50 bg-white dark:bg-gray-900">
+            <SOPViewer
+              title={viewingDocument.title}
+              content={viewingDocument.content}
+              createdBy={viewingDocument.creator}
+              createdAt={viewingDocument.createdAt}
+              updatedAt={viewingDocument.updatedAt}
+              canEdit={isAdmin}
+              canDelete={isAdmin}
+              onEdit={() => {
+                setShowSOPViewer(false);
+                setEditingDocument(viewingDocument);
+                setShowSOPEditor(true);
+              }}
+              onClose={() => {
+                setShowSOPViewer(false);
+                setViewingDocument(null);
+              }}
+              onDelete={() => {
+                setShowSOPViewer(false);
+                setDeletingDocument(viewingDocument);
+                setShowDeleteDocModal(true);
+              }}
+            />
           </div>
         )}
       </div>
