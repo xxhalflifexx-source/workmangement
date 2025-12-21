@@ -51,6 +51,8 @@ export default function ReceiptScanner({
   const [storeNameApproved, setStoreNameApproved] = useState<boolean | null>(null);
   const [amountApproved, setAmountApproved] = useState<boolean | null>(null);
   const [rejectedStoreName, setRejectedStoreName] = useState<string>("");
+  const [manualStoreName, setManualStoreName] = useState<string>(""); // For when no format detected
+  const [ocrCompleted, setOcrCompleted] = useState(false); // Track if OCR has been done
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // OCR Result interface
@@ -292,6 +294,9 @@ export default function ReceiptScanner({
     setStoreNameApproved(null);
     setAmountApproved(null);
     setRejectedStoreName("");
+    setManualStoreName("");
+    setOcrCompleted(false);
+    setDetectedFormat(null);
 
     // Check image quality
     const qualityWarning = await checkImageQuality(file);
@@ -683,6 +688,8 @@ export default function ReceiptScanner({
       setStoreNameApproved(null);
       setAmountApproved(null);
       setRejectedStoreName("");
+      setManualStoreName("");
+      setOcrCompleted(true);
 
       if (bestResult.amount) {
         setExtractedAmount(bestResult.amount);
@@ -864,13 +871,25 @@ export default function ReceiptScanner({
     }
   };
 
+  // Get the effective store name (detected, corrected, or manual)
+  const getEffectiveStoreName = (): string | undefined => {
+    if (detectedFormat) {
+      if (storeNameApproved === true) {
+        return detectedFormat.storeName;
+      } else if (storeNameApproved === false && rejectedStoreName.trim()) {
+        return rejectedStoreName.trim();
+      }
+    }
+    return manualStoreName.trim() || undefined;
+  };
+
   // Handle amount approval
   const handleApproveAmount = () => {
     if (extractedAmount && currentOcrResult) {
       setAmountApproved(true);
       setVerifiedAmount(extractedAmount.toFixed(2));
       
-      // Immediately record learning
+      // Immediately record learning with effective store name
       const lines = currentOcrResult.text.split(/\n/).map(l => l.trim());
       const successLine = lines.find(line => 
         line.match(new RegExp(`\\b${extractedAmount.toFixed(2)}\\b`)) ||
@@ -882,7 +901,7 @@ export default function ReceiptScanner({
         extractedAmount,
         currentOcrResult.strategy,
         successLine,
-        detectedFormat?.storeName,
+        getEffectiveStoreName(),
         detectedFormat || null
       );
     }
@@ -900,7 +919,7 @@ export default function ReceiptScanner({
       setAmountApproved(false); // Still rejected, but we have correction
       setVerifiedAmount(correctAmount.toFixed(2));
       
-      // Immediately record learning
+      // Immediately record learning with effective store name
       const lines = currentOcrResult.text.split(/\n/).map(l => l.trim());
       const correctLine = lines.find(line => 
         line.match(new RegExp(`\\b${correctAmount.toFixed(2)}\\b`))
@@ -911,7 +930,7 @@ export default function ReceiptScanner({
         originalExtractedAmount,
         correctAmount,
         correctLine,
-        detectedFormat?.storeName,
+        getEffectiveStoreName(),
         currentOcrResult.strategy,
         detectedFormat || null
       );
@@ -920,8 +939,11 @@ export default function ReceiptScanner({
 
   // Check if all categories are verified
   const allCategoriesVerified = () => {
-    // Store name must be verified if detected
-    const storeNameVerified = !detectedFormat || storeNameApproved !== null;
+    // Store name is required - must have a value (detected+approved, corrected, or manually entered)
+    const storeNameVerified = detectedFormat 
+      ? (storeNameApproved === true || (storeNameApproved === false && rejectedStoreName.trim().length > 0))
+      : manualStoreName.trim().length > 0;
+    
     // Amount must be verified if detected, or if no amount detected, we just need verifiedAmount to be set and valid
     const amountVerified = extractedAmount 
       ? amountApproved !== null 
@@ -1038,6 +1060,9 @@ export default function ReceiptScanner({
                     setStoreNameApproved(null);
                     setAmountApproved(null);
                     setRejectedStoreName("");
+                    setManualStoreName("");
+                    setOcrCompleted(false);
+                    setDetectedFormat(null);
                     if (fileInputRef.current) {
                       fileInputRef.current.value = "";
                     }
@@ -1067,8 +1092,8 @@ export default function ReceiptScanner({
             </div>
           )}
 
-          {/* Verification UI - Show when we have OCR results */}
-          {(extractedAmount !== null || detectedFormat) && !isProcessing && (
+          {/* Verification UI - Show when OCR has completed */}
+          {ocrCompleted && !isProcessing && (
             <div className="space-y-4">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-bold text-gray-900">
@@ -1088,65 +1113,106 @@ export default function ReceiptScanner({
                 </div>
               </div>
 
-              {/* Store Name Verification Card */}
-              {detectedFormat && (
-                <div className={`border-2 rounded-xl p-4 ${
-                  storeNameApproved === null 
-                    ? "border-gray-300 bg-white" 
-                    : storeNameApproved 
-                    ? "border-green-400 bg-green-50" 
-                    : "border-red-400 bg-red-50"
-                }`}>
-                  <div className="flex items-center justify-between mb-3">
-                    <h4 className="font-semibold text-gray-900">Store Name Detection</h4>
-                    {storeNameApproved === true && (
-                      <span className="text-green-600 font-bold">✓ Approved</span>
-                    )}
-                    {storeNameApproved === false && (
-                      <span className="text-red-600 font-bold">✗ Rejected</span>
-                    )}
-                  </div>
-                  <div className="mb-3">
-                    <p className="text-sm text-gray-600 mb-1">Detected:</p>
-                    <p className="text-lg font-bold text-gray-900">{detectedFormat.storeName}</p>
-                  </div>
-                  {storeNameApproved === null && (
-                    <div className="flex gap-2">
-                      <button
-                        onClick={handleApproveStoreName}
-                        className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
-                      >
-                        ✓ Approve
-                      </button>
-                      <button
-                        onClick={handleRejectStoreName}
-                        className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
-                      >
-                        ✗ Reject
-                      </button>
-                    </div>
+              {/* Store/Supplier Name Card - Always shown */}
+              <div className={`border-2 rounded-xl p-4 ${
+                detectedFormat 
+                  ? (storeNameApproved === null 
+                      ? "border-gray-300 bg-white" 
+                      : storeNameApproved 
+                      ? "border-green-400 bg-green-50" 
+                      : "border-red-400 bg-red-50")
+                  : (manualStoreName.trim() 
+                      ? "border-green-400 bg-green-50" 
+                      : "border-gray-300 bg-white")
+              }`}>
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="font-semibold text-gray-900">
+                    {detectedFormat ? "Store Name Detection" : "Store/Supplier Name"}
+                  </h4>
+                  {detectedFormat && storeNameApproved === true && (
+                    <span className="text-green-600 font-bold">✓ Approved</span>
                   )}
-                  {storeNameApproved === false && (
-                    <div className="mt-3">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Enter Correct Store Name
-                      </label>
-                      <input
-                        type="text"
-                        value={rejectedStoreName}
-                        onChange={(e) => {
-                          setRejectedStoreName(e.target.value);
-                          if (e.target.value.trim()) {
-                            handleStoreNameCorrection(e.target.value);
-                          }
-                        }}
-                        placeholder="Enter store name"
-                        className="w-full border-2 border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-colors bg-white min-h-[44px]"
-                      />
-                    </div>
+                  {detectedFormat && storeNameApproved === false && rejectedStoreName.trim() && (
+                    <span className="text-orange-600 font-bold">✓ Corrected</span>
+                  )}
+                  {detectedFormat && storeNameApproved === false && !rejectedStoreName.trim() && (
+                    <span className="text-red-600 font-bold">✗ Rejected</span>
+                  )}
+                  {!detectedFormat && manualStoreName.trim() && (
+                    <span className="text-green-600 font-bold">✓ Entered</span>
                   )}
                 </div>
-              )}
+                
+                {/* When format was detected - show approve/reject */}
+                {detectedFormat && (
+                  <>
+                    <div className="mb-3">
+                      <p className="text-sm text-gray-600 mb-1">Detected:</p>
+                      <p className="text-lg font-bold text-gray-900">{detectedFormat.storeName}</p>
+                    </div>
+                    {storeNameApproved === null && (
+                      <div className="flex gap-2">
+                        <button
+                          onClick={handleApproveStoreName}
+                          className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+                        >
+                          ✓ Approve
+                        </button>
+                        <button
+                          onClick={handleRejectStoreName}
+                          className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
+                        >
+                          ✗ Reject
+                        </button>
+                      </div>
+                    )}
+                    {storeNameApproved === false && (
+                      <div className="mt-3">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Enter Correct Store Name *
+                        </label>
+                        <input
+                          type="text"
+                          value={rejectedStoreName}
+                          onChange={(e) => {
+                            setRejectedStoreName(e.target.value);
+                            if (e.target.value.trim()) {
+                              handleStoreNameCorrection(e.target.value);
+                            }
+                          }}
+                          placeholder="Enter store name"
+                          className="w-full border-2 border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-colors bg-white min-h-[44px]"
+                        />
+                      </div>
+                    )}
+                  </>
+                )}
+                
+                {/* When no format was detected - just show input */}
+                {!detectedFormat && (
+                  <div>
+                    <p className="text-sm text-gray-600 mb-2">No store detected. Enter the store/supplier name:</p>
+                    <input
+                      type="text"
+                      value={manualStoreName}
+                      onChange={(e) => setManualStoreName(e.target.value)}
+                      onBlur={(e) => {
+                        // Record for learning when user finishes entering store name
+                        if (e.target.value.trim() && currentOcrResult) {
+                          recordFormatDetectionFailure(
+                            "Unknown",
+                            e.target.value.trim(),
+                            currentOcrResult.text,
+                            null
+                          );
+                        }
+                      }}
+                      placeholder="e.g., O'Reilly Auto Parts, Home Depot, etc."
+                      className="w-full border-2 border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-colors bg-white min-h-[44px]"
+                    />
+                  </div>
+                )}
+              </div>
 
               {/* Total Amount Verification Card */}
               <div className={`border-2 rounded-xl p-4 ${
