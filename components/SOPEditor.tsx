@@ -129,51 +129,31 @@ export default function SOPEditor({
 
   return (
     <div className="flex flex-col h-full bg-white dark:bg-gray-900">
-      {/* Header */}
-      <div className="px-4 sm:px-6 py-4 border-b dark:border-gray-700">
-        <div className="flex items-center gap-3 mb-3">
+      {/* Header with Title Input */}
+      <div className="px-4 sm:px-6 py-4 border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+        <div className="flex items-center gap-3">
           <button
             onClick={onCancel}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition flex-shrink-0"
-            title="Back"
+            className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition flex-shrink-0"
+            title="Back to folder"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
           </button>
-          <input
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Enter document title..."
-            className="flex-1 text-lg sm:text-xl font-semibold bg-transparent border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-400 dark:placeholder:text-gray-500"
-          />
-        </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          {templates.length > 0 && (
-            <button
-              onClick={() => setShowTemplateModal(true)}
-              className="px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-lg transition flex items-center gap-2"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              <span className="hidden sm:inline">Load Template</span>
-              <span className="sm:hidden">Template</span>
-            </button>
-          )}
-          {onSaveAsTemplate && (
-            <button
-              onClick={() => setShowSaveTemplateModal(true)}
-              className="px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-lg transition flex items-center gap-2"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
-              </svg>
-              <span className="hidden sm:inline">Save as Template</span>
-              <span className="sm:hidden">Template</span>
-            </button>
-          )}
+          <div className="flex-1">
+            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+              Document Title
+            </label>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Enter a title for your document..."
+              className="w-full text-lg sm:text-xl font-semibold bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 placeholder:text-gray-400 dark:placeholder:text-gray-500"
+              autoFocus
+            />
+          </div>
         </div>
       </div>
 
@@ -201,17 +181,35 @@ export default function SOPEditor({
 
       {/* Fixed Footer with Save Button */}
       <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t dark:border-gray-700 px-4 sm:px-6 py-4 shadow-lg z-40">
-        <div className="max-w-5xl mx-auto flex items-center justify-between gap-4">
-          <button
-            onClick={onCancel}
-            className="px-6 py-3 text-sm font-medium text-gray-600 dark:text-gray-400 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-lg transition"
-          >
-            Cancel
-          </button>
+        <div className="max-w-5xl mx-auto flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onCancel}
+              className="px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-lg transition"
+            >
+              Cancel
+            </button>
+            {templates.length > 0 && (
+              <button
+                onClick={() => setShowTemplateModal(true)}
+                className="px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-lg transition hidden sm:flex items-center gap-2"
+              >
+                📋 Load Template
+              </button>
+            )}
+            {onSaveAsTemplate && (
+              <button
+                onClick={() => setShowSaveTemplateModal(true)}
+                className="px-4 py-2.5 text-sm font-medium text-purple-600 dark:text-purple-400 bg-purple-50 hover:bg-purple-100 dark:bg-purple-900/30 dark:hover:bg-purple-900/50 rounded-lg transition hidden sm:flex items-center gap-2"
+              >
+                📝 Save as Template
+              </button>
+            )}
+          </div>
           <button
             onClick={handleSave}
             disabled={saving}
-            className="px-8 py-3 text-sm font-medium bg-green-600 hover:bg-green-700 text-white rounded-lg transition disabled:opacity-50 flex items-center gap-2 shadow-md"
+            className="px-8 py-3 text-base font-semibold bg-green-600 hover:bg-green-700 text-white rounded-lg transition disabled:opacity-50 flex items-center gap-2 shadow-md"
           >
             {saving ? (
               <>
@@ -223,10 +221,7 @@ export default function SOPEditor({
               </>
             ) : (
               <>
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                {isNew ? "💾 Save Document" : "💾 Save Changes"}
+                💾 {isNew ? "Save Document" : "Save Changes"}
               </>
             )}
           </button>
