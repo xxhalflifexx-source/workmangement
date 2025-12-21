@@ -9,45 +9,79 @@
 export function extractAmountFromText(text: string): number | null {
   if (!text) return null;
 
-  // Normalize text - remove extra whitespace and newlines
+  // Normalize text - remove extra whitespace and newlines, but preserve structure
   const normalizedText = text.replace(/\s+/g, " ").trim();
-
-  // Patterns to match currency amounts
-  const patterns = [
-    // Total: $XX.XX or TOTAL: $XX.XX
-    /(?:total|amount|sum|balance|due|paid)[:\s]*\$?\s*(\d+\.\d{2})/i,
-    // $XX.XX at end of line (likely total)
-    /\$(\d+\.\d{2})\s*$/m,
-    // XX.XX with two decimal places (most likely total)
-    /(\d+\.\d{2})/g,
-  ];
+  
+  // Also try with newlines preserved for better pattern matching
+  const lines = text.split(/\n/).map(line => line.trim()).filter(line => line.length > 0);
 
   const amounts: number[] = [];
 
-  // Try pattern matching
-  for (const pattern of patterns) {
+  // Pattern 1: Look for "Total", "Amount", "Sum", etc. followed by currency
+  const totalPatterns = [
+    /(?:total|amount|sum|balance|due|paid|grand\s*total|final\s*amount)[:\s]*\$?\s*(\d+\.\d{2})/i,
+    /(?:total|amount|sum|balance|due|paid)[:\s]*(\d+\.\d{2})/i,
+  ];
+
+  for (const pattern of totalPatterns) {
     const matches = Array.from(normalizedText.matchAll(pattern));
     for (const match of matches) {
       const amount = parseFloat(match[1]);
       if (!isNaN(amount) && amount > 0 && amount < 1000000) {
-        // Reasonable range for expenses
         amounts.push(amount);
       }
     }
   }
 
-  // If we found amounts, return the largest one (likely the total)
-  if (amounts.length > 0) {
-    return Math.max(...amounts);
+  // Pattern 2: Look for amounts at end of lines (likely totals)
+  for (const line of lines) {
+    // Match $XX.XX at end of line
+    const endMatch = line.match(/\$(\d+\.\d{2})\s*$/);
+    if (endMatch) {
+      const amount = parseFloat(endMatch[1]);
+      if (!isNaN(amount) && amount > 0 && amount < 1000000) {
+        amounts.push(amount);
+      }
+    }
+    
+    // Match XX.XX at end of line (if line contains "total" or similar)
+    if (/total|amount|sum|balance|due/i.test(line)) {
+      const amountMatch = line.match(/(\d+\.\d{2})\s*$/);
+      if (amountMatch) {
+        const amount = parseFloat(amountMatch[1]);
+        if (!isNaN(amount) && amount > 0 && amount < 1000000) {
+          amounts.push(amount);
+        }
+      }
+    }
   }
 
-  // Fallback: look for any number with 2 decimal places
-  const fallbackMatch = normalizedText.match(/(\d+\.\d{2})/);
-  if (fallbackMatch) {
-    const amount = parseFloat(fallbackMatch[1]);
-    if (!isNaN(amount) && amount > 0) {
-      return amount;
+  // Pattern 3: Find all amounts with 2 decimal places
+  const allAmountsPattern = /(\d+\.\d{2})/g;
+  const allMatches = Array.from(normalizedText.matchAll(allAmountsPattern));
+  for (const match of allMatches) {
+    const amount = parseFloat(match[1]);
+    if (!isNaN(amount) && amount > 0 && amount < 1000000) {
+      amounts.push(amount);
     }
+  }
+
+  // If we found amounts, return the largest one (likely the total)
+  if (amounts.length > 0) {
+    // Prefer amounts that appeared with "total" keywords
+    const totalAmounts = amounts.filter((amt, idx) => {
+      // Check if this amount appeared near a total keyword
+      const amountStr = amt.toFixed(2);
+      return /total|amount|sum|balance|due/i.test(
+        normalizedText.substring(Math.max(0, normalizedText.indexOf(amountStr) - 20), normalizedText.indexOf(amountStr) + 20)
+      );
+    });
+    
+    if (totalAmounts.length > 0) {
+      return Math.max(...totalAmounts);
+    }
+    
+    return Math.max(...amounts);
   }
 
   return null;

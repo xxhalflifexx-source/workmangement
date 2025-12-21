@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useRef } from "react";
-import Tesseract from "tesseract.js";
 import { extractAmountFromText, extractAllAmounts } from "@/lib/receipt-ocr";
 
 interface ReceiptScannerProps {
@@ -25,6 +24,9 @@ export default function ReceiptScanner({
   const [verifiedAmount, setVerifiedAmount] = useState<string>("");
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [ocrText, setOcrText] = useState<string>("");
+  const [allAmounts, setAllAmounts] = useState<number[]>([]);
+  const [showDebug, setShowDebug] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -62,30 +64,60 @@ export default function ReceiptScanner({
     setIsProcessing(true);
     setProgress(0);
     setError(null);
+    setOcrText("");
+    setAllAmounts([]);
 
     try {
-      // Process image with Tesseract OCR
+      // Dynamically import Tesseract to avoid SSR issues
+      const Tesseract = (await import("tesseract.js")).default;
+
+      console.log("[ReceiptScanner] Starting OCR processing...");
+
+      // Process image with Tesseract OCR with improved settings
       const { data } = await Tesseract.recognize(imageFile, "eng", {
         logger: (m) => {
+          console.log("[ReceiptScanner] OCR progress:", m);
           if (m.status === "recognizing text") {
             setProgress(Math.round(m.progress * 100));
           }
         },
+        // Improve OCR accuracy
+        tessedit_char_whitelist: "0123456789.$ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz: ",
       });
 
-      // Extract amount from OCR text
+      console.log("[ReceiptScanner] OCR text extracted:", data.text);
+      setOcrText(data.text || "");
+
+      // Extract all amounts found
+      const allFoundAmounts = extractAllAmounts(data.text);
+      setAllAmounts(allFoundAmounts);
+      console.log("[ReceiptScanner] All amounts found:", allFoundAmounts);
+
+      // Extract primary amount from OCR text
       const amount = extractAmountFromText(data.text);
+      console.log("[ReceiptScanner] Primary amount extracted:", amount);
 
       if (amount) {
         setExtractedAmount(amount);
         setVerifiedAmount(amount.toFixed(2));
+        setError(null);
       } else {
-        setError("Could not detect amount in receipt. Please enter it manually.");
+        // Show helpful error with detected amounts
+        if (allFoundAmounts.length > 0) {
+          setError(
+            `Could not detect total amount. Found these amounts: ${allFoundAmounts.map(a => `$${a.toFixed(2)}`).join(", ")}. Please select one or enter manually.`
+          );
+          // Pre-fill with the largest amount found
+          const largestAmount = allFoundAmounts[0];
+          setVerifiedAmount(largestAmount.toFixed(2));
+        } else {
+          setError("Could not detect any amounts in receipt. The image might be unclear or the receipt format is not recognized. Please enter the amount manually.");
+        }
         setExtractedAmount(null);
       }
     } catch (err: any) {
-      console.error("OCR processing error:", err);
-      setError("Failed to process receipt. Please try again or enter amount manually.");
+      console.error("[ReceiptScanner] OCR processing error:", err);
+      setError(`Failed to process receipt: ${err?.message || "Unknown error"}. Please try again or enter amount manually.`);
       setExtractedAmount(null);
     } finally {
       setIsProcessing(false);
@@ -328,6 +360,25 @@ export default function ReceiptScanner({
               <h3 className="text-lg font-bold text-gray-900 mb-4">
                 Manual Entry Required
               </h3>
+              
+              {/* Show detected amounts if any */}
+              {allAmounts.length > 0 && (
+                <div className="mb-4 p-3 bg-white rounded-lg border border-yellow-300">
+                  <p className="text-sm font-medium text-gray-700 mb-2">Detected amounts:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {allAmounts.map((amt, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => setVerifiedAmount(amt.toFixed(2))}
+                        className="px-3 py-1 bg-yellow-100 hover:bg-yellow-200 border border-yellow-400 rounded text-sm font-medium text-gray-900"
+                      >
+                        ${amt.toFixed(2)}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Enter Amount *
@@ -345,6 +396,23 @@ export default function ReceiptScanner({
                   />
                 </div>
               </div>
+
+              {/* Debug toggle */}
+              {ocrText && (
+                <div className="mt-4">
+                  <button
+                    onClick={() => setShowDebug(!showDebug)}
+                    className="text-xs text-gray-600 hover:text-gray-800 underline"
+                  >
+                    {showDebug ? "Hide" : "Show"} OCR text (for debugging)
+                  </button>
+                  {showDebug && (
+                    <div className="mt-2 p-3 bg-gray-100 rounded text-xs font-mono text-gray-700 max-h-32 overflow-y-auto">
+                      {ocrText || "No text extracted"}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
