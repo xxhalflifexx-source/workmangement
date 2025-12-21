@@ -71,6 +71,6 @@ export function extractAllAmounts(text: string): number[] {
   }
 
   // Remove duplicates and sort descending
-  return [...new Set(amounts)].sort((a, b) => b - a);
+  return Array.from(new Set(amounts)).sort((a, b) => b - a);
 }
 
