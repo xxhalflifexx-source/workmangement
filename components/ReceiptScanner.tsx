@@ -15,6 +15,7 @@ import {
   shouldRefreshGlobalPatterns,
   getMergedPatterns,
 } from "@/lib/receipt-learning";
+import { isNativeApp, takePhoto, pickFromGallery, requestCameraPermissions } from "@/lib/camera-native";
 
 interface ReceiptScannerProps {
   jobId: string;
@@ -269,10 +270,8 @@ export default function ReceiptScanner({
     });
   };
 
-  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+  // Process file (shared logic for both native and web)
+  const processImageFile = async (file: File) => {
     // Validate file type
     if (!file.type.startsWith("image/")) {
       setError("Please select an image file");
@@ -312,6 +311,46 @@ export default function ReceiptScanner({
       setImagePreview(reader.result as string);
     };
     reader.readAsDataURL(file);
+  };
+
+  // Handle native camera capture
+  const handleNativeCamera = async () => {
+    try {
+      setError(null);
+      const file = await takePhoto({
+        quality: 90,
+        allowEditing: false,
+      });
+      
+      if (file) {
+        await processImageFile(file);
+      }
+    } catch (err: any) {
+      console.error("[ReceiptScanner] Native camera error:", err);
+      setError(err?.message || "Failed to capture photo. Please try again.");
+    }
+  };
+
+  // Handle native gallery pick
+  const handleNativeGallery = async () => {
+    try {
+      setError(null);
+      const file = await pickFromGallery();
+      
+      if (file) {
+        await processImageFile(file);
+      }
+    } catch (err: any) {
+      console.error("[ReceiptScanner] Gallery pick error:", err);
+      setError(err?.message || "Failed to pick image from gallery.");
+    }
+  };
+
+  // Handle web file input
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    await processImageFile(file);
   };
 
   // Crop bottom section of image
@@ -970,27 +1009,46 @@ export default function ReceiptScanner({
           {!imageFile && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Select or Capture Receipt Image
+                {isNativeApp() ? "Capture or Select Receipt Image" : "Select or Capture Receipt Image"}
               </label>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                capture="environment"
-                onChange={handleFileSelect}
-                className="hidden"
-              />
-              <div className="flex gap-3">
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium min-h-[44px]"
-                >
-                  📸 Choose Image
-                </button>
-              </div>
-              <p className="text-xs text-gray-500 mt-2">
-                On mobile devices, this will open your camera. On desktop, select an image file.
-              </p>
+              {isNativeApp() ? (
+                <div className="flex gap-3">
+                  <button
+                    onClick={handleNativeCamera}
+                    className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium min-h-[44px]"
+                  >
+                    📸 Take Photo
+                  </button>
+                  <button
+                    onClick={handleNativeGallery}
+                    className="flex-1 px-4 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium min-h-[44px]"
+                  >
+                    🖼️ Choose from Gallery
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={handleFileSelect}
+                    className="hidden"
+                  />
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium min-h-[44px]"
+                    >
+                      📸 Choose Image
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">
+                    On mobile devices, this will open your camera. On desktop, select an image file.
+                  </p>
+                </>
+              )}
               {imagePreview && (
                 <div className="mt-3 flex gap-2">
                   <button
