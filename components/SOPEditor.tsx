@@ -128,7 +128,7 @@ export default function SOPEditor({
   };
 
   return (
-    <div className="flex flex-col h-full bg-white dark:bg-gray-900 pt-16">
+    <div className="flex flex-col h-full bg-white dark:bg-gray-900 pt-24">
       {/* Header with Title Input */}
       <div className="px-4 sm:px-6 py-4 border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
         <div className="flex items-center gap-3">
@@ -150,7 +150,7 @@ export default function SOPEditor({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Enter a title for your document..."
-              className="w-full text-lg sm:text-xl font-semibold bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 placeholder:text-gray-400 dark:placeholder:text-gray-500"
+              className="w-full text-base sm:text-lg font-semibold bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 placeholder:text-gray-400 dark:placeholder:text-gray-500"
               autoFocus
             />
           </div>
@@ -174,7 +174,7 @@ export default function SOPEditor({
             modules={modules}
             formats={formats}
             placeholder="Start writing your SOP document..."
-            className="h-[calc(100vh-350px)] bg-white dark:bg-gray-800 rounded-lg"
+            className="h-[calc(100vh-380px)] bg-white dark:bg-gray-800 rounded-lg"
           />
         </div>
       </div>
