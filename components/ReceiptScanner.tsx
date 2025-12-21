@@ -351,7 +351,9 @@ export default function ReceiptScanner({
     });
 
     // Calculate average confidence from words
-    const words = data.words || [];
+    // Tesseract.js returns words in data.words, but TypeScript types may not include it
+    // Use type assertion and fallback to 0 if not available
+    const words = (data as any).words || [];
     const avgConfidence = words.length > 0
       ? words.reduce((sum: number, w: any) => sum + (w.confidence || 0), 0) / words.length
       : 0;
