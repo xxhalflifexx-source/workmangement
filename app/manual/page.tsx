@@ -302,7 +302,7 @@ export default function ManualPage() {
     return newFileName;
   };
 
-  // Upload files
+  // Upload files - uses direct upload to Supabase to support large files
   const handleFileUpload = async () => {
     if (uploadingFiles.length === 0) {
       setError("Please select at least one file");
@@ -328,7 +328,7 @@ export default function ManualPage() {
           // Generate unique name
           const uniqueName = generateUniqueFileName(fileName, existingFileNames);
           filesToUpload.push({ file, finalName: uniqueName });
-          existingFileNames.add(uniqueName); // Add to set to prevent duplicates within the same batch
+          existingFileNames.add(uniqueName);
           duplicateFiles.push(`${fileName} → ${uniqueName}`);
         } else {
           filesToUpload.push({ file, finalName: fileName });
@@ -336,60 +336,134 @@ export default function ManualPage() {
         }
       });
 
-      // Show warning if duplicates were renamed
-      if (duplicateFiles.length > 0) {
-        setSuccess(
-          `${duplicateFiles.length} file(s) renamed to avoid duplicates: ${duplicateFiles.join(', ')}`
-        );
-      }
-
-      // Upload files
-      const formData = new FormData();
-      filesToUpload.forEach(({ file }) => {
-        formData.append("files", file as Blob);
-      });
-
-      const uploadRes = await fetch("/api/upload-manual", {
+      // Step 1: Get signed upload URLs from the server
+      const urlRes = await fetch("/api/get-upload-url", {
         method: "POST",
-        body: formData,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          files: filesToUpload.map(({ file }) => ({
+            name: file.name,
+            type: file.type,
+          })),
+          folder: "manual",
+        }),
       });
 
-      if (!uploadRes.ok) {
-        const errorData = await uploadRes.json().catch(() => ({}));
-        setError(errorData.error || "Failed to upload files");
+      if (!urlRes.ok) {
+        const errorData = await urlRes.json().catch(() => ({}));
+        setError(errorData.error || "Failed to get upload URLs");
         setUploading(false);
         return;
       }
 
-      const uploadData = await uploadRes.json();
-      const uploadedFiles = uploadData.files || [];
+      const urlData = await urlRes.json();
+      const uploadUrls = urlData.uploadUrls || [];
 
-      // Create file records with unique names
-      for (let i = 0; i < uploadedFiles.length; i++) {
-        const uploadedFile = uploadedFiles[i];
-        const fileToUpload = filesToUpload[i];
-        const finalName = fileToUpload.finalName;
+      if (uploadUrls.length === 0) {
+        setError("Failed to generate upload URLs");
+        setUploading(false);
+        return;
+      }
 
-        const res = await createFile(
-          finalName,
-          uploadedFile.originalName, // Keep original name for reference
-          uploadedFile.fileType,
-          uploadedFile.fileSize,
-          uploadedFile.fileUrl,
-          currentFolderId
-        );
-        if (!res.ok) {
-          console.error("Failed to create file record:", res.error);
+      // Step 2: Upload files directly to Supabase using signed URLs
+      const uploadedFiles: Array<{
+        originalName: string;
+        fileType: string;
+        fileSize: number;
+        fileUrl: string;
+      }> = [];
+      const failedFiles: Array<{ originalName: string; error: string }> = [];
+
+      for (let i = 0; i < filesToUpload.length; i++) {
+        const { file, finalName } = filesToUpload[i];
+        const urlInfo = uploadUrls[i];
+
+        if (!urlInfo) {
+          failedFiles.push({ originalName: file.name, error: "No upload URL generated" });
+          continue;
+        }
+
+        try {
+          // Upload directly to Supabase using the signed URL
+          const uploadResponse = await fetch(urlInfo.signedUrl, {
+            method: "PUT",
+            headers: {
+              "Content-Type": file.type || "application/octet-stream",
+            },
+            body: file,
+          });
+
+          if (!uploadResponse.ok) {
+            const errorText = await uploadResponse.text().catch(() => "Upload failed");
+            console.error(`Direct upload failed for ${file.name}:`, errorText);
+            failedFiles.push({ originalName: file.name, error: `Upload failed: ${uploadResponse.status}` });
+            continue;
+          }
+
+          // Step 3: Confirm upload and get public URL
+          const confirmRes = await fetch("/api/confirm-upload", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              path: urlInfo.path,
+              originalName: file.name,
+              fileSize: file.size,
+            }),
+          });
+
+          if (!confirmRes.ok) {
+            const confirmError = await confirmRes.json().catch(() => ({}));
+            failedFiles.push({ originalName: file.name, error: confirmError.error || "Failed to confirm upload" });
+            continue;
+          }
+
+          const confirmData = await confirmRes.json();
+          uploadedFiles.push({
+            originalName: file.name,
+            fileType: confirmData.fileType,
+            fileSize: file.size,
+            fileUrl: confirmData.fileUrl,
+          });
+
+          // Create file record in database
+          const res = await createFile(
+            finalName,
+            file.name,
+            confirmData.fileType,
+            file.size,
+            confirmData.fileUrl,
+            currentFolderId
+          );
+          if (!res.ok) {
+            console.error("Failed to create file record:", res.error);
+          }
+        } catch (uploadError: any) {
+          console.error(`Error uploading ${file.name}:`, uploadError);
+          failedFiles.push({ originalName: file.name, error: uploadError?.message || "Upload failed" });
         }
       }
 
-      if (duplicateFiles.length === 0) {
+      // Show success/error messages
+      if (uploadedFiles.length > 0 && failedFiles.length === 0) {
+        if (duplicateFiles.length === 0) {
+          setSuccess(`${uploadedFiles.length} file(s) uploaded successfully`);
+        } else {
+          setSuccess(`${uploadedFiles.length} file(s) uploaded successfully. ${duplicateFiles.length} file(s) renamed to avoid duplicates: ${duplicateFiles.join(', ')}`);
+        }
+      } else if (uploadedFiles.length > 0 && failedFiles.length > 0) {
+        const failedDetails = failedFiles.map((f) => `${f.originalName}: ${f.error}`).join('; ');
         setSuccess(`${uploadedFiles.length} file(s) uploaded successfully`);
+        setError(`${failedFiles.length} file(s) failed: ${failedDetails}`);
+      } else if (failedFiles.length > 0) {
+        const failedDetails = failedFiles.map((f) => `${f.originalName}: ${f.error}`).join('; ');
+        setError(`All files failed to upload: ${failedDetails}`);
       }
+
       setShowUploadModal(false);
       setUploadingFiles([]);
       loadData();
     } catch (err: any) {
+      console.error("Upload error:", err);
       setError(err?.message || "Failed to upload files");
     } finally {
       setUploading(false);
