@@ -13,18 +13,25 @@ export function extractAmountFromText(text: string): number | null {
   const lines = text.split(/\n/).map(line => line.trim()).filter(line => line.length > 0);
   const normalizedText = text.replace(/\s+/g, " ").trim();
 
-  // Track amounts with their context (which line, priority score)
+  // Track amounts with their context (which line, priority score, position)
   interface AmountWithContext {
     amount: number;
     line: string;
     priority: number; // Higher = more likely to be the total
     keyword: string; // Which keyword was found
+    lineIndex: number; // Position in receipt (0 = top, higher = bottom)
+    isBottomSection: boolean; // True if in bottom 30% of receipt
   }
 
   const amountCandidates: AmountWithContext[] = [];
+  const totalLines = lines.length;
+  const bottomThreshold = Math.floor(totalLines * 0.7); // Bottom 30% of receipt
 
   // Priority 1: Lines containing "Total" or "Grand Total" (highest priority)
-  for (const line of lines) {
+  // Prioritize amounts in bottom section of receipt
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const isBottomSection = i >= bottomThreshold;
     const totalMatch = line.match(/(?:^|\s)(?:total|grand\s*total|final\s*total)[:\s]*\$?\s*(\d+\.\d{2})/i);
     if (totalMatch) {
       const amount = parseFloat(totalMatch[1]);
@@ -32,8 +39,10 @@ export function extractAmountFromText(text: string): number | null {
         amountCandidates.push({
           amount,
           line,
-          priority: 10,
+          priority: isBottomSection ? 12 : 10, // Higher priority if in bottom section
           keyword: "total",
+          lineIndex: i,
+          isBottomSection,
         });
       }
     }
@@ -47,8 +56,10 @@ export function extractAmountFromText(text: string): number | null {
           amountCandidates.push({
             amount,
             line,
-            priority: 10,
+            priority: isBottomSection ? 12 : 10,
             keyword: "total",
+            lineIndex: i,
+            isBottomSection,
           });
         }
       }
@@ -56,7 +67,10 @@ export function extractAmountFromText(text: string): number | null {
   }
 
   // Priority 2: Lines containing "Amount Due" or "Balance Due"
-  for (const line of lines) {
+  // Prioritize bottom section
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const isBottomSection = i >= bottomThreshold;
     const dueMatch = line.match(/(?:amount\s*due|balance\s*due)[:\s]*\$?\s*(\d+\.\d{2})/i);
     if (dueMatch) {
       const amount = parseFloat(dueMatch[1]);
@@ -64,15 +78,20 @@ export function extractAmountFromText(text: string): number | null {
         amountCandidates.push({
           amount,
           line,
-          priority: 9,
+          priority: isBottomSection ? 11 : 9,
           keyword: "amount due",
+          lineIndex: i,
+          isBottomSection,
         });
       }
     }
   }
 
   // Priority 3: Credit card amount patterns (VISA #XXXX Amount, etc.)
-  for (const line of lines) {
+  // Usually at bottom of receipt
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const isBottomSection = i >= bottomThreshold;
     const cardMatch = line.match(/(?:visa|mastercard|amex|discover|card)[\s#:]*\d*[\s:]*(\d+\.\d{2})/i);
     if (cardMatch) {
       const amount = parseFloat(cardMatch[1]);
@@ -80,26 +99,44 @@ export function extractAmountFromText(text: string): number | null {
         amountCandidates.push({
           amount,
           line,
-          priority: 8,
+          priority: isBottomSection ? 9 : 8,
           keyword: "card",
+          lineIndex: i,
+          isBottomSection,
         });
       }
     }
   }
 
   // Priority 4: Amounts at end of lines (likely totals)
-  for (const line of lines) {
+  // Filter out small amounts that are likely item prices
+  // Prefer amounts in bottom section
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const isBottomSection = i >= bottomThreshold;
     const endMatch = line.match(/\$(\d+\.\d{2})\s*$/);
     if (endMatch) {
       const amount = parseFloat(endMatch[1]);
+      // Filter out very small amounts (< $1) unless in bottom section with keywords
+      const hasKeyword = /total|amount|sum|balance|due|paid/i.test(line);
       if (!isNaN(amount) && amount > 0 && amount < 1000000) {
-        // Lower priority unless line has relevant keywords
-        const hasKeyword = /total|amount|sum|balance|due|paid/i.test(line);
+        // Skip very small amounts unless they're clearly totals
+        if (amount < 1 && !hasKeyword && !isBottomSection) {
+          continue;
+        }
+        
+        let priority = hasKeyword ? 7 : 3;
+        if (isBottomSection) {
+          priority += 2; // Boost priority for bottom section
+        }
+        
         amountCandidates.push({
           amount,
           line,
-          priority: hasKeyword ? 7 : 3,
+          priority,
           keyword: hasKeyword ? "end with keyword" : "end of line",
+          lineIndex: i,
+          isBottomSection,
         });
       }
     }
@@ -119,11 +156,19 @@ export function extractAmountFromText(text: string): number | null {
         // Check if we already have this amount with higher priority
         const existing = amountCandidates.find(c => c.amount === amount && c.priority >= 5);
         if (!existing) {
+          // Try to determine if this is in bottom section
+          const matchPosition = match.index || 0;
+          const textBeforeMatch = normalizedText.substring(0, matchPosition);
+          const linesBeforeMatch = textBeforeMatch.split(/\s+/).length;
+          const isBottomSection = linesBeforeMatch >= totalLines * 0.7;
+          
           amountCandidates.push({
             amount,
             line: normalizedText.substring(Math.max(0, match.index! - 30), match.index! + 30),
-            priority: 5,
+            priority: isBottomSection ? 6 : 5,
             keyword: "pattern match",
+            lineIndex: Math.floor(linesBeforeMatch),
+            isBottomSection,
           });
         }
       }
@@ -131,18 +176,46 @@ export function extractAmountFromText(text: string): number | null {
   }
 
   // If no high-priority matches, find all amounts as fallback
+  // But prioritize amounts from bottom section
   if (amountCandidates.length === 0) {
     const allAmountsPattern = /(\d+\.\d{2})/g;
     const allMatches = Array.from(normalizedText.matchAll(allAmountsPattern));
-    for (const match of allMatches) {
+    
+    // Try to find amounts in bottom section of lines
+    const bottomLines = lines.slice(bottomThreshold);
+    const bottomText = bottomLines.join(" ");
+    
+    for (const match of Array.from(bottomText.matchAll(allAmountsPattern))) {
       const amount = parseFloat(match[1]);
       if (!isNaN(amount) && amount > 0 && amount < 1000000) {
-        amountCandidates.push({
-          amount,
-          line: normalizedText.substring(Math.max(0, match.index! - 30), match.index! + 30),
-          priority: 1,
-          keyword: "any amount",
-        });
+        // Filter out very small amounts
+        if (amount >= 1) {
+          amountCandidates.push({
+            amount,
+            line: bottomText.substring(Math.max(0, match.index! - 30), match.index! + 30),
+            priority: 2, // Higher priority for bottom section amounts
+            keyword: "bottom section",
+            lineIndex: bottomThreshold + Math.floor(match.index! / 50), // Approximate
+            isBottomSection: true,
+          });
+        }
+      }
+    }
+    
+    // If still nothing, check all lines but filter small amounts
+    if (amountCandidates.length === 0) {
+      for (const match of allMatches) {
+        const amount = parseFloat(match[1]);
+        if (!isNaN(amount) && amount > 0 && amount < 1000000 && amount >= 1) {
+          amountCandidates.push({
+            amount,
+            line: normalizedText.substring(Math.max(0, match.index! - 30), match.index! + 30),
+            priority: 1,
+            keyword: "any amount",
+            lineIndex: 0,
+            isBottomSection: false,
+          });
+        }
       }
     }
   }

@@ -28,9 +28,147 @@ export default function ReceiptScanner({
   const [allAmounts, setAllAmounts] = useState<number[]>([]);
   const [amountsWithContext, setAmountsWithContext] = useState<Array<{ amount: number; line: string; keyword: string }>>([]);
   const [showDebug, setShowDebug] = useState(false);
+  const [imageQualityWarning, setImageQualityWarning] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Detect mobile device
+  const isMobile = typeof window !== "undefined" && (
+    /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ||
+    window.innerWidth < 768
+  );
+
+  // Image preprocessing function
+  const preprocessImage = async (file: File): Promise<File> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      
+      if (!ctx) {
+        reject(new Error("Could not get canvas context"));
+        return;
+      }
+
+      img.onload = () => {
+        try {
+          // Set optimal canvas size (max 2000px for OCR)
+          const maxWidth = 2000;
+          const maxHeight = 2000;
+          let { width, height } = img;
+
+          // Scale down if too large
+          if (width > maxWidth || height > maxHeight) {
+            const ratio = Math.min(maxWidth / width, maxHeight / height);
+            width = Math.round(width * ratio);
+            height = Math.round(height * ratio);
+          }
+
+          // Ensure minimum size for OCR (at least 300px)
+          const minSize = 300;
+          if (width < minSize && height < minSize) {
+            const scale = minSize / Math.min(width, height);
+            width = Math.round(width * scale);
+            height = Math.round(height * scale);
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+
+          // Draw image
+          ctx.drawImage(img, 0, 0, width, height);
+
+          // Get image data for processing
+          const imageData = ctx.getImageData(0, 0, width, height);
+          const data = imageData.data;
+
+          // Apply preprocessing: contrast, brightness, and convert to grayscale
+          // More aggressive for mobile
+          const contrastFactor = isMobile ? 1.3 : 1.2;
+          const brightnessOffset = isMobile ? 10 : 5;
+
+          for (let i = 0; i < data.length; i += 4) {
+            // Convert to grayscale
+            const gray = Math.round(
+              0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2]
+            );
+
+            // Apply contrast and brightness
+            let adjusted = gray * contrastFactor + brightnessOffset;
+            adjusted = Math.max(0, Math.min(255, adjusted));
+
+            // Set RGB to grayscale value
+            data[i] = adjusted;     // R
+            data[i + 1] = adjusted; // G
+            data[i + 2] = adjusted; // B
+            // Alpha channel (data[i + 3]) stays the same
+          }
+
+          // Put processed image data back
+          ctx.putImageData(imageData, 0, 0);
+
+          // Convert canvas to blob, then to File
+          canvas.toBlob(
+            (blob) => {
+              if (!blob) {
+                reject(new Error("Failed to process image"));
+                return;
+              }
+              const processedFile = new File([blob], file.name, {
+                type: "image/jpeg",
+                lastModified: Date.now(),
+              });
+              resolve(processedFile);
+            },
+            "image/jpeg",
+            0.95
+          );
+        } catch (err) {
+          reject(err);
+        }
+      };
+
+      img.onerror = () => {
+        reject(new Error("Failed to load image"));
+      };
+
+      // Load image
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        img.src = reader.result as string;
+      };
+      reader.onerror = () => {
+        reject(new Error("Failed to read image file"));
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  // Check image quality
+  const checkImageQuality = async (file: File): Promise<string | null> => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const warnings: string[] = [];
+
+        // Check resolution
+        if (img.width < 300 || img.height < 300) {
+          warnings.push("Image resolution is low. Try taking a closer photo.");
+        }
+
+        // Check aspect ratio (very wide or tall images might be problematic)
+        const aspectRatio = img.width / img.height;
+        if (aspectRatio > 3 || aspectRatio < 0.3) {
+          warnings.push("Image appears stretched. Ensure receipt is fully visible.");
+        }
+
+        resolve(warnings.length > 0 ? warnings.join(" ") : null);
+      };
+      img.onerror = () => resolve(null);
+      img.src = URL.createObjectURL(file);
+    });
+  };
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -46,10 +184,18 @@ export default function ReceiptScanner({
       return;
     }
 
-    setImageFile(file);
     setError(null);
     setExtractedAmount(null);
     setVerifiedAmount("");
+    setImageQualityWarning(null);
+
+    // Check image quality
+    const qualityWarning = await checkImageQuality(file);
+    if (qualityWarning) {
+      setImageQualityWarning(qualityWarning);
+    }
+
+    setImageFile(file);
 
     // Create preview
     const reader = new FileReader();
@@ -67,19 +213,36 @@ export default function ReceiptScanner({
     setError(null);
     setOcrText("");
     setAllAmounts([]);
+    setImageQualityWarning(null);
 
     try {
       // Dynamically import Tesseract to avoid SSR issues
       const Tesseract = (await import("tesseract.js")).default;
 
       console.log("[ReceiptScanner] Starting OCR processing...");
+      console.log("[ReceiptScanner] Mobile device:", isMobile);
+
+      // Preprocess image before OCR
+      setProgress(5);
+      let processedFile: File;
+      try {
+        console.log("[ReceiptScanner] Preprocessing image...");
+        processedFile = await preprocessImage(imageFile);
+        console.log("[ReceiptScanner] Image preprocessing complete");
+        setProgress(10);
+      } catch (preprocessError: any) {
+        console.warn("[ReceiptScanner] Preprocessing failed, using original:", preprocessError);
+        // Fallback to original file if preprocessing fails
+        processedFile = imageFile;
+      }
 
       // Process image with Tesseract OCR
-      const { data } = await Tesseract.recognize(imageFile, "eng", {
+      const { data } = await Tesseract.recognize(processedFile, "eng", {
         logger: (m) => {
           console.log("[ReceiptScanner] OCR progress:", m);
           if (m.status === "recognizing text") {
-            setProgress(Math.round(m.progress * 100));
+            // Map progress from 10-100% (since preprocessing took first 10%)
+            setProgress(Math.min(100, 10 + Math.round(m.progress * 90)));
           }
         },
       });
@@ -108,20 +271,29 @@ export default function ReceiptScanner({
       } else {
         // Show helpful error with detected amounts
         if (allFoundAmounts.length > 0) {
-          setError(
-            `Could not detect total amount. Found these amounts: ${allFoundAmounts.map(a => `$${a.toFixed(2)}`).join(", ")}. Please select one or enter manually.`
-          );
+          const errorMsg = isMobile
+            ? `Could not detect total amount. Found these amounts: ${allFoundAmounts.map(a => `$${a.toFixed(2)}`).join(", ")}. Please select one or enter manually. Tip: Try zooming in on the total line for better results.`
+            : `Could not detect total amount. Found these amounts: ${allFoundAmounts.map(a => `$${a.toFixed(2)}`).join(", ")}. Please select one or enter manually.`;
+          setError(errorMsg);
           // Pre-fill with the largest amount found
           const largestAmount = allFoundAmounts[0];
           setVerifiedAmount(largestAmount.toFixed(2));
         } else {
-          setError("Could not detect any amounts in receipt. The image might be unclear or the receipt format is not recognized. Please enter the amount manually.");
+          const errorMsg = isMobile
+            ? "Could not detect any amounts in receipt. The image might be unclear, blurry, or the receipt format is not recognized. Try: 1) Ensure good lighting, 2) Hold phone steady, 3) Zoom in on the total line, 4) Or enter the amount manually."
+            : data.text && data.text.trim().length > 0
+            ? "Could not detect any amounts in receipt. Text was found but no amounts were recognized. Please enter the amount manually."
+            : "Could not detect any text in receipt. The image might be unclear or the receipt format is not recognized. Please enter the amount manually.";
+          setError(errorMsg);
         }
         setExtractedAmount(null);
       }
     } catch (err: any) {
       console.error("[ReceiptScanner] OCR processing error:", err);
-      setError(`Failed to process receipt: ${err?.message || "Unknown error"}. Please try again or enter amount manually.`);
+      const errorMsg = isMobile
+        ? `Failed to process receipt: ${err?.message || "Unknown error"}. On mobile, try: 1) Ensure good lighting, 2) Hold phone steady, 3) Zoom in on the total line. Or enter amount manually.`
+        : `Failed to process receipt: ${err?.message || "Unknown error"}. Please try again or enter amount manually.`;
+      setError(errorMsg);
       setExtractedAmount(null);
     } finally {
       setIsProcessing(false);
@@ -256,6 +428,17 @@ export default function ReceiptScanner({
               <p className="text-xs text-gray-500 mt-2">
                 On mobile devices, this will open your camera. On desktop, select an image file.
               </p>
+              {isMobile && (
+                <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-xs font-medium text-blue-900 mb-1">📱 Mobile Tips:</p>
+                  <ul className="text-xs text-blue-800 space-y-1 list-disc list-inside">
+                    <li>Ensure good lighting</li>
+                    <li>Hold phone steady</li>
+                    <li>Zoom in on the total line for best results</li>
+                    <li>Make sure receipt is fully visible</li>
+                  </ul>
+                </div>
+              )}
             </div>
           )}
 
@@ -265,6 +448,12 @@ export default function ReceiptScanner({
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Receipt Preview
               </label>
+              {imageQualityWarning && (
+                <div className="mb-3 p-3 bg-yellow-50 border border-yellow-300 rounded-lg">
+                  <p className="text-xs font-medium text-yellow-900">⚠️ Image Quality Warning:</p>
+                  <p className="text-xs text-yellow-800 mt-1">{imageQualityWarning}</p>
+                </div>
+              )}
               <div className="border-2 border-gray-300 rounded-lg p-4 bg-gray-50">
                 <img
                   src={imagePreview}
