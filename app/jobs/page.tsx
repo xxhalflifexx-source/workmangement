@@ -12,6 +12,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import PhotoViewerModal from "../qc/PhotoViewerModal";
 import JobFilters from "./JobFilters";
 import JobRow from "./JobRow";
+import ReceiptScanner from "@/components/ReceiptScanner";
 import { formatDateShort, formatDateTime, formatDateInput, todayCentralISO, nowInCentral, centralToUTC } from "@/lib/date-utils";
 
 interface Job {
@@ -278,6 +279,8 @@ function JobsPageContent() {
   const [expenseQuantity, setExpenseQuantity] = useState("1");
   const [expenseUnit, setExpenseUnit] = useState("");
   const [expenseNotes, setExpenseNotes] = useState("");
+  const [expenseReceiptUrl, setExpenseReceiptUrl] = useState<string | null>(null);
+  const [showReceiptScanner, setShowReceiptScanner] = useState(false);
   const [addingExpense, setAddingExpense] = useState(false);
   
   // Photo upload states per job
@@ -832,6 +835,9 @@ function JobsPageContent() {
     formData.append("quantity", expenseQuantity);
     formData.append("unit", expenseUnit);
     formData.append("notes", expenseNotes);
+    if (expenseReceiptUrl) {
+      formData.append("receiptUrl", expenseReceiptUrl);
+    }
 
     const res = await addJobExpense(formData);
     if (res.ok) {
@@ -842,6 +848,7 @@ function JobsPageContent() {
       setExpenseQuantity("1");
       setExpenseUnit("");
       setExpenseNotes("");
+      setExpenseReceiptUrl(null);
       // Refresh expenses and materials
       await openMaterialsAndExpensesModal(selectedJobForMaterialsAndExpenses);
       await loadData(); // Refresh jobs to update profit calculations
@@ -866,6 +873,13 @@ function JobsPageContent() {
     } else {
       setError(res.error || "Failed to delete expense");
     }
+  };
+
+  const handleReceiptScanComplete = (amount: number, receiptUrl: string) => {
+    setExpenseAmount(amount.toFixed(2));
+    setExpenseReceiptUrl(receiptUrl);
+    setShowReceiptScanner(false);
+    setSuccess("Receipt scanned successfully! Amount filled automatically.");
   };
 
   const handleJobPhotoSelect = (jobId: string, e: React.ChangeEvent<HTMLInputElement>) => {
@@ -2453,6 +2467,8 @@ function JobsPageContent() {
                     setExpenseQuantity("1");
                     setExpenseUnit("");
                     setExpenseNotes("");
+                    setExpenseReceiptUrl(null);
+                    setShowReceiptScanner(false);
                     setActiveTab("materials");
                   }}
                   className="text-gray-400 hover:text-gray-600 text-2xl"
@@ -2739,21 +2755,63 @@ function JobsPageContent() {
                           <label className="block text-sm font-medium text-gray-700 mb-2">
                             Amount *
                           </label>
-                          <div className="relative">
-                            <span className="absolute left-3 top-2.5 text-gray-500">$</span>
-                            <input
-                              type="number"
-                              step="0.01"
-                              min="0"
-                              value={expenseAmount}
-                              onChange={(e) => setExpenseAmount(e.target.value)}
-                              placeholder="0.00"
-                              className="w-full border-2 border-gray-300 rounded-xl pl-7 pr-3 py-2.5 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-colors bg-white min-h-[44px]"
-                              required
-                            />
+                          <div className="flex gap-2">
+                            <div className="relative flex-1">
+                              <span className="absolute left-3 top-2.5 text-gray-500">$</span>
+                              <input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                value={expenseAmount}
+                                onChange={(e) => setExpenseAmount(e.target.value)}
+                                placeholder="0.00"
+                                className="w-full border-2 border-gray-300 rounded-xl pl-7 pr-3 py-2.5 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-colors bg-white min-h-[44px]"
+                                required
+                              />
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setShowReceiptScanner(true)}
+                              className="px-4 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium min-h-[44px] whitespace-nowrap"
+                              title="Scan receipt to auto-fill amount"
+                            >
+                              📷 Scan Receipt
+                            </button>
                           </div>
                         </div>
                       </div>
+
+                      {/* Receipt Preview */}
+                      {expenseReceiptUrl && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Receipt
+                          </label>
+                          <div className="flex items-center gap-3 p-3 bg-gray-50 border-2 border-gray-200 rounded-xl">
+                            <img
+                              src={expenseReceiptUrl}
+                              alt="Receipt"
+                              className="w-20 h-20 object-cover rounded-lg border border-gray-300"
+                            />
+                            <div className="flex-1">
+                              <p className="text-sm font-medium text-gray-900">Receipt attached</p>
+                              <p className="text-xs text-gray-500">Click to view full size</p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setExpenseReceiptUrl(null);
+                                if (!expenseAmount) {
+                                  setExpenseAmount("");
+                                }
+                              }}
+                              className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg border border-red-200 transition-colors text-sm font-medium"
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        </div>
+                      )}
 
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -2879,6 +2937,21 @@ function JobsPageContent() {
                                       {expense.notes && (
                                         <p className="text-sm text-gray-600 mt-1 italic">"{expense.notes}"</p>
                                       )}
+                                      {expense.receiptUrl && (
+                                        <div className="mt-2">
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              setPhotoViewerPhotos([expense.receiptUrl]);
+                                              setPhotoViewerIndex(0);
+                                              setShowPhotoViewer(true);
+                                            }}
+                                            className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 font-medium"
+                                          >
+                                            📷 View Receipt
+                                          </button>
+                                        </div>
+                                      )}
                                       <p className="text-xs text-gray-500 mt-1">
                                         Added by {expense.user?.name || "Unknown"} • {formatDateTime(expense.expenseDate || expense.createdAt)}
                                       </p>
@@ -2996,6 +3069,21 @@ function JobsPageContent() {
                                     <p className="text-xs text-gray-500">
                                       Added by {item.user?.name || "Unknown"} • {formatDateTime(item.expenseDate || item.createdAt)}
                                     </p>
+                                    {item.receiptUrl && (
+                                      <div className="mt-2">
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setPhotoViewerPhotos([item.receiptUrl]);
+                                            setPhotoViewerIndex(0);
+                                            setShowPhotoViewer(true);
+                                          }}
+                                          className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 font-medium"
+                                        >
+                                          📷 View Receipt
+                                        </button>
+                                      </div>
+                                    )}
                                     {item.notes && (
                                       <p className="text-sm text-gray-600 mt-1 italic">"{item.notes}"</p>
                                     )}
@@ -3406,6 +3494,16 @@ function JobsPageContent() {
           photos={photoViewerPhotos}
           initialIndex={photoViewerIndex}
           onClose={() => setShowPhotoViewer(false)}
+        />
+      )}
+
+      {/* Receipt Scanner Modal */}
+      {showReceiptScanner && selectedJobForMaterialsAndExpenses && session?.user && (
+        <ReceiptScanner
+          jobId={selectedJobForMaterialsAndExpenses.id}
+          userId={(session.user as any).id}
+          onScanComplete={handleReceiptScanComplete}
+          onCancel={() => setShowReceiptScanner(false)}
         />
       )}
     </main>

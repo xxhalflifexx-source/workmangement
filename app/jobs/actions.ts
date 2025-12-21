@@ -590,6 +590,7 @@ export async function addJobExpense(formData: FormData) {
     const quantity = parseFloat(formData.get("quantity") as string) || 1;
     const unit = formData.get("unit") as string || "";
     const notes = formData.get("notes") as string || "";
+    const receiptUrl = formData.get("receiptUrl") as string || null;
 
     if (!jobId || !category || !description || isNaN(amount)) {
       return { ok: false, error: "Missing required fields" };
@@ -605,6 +606,7 @@ export async function addJobExpense(formData: FormData) {
         quantity,
         unit: unit || null,
         notes: notes || null,
+        receiptUrl: receiptUrl || null,
       },
       include: {
         user: { select: { name: true } },
