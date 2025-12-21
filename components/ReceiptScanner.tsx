@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { extractAmountFromText, extractAllAmounts } from "@/lib/receipt-ocr";
+import { extractAmountFromText, extractAllAmounts, extractAmountsWithContext } from "@/lib/receipt-ocr";
 
 interface ReceiptScannerProps {
   jobId: string;
@@ -26,6 +26,7 @@ export default function ReceiptScanner({
   const [error, setError] = useState<string | null>(null);
   const [ocrText, setOcrText] = useState<string>("");
   const [allAmounts, setAllAmounts] = useState<number[]>([]);
+  const [amountsWithContext, setAmountsWithContext] = useState<Array<{ amount: number; line: string; keyword: string }>>([]);
   const [showDebug, setShowDebug] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -90,6 +91,11 @@ export default function ReceiptScanner({
       const allFoundAmounts = extractAllAmounts(data.text);
       setAllAmounts(allFoundAmounts);
       console.log("[ReceiptScanner] All amounts found:", allFoundAmounts);
+
+      // Extract amounts with context
+      const amountsWithCtx = extractAmountsWithContext(data.text);
+      setAmountsWithContext(amountsWithCtx);
+      console.log("[ReceiptScanner] Amounts with context:", amountsWithCtx);
 
       // Extract primary amount from OCR text
       const amount = extractAmountFromText(data.text);
@@ -359,8 +365,38 @@ export default function ReceiptScanner({
                 Manual Entry Required
               </h3>
               
-              {/* Show detected amounts if any */}
-              {allAmounts.length > 0 && (
+              {/* Show detected amounts with context if available */}
+              {amountsWithContext.length > 0 ? (
+                <div className="mb-4 space-y-2">
+                  <p className="text-sm font-medium text-gray-700 mb-2">Detected amounts (with context):</p>
+                  {amountsWithContext.map((item, idx) => (
+                    <div
+                      key={idx}
+                      className="p-3 bg-white rounded-lg border border-yellow-300 hover:border-yellow-400 transition-colors"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-lg font-bold text-gray-900">${item.amount.toFixed(2)}</span>
+                            <span className="text-xs px-2 py-1 rounded-full bg-yellow-100 text-yellow-700 font-medium">
+                              {item.keyword}
+                            </span>
+                          </div>
+                          <p className="text-xs text-gray-600 font-mono truncate" title={item.line}>
+                            {item.line.length > 60 ? item.line.substring(0, 60) + "..." : item.line}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => setVerifiedAmount(item.amount.toFixed(2))}
+                          className="ml-3 px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg text-sm font-medium transition-colors"
+                        >
+                          Use
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : allAmounts.length > 0 ? (
                 <div className="mb-4 p-3 bg-white rounded-lg border border-yellow-300">
                   <p className="text-sm font-medium text-gray-700 mb-2">Detected amounts:</p>
                   <div className="flex flex-wrap gap-2">
@@ -375,7 +411,7 @@ export default function ReceiptScanner({
                     ))}
                   </div>
                 </div>
-              )}
+              ) : null}
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
