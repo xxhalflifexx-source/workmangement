@@ -18,9 +18,16 @@ export default async function Dashboard() {
   try {
     const session = await getServerSession(authOptions);
     console.log("[Dashboard] Session check:", session ? "Found" : "Not found");
+    console.log("[Dashboard] Session user:", session?.user?.email || "None");
     
     if (!session?.user) {
       console.log("[Dashboard] No session, redirecting to login");
+      redirect("/login");
+    }
+    
+    // Additional validation - if session exists but user data is incomplete
+    if (!session.user.email) {
+      console.error("[Dashboard] Session exists but user email missing - redirecting to login");
       redirect("/login");
     }
     
