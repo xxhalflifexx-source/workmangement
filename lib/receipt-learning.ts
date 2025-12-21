@@ -39,13 +39,25 @@ export interface LearnedPattern {
   formatId?: string;
 }
 
+export interface FormatDetection {
+  detectedStoreName: string;
+  correctStoreName: string;
+  ocrText: string;
+  formatId?: string;
+  timestamp: number;
+  wasCorrect: boolean;
+}
+
 export interface LearningData {
   successfulExtractions: SuccessfulExtraction[];
   corrections: Correction[];
+  formatDetections: FormatDetection[];
   patternSuccess: Record<string, number>; // Pattern -> success count
   strategySuccess: Record<string, number>; // Strategy -> success count
   patternFailures: Record<string, number>; // Pattern -> failure count
   strategyFailures: Record<string, number>; // Strategy -> failure count
+  formatDetectionSuccess: Record<string, number>; // Store name -> success count
+  formatDetectionFailures: Record<string, number>; // Store name -> failure count
 }
 
 /**
@@ -75,10 +87,13 @@ function getLearningData(): LearningData {
   return {
     successfulExtractions: [],
     corrections: [],
+    formatDetections: [],
     patternSuccess: {},
     strategySuccess: {},
     patternFailures: {},
     strategyFailures: {},
+    formatDetectionSuccess: {},
+    formatDetectionFailures: {},
   };
 }
 
@@ -102,6 +117,11 @@ function saveLearningData(data: LearningData): void {
         .sort((a, b) => b.timestamp - a.timestamp)
         .slice(0, maxItems);
     }
+    if (data.formatDetections && data.formatDetections.length > maxItems) {
+      data.formatDetections = data.formatDetections
+        .sort((a, b) => b.timestamp - a.timestamp)
+        .slice(0, maxItems);
+    }
 
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   } catch (err) {
@@ -112,6 +132,7 @@ function saveLearningData(data: LearningData): void {
         ...data,
         successfulExtractions: data.successfulExtractions.slice(-maxItems / 2),
         corrections: data.corrections.slice(-maxItems / 2),
+        formatDetections: (data.formatDetections || []).slice(-maxItems / 2),
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(cleared));
     } catch (clearErr) {
@@ -387,6 +408,84 @@ export function clearLearningData(): void {
 }
 
 /**
+ * Record format detection success (store name was correctly detected)
+ */
+export function recordFormatDetectionSuccess(
+  storeName: string,
+  format: ReceiptFormat | null,
+  ocrText: string
+): void {
+  const data = getLearningData();
+  
+  const detection: FormatDetection = {
+    detectedStoreName: storeName,
+    correctStoreName: storeName,
+    ocrText: ocrText.substring(0, 500), // Store snippet only
+    formatId: format?.id,
+    timestamp: Date.now(),
+    wasCorrect: true,
+  };
+
+  if (!data.formatDetections) {
+    data.formatDetections = [];
+  }
+  data.formatDetections.push(detection);
+
+  // Update format detection success count
+  data.formatDetectionSuccess[storeName] = (data.formatDetectionSuccess[storeName] || 0) + 1;
+
+  saveLearningData(data);
+}
+
+/**
+ * Record format detection failure (store name was incorrectly detected)
+ */
+export function recordFormatDetectionFailure(
+  detectedStoreName: string,
+  correctStoreName: string,
+  ocrText: string,
+  format?: ReceiptFormat | null
+): void {
+  const data = getLearningData();
+
+  const detection: FormatDetection = {
+    detectedStoreName,
+    correctStoreName,
+    ocrText: ocrText.substring(0, 500), // Store snippet only
+    formatId: format?.id,
+    timestamp: Date.now(),
+    wasCorrect: false,
+  };
+
+  if (!data.formatDetections) {
+    data.formatDetections = [];
+  }
+  data.formatDetections.push(detection);
+
+  // Update format detection failure count
+  data.formatDetectionFailures[detectedStoreName] = (data.formatDetectionFailures[detectedStoreName] || 0) + 1;
+  
+  // Also record success for correct store name if different
+  if (correctStoreName !== detectedStoreName) {
+    data.formatDetectionSuccess[correctStoreName] = (data.formatDetectionSuccess[correctStoreName] || 0) + 1;
+  }
+
+  saveLearningData(data);
+}
+
+/**
+ * Get format detection accuracy for a specific store name
+ */
+export function getFormatDetectionAccuracy(storeName: string): number {
+  const data = getLearningData();
+  const success = data.formatDetectionSuccess[storeName] || 0;
+  const failure = data.formatDetectionFailures[storeName] || 0;
+  const total = success + failure;
+  
+  return total > 0 ? success / total : 0.5; // Default to 0.5 if no data
+}
+
+/**
  * Get learning statistics
  */
 export function getLearningStats(): {
@@ -395,6 +494,7 @@ export function getLearningStats(): {
   patternCount: number;
   strategyCount: number;
   avgSuccessRate: number;
+  formatDetections: number;
 } {
   const data = getLearningData();
   const patterns = getLearnedPatterns();
@@ -411,6 +511,7 @@ export function getLearningStats(): {
     patternCount: patterns.length,
     strategyCount: Object.keys(strategies).length,
     avgSuccessRate,
+    formatDetections: data.formatDetections?.length || 0,
   };
 }
 

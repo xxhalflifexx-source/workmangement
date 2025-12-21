@@ -3,7 +3,7 @@
 import { useState, useRef } from "react";
 import { extractAmountFromText, extractAllAmounts, extractAmountsWithContext } from "@/lib/receipt-ocr";
 import { detectReceiptFormat, ReceiptFormat } from "@/lib/receipt-formats";
-import { recordSuccess, recordCorrection, getRecommendedStrategies } from "@/lib/receipt-learning";
+import { recordSuccess, recordCorrection, getRecommendedStrategies, recordFormatDetectionSuccess, recordFormatDetectionFailure } from "@/lib/receipt-learning";
 
 interface ReceiptScannerProps {
   jobId: string;
@@ -37,6 +37,9 @@ export default function ReceiptScanner({
   const [detectedFormat, setDetectedFormat] = useState<ReceiptFormat | null>(null);
   const [currentOcrResult, setCurrentOcrResult] = useState<{ text: string; strategy: string; format?: ReceiptFormat | null } | null>(null);
   const [originalExtractedAmount, setOriginalExtractedAmount] = useState<number | null>(null);
+  const [storeNameApproved, setStoreNameApproved] = useState<boolean | null>(null);
+  const [amountApproved, setAmountApproved] = useState<boolean | null>(null);
+  const [rejectedStoreName, setRejectedStoreName] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // OCR Result interface
@@ -249,6 +252,9 @@ export default function ReceiptScanner({
     setVerifiedAmount("");
     setImageQualityWarning(null);
     setCurrentOcrResult(null);
+    setStoreNameApproved(null);
+    setAmountApproved(null);
+    setRejectedStoreName("");
 
     // Check image quality
     const qualityWarning = await checkImageQuality(file);
@@ -636,6 +642,11 @@ export default function ReceiptScanner({
         format: bestResult.format,
       });
 
+      // Reset verification states
+      setStoreNameApproved(null);
+      setAmountApproved(null);
+      setRejectedStoreName("");
+
       if (bestResult.amount) {
         setExtractedAmount(bestResult.amount);
         setOriginalExtractedAmount(bestResult.amount);
@@ -682,6 +693,12 @@ export default function ReceiptScanner({
 
   const uploadReceipt = async () => {
     if (!imageFile) return;
+
+    // Check if all categories are verified
+    if (!allCategoriesVerified()) {
+      setError("Please verify all detected categories before continuing");
+      return;
+    }
 
     const finalAmount = parseFloat(verifiedAmount);
     if (isNaN(finalAmount) || finalAmount <= 0) {
@@ -749,44 +766,8 @@ export default function ReceiptScanner({
 
       const confirmData = await confirmRes.json();
 
-      // Record learning: success or correction
-      if (currentOcrResult && originalExtractedAmount !== null) {
-        const wasCorrected = Math.abs(finalAmount - originalExtractedAmount) > 0.01;
-        
-        if (wasCorrected) {
-          // User corrected the amount - record as correction
-          const lines = currentOcrResult.text.split(/\n/).map(l => l.trim());
-          const correctLine = lines.find(line => 
-            line.match(new RegExp(`\\b${finalAmount.toFixed(2)}\\b`))
-          ) || lines[lines.length - 1] || currentOcrResult.text.substring(0, 100);
-          
-          recordCorrection(
-            currentOcrResult.text,
-            originalExtractedAmount,
-            finalAmount,
-            correctLine,
-            detectedFormat?.storeName,
-            currentOcrResult.strategy,
-            currentOcrResult.format || null
-          );
-        } else {
-          // Amount was correct - record as success
-          const lines = currentOcrResult.text.split(/\n/).map(l => l.trim());
-          const successLine = lines.find(line => 
-            line.match(new RegExp(`\\b${finalAmount.toFixed(2)}\\b`)) ||
-            /total|amount\s*due|balance/i.test(line)
-          ) || lines[lines.length - 1] || currentOcrResult.text.substring(0, 100);
-          
-          recordSuccess(
-            currentOcrResult.text,
-            finalAmount,
-            currentOcrResult.strategy,
-            successLine,
-            detectedFormat?.storeName,
-            currentOcrResult.format || null
-          );
-        }
-      }
+      // Learning has already happened immediately on approve/reject clicks
+      // No need to record again here
 
       // Callback with extracted amount and receipt URL
       onScanComplete(finalAmount, confirmData.fileUrl);
@@ -802,6 +783,104 @@ export default function ReceiptScanner({
     if (extractedAmount) {
       setVerifiedAmount(extractedAmount.toFixed(2));
     }
+  };
+
+  // Handle store name approval
+  const handleApproveStoreName = () => {
+    if (detectedFormat && currentOcrResult) {
+      setStoreNameApproved(true);
+      // Immediately record learning
+      recordFormatDetectionSuccess(
+        detectedFormat.storeName,
+        detectedFormat,
+        currentOcrResult.text
+      );
+    }
+  };
+
+  // Handle store name rejection
+  const handleRejectStoreName = () => {
+    setStoreNameApproved(false);
+    setRejectedStoreName("");
+  };
+
+  // Handle store name correction (when user enters correct name)
+  const handleStoreNameCorrection = (correctName: string) => {
+    if (detectedFormat && currentOcrResult && correctName.trim()) {
+      setRejectedStoreName(correctName.trim());
+      // Immediately record learning
+      recordFormatDetectionFailure(
+        detectedFormat.storeName,
+        correctName.trim(),
+        currentOcrResult.text,
+        detectedFormat
+      );
+    }
+  };
+
+  // Handle amount approval
+  const handleApproveAmount = () => {
+    if (extractedAmount && currentOcrResult) {
+      setAmountApproved(true);
+      setVerifiedAmount(extractedAmount.toFixed(2));
+      
+      // Immediately record learning
+      const lines = currentOcrResult.text.split(/\n/).map(l => l.trim());
+      const successLine = lines.find(line => 
+        line.match(new RegExp(`\\b${extractedAmount.toFixed(2)}\\b`)) ||
+        /total|amount\s*due|balance/i.test(line)
+      ) || lines[lines.length - 1] || currentOcrResult.text.substring(0, 100);
+      
+      recordSuccess(
+        currentOcrResult.text,
+        extractedAmount,
+        currentOcrResult.strategy,
+        successLine,
+        detectedFormat?.storeName,
+        detectedFormat || null
+      );
+    }
+  };
+
+  // Handle amount rejection
+  const handleRejectAmount = () => {
+    setAmountApproved(false);
+    // Don't clear verifiedAmount - let user enter correct amount
+  };
+
+  // Handle amount correction (when user enters correct amount)
+  const handleAmountCorrection = (correctAmount: number) => {
+    if (originalExtractedAmount !== null && currentOcrResult && correctAmount > 0) {
+      setAmountApproved(false); // Still rejected, but we have correction
+      setVerifiedAmount(correctAmount.toFixed(2));
+      
+      // Immediately record learning
+      const lines = currentOcrResult.text.split(/\n/).map(l => l.trim());
+      const correctLine = lines.find(line => 
+        line.match(new RegExp(`\\b${correctAmount.toFixed(2)}\\b`))
+      ) || lines[lines.length - 1] || currentOcrResult.text.substring(0, 100);
+      
+      recordCorrection(
+        currentOcrResult.text,
+        originalExtractedAmount,
+        correctAmount,
+        correctLine,
+        detectedFormat?.storeName,
+        currentOcrResult.strategy,
+        detectedFormat || null
+      );
+    }
+  };
+
+  // Check if all categories are verified
+  const allCategoriesVerified = () => {
+    // Store name must be verified if detected
+    const storeNameVerified = !detectedFormat || storeNameApproved !== null;
+    // Amount must be verified if detected, or if no amount detected, we just need verifiedAmount to be set and valid
+    const amountVerified = extractedAmount 
+      ? amountApproved !== null 
+      : (verifiedAmount && parseFloat(verifiedAmount) > 0);
+    return storeNameVerified && amountVerified;
   };
 
   return (
@@ -910,6 +989,9 @@ export default function ReceiptScanner({
                     setVerifiedAmount("");
                     setError(null);
                     setCurrentOcrResult(null);
+                    setStoreNameApproved(null);
+                    setAmountApproved(null);
+                    setRejectedStoreName("");
                     if (fileInputRef.current) {
                       fileInputRef.current.value = "";
                     }
@@ -939,19 +1021,14 @@ export default function ReceiptScanner({
             </div>
           )}
 
-          {/* Extracted Amount */}
-          {extractedAmount && !isProcessing && (
-            <div className="bg-green-50 border-2 border-green-200 rounded-xl p-6">
+          {/* Verification UI - Show when we have OCR results */}
+          {(extractedAmount !== null || detectedFormat) && !isProcessing && (
+            <div className="space-y-4">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-bold text-gray-900">
-                  ✓ Amount Detected
+                  Verify Detection Results
                 </h3>
                 <div className="flex gap-2 flex-wrap">
-                  {detectedFormat && (
-                    <span className="text-xs px-2 py-1 bg-purple-100 text-purple-700 rounded" title={`Detected format: ${detectedFormat.storeName}`}>
-                      {detectedFormat.storeName}
-                    </span>
-                  )}
                   {successfulStrategy && (
                     <span className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded">
                       {successfulStrategy}
@@ -964,51 +1041,149 @@ export default function ReceiptScanner({
                   )}
                 </div>
               </div>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Detected Amount
-                  </label>
-                  <div className="flex items-center gap-3">
-                    <div className="flex-1 bg-white border-2 border-green-300 rounded-lg px-4 py-3">
-                      <span className="text-2xl font-bold text-green-700">
-                        ${extractedAmount.toFixed(2)}
-                      </span>
+
+              {/* Store Name Verification Card */}
+              {detectedFormat && (
+                <div className={`border-2 rounded-xl p-4 ${
+                  storeNameApproved === null 
+                    ? "border-gray-300 bg-white" 
+                    : storeNameApproved 
+                    ? "border-green-400 bg-green-50" 
+                    : "border-red-400 bg-red-50"
+                }`}>
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="font-semibold text-gray-900">Store Name Detection</h4>
+                    {storeNameApproved === true && (
+                      <span className="text-green-600 font-bold">✓ Approved</span>
+                    )}
+                    {storeNameApproved === false && (
+                      <span className="text-red-600 font-bold">✗ Rejected</span>
+                    )}
+                  </div>
+                  <div className="mb-3">
+                    <p className="text-sm text-gray-600 mb-1">Detected:</p>
+                    <p className="text-lg font-bold text-gray-900">{detectedFormat.storeName}</p>
+                  </div>
+                  {storeNameApproved === null && (
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handleApproveStoreName}
+                        className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+                      >
+                        ✓ Approve
+                      </button>
+                      <button
+                        onClick={handleRejectStoreName}
+                        className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
+                      >
+                        ✗ Reject
+                      </button>
                     </div>
-                    <button
-                      onClick={handleUseAmount}
-                      className="px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
-                    >
-                      Use This
-                    </button>
-                  </div>
+                  )}
+                  {storeNameApproved === false && (
+                    <div className="mt-3">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Enter Correct Store Name
+                      </label>
+                      <input
+                        type="text"
+                        value={rejectedStoreName}
+                        onChange={(e) => {
+                          setRejectedStoreName(e.target.value);
+                          if (e.target.value.trim()) {
+                            handleStoreNameCorrection(e.target.value);
+                          }
+                        }}
+                        placeholder="Enter store name"
+                        className="w-full border-2 border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-colors bg-white min-h-[44px]"
+                      />
+                    </div>
+                  )}
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Verify Amount *
-                  </label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-2.5 text-gray-500">$</span>
-                    <input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      value={verifiedAmount}
-                      onChange={(e) => setVerifiedAmount(e.target.value)}
-                      placeholder="0.00"
-                      className="w-full border-2 border-gray-300 rounded-lg pl-7 pr-3 py-2.5 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-colors bg-white min-h-[44px]"
-                    />
-                  </div>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Please verify the amount is correct before continuing
-                  </p>
+              )}
+
+              {/* Total Amount Verification Card */}
+              <div className={`border-2 rounded-xl p-4 ${
+                amountApproved === null 
+                  ? "border-gray-300 bg-white" 
+                  : amountApproved 
+                  ? "border-green-400 bg-green-50" 
+                  : "border-red-400 bg-red-50"
+              }`}>
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="font-semibold text-gray-900">Total Amount</h4>
+                  {amountApproved === true && (
+                    <span className="text-green-600 font-bold">✓ Approved</span>
+                  )}
+                  {amountApproved === false && (
+                    <span className="text-red-600 font-bold">✗ Rejected</span>
+                  )}
                 </div>
+                {extractedAmount ? (
+                  <>
+                    <div className="mb-3">
+                      <p className="text-sm text-gray-600 mb-1">Detected:</p>
+                      <p className="text-2xl font-bold text-gray-900">${extractedAmount.toFixed(2)}</p>
+                    </div>
+                    {amountApproved === null && (
+                      <div className="flex gap-2">
+                        <button
+                          onClick={handleApproveAmount}
+                          className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+                        >
+                          ✓ Approve
+                        </button>
+                        <button
+                          onClick={handleRejectAmount}
+                          className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
+                        >
+                          ✗ Reject
+                        </button>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="mb-3">
+                    <p className="text-sm text-gray-600 mb-2">No amount detected. Please enter manually:</p>
+                  </div>
+                )}
+                {(amountApproved === false || !extractedAmount) && (
+                  <div className="mt-3">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Enter Amount *
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-2.5 text-gray-500">$</span>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={verifiedAmount}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setVerifiedAmount(val);
+                          const numVal = parseFloat(val);
+                          if (!isNaN(numVal) && numVal > 0) {
+                            if (originalExtractedAmount !== null) {
+                              handleAmountCorrection(numVal);
+                            } else {
+                              // No original amount, so this is manual entry - mark as verified
+                              setAmountApproved(true);
+                            }
+                          }
+                        }}
+                        placeholder="0.00"
+                        className="w-full border-2 border-gray-300 rounded-lg pl-7 pr-3 py-2.5 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-colors bg-white min-h-[44px]"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}
 
-          {/* Manual Entry Fallback */}
-          {!extractedAmount && !isProcessing && imageFile && (
+          {/* Manual Entry Fallback (when no amount detected) */}
+          {!extractedAmount && !detectedFormat && !isProcessing && imageFile && (
             <div className="bg-yellow-50 border-2 border-yellow-200 rounded-xl p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-bold text-gray-900">
@@ -1150,11 +1325,12 @@ export default function ReceiptScanner({
                 disabled={
                   isUploading ||
                   !verifiedAmount ||
-                  parseFloat(verifiedAmount) <= 0
+                  parseFloat(verifiedAmount) <= 0 ||
+                  !allCategoriesVerified()
                 }
                 className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-medium"
               >
-                {isUploading ? "Uploading..." : "✓ Use This Amount"}
+                {isUploading ? "Uploading..." : allCategoriesVerified() ? "Continue" : "Verify All Categories"}
               </button>
             </div>
           )}
