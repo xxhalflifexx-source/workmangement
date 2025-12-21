@@ -120,7 +120,7 @@ export async function POST(request: NextRequest) {
 					console.error(`Upload error details:`, JSON.stringify(uploadError, null, 2));
 					failedFiles.push({
 						originalName: file.name,
-						error: uploadError.message || uploadError.error || "Upload failed",
+						error: uploadError.message || "Upload failed",
 					});
 					continue;
 				}
