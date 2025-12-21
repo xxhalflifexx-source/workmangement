@@ -7,7 +7,10 @@
     "build": "prisma generate --schema=prisma/schema.prisma && next build",
     "start": "next start",
     "lint": "next lint",
-    "postinstall": "prisma generate --schema=prisma/schema.prisma"
+    "postinstall": "prisma generate --schema=prisma/schema.prisma",
+    "check-db": "tsx scripts/check-and-migrate.ts --check",
+    "migrate-db": "tsx scripts/check-and-migrate.ts --migrate",
+    "db-health": "tsx scripts/check-and-migrate.ts --health"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.4.2",

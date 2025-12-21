@@ -4,6 +4,11 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authOptions";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import {
+  isTableMissingError,
+  extractTableNameFromError,
+  getMissingTableError,
+} from "@/lib/db-health-check";
 
 // ============ SOP Documents ============
 
@@ -25,6 +30,16 @@ export async function getSOPDocuments(folderId: string | null) {
     return { ok: true, documents };
   } catch (error: any) {
     console.error("Error getting SOP documents:", error);
+    
+    // Check if this is a missing table error
+    if (isTableMissingError(error)) {
+      const tableName = extractTableNameFromError(error) || "SOPDocument";
+      return {
+        ok: false,
+        error: getMissingTableError(tableName),
+      };
+    }
+    
     return { ok: false, error: error?.message || "Failed to get documents" };
   }
 }
@@ -51,6 +66,15 @@ export async function getSOPDocument(id: string) {
     return { ok: true, document };
   } catch (error: any) {
     console.error("Error getting SOP document:", error);
+    
+    if (isTableMissingError(error)) {
+      const tableName = extractTableNameFromError(error) || "SOPDocument";
+      return {
+        ok: false,
+        error: getMissingTableError(tableName),
+      };
+    }
+    
     return { ok: false, error: error?.message || "Failed to get document" };
   }
 }
@@ -84,6 +108,15 @@ export async function createSOPDocument(
     return { ok: true, document };
   } catch (error: any) {
     console.error("Error creating SOP document:", error);
+    
+    if (isTableMissingError(error)) {
+      const tableName = extractTableNameFromError(error) || "SOPDocument";
+      return {
+        ok: false,
+        error: getMissingTableError(tableName),
+      };
+    }
+    
     return { ok: false, error: error?.message || "Failed to create document" };
   }
 }
@@ -119,6 +152,15 @@ export async function updateSOPDocument(
     return { ok: true, document };
   } catch (error: any) {
     console.error("Error updating SOP document:", error);
+    
+    if (isTableMissingError(error)) {
+      const tableName = extractTableNameFromError(error) || "SOPDocument";
+      return {
+        ok: false,
+        error: getMissingTableError(tableName),
+      };
+    }
+    
     return { ok: false, error: error?.message || "Failed to update document" };
   }
 }
@@ -141,6 +183,15 @@ export async function deleteSOPDocument(id: string) {
     return { ok: true };
   } catch (error: any) {
     console.error("Error deleting SOP document:", error);
+    
+    if (isTableMissingError(error)) {
+      const tableName = extractTableNameFromError(error) || "SOPDocument";
+      return {
+        ok: false,
+        error: getMissingTableError(tableName),
+      };
+    }
+    
     return { ok: false, error: error?.message || "Failed to delete document" };
   }
 }
@@ -164,6 +215,15 @@ export async function getSOPTemplates() {
     return { ok: true, templates };
   } catch (error: any) {
     console.error("Error getting SOP templates:", error);
+    
+    if (isTableMissingError(error)) {
+      const tableName = extractTableNameFromError(error) || "SOPTemplate";
+      return {
+        ok: false,
+        error: getMissingTableError(tableName),
+      };
+    }
+    
     return { ok: false, error: error?.message || "Failed to get templates" };
   }
 }
@@ -189,6 +249,15 @@ export async function getSOPTemplate(id: string) {
     return { ok: true, template };
   } catch (error: any) {
     console.error("Error getting SOP template:", error);
+    
+    if (isTableMissingError(error)) {
+      const tableName = extractTableNameFromError(error) || "SOPTemplate";
+      return {
+        ok: false,
+        error: getMissingTableError(tableName),
+      };
+    }
+    
     return { ok: false, error: error?.message || "Failed to get template" };
   }
 }
@@ -222,6 +291,15 @@ export async function createSOPTemplate(
     return { ok: true, template };
   } catch (error: any) {
     console.error("Error creating SOP template:", error);
+    
+    if (isTableMissingError(error)) {
+      const tableName = extractTableNameFromError(error) || "SOPTemplate";
+      return {
+        ok: false,
+        error: getMissingTableError(tableName),
+      };
+    }
+    
     return { ok: false, error: error?.message || "Failed to create template" };
   }
 }
@@ -257,6 +335,15 @@ export async function updateSOPTemplate(
     return { ok: true, template };
   } catch (error: any) {
     console.error("Error updating SOP template:", error);
+    
+    if (isTableMissingError(error)) {
+      const tableName = extractTableNameFromError(error) || "SOPTemplate";
+      return {
+        ok: false,
+        error: getMissingTableError(tableName),
+      };
+    }
+    
     return { ok: false, error: error?.message || "Failed to update template" };
   }
 }
@@ -279,6 +366,15 @@ export async function deleteSOPTemplate(id: string) {
     return { ok: true };
   } catch (error: any) {
     console.error("Error deleting SOP template:", error);
+    
+    if (isTableMissingError(error)) {
+      const tableName = extractTableNameFromError(error) || "SOPTemplate";
+      return {
+        ok: false,
+        error: getMissingTableError(tableName),
+      };
+    }
+    
     return { ok: false, error: error?.message || "Failed to delete template" };
   }
 }
