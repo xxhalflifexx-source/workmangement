@@ -957,7 +957,12 @@ export default function ReceiptScanner({
                 <h3 className="text-lg font-bold text-gray-900">
                   Manual Entry Required
                 </h3>
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap">
+                  {detectedFormat && (
+                    <span className="text-xs px-2 py-1 bg-purple-100 text-purple-700 rounded" title={`Detected format: ${detectedFormat.storeName}`}>
+                      {detectedFormat.storeName}
+                    </span>
+                  )}
                   {successfulStrategy && (
                     <span className="text-xs px-2 py-1 bg-yellow-100 text-yellow-700 rounded">
                       {successfulStrategy}
