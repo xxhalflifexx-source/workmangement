@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import dynamic from "next/dynamic";
 
 // Dynamically import ReactQuill to avoid SSR issues
@@ -42,58 +42,23 @@ export default function SOPEditor({
   const [templateName, setTemplateName] = useState("");
   const [templateDescription, setTemplateDescription] = useState("");
   const [error, setError] = useState<string | undefined>();
-  const quillRef = useRef<any>(null);
 
-  // Quill modules configuration with image handling
+  // Quill modules configuration
   const modules = useMemo(() => ({
-    toolbar: {
-      container: [
-        [{ header: [1, 2, 3, 4, 5, 6, false] }],
-        [{ font: [] }],
-        [{ size: ["small", false, "large", "huge"] }],
-        ["bold", "italic", "underline", "strike"],
-        [{ color: [] }, { background: [] }],
-        [{ script: "sub" }, { script: "super" }],
-        [{ list: "ordered" }, { list: "bullet" }, { list: "check" }],
-        [{ indent: "-1" }, { indent: "+1" }],
-        [{ align: [] }],
-        ["blockquote", "code-block"],
-        ["link", "image"],
-        ["clean"],
-      ],
-      handlers: {
-        image: function() {
-          const input = document.createElement("input");
-          input.setAttribute("type", "file");
-          input.setAttribute("accept", "image/*");
-          input.click();
-
-          input.onchange = async () => {
-            const file = input.files?.[0];
-            if (!file) return;
-
-            // Check file size (max 5MB for inline images)
-            if (file.size > 5 * 1024 * 1024) {
-              alert("Image must be less than 5MB");
-              return;
-            }
-
-            // Convert to base64 for inline embedding
-            const reader = new FileReader();
-            reader.onload = (e) => {
-              const base64 = e.target?.result as string;
-              const quill = (quillRef.current as any)?.getEditor();
-              if (quill) {
-                const range = quill.getSelection(true);
-                quill.insertEmbed(range.index, "image", base64);
-                quill.setSelection(range.index + 1);
-              }
-            };
-            reader.readAsDataURL(file);
-          };
-        },
-      },
-    },
+    toolbar: [
+      [{ header: [1, 2, 3, 4, 5, 6, false] }],
+      [{ font: [] }],
+      [{ size: ["small", false, "large", "huge"] }],
+      ["bold", "italic", "underline", "strike"],
+      [{ color: [] }, { background: [] }],
+      [{ script: "sub" }, { script: "super" }],
+      [{ list: "ordered" }, { list: "bullet" }, { list: "check" }],
+      [{ indent: "-1" }, { indent: "+1" }],
+      [{ align: [] }],
+      ["blockquote", "code-block"],
+      ["link", "image"],
+      ["clean"],
+    ],
     clipboard: {
       matchVisual: false,
     },
@@ -249,7 +214,6 @@ export default function SOPEditor({
       <div className="flex-1 overflow-auto p-6">
         <div className="max-w-5xl mx-auto">
           <ReactQuill
-            ref={quillRef}
             theme="snow"
             value={content}
             onChange={setContent}
