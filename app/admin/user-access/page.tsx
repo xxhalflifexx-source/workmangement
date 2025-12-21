@@ -39,7 +39,6 @@ export default function UserAccessControlPage() {
     { key: "finance", label: "Finance" },
     { key: "inventory", label: "Inventory" },
     { key: "adminPanel", label: "Admin Panel" },
-    { key: "employeeHandbook", label: "Employee Handbook" },
     { key: "manual", label: "Manual" },
     { key: "operationsCommon", label: "Operations Common" },
   ];
@@ -238,11 +237,6 @@ export default function UserAccessControlPage() {
                       <span className="leading-tight">Admin Panel</span>
                     </div>
                   </th>
-                  <th key="header-employeeHandbook" className="px-2 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider min-w-[100px] whitespace-nowrap">
-                    <div className="flex flex-col items-center gap-1">
-                      <span className="leading-tight">Employee Handbook</span>
-                    </div>
-                  </th>
                   <th key="header-manual" className="px-2 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider min-w-[100px] whitespace-nowrap">
                     <div className="flex flex-col items-center gap-1">
                       <span className="leading-tight">Manual</span>
@@ -377,20 +371,6 @@ export default function UserAccessControlPage() {
                             title={`Admin Panel: ${(userPermissions.adminPanel ?? false) ? "Allowed" : "Denied"}`}
                           >
                             <span className="text-lg font-bold">{(userPermissions.adminPanel ?? false) ? "✓" : "✗"}</span>
-                          </button>
-                        </td>
-                        <td key={`${user.id}-employeeHandbook`} className="px-2 py-4 whitespace-nowrap text-center min-w-[100px]">
-                          <button
-                            onClick={() => togglePermission(user.id, "employeeHandbook")}
-                            disabled={saving[user.id]}
-                            className={`inline-flex items-center justify-center w-8 h-8 transition-all duration-200 ${
-                              (userPermissions.employeeHandbook ?? false)
-                                ? "text-green-700 hover:text-green-800 hover:scale-110"
-                                : "text-red-700 hover:text-red-800 hover:scale-110"
-                            } disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100`}
-                            title={`Employee Handbook: ${(userPermissions.employeeHandbook ?? false) ? "Allowed" : "Denied"}`}
-                          >
-                            <span className="text-lg font-bold">{(userPermissions.employeeHandbook ?? false) ? "✓" : "✗"}</span>
                           </button>
                         </td>
                         <td key={`${user.id}-manual`} className="px-2 py-4 whitespace-nowrap text-center min-w-[100px]">

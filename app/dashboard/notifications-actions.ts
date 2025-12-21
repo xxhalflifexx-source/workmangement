@@ -155,7 +155,6 @@ export async function getUnreadCountsByModule() {
       "/finance": 0,
       "/inventory": 0,
       "/admin": 0,
-      "/handbook": 0,
       "/manual": 0,
       "/operations-common": 0,
     };

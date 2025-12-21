@@ -8,7 +8,6 @@ export type ModulePermission =
   | "finance"
   | "inventory"
   | "adminPanel"
-  | "employeeHandbook"
   | "manual"
   | "operationsCommon";
 
@@ -20,7 +19,6 @@ export interface UserPermissions {
   finance?: boolean;
   inventory?: boolean;
   adminPanel?: boolean;
-  employeeHandbook?: boolean;
   manual?: boolean;
   operationsCommon?: boolean;
 }
@@ -33,7 +31,6 @@ export const DEFAULT_PERMISSIONS: UserPermissions = {
   finance: false,
   inventory: false,
   adminPanel: false,
-  employeeHandbook: true,
   manual: true,
   operationsCommon: true,
 };
@@ -46,7 +43,6 @@ export const MODULE_ROUTES: Record<ModulePermission, string[]> = {
   finance: ["/finance"],
   inventory: ["/inventory"],
   adminPanel: ["/admin"],
-  employeeHandbook: ["/handbook"],
   manual: ["/manual"],
   operationsCommon: ["/operations-common"],
 };
@@ -97,7 +93,6 @@ export function getModuleNames(): Record<ModulePermission, string> {
     finance: "Finance",
     inventory: "Inventory",
     adminPanel: "Admin Panel",
-    employeeHandbook: "Employee Handbook",
     manual: "Manual",
     operationsCommon: "Operations Common",
   };

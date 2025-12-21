@@ -186,17 +186,6 @@ export default async function Dashboard() {
                   />
                 )}
 
-                {/* Employee Handbook - Check permission */}
-                {(role === "ADMIN" || (permissions && hasPermission(permissions, "employeeHandbook"))) && (
-                  <DashboardTabLink
-                    href="/handbook"
-                    icon="📖"
-                    title="Employee Handbook"
-                    description="Company policies"
-                    notificationCount={unreadCounts["/handbook"] || 0}
-                  />
-                )}
-
                 {/* Operations Common - Visible to Employees, Managers, and Admin */}
                 {(role === "ADMIN" || role === "MANAGER" || role === "EMPLOYEE") && (
                   <DashboardTabLink
