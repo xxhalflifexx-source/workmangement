@@ -88,9 +88,10 @@ function getLearningData(): LearningData {
 function saveLearningData(data: LearningData): void {
   if (typeof window === "undefined") return;
 
+  // Limit storage size by keeping only recent items
+  const maxItems = MAX_STORED_ITEMS;
+  
   try {
-    // Limit storage size by keeping only recent items
-    const maxItems = MAX_STORED_ITEMS;
     if (data.successfulExtractions.length > maxItems) {
       data.successfulExtractions = data.successfulExtractions
         .sort((a, b) => b.timestamp - a.timestamp)
