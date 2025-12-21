@@ -224,8 +224,9 @@ export async function createFile(
   }
 
   const userRole = (session.user as any).role;
-  if (userRole !== "ADMIN" && userRole !== "MANAGER") {
-    return { ok: false, error: "Unauthorized: Only admins and managers can upload files" };
+  // Allow ADMIN, MANAGER, and EMPLOYEE to upload files
+  if (userRole !== "ADMIN" && userRole !== "MANAGER" && userRole !== "EMPLOYEE") {
+    return { ok: false, error: "Unauthorized: You do not have permission to upload files" };
   }
 
   if (!name || name.trim().length === 0) {
