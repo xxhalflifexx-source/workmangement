@@ -8,6 +8,8 @@ import type { TextRecognitionPlugin } from './definitions';
 
 const TextRecognition = registerPlugin<TextRecognitionPlugin>('TextRecognition', {
   web: () => import('./web').then(m => new m.TextRecognitionWeb()),
+  // Explicitly specify Android implementation
+  // Capacitor will look for the plugin with @CapacitorPlugin(name = "TextRecognition")
 });
 
 export * from './definitions';

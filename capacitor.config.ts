@@ -19,6 +19,9 @@ const config: CapacitorConfig = {
     PushNotifications: {
       presentationOptions: ['badge', 'sound', 'alert'],
     },
+    TextRecognition: {
+      // Local plugin - registered via @CapacitorPlugin annotation in Android
+    },
   },
   ios: {
     contentInset: 'automatic',
