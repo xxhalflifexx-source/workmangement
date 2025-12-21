@@ -363,6 +363,7 @@ export default function OperationsCommonPage() {
 
       const uploadData = await uploadRes.json();
       const uploadedFiles = uploadData.files || [];
+      const failedFiles = uploadData.failedFiles || [];
 
       // Create file records with unique names
       for (let i = 0; i < uploadedFiles.length; i++) {
@@ -383,8 +384,20 @@ export default function OperationsCommonPage() {
         }
       }
 
-      if (duplicateFiles.length === 0) {
+      // Show success/error messages
+      if (uploadedFiles.length > 0 && failedFiles.length === 0) {
+        if (duplicateFiles.length === 0) {
+          setSuccess(`${uploadedFiles.length} file(s) uploaded successfully`);
+        } else {
+          setSuccess(`${uploadedFiles.length} file(s) uploaded successfully. ${duplicateFiles.length} file(s) renamed to avoid duplicates: ${duplicateFiles.join(', ')}`);
+        }
+      } else if (uploadedFiles.length > 0 && failedFiles.length > 0) {
+        const failedNames = failedFiles.map((f: any) => f.originalName).join(', ');
         setSuccess(`${uploadedFiles.length} file(s) uploaded successfully`);
+        setError(`${failedFiles.length} file(s) failed: ${failedNames}`);
+      } else if (failedFiles.length > 0) {
+        const failedNames = failedFiles.map((f: any) => f.originalName).join(', ');
+        setError(`All files failed to upload: ${failedNames}`);
       }
       setShowUploadModal(false);
       setUploadingFiles([]);

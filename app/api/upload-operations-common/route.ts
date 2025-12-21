@@ -46,62 +46,105 @@ export async function POST(request: NextRequest) {
 			fileSize: number;
 			fileUrl: string;
 		}> = [];
+		const failedFiles: Array<{
+			originalName: string;
+			error: string;
+		}> = [];
 
 		for (const file of files) {
-			const bytes = await file.arrayBuffer();
-			const buffer = Buffer.from(bytes);
+			try {
+				const bytes = await file.arrayBuffer();
+				const buffer = Buffer.from(bytes);
 
-			const timestamp = Date.now();
-			const sanitizedName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
-			const objectPath = `operations-common/${(session.user as any).id || "user"}/${timestamp}-${sanitizedName}`;
+				const timestamp = Date.now();
+				const sanitizedName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
+				const objectPath = `operations-common/${(session.user as any).id || "user"}/${timestamp}-${sanitizedName}`;
 
-			// Determine file type category
-			let fileType = "other";
-			const mimeType = file.type.toLowerCase();
-			if (mimeType.includes("pdf")) {
-				fileType = "pdf";
-			} else if (mimeType.startsWith("image/")) {
-				fileType = "image";
-			} else if (mimeType.includes("word") || mimeType.includes("document") || file.name.endsWith(".doc") || file.name.endsWith(".docx")) {
-				fileType = "word";
-			} else if (mimeType.includes("excel") || mimeType.includes("spreadsheet") || file.name.endsWith(".xls") || file.name.endsWith(".xlsx")) {
-				fileType = "excel";
-			} else if (mimeType.includes("cad") || file.name.endsWith(".dwg") || file.name.endsWith(".dxf")) {
-				fileType = "cad";
-			}
+				// Determine file type category with improved PDF detection
+				let fileType = "other";
+				let contentType = file.type || "application/octet-stream";
+				const mimeType = (file.type || "").toLowerCase();
+				const fileNameLower = file.name.toLowerCase();
+				
+				// Check PDF: MIME type OR file extension
+				if (mimeType === "application/pdf" || mimeType.includes("pdf") || fileNameLower.endsWith(".pdf")) {
+					fileType = "pdf";
+					// Ensure Content-Type is set correctly for PDFs
+					if (!mimeType || !mimeType.includes("pdf")) {
+						contentType = "application/pdf";
+					}
+				} else if (mimeType.startsWith("image/")) {
+					fileType = "image";
+				} else if (mimeType.includes("word") || mimeType.includes("document") || fileNameLower.endsWith(".doc") || fileNameLower.endsWith(".docx")) {
+					fileType = "word";
+				} else if (mimeType.includes("excel") || mimeType.includes("spreadsheet") || fileNameLower.endsWith(".xls") || fileNameLower.endsWith(".xlsx")) {
+					fileType = "excel";
+				} else if (mimeType.includes("cad") || fileNameLower.endsWith(".dwg") || fileNameLower.endsWith(".dxf")) {
+					fileType = "cad";
+				}
 
-			const { error: uploadError } = await supabase
-				.storage
-				.from(bucket)
-				.upload(objectPath, buffer, {
-					cacheControl: "3600",
-					contentType: file.type,
-					upsert: false,
-				});
+				const { error: uploadError } = await supabase
+					.storage
+					.from(bucket)
+					.upload(objectPath, buffer, {
+						cacheControl: "3600",
+						contentType: contentType,
+						upsert: false,
+					});
 
-			if (uploadError) {
-				console.error("Supabase upload error:", uploadError);
-				continue;
-			}
+				if (uploadError) {
+					console.error(`Supabase upload error for ${file.name}:`, uploadError);
+					failedFiles.push({
+						originalName: file.name,
+						error: uploadError.message || "Upload failed",
+					});
+					continue;
+				}
 
-			const { data: publicUrlData } = supabase
-				.storage
-				.from(bucket)
-				.getPublicUrl(objectPath);
+				const { data: publicUrlData } = supabase
+					.storage
+					.from(bucket)
+					.getPublicUrl(objectPath);
 
-			if (publicUrlData?.publicUrl) {
-				uploadedFiles.push({
+				if (publicUrlData?.publicUrl) {
+					uploadedFiles.push({
+						originalName: file.name,
+						fileType,
+						fileSize: file.size,
+						fileUrl: publicUrlData.publicUrl,
+					});
+				} else {
+					failedFiles.push({
+						originalName: file.name,
+						error: "Failed to generate public URL",
+					});
+				}
+			} catch (fileError: any) {
+				console.error(`Error processing file ${file.name}:`, fileError);
+				failedFiles.push({
 					originalName: file.name,
-					fileType,
-					fileSize: file.size,
-					fileUrl: publicUrlData.publicUrl,
+					error: fileError?.message || "File processing failed",
 				});
 			}
 		}
 
+		// If all files failed, return an error
+		if (uploadedFiles.length === 0 && failedFiles.length > 0) {
+			return NextResponse.json(
+				{
+					success: false,
+					error: `All ${failedFiles.length} file(s) failed to upload`,
+					failedFiles: failedFiles,
+				},
+				{ status: 400 }
+			);
+		}
+
+		// Return success with uploaded files and any failures
 		return NextResponse.json({
 			success: true,
 			files: uploadedFiles,
+			failedFiles: failedFiles.length > 0 ? failedFiles : undefined,
 		});
 	} catch (error) {
 		console.error("Upload error:", error);
