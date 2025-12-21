@@ -1,9 +1,20 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { extractAmountFromText, extractAllAmounts, extractAmountsWithContext } from "@/lib/receipt-ocr";
 import { detectReceiptFormat, ReceiptFormat } from "@/lib/receipt-formats";
-import { recordSuccess, recordCorrection, getRecommendedStrategies, recordFormatDetectionSuccess, recordFormatDetectionFailure } from "@/lib/receipt-learning";
+import { 
+  recordSuccess, 
+  recordCorrection, 
+  getRecommendedStrategies, 
+  recordFormatDetectionSuccess, 
+  recordFormatDetectionFailure,
+  processSyncQueue,
+  fetchGlobalPatterns,
+  shouldSync,
+  shouldRefreshGlobalPatterns,
+  getMergedPatterns,
+} from "@/lib/receipt-learning";
 
 interface ReceiptScannerProps {
   jobId: string;
@@ -59,6 +70,32 @@ export default function ReceiptScanner({
     /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ||
     window.innerWidth < 768
   );
+
+  // Fetch global patterns and sync on mount
+  useEffect(() => {
+    const initLearning = async () => {
+      try {
+        // Refresh global patterns if needed
+        if (shouldRefreshGlobalPatterns()) {
+          console.log("[ReceiptScanner] Fetching global patterns from server...");
+          await fetchGlobalPatterns();
+        }
+
+        // Process sync queue if needed
+        if (shouldSync()) {
+          console.log("[ReceiptScanner] Syncing learning data to server...");
+          const synced = await processSyncQueue();
+          if (synced > 0) {
+            console.log(`[ReceiptScanner] Synced ${synced} items to server`);
+          }
+        }
+      } catch (err) {
+        console.error("[ReceiptScanner] Failed to initialize learning:", err);
+      }
+    };
+
+    initLearning();
+  }, []);
 
   // Image preprocessing function with options
   const preprocessImage = async (file: File, options: { aggressive?: boolean; highBrightness?: boolean; edgeEnhancement?: boolean } = {}): Promise<File> => {
@@ -768,6 +805,15 @@ export default function ReceiptScanner({
 
       // Learning has already happened immediately on approve/reject clicks
       // No need to record again here
+
+      // Trigger background sync to Supabase after successful upload
+      processSyncQueue().then((synced) => {
+        if (synced > 0) {
+          console.log(`[ReceiptScanner] Synced ${synced} learning items to server`);
+        }
+      }).catch((err) => {
+        console.error("[ReceiptScanner] Background sync failed:", err);
+      });
 
       // Callback with extracted amount and receipt URL
       onScanComplete(finalAmount, confirmData.fileUrl);

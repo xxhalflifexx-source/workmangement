@@ -210,6 +210,13 @@ export function recordSuccess(
   data.strategySuccess[strategy] = (data.strategySuccess[strategy] || 0) + 1;
 
   saveLearningData(data);
+
+  // Queue for Supabase sync
+  queueForSync({
+    type: "extraction",
+    data: extraction,
+    timestamp: Date.now(),
+  });
 }
 
 /**
@@ -260,6 +267,13 @@ export function recordCorrection(
   }
 
   saveLearningData(data);
+
+  // Queue for Supabase sync
+  queueForSync({
+    type: "correction",
+    data: correction,
+    timestamp: Date.now(),
+  });
 }
 
 /**
@@ -450,6 +464,13 @@ export function recordFormatDetectionSuccess(
   data.formatDetectionSuccess[storeName] = (data.formatDetectionSuccess[storeName] || 0) + 1;
 
   saveLearningData(data);
+
+  // Queue for Supabase sync
+  queueForSync({
+    type: "formatDetection",
+    data: detection,
+    timestamp: Date.now(),
+  });
 }
 
 /**
@@ -486,6 +507,13 @@ export function recordFormatDetectionFailure(
   }
 
   saveLearningData(data);
+
+  // Queue for Supabase sync
+  queueForSync({
+    type: "formatDetection",
+    data: detection,
+    timestamp: Date.now(),
+  });
 }
 
 /**
@@ -528,5 +556,311 @@ export function getLearningStats(): {
     avgSuccessRate,
     formatDetections: data.formatDetections?.length || 0,
   };
+}
+
+// ============================================
+// Supabase Sync Functions
+// ============================================
+
+const SYNC_QUEUE_KEY = "receipt_ocr_sync_queue";
+const GLOBAL_PATTERNS_KEY = "receipt_ocr_global_patterns";
+const LAST_SYNC_KEY = "receipt_ocr_last_sync";
+
+interface SyncQueueItem {
+  type: "extraction" | "correction" | "formatDetection";
+  data: SuccessfulExtraction | Correction | FormatDetection;
+  timestamp: number;
+}
+
+interface GlobalPatternData {
+  patterns: LearnedPattern[];
+  strategies: Record<string, { success: number; failure: number; rate: number }>;
+  fetchedAt: number;
+}
+
+/**
+ * Queue an item for sync to Supabase
+ */
+export function queueForSync(item: SyncQueueItem): void {
+  if (typeof window === "undefined") return;
+
+  try {
+    const queue = getSyncQueue();
+    queue.push(item);
+    
+    // Limit queue size
+    const maxQueueSize = 100;
+    if (queue.length > maxQueueSize) {
+      queue.splice(0, queue.length - maxQueueSize);
+    }
+    
+    localStorage.setItem(SYNC_QUEUE_KEY, JSON.stringify(queue));
+  } catch (err) {
+    console.error("[ReceiptLearning] Failed to queue for sync:", err);
+  }
+}
+
+/**
+ * Get sync queue from localStorage
+ */
+function getSyncQueue(): SyncQueueItem[] {
+  if (typeof window === "undefined") return [];
+
+  try {
+    const stored = localStorage.getItem(SYNC_QUEUE_KEY);
+    return stored ? JSON.parse(stored) : [];
+  } catch (err) {
+    return [];
+  }
+}
+
+/**
+ * Clear sync queue
+ */
+function clearSyncQueue(): void {
+  if (typeof window === "undefined") return;
+  localStorage.removeItem(SYNC_QUEUE_KEY);
+}
+
+/**
+ * Process sync queue - upload items to Supabase
+ * Returns number of items synced
+ */
+export async function processSyncQueue(): Promise<number> {
+  if (typeof window === "undefined") return 0;
+
+  const queue = getSyncQueue();
+  if (queue.length === 0) return 0;
+
+  try {
+    // Dynamically import server actions to avoid SSR issues
+    const { saveExtractionSuccess, saveCorrection, saveFormatDetection } = await import("@/app/jobs/ocr-learning-actions");
+
+    let synced = 0;
+
+    for (const item of queue) {
+      try {
+        let result: { ok: boolean };
+
+        switch (item.type) {
+          case "extraction":
+            const extraction = item.data as SuccessfulExtraction;
+            result = await saveExtractionSuccess({
+              receiptText: extraction.receiptText,
+              extractedAmount: extraction.extractedAmount,
+              storeName: extraction.storeName,
+              strategy: extraction.strategy,
+              linePattern: extraction.linePattern,
+              formatId: extraction.formatId,
+            });
+            break;
+
+          case "correction":
+            const correction = item.data as Correction;
+            result = await saveCorrection({
+              receiptText: correction.receiptText,
+              originalAmount: correction.originalAmount,
+              correctedAmount: correction.correctedAmount,
+              correctLinePattern: correction.correctLinePattern,
+              storeName: correction.storeName,
+              strategy: correction.strategy,
+              formatId: correction.formatId,
+            });
+            break;
+
+          case "formatDetection":
+            const detection = item.data as FormatDetection;
+            result = await saveFormatDetection({
+              detectedStoreName: detection.detectedStoreName,
+              correctStoreName: detection.correctStoreName,
+              ocrTextSnippet: detection.ocrText,
+              formatId: detection.formatId,
+              wasCorrect: detection.wasCorrect,
+            });
+            break;
+
+          default:
+            result = { ok: true };
+        }
+
+        if (result.ok) {
+          synced++;
+        }
+      } catch (itemErr) {
+        console.error("[ReceiptLearning] Failed to sync item:", itemErr);
+      }
+    }
+
+    // Clear successfully synced items
+    if (synced > 0) {
+      clearSyncQueue();
+      localStorage.setItem(LAST_SYNC_KEY, Date.now().toString());
+    }
+
+    return synced;
+  } catch (err) {
+    console.error("[ReceiptLearning] Failed to process sync queue:", err);
+    return 0;
+  }
+}
+
+/**
+ * Fetch global patterns from Supabase
+ */
+export async function fetchGlobalPatterns(): Promise<GlobalPatternData | null> {
+  if (typeof window === "undefined") return null;
+
+  try {
+    const { getGlobalPatternStats, getGlobalStrategyStats } = await import("@/app/jobs/ocr-learning-actions");
+
+    const [patternsResult, strategiesResult] = await Promise.all([
+      getGlobalPatternStats(),
+      getGlobalStrategyStats(),
+    ]);
+
+    if (!patternsResult.ok || !strategiesResult.ok) {
+      return null;
+    }
+
+    const globalData: GlobalPatternData = {
+      patterns: (patternsResult.patterns || []).map((p) => ({
+        pattern: p.pattern,
+        successCount: p.successCount,
+        failureCount: p.failureCount,
+        successRate: p.successRate,
+        lastUsed: Date.now(),
+        storeName: p.storeName,
+        formatId: p.formatId,
+      })),
+      strategies: strategiesResult.strategies || {},
+      fetchedAt: Date.now(),
+    };
+
+    // Cache global patterns locally
+    localStorage.setItem(GLOBAL_PATTERNS_KEY, JSON.stringify(globalData));
+
+    return globalData;
+  } catch (err) {
+    console.error("[ReceiptLearning] Failed to fetch global patterns:", err);
+    return null;
+  }
+}
+
+/**
+ * Get cached global patterns
+ */
+export function getCachedGlobalPatterns(): GlobalPatternData | null {
+  if (typeof window === "undefined") return null;
+
+  try {
+    const stored = localStorage.getItem(GLOBAL_PATTERNS_KEY);
+    if (stored) {
+      return JSON.parse(stored);
+    }
+  } catch (err) {
+    console.error("[ReceiptLearning] Failed to get cached global patterns:", err);
+  }
+
+  return null;
+}
+
+/**
+ * Merge local and global patterns
+ * Returns combined patterns with higher confidence from global data
+ */
+export function getMergedPatterns(): LearnedPattern[] {
+  const localPatterns = getLearnedPatterns();
+  const globalData = getCachedGlobalPatterns();
+
+  if (!globalData || !globalData.patterns) {
+    return localPatterns;
+  }
+
+  const mergedMap = new Map<string, LearnedPattern>();
+
+  // Add local patterns first
+  for (const pattern of localPatterns) {
+    mergedMap.set(pattern.pattern, { ...pattern });
+  }
+
+  // Merge global patterns (add to existing or create new)
+  for (const globalPattern of globalData.patterns) {
+    const existing = mergedMap.get(globalPattern.pattern);
+    if (existing) {
+      // Combine counts
+      existing.successCount += globalPattern.successCount;
+      existing.failureCount += globalPattern.failureCount;
+      // Recalculate success rate
+      const total = existing.successCount + existing.failureCount;
+      existing.successRate = total > 0 ? existing.successCount / total : 0;
+    } else {
+      mergedMap.set(globalPattern.pattern, { ...globalPattern });
+    }
+  }
+
+  // Sort by success rate and usage
+  return Array.from(mergedMap.values()).sort((a, b) => {
+    if (Math.abs(a.successRate - b.successRate) > 0.1) {
+      return b.successRate - a.successRate;
+    }
+    return (b.successCount + b.failureCount) - (a.successCount + a.failureCount);
+  });
+}
+
+/**
+ * Get merged strategy success rates (local + global)
+ */
+export function getMergedStrategyRates(): Record<string, { success: number; failure: number; rate: number }> {
+  const localRates = getStrategySuccessRates();
+  const globalData = getCachedGlobalPatterns();
+
+  if (!globalData || !globalData.strategies) {
+    return localRates;
+  }
+
+  const merged: Record<string, { success: number; failure: number; rate: number }> = { ...localRates };
+
+  for (const [strategy, globalStats] of Object.entries(globalData.strategies)) {
+    if (merged[strategy]) {
+      merged[strategy].success += globalStats.success;
+      merged[strategy].failure += globalStats.failure;
+      const total = merged[strategy].success + merged[strategy].failure;
+      merged[strategy].rate = total > 0 ? merged[strategy].success / total : 0.5;
+    } else {
+      merged[strategy] = { ...globalStats };
+    }
+  }
+
+  return merged;
+}
+
+/**
+ * Check if sync is needed (called periodically)
+ */
+export function shouldSync(): boolean {
+  if (typeof window === "undefined") return false;
+
+  const queue = getSyncQueue();
+  if (queue.length === 0) return false;
+
+  // Check if last sync was more than 5 minutes ago
+  const lastSync = parseInt(localStorage.getItem(LAST_SYNC_KEY) || "0", 10);
+  const fiveMinutes = 5 * 60 * 1000;
+  
+  return Date.now() - lastSync > fiveMinutes;
+}
+
+/**
+ * Check if global patterns need refresh (called periodically)
+ */
+export function shouldRefreshGlobalPatterns(): boolean {
+  if (typeof window === "undefined") return false;
+
+  const globalData = getCachedGlobalPatterns();
+  if (!globalData) return true;
+
+  // Refresh if older than 1 hour
+  const oneHour = 60 * 60 * 1000;
+  return Date.now() - globalData.fetchedAt > oneHour;
 }
 

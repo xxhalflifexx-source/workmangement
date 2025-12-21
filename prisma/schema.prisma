@@ -50,6 +50,9 @@ model User {
   operationsCommonFiles   OperationsCommonFile[]
   sopDocuments         SOPDocument[]
   sopTemplates         SOPTemplate[]
+  ocrExtractionSuccesses OCRExtractionSuccess[]
+  ocrCorrections       OCRCorrection[]
+  ocrFormatDetections  OCRFormatDetection[]
 }
 
 model Account {
@@ -482,4 +485,72 @@ model SOPTemplate {
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
   creator     User         @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+}
+
+// OCR Learning - Successful Extractions
+model OCRExtractionSuccess {
+  id              String   @id @default(cuid())
+  receiptText     String   @db.Text  // Snippet of OCR text (max 500 chars)
+  extractedAmount Float
+  storeName       String?
+  strategy        String
+  linePattern     String   // The line that matched
+  formatId        String?
+  userId          String
+  createdAt       DateTime @default(now())
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([storeName])
+  @@index([formatId])
+  @@index([userId])
+}
+
+// OCR Learning - Corrections
+model OCRCorrection {
+  id                 String   @id @default(cuid())
+  receiptText        String   @db.Text  // Snippet of OCR text (max 500 chars)
+  originalAmount     Float
+  correctedAmount    Float
+  correctLinePattern String
+  storeName          String?
+  strategy           String
+  formatId           String?
+  userId             String
+  createdAt          DateTime @default(now())
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([storeName])
+  @@index([formatId])
+  @@index([userId])
+}
+
+// OCR Learning - Format Detection Results
+model OCRFormatDetection {
+  id                String   @id @default(cuid())
+  detectedStoreName String
+  correctStoreName  String
+  ocrTextSnippet    String   @db.Text  // Snippet of OCR text (max 500 chars)
+  formatId          String?
+  wasCorrect        Boolean
+  userId            String
+  createdAt         DateTime @default(now())
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([detectedStoreName])
+  @@index([correctStoreName])
+  @@index([userId])
+}
+
+// OCR Learning - Aggregated Pattern Stats (computed from above tables)
+model OCRPatternStats {
+  id           String   @id @default(cuid())
+  pattern      String   @unique
+  successCount Int      @default(0)
+  failureCount Int      @default(0)
+  storeName    String?
+  formatId     String?
+  updatedAt    DateTime @updatedAt
+  
+  @@index([storeName])
+  @@index([formatId])
 }
