@@ -483,10 +483,10 @@ export default function ReceiptScanner({
       
       // Detect format from first OCR result
       if (originalResult.text) {
-        detectedFormat = detectReceiptFormat(originalResult.text);
-        if (detectedFormat) {
-          console.log("[ReceiptScanner] Detected format:", detectedFormat.storeName);
-          setDetectedFormat(detectedFormat);
+        const detected = detectReceiptFormat(originalResult.text);
+        if (detected) {
+          console.log("[ReceiptScanner] Detected format:", detected.storeName);
+          setDetectedFormat(detected);
         }
       }
       
