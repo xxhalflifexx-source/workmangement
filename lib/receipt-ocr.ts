@@ -36,7 +36,9 @@ export function extractAmountFromMultipleResults(
   let bestAmount: number | null = null;
   let bestScore = 0;
 
-  for (const [amount, { count, totalConfidence }] of amountVotes.entries()) {
+  // Convert Map entries to array for iteration compatibility
+  const entries = Array.from(amountVotes.entries());
+  for (const [amount, { count, totalConfidence }] of entries) {
     const avgConfidence = totalConfidence / count;
     const score = count * 10 + avgConfidence; // Votes weighted more than confidence
 
