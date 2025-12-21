@@ -16,16 +16,6 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
-    
-    // Ensure annotation processing is enabled for Capacitor plugins
-    defaultConfig {
-        javaCompileOptions {
-            annotationProcessorOptions {
-                arguments = [:]
-            }
-        }
-    }
-    
     buildTypes {
         release {
             minifyEnabled false
@@ -52,6 +42,8 @@ dependencies {
     implementation project(':capacitor-cordova-android-plugins')
     // ML Kit Text Recognition
     implementation 'com.google.mlkit:text-recognition:16.0.1'
+    // Capacitor annotation processor for plugin discovery
+    annotationProcessor project(':capacitor-android')
 }
 
 apply from: 'capacitor.build.gradle'
