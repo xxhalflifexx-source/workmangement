@@ -3,6 +3,7 @@ package com.workmanagement.app;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.util.Base64;
+import android.util.Log;
 
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
@@ -21,14 +22,17 @@ import java.util.concurrent.atomic.AtomicReference;
 
 @CapacitorPlugin(name = "TextRecognition")
 public class TextRecognitionPlugin extends Plugin {
+    private static final String TAG = "TextRecognitionPlugin";
 
     private TextRecognizer textRecognizer;
 
     @Override
     public void load() {
         super.load();
+        Log.d(TAG, "TextRecognitionPlugin.load() called - initializing ML Kit");
         // Initialize ML Kit Text Recognizer
         textRecognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS);
+        Log.d(TAG, "TextRecognitionPlugin loaded successfully");
     }
 
     @Override
@@ -41,9 +45,11 @@ public class TextRecognitionPlugin extends Plugin {
 
     @PluginMethod
     public void recognize(PluginCall call) {
+        Log.d(TAG, "TextRecognitionPlugin.recognize() called");
         try {
             String imageBase64 = call.getString("image");
             String imageFormat = call.getString("imageFormat", "jpeg");
+            Log.d(TAG, "Processing image - format: " + imageFormat + ", data length: " + (imageBase64 != null ? imageBase64.length() : 0));
 
             if (imageBase64 == null || imageBase64.isEmpty()) {
                 call.reject("Image data is required");
@@ -130,12 +136,17 @@ public class TextRecognitionPlugin extends Plugin {
             }
 
             // Return result
+            String recognizedText = recognizedTextRef.get();
+            Double confidence = confidenceRef.get();
+            Log.d(TAG, "Recognition successful - text length: " + recognizedText.length() + ", confidence: " + confidence);
+            
             JSObject result = new JSObject();
-            result.put("text", recognizedTextRef.get());
-            result.put("confidence", confidenceRef.get());
+            result.put("text", recognizedText);
+            result.put("confidence", confidence);
             call.resolve(result);
 
         } catch (Exception e) {
+            Log.e(TAG, "Recognition error: " + e.getMessage(), e);
             call.reject("Recognition error: " + e.getMessage());
         }
     }

@@ -46,6 +46,9 @@ dependencies {
     
     // Kotlin stdlib - version forced in root build.gradle
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+    
+    // Capacitor annotation processor for plugin discovery
+    annotationProcessor project(':capacitor-android')
 }
 
 apply from: 'capacitor.build.gradle'
