@@ -1161,15 +1161,24 @@ export default function ReceiptScanner({
                         value={verifiedAmount}
                         onChange={(e) => {
                           const val = e.target.value;
+                          // Always update the input value first to allow deletion/editing
                           setVerifiedAmount(val);
+                          
+                          // Only process learning/correction when there's a valid positive number
+                          // and it's different from the original (to avoid unnecessary calls)
                           const numVal = parseFloat(val);
-                          if (!isNaN(numVal) && numVal > 0) {
-                            if (originalExtractedAmount !== null) {
-                              handleAmountCorrection(numVal);
-                            } else {
-                              // No original amount, so this is manual entry - mark as verified
-                              setAmountApproved(true);
-                            }
+                          
+                          // Allow empty or partial input - don't process yet
+                          if (val === "" || val === "." || val === "0" || val === "0." || isNaN(numVal) || numVal <= 0) {
+                            return;
+                          }
+                          
+                          // Only call correction handler if amount actually changed
+                          if (originalExtractedAmount !== null && Math.abs(numVal - originalExtractedAmount) > 0.01) {
+                            handleAmountCorrection(numVal);
+                          } else if (originalExtractedAmount === null) {
+                            // No original amount, so this is manual entry - mark as verified
+                            setAmountApproved(true);
                           }
                         }}
                         placeholder="0.00"
