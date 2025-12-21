@@ -3,6 +3,7 @@
  */
 
 import { ReceiptFormat } from "./receipt-formats";
+import { applyLearnedPatterns } from "./receipt-learning";
 
 /**
  * Extract amount from multiple OCR results using voting mechanism
@@ -66,6 +67,9 @@ export function extractAmountFromText(text: string, format?: ReceiptFormat | nul
   const lines = text.split(/\n/).map(line => line.trim()).filter(line => line.length > 0);
   const normalizedText = text.replace(/\s+/g, " ").trim();
 
+  // Get learned patterns to boost confidence
+  const learnedHints = applyLearnedPatterns(text, format?.storeName, format?.id);
+
   // Track amounts with their context (which line, priority score, position)
   interface AmountWithContext {
     amount: number;
@@ -96,6 +100,12 @@ export function extractAmountFromText(text: string, format?: ReceiptFormat | nul
     filterTopPercent = 50; // Default: filter top 50%
   }
 
+  // Create a map of learned patterns for quick lookup
+  const learnedPatternMap = new Map<string, number>();
+  for (const hint of learnedHints) {
+    learnedPatternMap.set(hint.pattern, hint.priority);
+  }
+
   // Priority 1: Lines containing "Total" - Extract amount next to "total" keyword
   // This is the most reliable method - find "total" and get the amount near it
   for (let i = 0; i < lines.length; i++) {
@@ -115,10 +125,14 @@ export function extractAmountFromText(text: string, format?: ReceiptFormat | nul
         const maxAmount = format ? format.extractionRules.maxAmount : 1000000;
         
         if (!isNaN(amount) && amount > minAmount && amount < maxAmount) {
+          // Check if this line matches a learned pattern
+          const normalizedLine = line.replace(/\d+\.\d{2}/g, "AMOUNT").replace(/\d+/g, "NUM").replace(/\s+/g, " ").trim().toUpperCase();
+          const learnedBoost = learnedPatternMap.get(normalizedLine) || 0;
+          
           amountCandidates.push({
             amount,
             line,
-            priority: isBottomSection ? 15 : 13, // Very high priority
+            priority: (isBottomSection ? 15 : 13) + learnedBoost, // Boost with learned pattern
             keyword: "total",
             lineIndex: i,
             isBottomSection,
@@ -135,10 +149,14 @@ export function extractAmountFromText(text: string, format?: ReceiptFormat | nul
         const maxAmount = format ? format.extractionRules.maxAmount : 1000000;
         
         if (!isNaN(amount) && amount > minAmount && amount < maxAmount) {
+          // Check if this line matches a learned pattern
+          const normalizedLine = line.replace(/\d+\.\d{2}/g, "AMOUNT").replace(/\d+/g, "NUM").replace(/\s+/g, " ").trim().toUpperCase();
+          const learnedBoost = learnedPatternMap.get(normalizedLine) || 0;
+          
           amountCandidates.push({
             amount,
             line,
-            priority: isBottomSection ? 15 : 13,
+            priority: (isBottomSection ? 15 : 13) + learnedBoost,
             keyword: "total",
             lineIndex: i,
             isBottomSection,
@@ -162,10 +180,14 @@ export function extractAmountFromText(text: string, format?: ReceiptFormat | nul
           const distance = Math.abs(amountIndex - totalIndex);
           
           if (distance < 30) {
+            // Check if this line matches a learned pattern
+            const normalizedLine = line.replace(/\d+\.\d{2}/g, "AMOUNT").replace(/\d+/g, "NUM").replace(/\s+/g, " ").trim().toUpperCase();
+            const learnedBoost = learnedPatternMap.get(normalizedLine) || 0;
+            
             amountCandidates.push({
               amount,
               line,
-              priority: isBottomSection ? 14 : 12, // High priority if close to "total"
+              priority: (isBottomSection ? 14 : 12) + learnedBoost, // Boost with learned pattern
               keyword: "total",
               lineIndex: i,
               isBottomSection,

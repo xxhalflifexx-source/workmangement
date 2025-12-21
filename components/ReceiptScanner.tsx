@@ -3,6 +3,7 @@
 import { useState, useRef } from "react";
 import { extractAmountFromText, extractAllAmounts, extractAmountsWithContext } from "@/lib/receipt-ocr";
 import { detectReceiptFormat, ReceiptFormat } from "@/lib/receipt-formats";
+import { recordSuccess, recordCorrection, getRecommendedStrategies } from "@/lib/receipt-learning";
 
 interface ReceiptScannerProps {
   jobId: string;
@@ -34,6 +35,8 @@ export default function ReceiptScanner({
   const [ocrConfidence, setOcrConfidence] = useState<number | null>(null);
   const [imageRotation, setImageRotation] = useState(0);
   const [detectedFormat, setDetectedFormat] = useState<ReceiptFormat | null>(null);
+  const [currentOcrResult, setCurrentOcrResult] = useState<{ text: string; strategy: string; format?: ReceiptFormat | null } | null>(null);
+  const [originalExtractedAmount, setOriginalExtractedAmount] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // OCR Result interface
@@ -242,8 +245,10 @@ export default function ReceiptScanner({
 
     setError(null);
     setExtractedAmount(null);
+    setOriginalExtractedAmount(null);
     setVerifiedAmount("");
     setImageQualityWarning(null);
+    setCurrentOcrResult(null);
 
     // Check image quality
     const qualityWarning = await checkImageQuality(file);
@@ -475,6 +480,9 @@ export default function ReceiptScanner({
     const strategies: Array<{ name: string; file: File; psm: number }> = [];
     const results: OCRResult[] = [];
 
+    // Get recommended strategies from learning system
+    const recommendedStrategies = getRecommendedStrategies();
+
     try {
       // Strategy 1: Original image with default PSM
       console.log("[ReceiptScanner] Strategy 1: Original image");
@@ -621,8 +629,16 @@ export default function ReceiptScanner({
       setAllAmounts(bestResult.allAmounts);
       setAmountsWithContext(bestResult.amountsWithContext);
 
+      // Store current OCR result for learning
+      setCurrentOcrResult({
+        text: bestResult.text || "",
+        strategy: bestResult.strategy,
+        format: bestResult.format,
+      });
+
       if (bestResult.amount) {
         setExtractedAmount(bestResult.amount);
+        setOriginalExtractedAmount(bestResult.amount);
         setVerifiedAmount(bestResult.amount.toFixed(2));
         setError(null);
       } else {
@@ -732,6 +748,45 @@ export default function ReceiptScanner({
       }
 
       const confirmData = await confirmRes.json();
+
+      // Record learning: success or correction
+      if (currentOcrResult && originalExtractedAmount !== null) {
+        const wasCorrected = Math.abs(finalAmount - originalExtractedAmount) > 0.01;
+        
+        if (wasCorrected) {
+          // User corrected the amount - record as correction
+          const lines = currentOcrResult.text.split(/\n/).map(l => l.trim());
+          const correctLine = lines.find(line => 
+            line.match(new RegExp(`\\b${finalAmount.toFixed(2)}\\b`))
+          ) || lines[lines.length - 1] || currentOcrResult.text.substring(0, 100);
+          
+          recordCorrection(
+            currentOcrResult.text,
+            originalExtractedAmount,
+            finalAmount,
+            correctLine,
+            detectedFormat?.storeName,
+            currentOcrResult.strategy,
+            currentOcrResult.format || null
+          );
+        } else {
+          // Amount was correct - record as success
+          const lines = currentOcrResult.text.split(/\n/).map(l => l.trim());
+          const successLine = lines.find(line => 
+            line.match(new RegExp(`\\b${finalAmount.toFixed(2)}\\b`)) ||
+            /total|amount\s*due|balance/i.test(line)
+          ) || lines[lines.length - 1] || currentOcrResult.text.substring(0, 100);
+          
+          recordSuccess(
+            currentOcrResult.text,
+            finalAmount,
+            currentOcrResult.strategy,
+            successLine,
+            detectedFormat?.storeName,
+            currentOcrResult.format || null
+          );
+        }
+      }
 
       // Callback with extracted amount and receipt URL
       onScanComplete(finalAmount, confirmData.fileUrl);
@@ -851,8 +906,10 @@ export default function ReceiptScanner({
                     setImageFile(null);
                     setImagePreview(null);
                     setExtractedAmount(null);
+                    setOriginalExtractedAmount(null);
                     setVerifiedAmount("");
                     setError(null);
+                    setCurrentOcrResult(null);
                     if (fileInputRef.current) {
                       fileInputRef.current.value = "";
                     }
