@@ -6,7 +6,6 @@ import { detectReceiptFormat, ReceiptFormat } from "@/lib/receipt-formats";
 import { 
   recordSuccess, 
   recordCorrection, 
-  getRecommendedStrategies, 
   recordFormatDetectionSuccess, 
   recordFormatDetectionFailure,
   processSyncQueue,
@@ -16,6 +15,7 @@ import {
   getMergedPatterns,
 } from "@/lib/receipt-learning";
 import { isNativeApp, takePhoto, pickFromGallery, requestCameraPermissions } from "@/lib/camera-native";
+import { recognizeText } from "@/lib/ocr-native";
 
 interface ReceiptScannerProps {
   jobId: string;
@@ -100,150 +100,7 @@ export default function ReceiptScanner({
     initLearning();
   }, []);
 
-  // Image preprocessing function with options
-  const preprocessImage = async (file: File, options: { aggressive?: boolean; highBrightness?: boolean; edgeEnhancement?: boolean } = {}): Promise<File> => {
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      const canvas = document.createElement("canvas");
-      const ctx = canvas.getContext("2d");
-      
-      if (!ctx) {
-        reject(new Error("Could not get canvas context"));
-        return;
-      }
-
-      img.onload = () => {
-        try {
-          // Set optimal canvas size (max 2000px for OCR)
-          const maxWidth = 2000;
-          const maxHeight = 2000;
-          let { width, height } = img;
-
-          // Scale down if too large
-          if (width > maxWidth || height > maxHeight) {
-            const ratio = Math.min(maxWidth / width, maxHeight / height);
-            width = Math.round(width * ratio);
-            height = Math.round(height * ratio);
-          }
-
-          // Ensure minimum size for OCR (at least 300px)
-          const minSize = 300;
-          if (width < minSize && height < minSize) {
-            const scale = minSize / Math.min(width, height);
-            width = Math.round(width * scale);
-            height = Math.round(height * scale);
-          }
-
-          canvas.width = width;
-          canvas.height = height;
-
-          // Draw image
-          ctx.drawImage(img, 0, 0, width, height);
-
-          // Get image data for processing
-          const imageData = ctx.getImageData(0, 0, width, height);
-          const data = imageData.data;
-
-          // Apply preprocessing: contrast, brightness, and convert to grayscale
-          // Adjust based on options
-          let contrastFactor = isMobile ? 1.3 : 1.2;
-          let brightnessOffset = isMobile ? 10 : 5;
-          
-          if (options.aggressive) {
-            contrastFactor = isMobile ? 1.5 : 1.4;
-            brightnessOffset = isMobile ? 15 : 10;
-          } else if (options.highBrightness) {
-            contrastFactor = 1.1;
-            brightnessOffset = isMobile ? 20 : 15;
-          }
-
-          for (let i = 0; i < data.length; i += 4) {
-            // Convert to grayscale
-            const gray = Math.round(
-              0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2]
-            );
-
-            // Apply contrast and brightness
-            let adjusted = gray * contrastFactor + brightnessOffset;
-            adjusted = Math.max(0, Math.min(255, adjusted));
-
-            // Set RGB to grayscale value
-            data[i] = adjusted;     // R
-            data[i + 1] = adjusted; // G
-            data[i + 2] = adjusted; // B
-            // Alpha channel (data[i + 3]) stays the same
-          }
-
-          // Apply edge enhancement if requested (unsharp mask)
-          if (options.edgeEnhancement) {
-            const enhancedData = ctx.createImageData(width, height);
-            const kernel = [
-              0, -1, 0,
-              -1, 5, -1,
-              0, -1, 0
-            ];
-            
-            for (let y = 1; y < height - 1; y++) {
-              for (let x = 1; x < width - 1; x++) {
-                let r = 0, g = 0, b = 0;
-                for (let ky = -1; ky <= 1; ky++) {
-                  for (let kx = -1; kx <= 1; kx++) {
-                    const idx = ((y + ky) * width + (x + kx)) * 4;
-                    const k = kernel[(ky + 1) * 3 + (kx + 1)];
-                    r += data[idx] * k;
-                    g += data[idx + 1] * k;
-                    b += data[idx + 2] * k;
-                  }
-                }
-                const outIdx = (y * width + x) * 4;
-                enhancedData.data[outIdx] = Math.max(0, Math.min(255, r));
-                enhancedData.data[outIdx + 1] = Math.max(0, Math.min(255, g));
-                enhancedData.data[outIdx + 2] = Math.max(0, Math.min(255, b));
-                enhancedData.data[outIdx + 3] = data[(y * width + x) * 4 + 3];
-              }
-            }
-            ctx.putImageData(enhancedData, 0, 0);
-          } else {
-            // Put processed image data back
-            ctx.putImageData(imageData, 0, 0);
-          }
-
-          // Convert canvas to blob, then to File
-          canvas.toBlob(
-            (blob) => {
-              if (!blob) {
-                reject(new Error("Failed to process image"));
-                return;
-              }
-              const processedFile = new File([blob], file.name, {
-                type: "image/jpeg",
-                lastModified: Date.now(),
-              });
-              resolve(processedFile);
-            },
-            "image/jpeg",
-            0.95
-          );
-        } catch (err) {
-          reject(err);
-        }
-      };
-
-      img.onerror = () => {
-        reject(new Error("Failed to load image"));
-      };
-
-      // Load image
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        img.src = reader.result as string;
-      };
-      reader.onerror = () => {
-        reject(new Error("Failed to read image file"));
-      };
-      reader.readAsDataURL(file);
-    });
-  };
+  // Note: Image preprocessing removed - native OCR (ML Kit/Vision) handles this automatically
 
   // Check image quality
   const checkImageQuality = async (file: File): Promise<string | null> => {
@@ -353,87 +210,7 @@ export default function ReceiptScanner({
     await processImageFile(file);
   };
 
-  // Crop bottom section of image
-  const cropBottomSection = async (file: File, bottomPercentage: number): Promise<File> => {
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      const canvas = document.createElement("canvas");
-      const ctx = canvas.getContext("2d");
-      
-      if (!ctx) {
-        reject(new Error("Could not get canvas context"));
-        return;
-      }
-
-      img.onload = () => {
-        try {
-          const sourceHeight = img.height;
-          const cropHeight = Math.floor(sourceHeight * bottomPercentage);
-          const startY = sourceHeight - cropHeight;
-          
-          canvas.width = img.width;
-          canvas.height = cropHeight;
-          
-          // Draw only bottom portion
-          ctx.drawImage(
-            img,
-            0, startY,              // Source: x, y (start from bottom)
-            img.width, cropHeight,   // Source: width, height
-            0, 0,                    // Destination: x, y
-            img.width, cropHeight    // Destination: width, height
-          );
-          
-          // Convert to File
-          canvas.toBlob(
-            (blob) => {
-              if (!blob) {
-                reject(new Error("Failed to crop image"));
-                return;
-              }
-              const croppedFile = new File([blob], file.name, {
-                type: "image/jpeg",
-                lastModified: Date.now(),
-              });
-              resolve(croppedFile);
-            },
-            "image/jpeg",
-            0.95
-          );
-        } catch (err) {
-          reject(err);
-        }
-      };
-
-      img.onerror = () => reject(new Error("Failed to load image"));
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        img.src = reader.result as string;
-      };
-      reader.onerror = () => reject(new Error("Failed to read image file"));
-      reader.readAsDataURL(file);
-    });
-  };
-
-  // Detect if image is full-page receipt (tall aspect ratio)
-  const isFullPageReceipt = async (file: File): Promise<boolean> => {
-    return new Promise((resolve) => {
-      const img = new Image();
-      img.onload = () => {
-        const aspectRatio = img.height / img.width;
-        // Consider it full-page if:
-        // 1. Aspect ratio > 1.5 (tall image)
-        // 2. Height > 2000px (large image)
-        const isFullPage = aspectRatio > 1.5 || img.height > 2000;
-        resolve(isFullPage);
-      };
-      img.onerror = () => resolve(false);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        img.src = reader.result as string;
-      };
-      reader.readAsDataURL(file);
-    });
-  };
+  // Note: Image cropping and full-page detection removed - native OCR handles this automatically
 
   // Rotate image function
   const rotateImage = async (file: File, degrees: number): Promise<File> => {
@@ -499,180 +276,70 @@ export default function ReceiptScanner({
     });
   };
 
-  // Single OCR attempt with specific strategy
+  // Single OCR attempt using native OCR (ML Kit/Vision) ONLY
   const tryOCR = async (
     file: File,
-    strategy: string,
-    psm: number = 6
+    strategy: string = "native"
   ): Promise<OCRResult> => {
-    const Tesseract = (await import("tesseract.js")).default;
+    // Update progress
+    setProgress(20);
     
-    const { data } = await Tesseract.recognize(file, "eng", {
-      logger: (m) => {
-        if (m.status === "recognizing text") {
-          // Update progress based on strategy
-          const progressMap: Record<string, number> = {
-            original: 5,
-            "bottom-30%": 15,
-            "bottom-40%": 20,
-            "bottom-50%": 25,
-            preprocessed: 35,
-            aggressive: 50,
-            "preprocessed-psm11": 55,
-            "preprocessed-psm12": 60,
-            "rotated-90": 65,
-            "rotated-180": 70,
-            "rotated-270": 75,
-            "high-brightness": 80,
-          };
-          const baseProgress = progressMap[strategy] || 10;
-          setProgress(Math.min(95, baseProgress + Math.round(m.progress * 10)));
-        }
-      },
-      // @ts-ignore - PSM option exists but may not be in types
-      psm: psm,
-    });
-
-    // Calculate average confidence from words
-    // Tesseract.js returns words in data.words, but TypeScript types may not include it
-    // Use type assertion and fallback to 0 if not available
-    const words = (data as any).words || [];
-    const avgConfidence = words.length > 0
-      ? words.reduce((sum: number, w: any) => sum + (w.confidence || 0), 0) / words.length
-      : 0;
-
-    const text = data.text || "";
+    // Use native OCR wrapper (ML Kit/Vision ONLY - no fallback)
+    const ocrResult = await recognizeText(file);
+    
+    setProgress(80);
+    
+    const text = ocrResult.text || "";
     
     // Detect receipt format from OCR text
     const format = detectReceiptFormat(text);
     
+    // Extract amounts using existing logic
     const amount = extractAmountFromText(text, format);
     const allAmounts = extractAllAmounts(text);
     const amountsWithCtx = extractAmountsWithContext(text);
 
+    setProgress(100);
+
     return {
       text,
-      confidence: avgConfidence,
+      confidence: ocrResult.confidence,
       amount,
       strategy,
-      psm,
+      psm: 0, // Not used with native OCR
       amountsWithContext: amountsWithCtx,
       allAmounts,
       format: format || undefined,
     };
   };
 
-  // Multi-strategy OCR with fallback chain
-  const performMultiStrategyOCR = async (file: File): Promise<OCRResult | null> => {
-    const strategies: Array<{ name: string; file: File; psm: number }> = [];
-    const results: OCRResult[] = [];
-
-    // Get recommended strategies from learning system
-    const recommendedStrategies = getRecommendedStrategies();
-
+  // Simplified OCR - native OCR handles preprocessing automatically
+  const performOCR = async (file: File): Promise<OCRResult | null> => {
     try {
-      // Strategy 1: Original image with default PSM
-      console.log("[ReceiptScanner] Strategy 1: Original image");
-      const originalResult = await tryOCR(file, "original", 6);
-      results.push(originalResult);
+      console.log("[ReceiptScanner] Starting native OCR processing...");
+      console.log("[ReceiptScanner] Native app:", isNativeApp());
       
-      // Detect format from first OCR result
-      if (originalResult.text) {
-        const detected = detectReceiptFormat(originalResult.text);
+      // Native OCR (ML Kit/Vision) handles all preprocessing automatically
+      // No need for multiple strategies, rotations, or preprocessing
+      const result = await tryOCR(file, "native");
+      
+      // Detect format from OCR result
+      if (result.text) {
+        const detected = detectReceiptFormat(result.text);
         if (detected) {
           console.log("[ReceiptScanner] Detected format:", detected.storeName);
           setDetectedFormat(detected);
         }
       }
       
-      // If we got a good result, return early
-      if (originalResult.amount && originalResult.confidence > 60) {
-        return originalResult;
-      }
-
-      // Strategy 2: Preprocessed image
-      console.log("[ReceiptScanner] Strategy 2: Preprocessed image");
-      const preprocessed = await preprocessImage(file, { aggressive: false });
-      results.push(await tryOCR(preprocessed, "preprocessed", 6));
-      
-      if (results[1].amount && results[1].confidence > 60) {
-        return results[1];
-      }
-
-      // Strategy 3: Aggressive preprocessing
-      console.log("[ReceiptScanner] Strategy 3: Aggressive preprocessing");
-      const aggressive = await preprocessImage(file, { aggressive: true, edgeEnhancement: true });
-      results.push(await tryOCR(aggressive, "aggressive", 6));
-      
-      if (results[2].amount && results[2].confidence > 60) {
-        return results[2];
-      }
-
-      // Strategy 4: Try different PSM modes
-      console.log("[ReceiptScanner] Strategy 4: Different PSM modes");
-      const psmModes = [11, 12]; // Sparse text modes
-      for (const psm of psmModes) {
-        const result = await tryOCR(preprocessed, `preprocessed-psm${psm}`, psm);
-        results.push(result);
-        if (result.amount && result.confidence > 60) {
-          return result;
-        }
-      }
-
-      // Strategy 5: Rotated images (if no success yet)
-      if (!results.some(r => r.amount && r.confidence > 50)) {
-        console.log("[ReceiptScanner] Strategy 5: Rotated images");
-        for (const rotation of [90, 180, 270]) {
-          try {
-            const rotated = await rotateImage(file, rotation);
-            const result = await tryOCR(rotated, `rotated-${rotation}`, 6);
-            results.push(result);
-            if (result.amount && result.confidence > 50) {
-              return result;
-            }
-          } catch (err) {
-            console.warn(`[ReceiptScanner] Rotation ${rotation}° failed:`, err);
-          }
-        }
-      }
-
-      // Strategy 6: High brightness variant
-      console.log("[ReceiptScanner] Strategy 6: High brightness");
-      const highBrightness = await preprocessImage(file, { highBrightness: true });
-      results.push(await tryOCR(highBrightness, "high-brightness", 6));
-
+      return result;
     } catch (err) {
-      console.error("[ReceiptScanner] Multi-strategy OCR error:", err);
+      console.error("[ReceiptScanner] OCR error:", err);
+      throw err;
     }
-
-    // Select best result from all attempts
-    return selectBestResult(results);
   };
 
-  // Select best result based on confidence and amount detection
-  const selectBestResult = (results: OCRResult[]): OCRResult | null => {
-    if (results.length === 0) return null;
-
-    // Filter results that found an amount
-    const resultsWithAmount = results.filter(r => r.amount !== null);
-    
-    if (resultsWithAmount.length === 0) {
-      // Return result with highest confidence even if no amount found
-      return results.reduce((best, current) => 
-        current.confidence > (best?.confidence || 0) ? current : best
-      );
-    }
-
-    // Prefer results with high confidence and detected amount
-    const scored = resultsWithAmount.map(r => ({
-      ...r,
-      score: (r.confidence || 0) + (r.amount ? 20 : 0) + (r.amountsWithContext.length > 0 ? 10 : 0),
-    }));
-
-    return scored.reduce((best, current) => 
-      current.score > (best?.score || 0) ? current : best
-    );
-  };
+  // Note: selectBestResult removed - native OCR only needs one attempt
 
   const processReceipt = async () => {
     if (!imageFile) return;
@@ -687,8 +354,8 @@ export default function ReceiptScanner({
     setOcrConfidence(null);
 
     try {
-      console.log("[ReceiptScanner] Starting multi-strategy OCR processing...");
-      console.log("[ReceiptScanner] Mobile device:", isMobile);
+      console.log("[ReceiptScanner] Starting OCR processing...");
+      console.log("[ReceiptScanner] Native app:", isNativeApp());
 
       // Apply rotation if user rotated image
       let fileToProcess = imageFile;
@@ -696,8 +363,8 @@ export default function ReceiptScanner({
         fileToProcess = await rotateImage(imageFile, imageRotation);
       }
 
-      // Perform multi-strategy OCR
-      const bestResult = await performMultiStrategyOCR(fileToProcess);
+      // Perform OCR (native OCR handles everything automatically)
+      const bestResult = await performOCR(fileToProcess);
 
       if (!bestResult) {
         throw new Error("All OCR strategies failed");
