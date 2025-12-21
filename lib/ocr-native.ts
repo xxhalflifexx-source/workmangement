@@ -111,10 +111,25 @@ async function recognizeTextNative(imageFile: File): Promise<OCRResult> {
   console.log('[OCR] Image format:', imageFormat);
   
   console.log('[OCR] Calling native TextRecognition plugin...');
+  console.log('[OCR] Plugin check:', {
+    pluginExists: typeof TextRecognition !== 'undefined',
+    pluginMethods: TextRecognition ? Object.keys(TextRecognition) : [],
+  });
+  
   const pluginStartTime = Date.now();
   
   try {
+    // Check if plugin method exists
+    if (!TextRecognition || typeof TextRecognition.recognize !== 'function') {
+      throw new Error('TextRecognition plugin not found. Make sure the plugin is registered in Android.');
+    }
+    
     // Call native plugin
+    console.log('[OCR] Calling TextRecognition.recognize with:', {
+      imageLength: base64.length,
+      imageFormat,
+    });
+    
     const result = await TextRecognition.recognize({
       image: base64,
       imageFormat: imageFormat,
@@ -135,9 +150,16 @@ async function recognizeTextNative(imageFile: File): Promise<OCRResult> {
     const pluginDuration = Date.now() - pluginStartTime;
     console.error('[OCR] Native plugin error:', {
       error: error?.message,
+      errorName: error?.name,
       stack: error?.stack,
       duration: `${pluginDuration}ms`,
     });
+    
+    // Provide more helpful error message
+    if (error?.message?.includes('not implemented') || error?.message?.includes('not found')) {
+      throw new Error('TextRecognition plugin is not implemented on Android. Please rebuild the app: 1) Run "npx cap sync android" 2) Clean and rebuild in Android Studio');
+    }
+    
     throw new Error(`Native OCR failed: ${error?.message || 'Unknown error'}`);
   }
 }
