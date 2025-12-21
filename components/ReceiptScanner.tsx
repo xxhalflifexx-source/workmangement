@@ -258,6 +258,88 @@ export default function ReceiptScanner({
     reader.readAsDataURL(file);
   };
 
+  // Crop bottom section of image
+  const cropBottomSection = async (file: File, bottomPercentage: number): Promise<File> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      
+      if (!ctx) {
+        reject(new Error("Could not get canvas context"));
+        return;
+      }
+
+      img.onload = () => {
+        try {
+          const sourceHeight = img.height;
+          const cropHeight = Math.floor(sourceHeight * bottomPercentage);
+          const startY = sourceHeight - cropHeight;
+          
+          canvas.width = img.width;
+          canvas.height = cropHeight;
+          
+          // Draw only bottom portion
+          ctx.drawImage(
+            img,
+            0, startY,              // Source: x, y (start from bottom)
+            img.width, cropHeight,   // Source: width, height
+            0, 0,                    // Destination: x, y
+            img.width, cropHeight    // Destination: width, height
+          );
+          
+          // Convert to File
+          canvas.toBlob(
+            (blob) => {
+              if (!blob) {
+                reject(new Error("Failed to crop image"));
+                return;
+              }
+              const croppedFile = new File([blob], file.name, {
+                type: "image/jpeg",
+                lastModified: Date.now(),
+              });
+              resolve(croppedFile);
+            },
+            "image/jpeg",
+            0.95
+          );
+        } catch (err) {
+          reject(err);
+        }
+      };
+
+      img.onerror = () => reject(new Error("Failed to load image"));
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        img.src = reader.result as string;
+      };
+      reader.onerror = () => reject(new Error("Failed to read image file"));
+      reader.readAsDataURL(file);
+    });
+  };
+
+  // Detect if image is full-page receipt (tall aspect ratio)
+  const isFullPageReceipt = async (file: File): Promise<boolean> => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const aspectRatio = img.height / img.width;
+        // Consider it full-page if:
+        // 1. Aspect ratio > 1.5 (tall image)
+        // 2. Height > 2000px (large image)
+        const isFullPage = aspectRatio > 1.5 || img.height > 2000;
+        resolve(isFullPage);
+      };
+      img.onerror = () => resolve(false);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        img.src = reader.result as string;
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
   // Rotate image function
   const rotateImage = async (file: File, degrees: number): Promise<File> => {
     return new Promise((resolve, reject) => {
@@ -335,12 +417,18 @@ export default function ReceiptScanner({
         if (m.status === "recognizing text") {
           // Update progress based on strategy
           const progressMap: Record<string, number> = {
-            original: 10,
-            preprocessed: 30,
+            original: 5,
+            "bottom-30%": 15,
+            "bottom-40%": 20,
+            "bottom-50%": 25,
+            preprocessed: 35,
             aggressive: 50,
-            "rotated-90": 60,
+            "preprocessed-psm11": 55,
+            "preprocessed-psm12": 60,
+            "rotated-90": 65,
             "rotated-180": 70,
-            "rotated-270": 80,
+            "rotated-270": 75,
+            "high-brightness": 80,
           };
           const baseProgress = progressMap[strategy] || 10;
           setProgress(Math.min(95, baseProgress + Math.round(m.progress * 10)));

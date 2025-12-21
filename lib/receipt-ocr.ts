@@ -74,7 +74,12 @@ export function extractAmountFromText(text: string): number | null {
 
   const amountCandidates: AmountWithContext[] = [];
   const totalLines = lines.length;
-  const bottomThreshold = Math.floor(totalLines * 0.7); // Bottom 30% of receipt
+  
+  // For full receipts (>20 lines), be more aggressive - only consider bottom 20%
+  // For shorter receipts, use bottom 30%
+  const bottomThreshold = totalLines > 20 
+    ? Math.floor(totalLines * 0.8)  // Bottom 20% for long receipts
+    : Math.floor(totalLines * 0.7); // Bottom 30% for shorter receipts
 
   // Priority 1: Lines containing "Total" or "Grand Total" (highest priority)
   // Prioritize amounts in bottom section of receipt
@@ -160,9 +165,13 @@ export function extractAmountFromText(text: string): number | null {
   // Priority 4: Amounts at end of lines (likely totals)
   // Filter out small amounts that are likely item prices
   // Prefer amounts in bottom section
+  // For full receipts, filter out amounts in top 50% more aggressively
+  const topHalfThreshold = Math.floor(totalLines * 0.5);
+  
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     const isBottomSection = i >= bottomThreshold;
+    const isTopHalf = i < topHalfThreshold;
     const endMatch = line.match(/\$(\d+\.\d{2})\s*$/);
     if (endMatch) {
       const amount = parseFloat(endMatch[1]);
@@ -171,6 +180,11 @@ export function extractAmountFromText(text: string): number | null {
       if (!isNaN(amount) && amount > 0 && amount < 1000000) {
         // Skip very small amounts unless they're clearly totals
         if (amount < 1 && !hasKeyword && !isBottomSection) {
+          continue;
+        }
+        
+        // For full receipts, filter out amounts in top half (likely item prices)
+        if (totalLines > 20 && isTopHalf && !hasKeyword && !isBottomSection) {
           continue;
         }
         
