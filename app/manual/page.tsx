@@ -305,12 +305,6 @@ export default function ManualPage() {
   // Maximum file size: 50MB (Supabase default limit)
   const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB in bytes
 
-  const formatFileSize = (bytes: number) => {
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  };
-
   // Upload files - uses direct upload to Supabase to support large files
   const handleFileUpload = async () => {
     if (uploadingFiles.length === 0) {
