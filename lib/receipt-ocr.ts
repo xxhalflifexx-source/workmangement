@@ -26,7 +26,7 @@ export function extractAmountFromText(text: string): number | null {
 
   // Try pattern matching
   for (const pattern of patterns) {
-    const matches = normalizedText.matchAll(pattern);
+    const matches = Array.from(normalizedText.matchAll(pattern));
     for (const match of matches) {
       const amount = parseFloat(match[1]);
       if (!isNaN(amount) && amount > 0 && amount < 1000000) {
@@ -61,7 +61,7 @@ export function extractAllAmounts(text: string): number[] {
   if (!text) return [];
 
   const amounts: number[] = [];
-  const matches = text.matchAll(/(\d+\.\d{2})/g);
+  const matches = Array.from(text.matchAll(/(\d+\.\d{2})/g));
 
   for (const match of matches) {
     const amount = parseFloat(match[1]);
