@@ -302,10 +302,27 @@ export default function ManualPage() {
     return newFileName;
   };
 
+  // Maximum file size: 50MB (Supabase default limit)
+  const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB in bytes
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
   // Upload files - uses direct upload to Supabase to support large files
   const handleFileUpload = async () => {
     if (uploadingFiles.length === 0) {
       setError("Please select at least one file");
+      return;
+    }
+
+    // Check file sizes before uploading
+    const oversizedFiles = uploadingFiles.filter(file => file.size > MAX_FILE_SIZE);
+    if (oversizedFiles.length > 0) {
+      const fileList = oversizedFiles.map(f => `${f.name} (${formatFileSize(f.size)})`).join(", ");
+      setError(`File(s) too large (max 50MB): ${fileList}`);
       return;
     }
 
@@ -396,7 +413,14 @@ export default function ManualPage() {
           if (!uploadResponse.ok) {
             const errorText = await uploadResponse.text().catch(() => "Upload failed");
             console.error(`Direct upload failed for ${file.name}:`, errorText);
-            failedFiles.push({ originalName: file.name, error: `Upload failed: ${uploadResponse.status}` });
+            // Check for common error cases
+            let errorMsg = `Upload failed: ${uploadResponse.status}`;
+            if (uploadResponse.status === 413 || errorText.toLowerCase().includes("too large") || errorText.toLowerCase().includes("payload")) {
+              errorMsg = `File too large (max 50MB)`;
+            } else if (uploadResponse.status === 0 || errorText.toLowerCase().includes("network")) {
+              errorMsg = `Network error - check your connection`;
+            }
+            failedFiles.push({ originalName: file.name, error: errorMsg });
             continue;
           }
 
