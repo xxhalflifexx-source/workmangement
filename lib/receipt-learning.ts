@@ -68,17 +68,32 @@ function getLearningData(): LearningData {
     return {
       successfulExtractions: [],
       corrections: [],
+      formatDetections: [],
       patternSuccess: {},
       strategySuccess: {},
       patternFailures: {},
       strategyFailures: {},
+      formatDetectionSuccess: {},
+      formatDetectionFailures: {},
     };
   }
 
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
-      return JSON.parse(stored);
+      const data = JSON.parse(stored);
+      // Ensure all required properties exist (for backward compatibility)
+      return {
+        successfulExtractions: data.successfulExtractions || [],
+        corrections: data.corrections || [],
+        formatDetections: data.formatDetections || [],
+        patternSuccess: data.patternSuccess || {},
+        strategySuccess: data.strategySuccess || {},
+        patternFailures: data.patternFailures || {},
+        strategyFailures: data.strategyFailures || {},
+        formatDetectionSuccess: data.formatDetectionSuccess || {},
+        formatDetectionFailures: data.formatDetectionFailures || {},
+      };
     }
   } catch (err) {
     console.error("[ReceiptLearning] Failed to load learning data:", err);
