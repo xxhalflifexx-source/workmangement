@@ -350,8 +350,8 @@ export function extractAmountsWithContext(text: string): Array<{ amount: number;
   const results: Array<{ amount: number; line: string; keyword: string }> = [];
 
   for (const line of lines) {
-    // Check for total patterns
-    if (/total|grand\s*total/i.test(line)) {
+    // Check for total patterns (more flexible)
+    if (/total|grand\s*total|final\s*total|amount\s*total/i.test(line)) {
       const match = line.match(/(\d+\.\d{2})/);
       if (match) {
         const amount = parseFloat(match[1]);
@@ -362,7 +362,7 @@ export function extractAmountsWithContext(text: string): Array<{ amount: number;
     }
 
     // Check for amount due
-    if (/amount\s*due|balance\s*due/i.test(line)) {
+    if (/amount\s*due|balance\s*due|due\s*amount/i.test(line)) {
       const match = line.match(/(\d+\.\d{2})/);
       if (match) {
         const amount = parseFloat(match[1]);
@@ -373,12 +373,32 @@ export function extractAmountsWithContext(text: string): Array<{ amount: number;
     }
 
     // Check for credit card amounts
-    if (/(?:visa|mastercard|amex|discover|card)/i.test(line)) {
+    if (/(?:visa|mastercard|amex|discover|card|payment)/i.test(line)) {
       const match = line.match(/(\d+\.\d{2})/);
       if (match) {
         const amount = parseFloat(match[1]);
         if (!isNaN(amount) && amount > 0 && amount < 1000000) {
           results.push({ amount, line, keyword: "Card Payment" });
+        }
+      }
+    }
+
+    // Check for subtotal patterns and look for corresponding total
+    if (/sub\s*total|subtotal/i.test(line)) {
+      const match = line.match(/(\d+\.\d{2})/);
+      if (match) {
+        const subtotal = parseFloat(match[1]);
+        // Look for amounts larger than subtotal (likely the total)
+        for (const otherLine of lines) {
+          const totalMatch = otherLine.match(/(\d+\.\d{2})/);
+          if (totalMatch) {
+            const amount = parseFloat(totalMatch[1]);
+            if (!isNaN(amount) && amount > subtotal && amount < 1000000) {
+              if (/total|due|paid/i.test(otherLine)) {
+                results.push({ amount, line: otherLine, keyword: "Total (after subtotal)" });
+              }
+            }
+          }
         }
       }
     }
