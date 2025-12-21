@@ -3,8 +3,10 @@ import { CapacitorConfig } from '@capacitor/cli';
 const config: CapacitorConfig = {
   appId: 'com.workmanagement.app',
   appName: 'Work Management',
-  webDir: 'out',
+  webDir: 'public', // Use public directory (will be empty, server handles rendering)
   server: {
+    // Point to your deployed server URL
+    url: process.env.CAPACITOR_SERVER_URL || 'https://nextjs-auth-roles.vercel.app',
     androidScheme: 'https',
     iosScheme: 'https',
   },
@@ -23,6 +25,9 @@ const config: CapacitorConfig = {
   },
   android: {
     allowMixedContent: true,
+    // Enable cookies for session management
+    captureInput: true,
+    webContentsDebuggingEnabled: true, // Enable debugging
     buildOptions: {
       keystorePath: undefined,
       keystoreAlias: undefined,

@@ -10,13 +10,21 @@ import { redirect } from "next/navigation";
 import DashboardTabLink from "./DashboardTabLink";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
+import DashboardWrapper from "./DashboardWrapper";
 
 export default async function Dashboard() {
-  const session = await getServerSession(authOptions);
+  console.log("[Dashboard] Server component starting...");
   
-  if (!session?.user) {
-    redirect("/login");
-  }
+  try {
+    const session = await getServerSession(authOptions);
+    console.log("[Dashboard] Session check:", session ? "Found" : "Not found");
+    
+    if (!session?.user) {
+      console.log("[Dashboard] No session, redirecting to login");
+      redirect("/login");
+    }
+    
+    console.log("[Dashboard] User:", session.user.email);
   
   const user = session.user;
   const role = (user as any)?.role || "EMPLOYEE";
@@ -66,8 +74,11 @@ export default async function Dashboard() {
   const rejectedNotifications = notifications.filter((n: any) => !n.isRead && (n.type === "REJECTED" || n.type === "CANCELLED")).length;
   const draftNotifications = notifications.filter((n: any) => !n.isRead && n.type === "DRAFT").length;
 
-  return (
-    <main className="min-h-screen bg-gray-50">
+    console.log("[Dashboard] Rendering dashboard content");
+    
+    return (
+      <DashboardWrapper>
+        <main className="min-h-screen bg-gray-50">
       {/* Top Header Bar - Black Background */}
       <header className="bg-black border-b-2 border-[#001f3f] shadow-lg sticky top-0 z-50">
         <div className="max-w-full mx-auto px-2 sm:px-4 lg:px-8 py-2.5 sm:py-3 lg:py-4 flex justify-between items-center gap-2">
@@ -200,5 +211,11 @@ export default async function Dashboard() {
             </div>
       </div>
     </main>
-  );
+      </DashboardWrapper>
+    );
+  } catch (error: any) {
+    console.error("[Dashboard] Server component error:", error);
+    console.error("[Dashboard] Error stack:", error?.stack);
+    throw error; // Let error boundary handle it
+  }
 }

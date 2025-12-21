@@ -1,114 +1,91 @@
-# 🚀 Quick Start - Test Your App Locally
+# Quick Start - Android App
 
-## Step 1: Get Credentials From Your Boss
+## ✅ What We Just Did
 
-You need these from your boss to connect to the Supabase database:
+1. ✅ Built your web app
+2. ✅ Added Android platform
+3. ✅ Synced files to Android project
+4. ✅ Opened Android Studio
 
-1. **Supabase Project URL** - Looks like `https://xxxxx.supabase.co`
-2. **Supabase Service Role Key** - A long secret key
-3. **Database Connection Strings**:
-   - `DATABASE_URL` (Pooler connection)
-   - `DIRECT_URL` (Direct connection)
+## 🔧 IMPORTANT: Update Server URL
 
-**Where to find them:**
-- Supabase Dashboard → Settings → Database → Connection strings
-- Supabase Dashboard → Settings → API → Project URL & Service Role Key
+Before testing on your phone, you need to update the server URL in `capacitor.config.ts`:
 
-## Step 2: Update Your .env File
+1. Open `capacitor.config.ts` in your project
+2. Find the line: `url: process.env.CAPACITOR_SERVER_URL || 'http://localhost:3000',`
+3. Change it to your deployed Vercel URL, for example:
+   ```typescript
+   url: 'https://your-app-name.vercel.app',
+   ```
+4. Remove the `cleartext: true` line (only needed for localhost)
+5. Save the file
+6. Run `npx cap sync` again
 
-Open `.env` in the project root and add the credentials:
+## 📱 Testing on Your Phone
 
-```env
-# For local development
-NEXTAUTH_URL=http://localhost:3000
+### In Android Studio:
 
-# Generate a secret (run: openssl rand -base64 32)
-NEXTAUTH_SECRET=your-generated-secret-here
+1. **Wait for Gradle Sync** (first time takes a few minutes)
+   - Look at the bottom of Android Studio
+   - Wait for "Gradle sync finished" message
 
-# From your boss - Supabase Database
-DATABASE_URL=postgresql://postgres:[PASSWORD]@db.pooler.supabase.com:6543/postgres?pgbouncer=true
-DIRECT_URL=postgresql://postgres:[PASSWORD]@db.supabase.com:5432/postgres
+2. **Connect Your Phone**
+   - Plug phone into computer with USB
+   - On phone: Tap "Allow USB debugging" if prompted
+   - In Android Studio: Check top toolbar - you should see your phone name
 
-# From your boss - Supabase Storage
-SUPABASE_URL=https://your-project-id.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=your-service-role-key-here
-SUPABASE_BUCKET=uploads
+3. **Run the App**
+   - Click the green ▶️ Run button (or press Shift+F10)
+   - Wait for build to finish (first time: 5-10 minutes)
+   - App will install and open on your phone!
 
-# Optional - for email verification
-RESEND_API_KEY=your-resend-key-if-needed
+## 🐛 Troubleshooting
 
-# Local development helper
-DEV_BYPASS_AUTH=true
-```
+### "No devices found"
+- Make sure USB debugging is enabled on phone
+- Try a different USB cable
+- On phone: Settings → Developer Options → Revoke USB debugging authorizations, then reconnect
 
-## Step 3: Start the Development Server
+### "Build failed" or "Gradle sync failed"
+- Check internet connection (Gradle downloads dependencies)
+- File → Invalidate Caches → Invalidate and Restart
+- Try again
 
-```bash
-npm run dev
-```
+### "App opens but shows blank screen"
+- Check that server URL in `capacitor.config.ts` is correct
+- Make sure your Vercel app is deployed and running
+- Check Android Studio Logcat for errors
 
-## Step 4: Open Your Browser
+### "Camera doesn't work"
+- Make sure you're testing on a real phone (not emulator)
+- Check that camera permissions are granted on phone
+- Settings → Apps → Your App → Permissions → Camera → Allow
 
-Go to: **http://localhost:3000**
+## 🎯 What Should Happen
 
-You should see the app running! 🎉
+When everything works:
+- ✅ App builds without errors
+- ✅ App installs on your phone
+- ✅ App opens and shows your login screen
+- ✅ You can log in
+- ✅ Camera button works (takes real photos!)
+- ✅ Everything works like the web version
 
----
+## 📝 Next Steps After Testing
 
-## 🔍 Testing Your Boss's App
+Once it works:
+1. Update server URL to production
+2. Test all features (camera, receipts, etc.)
+3. Build release version
+4. Create Google Play Developer account ($25)
+5. Upload to Google Play Console
+6. Submit for review
 
-### Option A: Test Locally (Recommended)
-1. Get credentials from your boss
-2. Update `.env` file
-3. Run `npm run dev`
-4. Visit `http://localhost:3000`
+## 💡 Pro Tips
 
-### Option B: Test the Live Site
-- Ask your boss for the Vercel URL
-- Visit it in your browser
-- You can see what's currently live
+- **First build is slow** - be patient, subsequent builds are faster
+- **Keep phone connected** - faster than unplugging/plugging
+- **Check Logcat** - shows errors and debug info (bottom tab in Android Studio)
+- **Test on real phone** - emulators don't have real cameras
 
-### Option C: Test on Preview Deployment
-- Create a branch and push to Git
-- Vercel will create a preview URL
-- Test there before affecting production
-
----
-
-## ❓ Common Connection Errors
-
-### "Cannot connect to database"
-**Fix:** Make sure `DATABASE_URL` and `DIRECT_URL` in `.env` are correct
-
-### "Missing SUPABASE_URL"
-**Fix:** Add `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` to `.env`
-
-### "Prisma Client not generated"
-**Fix:** Run `npx prisma generate`
-
----
-
-## ✅ You Can Edit After Publishing!
-
-**Yes!** You can always edit and update the live site:
-
-1. **Make changes locally**
-2. **Test on `localhost:3000`**
-3. **Push to Git** → Vercel auto-deploys
-4. **Changes go live** in 2-5 minutes
-
-**Best Practice:** Test on a preview deployment first, then merge to production.
-
----
-
-## 📝 Next Steps
-
-1. ✅ Dependencies installed
-2. ✅ Prisma Client generated
-3. ⏳ Get credentials from boss
-4. ⏳ Update `.env` file
-5. ⏳ Run `npm run dev`
-6. ⏳ Test at `http://localhost:3000`
-
-See `TESTING_GUIDE.md` for more detailed information!
-
+Good luck! 🚀

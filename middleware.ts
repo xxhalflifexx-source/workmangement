@@ -10,15 +10,22 @@ export default function middleware(req: NextRequest) {
 		return NextResponse.next();
 	}
 	
-	// iOS Safari compatibility: Allow requests through and let pages handle auth
-	// This prevents middleware from blocking iOS Safari cookie issues
+	// iOS Safari and Android WebView compatibility: Allow requests through and let pages handle auth
+	// This prevents middleware from blocking cookie issues in mobile WebViews
 	const userAgent = req.headers.get("user-agent") || "";
 	const isIOS = /iPad|iPhone|iPod/.test(userAgent);
+	const isAndroidWebView = /Android.*wv|wv.*Android/i.test(userAgent) || 
+	                         /Android/i.test(userAgent) && !/Chrome/i.test(userAgent);
+	const isCapacitor = userAgent.includes("CapacitorHttp") || 
+	                    req.headers.get("x-capacitor-platform");
 	
-	if (isIOS) {
-		// For iOS, let the request through - pages will handle auth client-side
-		// This allows iOS Safari time to read cookies
-		return NextResponse.next();
+	if (isIOS || isAndroidWebView || isCapacitor) {
+		// For mobile WebViews/Capacitor, let the request through - pages will handle auth client-side
+		// This allows WebView time to read cookies properly
+		const response = NextResponse.next();
+		// Ensure cookies are accessible
+		response.headers.set("Access-Control-Allow-Credentials", "true");
+		return response;
 	}
 	
 	// Defer to NextAuth middleware for protected routes (non-iOS)
