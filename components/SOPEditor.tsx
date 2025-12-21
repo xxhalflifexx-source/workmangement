@@ -128,7 +128,7 @@ export default function SOPEditor({
   };
 
   return (
-    <div className="flex flex-col h-full bg-white dark:bg-gray-900">
+    <div className="flex flex-col h-full bg-white dark:bg-gray-900 pt-16">
       {/* Header with Title Input */}
       <div className="px-4 sm:px-6 py-4 border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
         <div className="flex items-center gap-3">
