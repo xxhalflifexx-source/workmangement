@@ -914,12 +914,10 @@ export default function ReceiptScanner({
   };
 
   // Handle amount correction (when user enters correct amount)
+  // Note: Does NOT set verifiedAmount - that's handled by the input onChange
   const handleAmountCorrection = (correctAmount: number) => {
     if (originalExtractedAmount !== null && currentOcrResult && correctAmount > 0) {
-      setAmountApproved(false); // Still rejected, but we have correction
-      setVerifiedAmount(correctAmount.toFixed(2));
-      
-      // Immediately record learning with effective store name
+      // Record learning with effective store name
       const lines = currentOcrResult.text.split(/\n/).map(l => l.trim());
       const correctLine = lines.find(line => 
         line.match(new RegExp(`\\b${correctAmount.toFixed(2)}\\b`))
@@ -1267,30 +1265,29 @@ export default function ReceiptScanner({
                     <div className="relative">
                       <span className="absolute left-3 top-2.5 text-gray-500">$</span>
                       <input
-                        type="number"
-                        step="0.01"
-                        min="0"
+                        type="text"
+                        inputMode="decimal"
                         value={verifiedAmount}
                         onChange={(e) => {
+                          // Allow any input - just update the value
+                          setVerifiedAmount(e.target.value);
+                        }}
+                        onBlur={(e) => {
+                          // On blur, validate and record learning if needed
                           const val = e.target.value;
-                          // Always update the input value first to allow deletion/editing
-                          setVerifiedAmount(val);
-                          
-                          // Only process learning/correction when there's a valid positive number
-                          // and it's different from the original (to avoid unnecessary calls)
                           const numVal = parseFloat(val);
                           
-                          // Allow empty or partial input - don't process yet
-                          if (val === "" || val === "." || val === "0" || val === "0." || isNaN(numVal) || numVal <= 0) {
-                            return;
-                          }
-                          
-                          // Only call correction handler if amount actually changed
-                          if (originalExtractedAmount !== null && Math.abs(numVal - originalExtractedAmount) > 0.01) {
-                            handleAmountCorrection(numVal);
-                          } else if (originalExtractedAmount === null) {
-                            // No original amount, so this is manual entry - mark as verified
-                            setAmountApproved(true);
+                          if (!isNaN(numVal) && numVal > 0) {
+                            // Format to 2 decimal places on blur
+                            setVerifiedAmount(numVal.toFixed(2));
+                            
+                            // Record correction if amount changed from original
+                            if (originalExtractedAmount !== null && Math.abs(numVal - originalExtractedAmount) > 0.01) {
+                              handleAmountCorrection(numVal);
+                            } else if (originalExtractedAmount === null) {
+                              // No original amount, so this is manual entry
+                              setAmountApproved(true);
+                            }
                           }
                         }}
                         placeholder="0.00"
