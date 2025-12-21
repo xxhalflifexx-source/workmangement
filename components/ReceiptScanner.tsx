@@ -73,7 +73,7 @@ export default function ReceiptScanner({
 
       console.log("[ReceiptScanner] Starting OCR processing...");
 
-      // Process image with Tesseract OCR with improved settings
+      // Process image with Tesseract OCR
       const { data } = await Tesseract.recognize(imageFile, "eng", {
         logger: (m) => {
           console.log("[ReceiptScanner] OCR progress:", m);
@@ -81,8 +81,6 @@ export default function ReceiptScanner({
             setProgress(Math.round(m.progress * 100));
           }
         },
-        // Improve OCR accuracy
-        tessedit_char_whitelist: "0123456789.$ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz: ",
       });
 
       console.log("[ReceiptScanner] OCR text extracted:", data.text);
