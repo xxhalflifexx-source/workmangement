@@ -53,6 +53,7 @@ model User {
   ocrExtractionSuccesses OCRExtractionSuccess[]
   ocrCorrections       OCRCorrection[]
   ocrFormatDetections  OCRFormatDetection[]
+  pushTokens           PushToken[]
 }
 
 model Account {
