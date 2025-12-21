@@ -355,13 +355,28 @@ export default function OperationsCommonPage() {
       });
 
       if (!uploadRes.ok) {
-        const errorData = await uploadRes.json().catch(() => ({}));
-        console.error("Upload failed:", errorData);
-        let errorMessage = errorData.error || "Failed to upload files";
+        let errorData: any = {};
+        const contentType = uploadRes.headers.get("content-type");
+        
+        try {
+          if (contentType && contentType.includes("application/json")) {
+            errorData = await uploadRes.json();
+          } else {
+            const text = await uploadRes.text();
+            console.error("Non-JSON error response:", text);
+            errorData = { error: text || `Upload failed with status ${uploadRes.status}` };
+          }
+        } catch (parseError) {
+          console.error("Failed to parse error response:", parseError);
+          errorData = { error: `Upload failed with status ${uploadRes.status}` };
+        }
+        
+        console.error("Upload failed - Status:", uploadRes.status, "Error data:", errorData);
+        let errorMessage = errorData.error || `Failed to upload files (Status: ${uploadRes.status})`;
         
         // Include failed files details if available
         if (errorData.failedFiles && errorData.failedFiles.length > 0) {
-          const failedDetails = errorData.failedFiles.map((f: any) => `${f.originalName}: ${f.error}`).join("; ");
+          const failedDetails = errorData.failedFiles.map((f: any) => `${f.originalName}: ${f.error || 'Unknown error'}`).join("; ");
           errorMessage += ` - ${failedDetails}`;
         }
         
@@ -370,9 +385,30 @@ export default function OperationsCommonPage() {
         return;
       }
 
-      const uploadData = await uploadRes.json();
+      let uploadData: any = {};
+      try {
+        uploadData = await uploadRes.json();
+      } catch (parseError) {
+        console.error("Failed to parse upload response:", parseError);
+        setError("Failed to parse upload response");
+        setUploading(false);
+        return;
+      }
+      
+      console.log("Upload response data:", uploadData);
       const uploadedFiles = uploadData.files || [];
       const failedFiles = uploadData.failedFiles || [];
+
+      // If no files were uploaded and there are failed files, show error
+      if (uploadedFiles.length === 0 && failedFiles.length > 0) {
+        const failedDetails = failedFiles.map((f: any) => `${f.originalName}: ${f.error || 'Unknown error'}`).join('; ');
+        setError(`All files failed to upload: ${failedDetails}`);
+        console.error("Failed files:", failedFiles);
+        setShowUploadModal(false);
+        setUploadingFiles([]);
+        setUploading(false);
+        return;
+      }
 
       // Create file records with unique names
       for (let i = 0; i < uploadedFiles.length; i++) {
@@ -401,13 +437,9 @@ export default function OperationsCommonPage() {
           setSuccess(`${uploadedFiles.length} file(s) uploaded successfully. ${duplicateFiles.length} file(s) renamed to avoid duplicates: ${duplicateFiles.join(', ')}`);
         }
       } else if (uploadedFiles.length > 0 && failedFiles.length > 0) {
-        const failedNames = failedFiles.map((f: any) => f.originalName).join(', ');
-        setSuccess(`${uploadedFiles.length} file(s) uploaded successfully`);
-        setError(`${failedFiles.length} file(s) failed: ${failedNames}`);
-      } else if (failedFiles.length > 0) {
         const failedDetails = failedFiles.map((f: any) => `${f.originalName}: ${f.error || 'Unknown error'}`).join('; ');
-        setError(`All files failed to upload: ${failedDetails}`);
-        console.error("Failed files:", failedFiles);
+        setSuccess(`${uploadedFiles.length} file(s) uploaded successfully`);
+        setError(`${failedFiles.length} file(s) failed: ${failedDetails}`);
       }
       setShowUploadModal(false);
       setUploadingFiles([]);
