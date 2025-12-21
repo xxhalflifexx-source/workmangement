@@ -63,12 +63,32 @@ export const authOptions: NextAuthOptions = {
         }
         
         const { email, password } = parsed.data;
-        console.log("[auth] lookup user:", email);
-        const user = await prisma.user.findUnique({ where: { email } });
+        // Make email case-insensitive for lookup
+        const emailLower = email.toLowerCase().trim();
+        console.log("[auth] lookup user (case-insensitive):", emailLower);
         
+        // Find user with case-insensitive email comparison
+        // Fetch all users and filter case-insensitively (for small user bases this is fine)
+        // Alternative: Use Prisma.sql for raw query if needed
+        const allUsers = await prisma.user.findMany({
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            passwordHash: true,
+            isVerified: true,
+            status: true,
+            role: true,
+          },
+        });
+        
+        // Find exact match (case-insensitive)
+        const user = allUsers.find(u => u.email && u.email.toLowerCase() === emailLower) || null;
+        
+        // Always return same error message for security (don't reveal if email exists)
         if (!user || !user.passwordHash) {
           console.log("[auth] no user or no hash");
-          return null;
+          throw new Error("Wrong username/password");
         }
         
         // Check if email is verified
@@ -92,7 +112,7 @@ export const authOptions: NextAuthOptions = {
         console.log("[auth] compare result:", isValid);
         if (!isValid) {
           console.log("[auth] invalid password");
-          return null;
+          throw new Error("Wrong username/password");
         }
         
         return {

@@ -101,7 +101,9 @@ export default function LoginPage() {
                 // We don't need to do anything else here
               } catch (err: any) {
                 console.error("[Login] Error:", err);
-                setError(err?.message || "An error occurred. Please try again.");
+                // Show user-friendly error message
+                const errorMessage = err?.message || "Wrong username/password";
+                setError(errorMessage);
                 setLoading(false);
               }
             }}
