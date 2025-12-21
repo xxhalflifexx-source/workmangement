@@ -2,6 +2,8 @@
  * Utility functions for extracting amounts from receipt text using OCR
  */
 
+import { ReceiptFormat } from "./receipt-formats";
+
 /**
  * Extract amount from multiple OCR results using voting mechanism
  * Returns the most common amount found across multiple attempts
@@ -54,8 +56,10 @@ export function extractAmountFromMultipleResults(
 /**
  * Extract currency amount from OCR text
  * Optimized for various receipt formats: retail, restaurant, gas station, credit card receipts
+ * @param text - OCR text from receipt
+ * @param format - Optional receipt format to use format-specific extraction rules
  */
-export function extractAmountFromText(text: string): number | null {
+export function extractAmountFromText(text: string, format?: ReceiptFormat | null): number | null {
   if (!text) return null;
 
   // Preserve line structure for better analysis
@@ -75,21 +79,43 @@ export function extractAmountFromText(text: string): number | null {
   const amountCandidates: AmountWithContext[] = [];
   const totalLines = lines.length;
   
-  // For full receipts (>20 lines), be more aggressive - only consider bottom 20%
-  // For shorter receipts, use bottom 30%
-  const bottomThreshold = totalLines > 20 
-    ? Math.floor(totalLines * 0.8)  // Bottom 20% for long receipts
-    : Math.floor(totalLines * 0.7); // Bottom 30% for shorter receipts
+  // Use format-specific bottom threshold if format provided, otherwise use default logic
+  let bottomThreshold: number;
+  let filterTopPercent: number;
+  
+  if (format) {
+    // Use format-specific rules
+    bottomThreshold = Math.floor(totalLines * (1 - format.extractionRules.preferBottomPercent / 100));
+    filterTopPercent = format.extractionRules.filterTopPercent;
+  } else {
+    // Default logic: For full receipts (>20 lines), be more aggressive - only consider bottom 20%
+    // For shorter receipts, use bottom 30%
+    bottomThreshold = totalLines > 20 
+      ? Math.floor(totalLines * 0.8)  // Bottom 20% for long receipts
+      : Math.floor(totalLines * 0.7); // Bottom 30% for shorter receipts
+    filterTopPercent = 50; // Default: filter top 50%
+  }
 
-  // Priority 1: Lines containing "Total" or "Grand Total" (highest priority)
+  // Build keyword pattern from format if available, otherwise use default
+  const totalKeywordPattern = format
+    ? new RegExp(`(?:^|\\s)(?:${format.patterns.totalKeywords.join("|")})[:\s]*\$?\\s*(\\d+\\.\\d{2})`, "i")
+    : /(?:^|\s)(?:total|grand\s*total|final\s*total)[:\s]*\$?\s*(\d+\.\d{2})/i;
+
+  // Priority 1: Lines containing "Total" or format-specific keywords (highest priority)
   // Prioritize amounts in bottom section of receipt
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     const isBottomSection = i >= bottomThreshold;
-    const totalMatch = line.match(/(?:^|\s)(?:total|grand\s*total|final\s*total)[:\s]*\$?\s*(\d+\.\d{2})/i);
+    
+    // Use format-specific pattern or default
+    const totalMatch = line.match(totalKeywordPattern);
     if (totalMatch) {
       const amount = parseFloat(totalMatch[1]);
-      if (!isNaN(amount) && amount > 0 && amount < 1000000) {
+      // Apply format-specific amount range if available
+      const minAmount = format ? format.extractionRules.minAmount : 0;
+      const maxAmount = format ? format.extractionRules.maxAmount : 1000000;
+      
+      if (!isNaN(amount) && amount > minAmount && amount < maxAmount) {
         amountCandidates.push({
           amount,
           line,
@@ -102,11 +128,18 @@ export function extractAmountFromText(text: string): number | null {
     }
 
     // Also check for amount at end of line with "total" keyword
-    if (/total|grand\s*total/i.test(line)) {
+    const totalKeywordTest = format
+      ? new RegExp(format.patterns.totalKeywords.join("|"), "i")
+      : /total|grand\s*total/i;
+      
+    if (totalKeywordTest.test(line)) {
       const endMatch = line.match(/(\d+\.\d{2})\s*$/);
       if (endMatch) {
         const amount = parseFloat(endMatch[1]);
-        if (!isNaN(amount) && amount > 0 && amount < 1000000) {
+        const minAmount = format ? format.extractionRules.minAmount : 0;
+        const maxAmount = format ? format.extractionRules.maxAmount : 1000000;
+        
+        if (!isNaN(amount) && amount > minAmount && amount < maxAmount) {
           amountCandidates.push({
             amount,
             line,
@@ -165,13 +198,13 @@ export function extractAmountFromText(text: string): number | null {
   // Priority 4: Amounts at end of lines (likely totals)
   // Filter out small amounts that are likely item prices
   // Prefer amounts in bottom section
-  // For full receipts, filter out amounts in top 50% more aggressively
-  const topHalfThreshold = Math.floor(totalLines * 0.5);
+  // Use format-specific filter percentage if available
+  const topFilterThreshold = Math.floor(totalLines * (filterTopPercent / 100));
   
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     const isBottomSection = i >= bottomThreshold;
-    const isTopHalf = i < topHalfThreshold;
+    const isTopFiltered = i < topFilterThreshold;
     const endMatch = line.match(/\$(\d+\.\d{2})\s*$/);
     if (endMatch) {
       const amount = parseFloat(endMatch[1]);
@@ -183,9 +216,18 @@ export function extractAmountFromText(text: string): number | null {
           continue;
         }
         
-        // For full receipts, filter out amounts in top half (likely item prices)
-        if (totalLines > 20 && isTopHalf && !hasKeyword && !isBottomSection) {
-          continue;
+        // Filter out amounts in top section (likely item prices)
+        // Use format-specific filter or default logic
+        if (isTopFiltered && !hasKeyword && !isBottomSection) {
+          // Apply format-specific min amount if available
+          const minAmount = format ? format.extractionRules.minAmount : 1;
+          if (amount < minAmount) {
+            continue;
+          }
+          // For full receipts or when format specifies, filter more aggressively
+          if (totalLines > 20 || (format && filterTopPercent > 50)) {
+            continue;
+          }
         }
         
         let priority = hasKeyword ? 7 : 3;

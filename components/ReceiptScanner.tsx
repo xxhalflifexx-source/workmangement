@@ -2,6 +2,7 @@
 
 import { useState, useRef } from "react";
 import { extractAmountFromText, extractAllAmounts, extractAmountsWithContext } from "@/lib/receipt-ocr";
+import { detectReceiptFormat, ReceiptFormat } from "@/lib/receipt-formats";
 
 interface ReceiptScannerProps {
   jobId: string;
@@ -32,6 +33,7 @@ export default function ReceiptScanner({
   const [successfulStrategy, setSuccessfulStrategy] = useState<string | null>(null);
   const [ocrConfidence, setOcrConfidence] = useState<number | null>(null);
   const [imageRotation, setImageRotation] = useState(0);
+  const [detectedFormat, setDetectedFormat] = useState<ReceiptFormat | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // OCR Result interface
@@ -43,6 +45,7 @@ export default function ReceiptScanner({
     psm: number;
     amountsWithContext: Array<{ amount: number; line: string; keyword: string }>;
     allAmounts: number[];
+    format?: ReceiptFormat;
   }
 
   // Detect mobile device
@@ -447,7 +450,11 @@ export default function ReceiptScanner({
       : 0;
 
     const text = data.text || "";
-    const amount = extractAmountFromText(text);
+    
+    // Detect receipt format from OCR text
+    const format = detectReceiptFormat(text);
+    
+    const amount = extractAmountFromText(text, format);
     const allAmounts = extractAllAmounts(text);
     const amountsWithCtx = extractAmountsWithContext(text);
 
@@ -459,6 +466,7 @@ export default function ReceiptScanner({
       psm,
       amountsWithContext: amountsWithCtx,
       allAmounts,
+      format: format || undefined,
     };
   };
 
@@ -470,11 +478,21 @@ export default function ReceiptScanner({
     try {
       // Strategy 1: Original image with default PSM
       console.log("[ReceiptScanner] Strategy 1: Original image");
-      results.push(await tryOCR(file, "original", 6));
+      const originalResult = await tryOCR(file, "original", 6);
+      results.push(originalResult);
+      
+      // Detect format from first OCR result
+      if (originalResult.text) {
+        detectedFormat = detectReceiptFormat(originalResult.text);
+        if (detectedFormat) {
+          console.log("[ReceiptScanner] Detected format:", detectedFormat.storeName);
+          setDetectedFormat(detectedFormat);
+        }
+      }
       
       // If we got a good result, return early
-      if (results[0].amount && results[0].confidence > 60) {
-        return results[0];
+      if (originalResult.amount && originalResult.confidence > 60) {
+        return originalResult;
       }
 
       // Strategy 2: Preprocessed image
@@ -591,6 +609,12 @@ export default function ReceiptScanner({
       }
 
       console.log("[ReceiptScanner] Best result:", bestResult);
+      
+      // Update detected format if found in best result
+      if (bestResult.format) {
+        setDetectedFormat(bestResult.format);
+      }
+      
       setSuccessfulStrategy(bestResult.strategy);
       setOcrConfidence(Math.round(bestResult.confidence));
       setOcrText(bestResult.text || "");
@@ -865,16 +889,23 @@ export default function ReceiptScanner({
                 <h3 className="text-lg font-bold text-gray-900">
                   ✓ Amount Detected
                 </h3>
-                {successfulStrategy && (
-                  <span className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded">
-                    {successfulStrategy}
-                  </span>
-                )}
-                {ocrConfidence !== null && (
-                  <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded">
-                    {ocrConfidence}% confidence
-                  </span>
-                )}
+                <div className="flex gap-2 flex-wrap">
+                  {detectedFormat && (
+                    <span className="text-xs px-2 py-1 bg-purple-100 text-purple-700 rounded" title={`Detected format: ${detectedFormat.storeName}`}>
+                      {detectedFormat.storeName}
+                    </span>
+                  )}
+                  {successfulStrategy && (
+                    <span className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded">
+                      {successfulStrategy}
+                    </span>
+                  )}
+                  {ocrConfidence !== null && (
+                    <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded">
+                      {ocrConfidence}% confidence
+                    </span>
+                  )}
+                </div>
               </div>
               <div className="space-y-4">
                 <div>
