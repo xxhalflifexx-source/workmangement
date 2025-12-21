@@ -269,9 +269,7 @@ function JobsPageContent() {
   const [jobActivities, setJobActivities] = useState<JobActivity[]>([]);
   const [loadingActivities, setLoadingActivities] = useState(false);
   
-  // Expenses state
-  const [showExpensesModal, setShowExpensesModal] = useState(false);
-  const [selectedJobForExpenses, setSelectedJobForExpenses] = useState<Job | null>(null);
+  // Expenses state (now part of unified modal)
   const [jobExpenses, setJobExpenses] = useState<any[]>([]);
   const [loadingExpenses, setLoadingExpenses] = useState(false);
   const [expenseCategory, setExpenseCategory] = useState("Materials");
@@ -293,10 +291,11 @@ function JobsPageContent() {
   const [photoViewerPhotos, setPhotoViewerPhotos] = useState<string[]>([]);
   const [photoViewerIndex, setPhotoViewerIndex] = useState(0);
   
-  const [showMaterialModal, setShowMaterialModal] = useState(false);
-  const [selectedJobForMaterial, setSelectedJobForMaterial] = useState<Job | null>(null);
+  const [showMaterialsAndExpensesModal, setShowMaterialsAndExpensesModal] = useState(false);
+  const [selectedJobForMaterialsAndExpenses, setSelectedJobForMaterialsAndExpenses] = useState<Job | null>(null);
   const [jobMaterialRequests, setJobMaterialRequests] = useState<MaterialRequest[]>([]);
   const [loadingMaterials, setLoadingMaterials] = useState(false);
+  const [activeTab, setActiveTab] = useState<"materials" | "expenses" | "history">("materials");
   
   const [materialItemName, setMaterialItemName] = useState("");
   const [materialQuantity, setMaterialQuantity] = useState(1);
@@ -817,33 +816,16 @@ function JobsPageContent() {
   };
 
   // Expenses handlers
-  const openExpensesModal = async (job: Job) => {
-    if (!canManage) {
-      setError("Only managers and admins can manage expenses");
-      return;
-    }
-    setSelectedJobForExpenses(job);
-    setShowExpensesModal(true);
-    setLoadingExpenses(true);
-    
-    const res = await getJobExpenses(job.id);
-    if (res.ok && res.expenses) {
-      setJobExpenses(res.expenses);
-    } else {
-      setError(res.error || "Failed to load expenses");
-    }
-    setLoadingExpenses(false);
-  };
 
   const handleAddExpense = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedJobForExpenses) return;
+    if (!selectedJobForMaterialsAndExpenses) return;
 
     setAddingExpense(true);
     setError(undefined);
 
     const formData = new FormData();
-    formData.append("jobId", selectedJobForExpenses.id);
+    formData.append("jobId", selectedJobForMaterialsAndExpenses.id);
     formData.append("category", expenseCategory);
     formData.append("description", expenseDescription);
     formData.append("amount", expenseAmount);
@@ -860,8 +842,8 @@ function JobsPageContent() {
       setExpenseQuantity("1");
       setExpenseUnit("");
       setExpenseNotes("");
-      // Refresh expenses
-      openExpensesModal(selectedJobForExpenses);
+      // Refresh expenses and materials
+      await openMaterialsAndExpensesModal(selectedJobForMaterialsAndExpenses);
       await loadData(); // Refresh jobs to update profit calculations
     } else {
       setError(res.error || "Failed to add expense");
@@ -877,8 +859,8 @@ function JobsPageContent() {
     const res = await deleteJobExpense(expenseId);
     if (res.ok) {
       setSuccess("Expense deleted successfully!");
-      if (selectedJobForExpenses) {
-        openExpensesModal(selectedJobForExpenses);
+      if (selectedJobForMaterialsAndExpenses) {
+        await openMaterialsAndExpensesModal(selectedJobForMaterialsAndExpenses);
         await loadData(); // Refresh jobs to update profit calculations
       }
     } else {
@@ -1070,26 +1052,41 @@ function JobsPageContent() {
     }
   };
 
-  const openMaterialModal = async (job: Job) => {
-    setSelectedJobForMaterial(job);
-    setShowMaterialModal(true);
+  const openMaterialsAndExpensesModal = async (job: Job) => {
+    setSelectedJobForMaterialsAndExpenses(job);
+    setShowMaterialsAndExpensesModal(true);
+    setActiveTab("materials");
     setLoadingMaterials(true);
+    setLoadingExpenses(true);
     
-    const res = await getJobMaterialRequests(job.id);
-    if (res.ok) {
-      setJobMaterialRequests(res.requests as any);
+    // Load both materials and expenses
+    const [materialsRes, expensesRes] = await Promise.all([
+      getJobMaterialRequests(job.id),
+      getJobExpenses(job.id)
+    ]);
+    
+    if (materialsRes.ok) {
+      setJobMaterialRequests(materialsRes.requests as any);
     } else {
-      setError(res.error);
+      setError(materialsRes.error);
     }
+    
+    if (expensesRes.ok && expensesRes.expenses) {
+      setJobExpenses(expensesRes.expenses);
+    } else {
+      setError(expensesRes.error || "Failed to load expenses");
+    }
+    
     setLoadingMaterials(false);
+    setLoadingExpenses(false);
   };
 
   const handleMaterialRequest = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedJobForMaterial) return;
+    if (!selectedJobForMaterialsAndExpenses) return;
 
     // Prevent creating material requests if job is locked
-    if (selectedJobForMaterial.status === "AWAITING_QC" || selectedJobForMaterial.status === "COMPLETED") {
+    if (selectedJobForMaterialsAndExpenses.status === "AWAITING_QC" || selectedJobForMaterialsAndExpenses.status === "COMPLETED") {
       setError("This job has been submitted to QC and cannot be edited until returned for rework.");
       return;
     }
@@ -1098,7 +1095,7 @@ function JobsPageContent() {
     setError(undefined);
 
     const formData = new FormData();
-    formData.append("jobId", selectedJobForMaterial.id);
+    formData.append("jobId", selectedJobForMaterialsAndExpenses.id);
     formData.append("itemName", materialItemName);
     // Ensure quantity is a whole number between 1-9
     const quantity = Math.max(1, Math.min(9, Math.floor(materialQuantity)));
@@ -1124,8 +1121,8 @@ function JobsPageContent() {
     setMaterialPriority("MEDIUM");
     setMaterialNotes("");
     
-    // Refresh material requests
-    openMaterialModal(selectedJobForMaterial);
+    // Refresh material requests and expenses
+    await openMaterialsAndExpensesModal(selectedJobForMaterialsAndExpenses);
     setSubmittingMaterial(false);
   };
 
@@ -1730,9 +1727,8 @@ function JobsPageContent() {
                           getAllJobPhotos={getAllJobPhotos}
                           jobExistingPhotos={jobExistingPhotos[job.id] || []}
                           onActivity={openActivityModal}
-                          onMaterial={openMaterialModal}
+                          onMaterialsAndExpenses={openMaterialsAndExpensesModal}
                           onQuotation={openQuotationModal}
-                          onExpenses={openExpensesModal}
                           jobExpenses={job.expenses || []}
                           onPhotoSelect={handleJobPhotoSelect}
                           onSavePhotos={handleSavePhotos}
@@ -2428,248 +2424,591 @@ function JobsPageContent() {
         </div>
       )}
 
-      {/* Material Request Modal */}
-      {showMaterialModal && selectedJobForMaterial && (
+      {/* Unified Materials & Expenses Modal */}
+      {showMaterialsAndExpensesModal && selectedJobForMaterialsAndExpenses && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl my-4 max-h-[calc(100vh-2rem)] overflow-y-auto">
             {/* Header */}
-            <div className="sticky top-0 bg-white border-b px-4 sm:px-6 py-3 sm:py-4 flex justify-between items-center z-[1]">
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900">📦 Material Requests</h2>
-                <p className="text-sm text-gray-600 mt-1">{selectedJobForMaterial.title}</p>
+            <div className="sticky top-0 bg-white border-b px-4 sm:px-6 py-3 sm:py-4 z-[1]">
+              <div className="flex justify-between items-center mb-3">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">📦💵 Materials & Expenses</h2>
+                  <p className="text-sm text-gray-600 mt-1">{selectedJobForMaterialsAndExpenses.title}</p>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowMaterialsAndExpensesModal(false);
+                    setSelectedJobForMaterialsAndExpenses(null);
+                    setJobMaterialRequests([]);
+                    setJobExpenses([]);
+                    setMaterialItemName("");
+                    setMaterialQuantity(1);
+                    setMaterialUnit("pcs");
+                    setMaterialDescription("");
+                    setMaterialPriority("MEDIUM");
+                    setMaterialNotes("");
+                    setExpenseCategory("Materials");
+                    setExpenseDescription("");
+                    setExpenseAmount("");
+                    setExpenseQuantity("1");
+                    setExpenseUnit("");
+                    setExpenseNotes("");
+                    setActiveTab("materials");
+                  }}
+                  className="text-gray-400 hover:text-gray-600 text-2xl"
+                >
+                  ✕
+                </button>
               </div>
-              <button
-                onClick={() => {
-                  setShowMaterialModal(false);
-                  setSelectedJobForMaterial(null);
-                  setJobMaterialRequests([]);
-                  setMaterialItemName("");
-                  setMaterialQuantity(1);
-                  setMaterialUnit("pcs");
-                  setMaterialDescription("");
-                  setMaterialPriority("MEDIUM");
-                  setMaterialNotes("");
-                }}
-                className="text-gray-400 hover:text-gray-600 text-2xl"
-              >
-                ✕
-              </button>
+              
+              {/* Tab Navigation */}
+              <div className="flex gap-2 border-b border-gray-200">
+                <button
+                  onClick={() => setActiveTab("materials")}
+                  className={`px-4 py-2 font-medium text-sm transition-colors border-b-2 ${
+                    activeTab === "materials"
+                      ? "border-green-500 text-green-700"
+                      : "border-transparent text-gray-600 hover:text-gray-900"
+                  }`}
+                >
+                  📦 Request Materials
+                </button>
+                <button
+                  onClick={() => setActiveTab("expenses")}
+                  className={`px-4 py-2 font-medium text-sm transition-colors border-b-2 ${
+                    activeTab === "expenses"
+                      ? "border-rose-500 text-rose-700"
+                      : "border-transparent text-gray-600 hover:text-gray-900"
+                  }`}
+                >
+                  💵 Report Expense
+                </button>
+                <button
+                  onClick={() => setActiveTab("history")}
+                  className={`px-4 py-2 font-medium text-sm transition-colors border-b-2 ${
+                    activeTab === "history"
+                      ? "border-indigo-500 text-indigo-700"
+                      : "border-transparent text-gray-600 hover:text-gray-900"
+                  }`}
+                >
+                  📋 History
+                </button>
+              </div>
             </div>
 
             {/* Content */}
             <div className="p-6 space-y-6">
               {/* Lock Message */}
-              {selectedJobForMaterial && (selectedJobForMaterial.status === "AWAITING_QC" || selectedJobForMaterial.status === "COMPLETED") && (
+              {selectedJobForMaterialsAndExpenses.status === "AWAITING_QC" || selectedJobForMaterialsAndExpenses.status === "COMPLETED" ? (
                 <div className="mb-4 p-3 bg-purple-50 border border-purple-200 rounded-lg">
                   <p className="text-sm text-purple-800 font-medium">
                     🔒 This job has been submitted to QC and cannot be edited until returned for rework.
                   </p>
                 </div>
+              ) : null}
+
+              {/* Tab 1: Request Materials */}
+              {activeTab === "materials" && (
+                <>
+                  <div className="bg-green-50 border-2 border-green-200 rounded-xl p-6">
+                    <h3 className="text-lg font-bold text-gray-900 mb-4">➕ Request New Material</h3>
+                    <form onSubmit={handleMaterialRequest} className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Item Name *
+                          </label>
+                          <input
+                            type="text"
+                            value={materialItemName}
+                            onChange={(e) => setMaterialItemName(e.target.value)}
+                            placeholder="e.g., Steel Handrail, Concrete Mix"
+                            required
+                            disabled={selectedJobForMaterialsAndExpenses.status === "AWAITING_QC" || selectedJobForMaterialsAndExpenses.status === "COMPLETED"}
+                            className="w-full border border-gray-300 rounded-lg px-3 py-2 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Priority
+                          </label>
+                          <select
+                            value={materialPriority}
+                            onChange={(e) => setMaterialPriority(e.target.value)}
+                            disabled={selectedJobForMaterialsAndExpenses.status === "AWAITING_QC" || selectedJobForMaterialsAndExpenses.status === "COMPLETED"}
+                            className="w-full border border-gray-300 rounded-lg px-3 py-2 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                          >
+                            <option value="LOW">Low - Can wait</option>
+                            <option value="MEDIUM">Medium - Normal priority</option>
+                            <option value="HIGH">High - Needed soon</option>
+                            <option value="URGENT">Urgent - Needed immediately</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Quantity *
+                          </label>
+                          <input
+                            type="number"
+                            value={materialQuantity}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              if (value === "" || (value.length <= 1 && /^[1-9]$/.test(value))) {
+                                setMaterialQuantity(value === "" ? 1 : Number(value));
+                              } else {
+                                e.target.value = materialQuantity.toString();
+                              }
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === '.' || e.key === '-' || e.key === 'e' || e.key === 'E' || e.key === '+') {
+                                e.preventDefault();
+                              }
+                            }}
+                            onBlur={(e) => {
+                              const numValue = Number(e.target.value);
+                              if (isNaN(numValue) || numValue < 1) {
+                                setMaterialQuantity(1);
+                              } else if (numValue > 9) {
+                                setMaterialQuantity(9);
+                              } else {
+                                setMaterialQuantity(Math.floor(numValue));
+                              }
+                            }}
+                            min="1"
+                            max="9"
+                            step="1"
+                            maxLength={1}
+                            required
+                            disabled={selectedJobForMaterialsAndExpenses.status === "AWAITING_QC" || selectedJobForMaterialsAndExpenses.status === "COMPLETED"}
+                            className="w-full border border-gray-300 rounded-lg px-3 py-2 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Unit *</label>
+                          <input
+                            type="text"
+                            value={materialUnit}
+                            onChange={(e) => setMaterialUnit(e.target.value)}
+                            placeholder="pcs, kg, lbs"
+                            required
+                            disabled={selectedJobForMaterialsAndExpenses.status === "AWAITING_QC" || selectedJobForMaterialsAndExpenses.status === "COMPLETED"}
+                            className="w-full border border-gray-300 rounded-lg px-3 py-2 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Description
+                        </label>
+                        <textarea
+                          value={materialDescription}
+                          onChange={(e) => setMaterialDescription(e.target.value)}
+                          placeholder="Additional details about the material needed..."
+                          rows={3}
+                          disabled={selectedJobForMaterialsAndExpenses.status === "AWAITING_QC" || selectedJobForMaterialsAndExpenses.status === "COMPLETED"}
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Notes
+                        </label>
+                        <textarea
+                          value={materialNotes}
+                          onChange={(e) => setMaterialNotes(e.target.value)}
+                          placeholder="Any additional notes or requirements..."
+                          rows={2}
+                          disabled={selectedJobForMaterialsAndExpenses.status === "AWAITING_QC" || selectedJobForMaterialsAndExpenses.status === "COMPLETED"}
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                        />
+                      </div>
+
+                      <button
+                        type="submit"
+                        disabled={
+                          submittingMaterial ||
+                          !materialItemName ||
+                          selectedJobForMaterialsAndExpenses.status === "AWAITING_QC" ||
+                          selectedJobForMaterialsAndExpenses.status === "COMPLETED"
+                        }
+                        className="w-full bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                      >
+                        {submittingMaterial ? "Submitting..." : "Submit Material Request"}
+                      </button>
+                    </form>
+                  </div>
+
+                  {/* Material Requests List */}
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900 mb-4">📋 Material Requests</h3>
+                    {loadingMaterials ? (
+                      <div className="text-center py-12">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
+                        <p className="text-gray-600 mt-4">Loading material requests...</p>
+                      </div>
+                    ) : jobMaterialRequests.length === 0 ? (
+                      <div className="text-center py-12 bg-gray-50 rounded-lg">
+                        <div className="text-4xl mb-3">📦</div>
+                        <p className="text-gray-600">No material requests yet for this job</p>
+                        <p className="text-gray-500 text-sm mt-1">Submit your first material request above</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {jobMaterialRequests.map((request) => (
+                          <div key={request.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                            <div className="flex justify-between items-start mb-3">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <p className="font-medium text-gray-900">{request.itemName}</p>
+                                  <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                                    request.priority === "URGENT"
+                                      ? "bg-red-100 text-red-700"
+                                      : request.priority === "HIGH"
+                                      ? "bg-orange-100 text-orange-700"
+                                      : request.priority === "MEDIUM"
+                                      ? "bg-yellow-100 text-yellow-700"
+                                      : "bg-green-100 text-green-700"
+                                  }`}>
+                                    {request.priority}
+                                  </span>
+                                  <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                                    request.status === "FULFILLED"
+                                      ? "bg-green-100 text-green-700"
+                                      : request.status === "APPROVED"
+                                      ? "bg-blue-100 text-blue-700"
+                                      : request.status === "REJECTED"
+                                      ? "bg-red-100 text-red-700"
+                                      : "bg-gray-100 text-gray-700"
+                                  }`}>
+                                    {request.status}
+                                  </span>
+                                </div>
+                                <p className="text-sm text-gray-600 mb-1">
+                                  Quantity: <span className="font-medium">{request.quantity} {request.unit}</span>
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                  Requested by {request.user.name || request.user.email} • {formatDateTime(request.requestedDate)}
+                                </p>
+                                {request.description && (
+                                  <p className="text-sm text-gray-700 mt-2">{request.description}</p>
+                                )}
+                                {request.notes && (
+                                  <p className="text-sm text-gray-600 mt-1 italic">"{request.notes}"</p>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </>
               )}
 
-              {/* Add Material Request Form */}
-              <div className="bg-green-50 border-2 border-green-200 rounded-xl p-6">
-                <h3 className="text-lg font-bold text-gray-900 mb-4">➕ Request New Material</h3>
-                <form onSubmit={handleMaterialRequest} className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Item Name *
-                      </label>
-                      <input
-                        type="text"
-                        value={materialItemName}
-                        onChange={(e) => setMaterialItemName(e.target.value)}
-                        placeholder="e.g., Steel Handrail, Concrete Mix"
-                        required
-                        disabled={selectedJobForMaterial ? (selectedJobForMaterial.status === "AWAITING_QC" || selectedJobForMaterial.status === "COMPLETED") : false}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Priority
-                      </label>
-                      <select
-                        value={materialPriority}
-                        onChange={(e) => setMaterialPriority(e.target.value)}
-                        disabled={selectedJobForMaterial ? (selectedJobForMaterial.status === "AWAITING_QC" || selectedJobForMaterial.status === "COMPLETED") : false}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                      >
-                        <option value="LOW">Low - Can wait</option>
-                        <option value="MEDIUM">Medium - Normal priority</option>
-                        <option value="HIGH">High - Needed soon</option>
-                        <option value="URGENT">Urgent - Needed immediately</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Quantity *
-                      </label>
-                      <input
-                        type="number"
-                        value={materialQuantity}
-                        onChange={(e) => {
-                          const value = e.target.value;
-                          // Only allow single digit numbers (1-9), no decimals
-                          if (value === "" || (value.length <= 1 && /^[1-9]$/.test(value))) {
-                            setMaterialQuantity(value === "" ? 1 : Number(value));
-                          } else {
-                            // If user tries to enter more than one digit or decimal, keep current value
-                            e.target.value = materialQuantity.toString();
-                          }
-                        }}
-                        onKeyDown={(e) => {
-                          // Prevent decimal point, minus sign, and 'e' (scientific notation)
-                          if (e.key === '.' || e.key === '-' || e.key === 'e' || e.key === 'E' || e.key === '+') {
-                            e.preventDefault();
-                          }
-                        }}
-                        onBlur={(e) => {
-                          // Ensure value is a whole number between 1-9 on blur
-                          const numValue = Number(e.target.value);
-                          if (isNaN(numValue) || numValue < 1) {
-                            setMaterialQuantity(1);
-                          } else if (numValue > 9) {
-                            setMaterialQuantity(9);
-                          } else {
-                            setMaterialQuantity(Math.floor(numValue)); // Ensure whole number, no decimals
-                          }
-                        }}
-                        min="1"
-                        max="9"
-                        step="1"
-                        maxLength={1}
-                        required
-                        disabled={selectedJobForMaterial ? (selectedJobForMaterial.status === "AWAITING_QC" || selectedJobForMaterial.status === "COMPLETED") : false}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Unit *</label>
-                      <input
-                        type="text"
-                        value={materialUnit}
-                        onChange={(e) => setMaterialUnit(e.target.value)}
-                        placeholder="pcs, kg, lbs"
-                        required
-                        disabled={selectedJobForMaterial ? (selectedJobForMaterial.status === "AWAITING_QC" || selectedJobForMaterial.status === "COMPLETED") : false}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Description
-                    </label>
-                    <textarea
-                      value={materialDescription}
-                      onChange={(e) => setMaterialDescription(e.target.value)}
-                      placeholder="Additional details about the material needed..."
-                      rows={3}
-                      disabled={selectedJobForMaterial ? (selectedJobForMaterial.status === "AWAITING_QC" || selectedJobForMaterial.status === "COMPLETED") : false}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Notes
-                    </label>
-                    <textarea
-                      value={materialNotes}
-                      onChange={(e) => setMaterialNotes(e.target.value)}
-                      placeholder="Any additional notes or requirements..."
-                      rows={2}
-                      disabled={selectedJobForMaterial ? (selectedJobForMaterial.status === "AWAITING_QC" || selectedJobForMaterial.status === "COMPLETED") : false}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                    />
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={
-                      submittingMaterial ||
-                      !materialItemName ||
-                      (selectedJobForMaterial ? (selectedJobForMaterial.status === "AWAITING_QC" || selectedJobForMaterial.status === "COMPLETED") : false)
-                    }
-                    className="w-full bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
-                  >
-                    {submittingMaterial ? "Submitting..." : "Submit Material Request"}
-                  </button>
-                </form>
-              </div>
-
-              {/* Material Requests History */}
-              <div>
-                <h3 className="text-lg font-bold text-gray-900 mb-4">📋 Material Request History</h3>
-                {loadingMaterials ? (
-                  <div className="text-center py-12">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
-                    <p className="text-gray-600 mt-4">Loading material requests...</p>
-                  </div>
-                ) : jobMaterialRequests.length === 0 ? (
-                  <div className="text-center py-12 bg-gray-50 rounded-lg">
-                    <div className="text-4xl mb-3">📦</div>
-                    <p className="text-gray-600">No material requests yet for this job</p>
-                    <p className="text-gray-500 text-sm mt-1">Submit your first material request above</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {jobMaterialRequests.map((request) => (
-                      <div key={request.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                        <div className="flex justify-between items-start mb-3">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <p className="font-medium text-gray-900">{request.itemName}</p>
-                              <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                                request.priority === "URGENT"
-                                  ? "bg-red-100 text-red-700"
-                                  : request.priority === "HIGH"
-                                  ? "bg-orange-100 text-orange-700"
-                                  : request.priority === "MEDIUM"
-                                  ? "bg-yellow-100 text-yellow-700"
-                                  : "bg-green-100 text-green-700"
-                              }`}>
-                                {request.priority}
-                              </span>
-                              <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                                request.status === "FULFILLED"
-                                  ? "bg-green-100 text-green-700"
-                                  : request.status === "APPROVED"
-                                  ? "bg-blue-100 text-blue-700"
-                                  : request.status === "REJECTED"
-                                  ? "bg-red-100 text-red-700"
-                                  : "bg-gray-100 text-gray-700"
-                              }`}>
-                                {request.status}
-                              </span>
-                            </div>
-                            <p className="text-sm text-gray-600 mb-1">
-                              Quantity: <span className="font-medium">{request.quantity} {request.unit}</span>
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              Requested by {request.user.name || request.user.email} • {formatDateTime(request.requestedDate)}
-                            </p>
-                            {request.description && (
-                              <p className="text-sm text-gray-700 mt-2">{request.description}</p>
-                            )}
-                            {request.notes && (
-                              <p className="text-sm text-gray-600 mt-1 italic">"{request.notes}"</p>
-                            )}
+              {/* Tab 2: Report Expense */}
+              {activeTab === "expenses" && (
+                <>
+                  <div className="bg-rose-50 border-2 border-rose-200 rounded-xl p-6">
+                    <h3 className="text-lg font-bold text-gray-900 mb-4">➕ Report Expense</h3>
+                    <form onSubmit={handleAddExpense} className="space-y-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Category *
+                          </label>
+                          <select
+                            value={expenseCategory}
+                            onChange={(e) => setExpenseCategory(e.target.value)}
+                            className="w-full border-2 border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-colors bg-white min-h-[44px]"
+                            required
+                          >
+                            <option value="Materials">Materials</option>
+                            <option value="Equipment">Equipment</option>
+                            <option value="Subcontractor">Subcontractor</option>
+                            <option value="Other">Other</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Amount *
+                          </label>
+                          <div className="relative">
+                            <span className="absolute left-3 top-2.5 text-gray-500">$</span>
+                            <input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              value={expenseAmount}
+                              onChange={(e) => setExpenseAmount(e.target.value)}
+                              placeholder="0.00"
+                              className="w-full border-2 border-gray-300 rounded-xl pl-7 pr-3 py-2.5 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-colors bg-white min-h-[44px]"
+                              required
+                            />
                           </div>
                         </div>
                       </div>
-                    ))}
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Description *
+                        </label>
+                        <input
+                          type="text"
+                          value={expenseDescription}
+                          onChange={(e) => setExpenseDescription(e.target.value)}
+                          placeholder="e.g., Steel bars, Welding supplies"
+                          className="w-full border-2 border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-colors bg-white min-h-[44px]"
+                          required
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Quantity
+                          </label>
+                          <input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={expenseQuantity}
+                            onChange={(e) => setExpenseQuantity(e.target.value)}
+                            placeholder="1"
+                            className="w-full border-2 border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-colors bg-white min-h-[44px]"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Unit
+                          </label>
+                          <input
+                            type="text"
+                            value={expenseUnit}
+                            onChange={(e) => setExpenseUnit(e.target.value)}
+                            placeholder="pcs, kg, lbs, hours"
+                            className="w-full border-2 border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-colors bg-white min-h-[44px]"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Notes
+                        </label>
+                        <textarea
+                          value={expenseNotes}
+                          onChange={(e) => setExpenseNotes(e.target.value)}
+                          placeholder="Additional notes about this expense..."
+                          rows={3}
+                          className="w-full border-2 border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-colors bg-white resize-none"
+                        />
+                      </div>
+
+                      <button
+                        type="submit"
+                        disabled={addingExpense || !expenseDescription || !expenseAmount}
+                        className="w-full bg-gradient-to-r from-rose-600 to-pink-600 text-white py-3 rounded-xl font-semibold hover:from-rose-700 hover:to-pink-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all shadow-md min-h-[44px]"
+                      >
+                        {addingExpense ? "Adding..." : "Add Expense"}
+                      </button>
+                    </form>
                   </div>
-                )}
-              </div>
+
+                  {/* Expenses List */}
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900 mb-4">📋 Expenses</h3>
+                    {loadingExpenses ? (
+                      <div className="text-center py-12">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-rose-600 mx-auto"></div>
+                        <p className="text-gray-600 mt-4">Loading expenses...</p>
+                      </div>
+                    ) : jobExpenses.length === 0 ? (
+                      <div className="text-center py-12 bg-gray-50 rounded-xl">
+                        <div className="text-4xl mb-3">💵</div>
+                        <p className="text-gray-600">No expenses recorded yet for this job</p>
+                        <p className="text-gray-500 text-sm mt-1">Add your first expense above</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {(() => {
+                          const totalExpenses = jobExpenses.reduce((sum: number, exp: any) => sum + (exp.amount || 0), 0);
+                          const revenue = selectedJobForMaterialsAndExpenses.finalPrice || selectedJobForMaterialsAndExpenses.estimatedPrice || 0;
+                          const profit = revenue - totalExpenses;
+                          
+                          return (
+                            <>
+                              <div className="bg-gradient-to-r from-indigo-50 to-blue-50 border-2 border-indigo-200 rounded-xl p-4 mb-4">
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                  <div>
+                                    <p className="text-xs text-indigo-600 font-semibold uppercase tracking-wider mb-1">Total Expenses</p>
+                                    <p className="text-xl font-bold text-indigo-900">${totalExpenses.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs text-blue-600 font-semibold uppercase tracking-wider mb-1">Revenue</p>
+                                    <p className="text-xl font-bold text-blue-900">${revenue.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                                  </div>
+                                  <div>
+                                    <p className={`text-xs font-semibold uppercase tracking-wider mb-1 ${profit >= 0 ? "text-emerald-600" : "text-red-600"}`}>Profit</p>
+                                    <p className={`text-xl font-bold ${profit >= 0 ? "text-emerald-900" : "text-red-900"}`}>${profit.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                                  </div>
+                                </div>
+                              </div>
+                              {jobExpenses.map((expense: any) => (
+                                <div key={expense.id} className="bg-white border-2 border-gray-200 rounded-xl p-4 hover:border-indigo-300 transition-colors shadow-sm">
+                                  <div className="flex justify-between items-start mb-2">
+                                    <div className="flex-1">
+                                      <div className="flex items-center gap-2 mb-1">
+                                        <p className="font-semibold text-gray-900">{expense.description}</p>
+                                        <span className="text-xs px-2 py-1 rounded-full font-medium bg-rose-100 text-rose-700">
+                                          {expense.category}
+                                        </span>
+                                      </div>
+                                      <p className="text-sm text-gray-600">
+                                        {expense.quantity && expense.quantity !== 1 && (
+                                          <span>{expense.quantity} {expense.unit || ""} × </span>
+                                        )}
+                                        <span className="font-semibold text-gray-900">${expense.amount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                      </p>
+                                      {expense.notes && (
+                                        <p className="text-sm text-gray-600 mt-1 italic">"{expense.notes}"</p>
+                                      )}
+                                      <p className="text-xs text-gray-500 mt-1">
+                                        Added by {expense.user?.name || "Unknown"} • {formatDateTime(expense.expenseDate || expense.createdAt)}
+                                      </p>
+                                    </div>
+                                    {canManage && (
+                                      <button
+                                        onClick={() => handleDeleteExpense(expense.id)}
+                                        className="ml-4 px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg border border-red-200 transition-colors text-sm font-medium min-h-[44px]"
+                                        title="Delete expense"
+                                      >
+                                        🗑️
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
+                            </>
+                          );
+                        })()}
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+
+              {/* Tab 3: History (Unified View) */}
+              {activeTab === "history" && (
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900 mb-4">📋 Complete History</h3>
+                  {loadingMaterials || loadingExpenses ? (
+                    <div className="text-center py-12">
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+                      <p className="text-gray-600 mt-4">Loading history...</p>
+                    </div>
+                  ) : jobMaterialRequests.length === 0 && jobExpenses.length === 0 ? (
+                    <div className="text-center py-12 bg-gray-50 rounded-xl">
+                      <div className="text-4xl mb-3">📋</div>
+                      <p className="text-gray-600">No materials or expenses recorded yet</p>
+                      <p className="text-gray-500 text-sm mt-1">Use the tabs above to add materials or expenses</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {/* Combine and sort by date */}
+                      {[
+                        ...jobMaterialRequests.map((req: any) => ({
+                          ...req,
+                          type: "material",
+                          date: new Date(req.requestedDate).getTime(),
+                        })),
+                        ...jobExpenses.map((exp: any) => ({
+                          ...exp,
+                          type: "expense",
+                          date: new Date(exp.expenseDate || exp.createdAt).getTime(),
+                        })),
+                      ]
+                        .sort((a, b) => b.date - a.date)
+                        .map((item: any) => {
+                          if (item.type === "material") {
+                            return (
+                              <div key={item.id} className="bg-green-50 border-2 border-green-200 rounded-xl p-4">
+                                <div className="flex items-start gap-3">
+                                  <div className="text-2xl">📦</div>
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <p className="font-semibold text-gray-900">{item.itemName}</p>
+                                      <span className="text-xs px-2 py-1 rounded-full font-medium bg-green-100 text-green-700">
+                                        Material Request
+                                      </span>
+                                      <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                                        item.status === "FULFILLED"
+                                          ? "bg-green-100 text-green-700"
+                                          : item.status === "APPROVED"
+                                          ? "bg-blue-100 text-blue-700"
+                                          : item.status === "REJECTED"
+                                          ? "bg-red-100 text-red-700"
+                                          : "bg-gray-100 text-gray-700"
+                                      }`}>
+                                        {item.status}
+                                      </span>
+                                    </div>
+                                    <p className="text-sm text-gray-600 mb-1">
+                                      Quantity: <span className="font-medium">{item.quantity} {item.unit}</span>
+                                    </p>
+                                    <p className="text-xs text-gray-500">
+                                      Requested by {item.user.name || item.user.email} • {formatDateTime(item.requestedDate)}
+                                    </p>
+                                    {item.description && (
+                                      <p className="text-sm text-gray-700 mt-2">{item.description}</p>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          } else {
+                            return (
+                              <div key={item.id} className="bg-rose-50 border-2 border-rose-200 rounded-xl p-4">
+                                <div className="flex items-start gap-3">
+                                  <div className="text-2xl">💵</div>
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <p className="font-semibold text-gray-900">{item.description}</p>
+                                      <span className="text-xs px-2 py-1 rounded-full font-medium bg-rose-100 text-rose-700">
+                                        Expense
+                                      </span>
+                                      <span className="text-xs px-2 py-1 rounded-full font-medium bg-gray-100 text-gray-700">
+                                        {item.category}
+                                      </span>
+                                    </div>
+                                    <p className="text-sm text-gray-600 mb-1">
+                                      {item.quantity && item.quantity !== 1 && (
+                                        <span>{item.quantity} {item.unit || ""} × </span>
+                                      )}
+                                      <span className="font-semibold text-gray-900">${item.amount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                    </p>
+                                    <p className="text-xs text-gray-500">
+                                      Added by {item.user?.name || "Unknown"} • {formatDateTime(item.expenseDate || item.createdAt)}
+                                    </p>
+                                    {item.notes && (
+                                      <p className="text-sm text-gray-600 mt-1 italic">"{item.notes}"</p>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          }
+                        })}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -3060,225 +3399,6 @@ function JobsPageContent() {
         }
       `}</style>
 
-      {/* Expenses Modal */}
-      {showExpensesModal && selectedJobForExpenses && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl my-4 max-h-[calc(100vh-2rem)] overflow-y-auto">
-            {/* Header */}
-            <div className="sticky top-0 bg-white border-b px-4 sm:px-6 py-3 sm:py-4 flex justify-between items-center z-[1]">
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900">💵 Expenses</h2>
-                <p className="text-sm text-gray-600 mt-1">{selectedJobForExpenses.title}</p>
-              </div>
-              <button
-                onClick={() => {
-                  setShowExpensesModal(false);
-                  setSelectedJobForExpenses(null);
-                  setJobExpenses([]);
-                  setExpenseCategory("Materials");
-                  setExpenseDescription("");
-                  setExpenseAmount("");
-                  setExpenseQuantity("1");
-                  setExpenseUnit("");
-                  setExpenseNotes("");
-                }}
-                className="text-gray-400 hover:text-gray-600 text-2xl"
-              >
-                ✕
-              </button>
-            </div>
-
-            {/* Content */}
-            <div className="p-6 space-y-6">
-              {/* Add Expense Form */}
-              <div className="bg-rose-50 border-2 border-rose-200 rounded-xl p-6">
-                <h3 className="text-lg font-bold text-gray-900 mb-4">➕ Add Expense</h3>
-                <form onSubmit={handleAddExpense} className="space-y-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Category *
-                      </label>
-                      <select
-                        value={expenseCategory}
-                        onChange={(e) => setExpenseCategory(e.target.value)}
-                        className="w-full border-2 border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-colors bg-white min-h-[44px]"
-                        required
-                      >
-                        <option value="Materials">Materials</option>
-                        <option value="Equipment">Equipment</option>
-                        <option value="Subcontractor">Subcontractor</option>
-                        <option value="Other">Other</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Amount *
-                      </label>
-                      <div className="relative">
-                        <span className="absolute left-3 top-2.5 text-gray-500">$</span>
-                        <input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          value={expenseAmount}
-                          onChange={(e) => setExpenseAmount(e.target.value)}
-                          placeholder="0.00"
-                          className="w-full border-2 border-gray-300 rounded-xl pl-7 pr-3 py-2.5 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-colors bg-white min-h-[44px]"
-                          required
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Description *
-                    </label>
-                    <input
-                      type="text"
-                      value={expenseDescription}
-                      onChange={(e) => setExpenseDescription(e.target.value)}
-                      placeholder="e.g., Steel bars, Welding supplies"
-                      className="w-full border-2 border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-colors bg-white min-h-[44px]"
-                      required
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Quantity
-                      </label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        value={expenseQuantity}
-                        onChange={(e) => setExpenseQuantity(e.target.value)}
-                        placeholder="1"
-                        className="w-full border-2 border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-colors bg-white min-h-[44px]"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Unit
-                      </label>
-                      <input
-                        type="text"
-                        value={expenseUnit}
-                        onChange={(e) => setExpenseUnit(e.target.value)}
-                        placeholder="pcs, kg, lbs, hours"
-                        className="w-full border-2 border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-colors bg-white min-h-[44px]"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Notes
-                    </label>
-                    <textarea
-                      value={expenseNotes}
-                      onChange={(e) => setExpenseNotes(e.target.value)}
-                      placeholder="Additional notes about this expense..."
-                      rows={3}
-                      className="w-full border-2 border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-colors bg-white resize-none"
-                    />
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={addingExpense || !expenseDescription || !expenseAmount}
-                    className="w-full bg-gradient-to-r from-rose-600 to-pink-600 text-white py-3 rounded-xl font-semibold hover:from-rose-700 hover:to-pink-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all shadow-md min-h-[44px]"
-                  >
-                    {addingExpense ? "Adding..." : "Add Expense"}
-                  </button>
-                </form>
-              </div>
-
-              {/* Expenses List */}
-              <div>
-                <h3 className="text-lg font-bold text-gray-900 mb-4">📋 Expense History</h3>
-                {loadingExpenses ? (
-                  <div className="text-center py-12">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-rose-600 mx-auto"></div>
-                    <p className="text-gray-600 mt-4">Loading expenses...</p>
-                  </div>
-                ) : jobExpenses.length === 0 ? (
-                  <div className="text-center py-12 bg-gray-50 rounded-xl">
-                    <div className="text-4xl mb-3">💵</div>
-                    <p className="text-gray-600">No expenses recorded yet for this job</p>
-                    <p className="text-gray-500 text-sm mt-1">Add your first expense above</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {(() => {
-                      const totalExpenses = jobExpenses.reduce((sum: number, exp: any) => sum + (exp.amount || 0), 0);
-                      const revenue = selectedJobForExpenses.finalPrice || selectedJobForExpenses.estimatedPrice || 0;
-                      const profit = revenue - totalExpenses;
-                      
-                      return (
-                        <>
-                          <div className="bg-gradient-to-r from-indigo-50 to-blue-50 border-2 border-indigo-200 rounded-xl p-4 mb-4">
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                              <div>
-                                <p className="text-xs text-indigo-600 font-semibold uppercase tracking-wider mb-1">Total Expenses</p>
-                                <p className="text-xl font-bold text-indigo-900">${totalExpenses.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                              </div>
-                              <div>
-                                <p className="text-xs text-blue-600 font-semibold uppercase tracking-wider mb-1">Revenue</p>
-                                <p className="text-xl font-bold text-blue-900">${revenue.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                              </div>
-                              <div>
-                                <p className={`text-xs font-semibold uppercase tracking-wider mb-1 ${profit >= 0 ? "text-emerald-600" : "text-red-600"}`}>Profit</p>
-                                <p className={`text-xl font-bold ${profit >= 0 ? "text-emerald-900" : "text-red-900"}`}>${profit.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                              </div>
-                            </div>
-                          </div>
-                          {jobExpenses.map((expense: any) => (
-                            <div key={expense.id} className="bg-white border-2 border-gray-200 rounded-xl p-4 hover:border-indigo-300 transition-colors shadow-sm">
-                              <div className="flex justify-between items-start mb-2">
-                                <div className="flex-1">
-                                  <div className="flex items-center gap-2 mb-1">
-                                    <p className="font-semibold text-gray-900">{expense.description}</p>
-                                    <span className="text-xs px-2 py-1 rounded-full font-medium bg-rose-100 text-rose-700">
-                                      {expense.category}
-                                    </span>
-                                  </div>
-                                  <p className="text-sm text-gray-600">
-                                    {expense.quantity && expense.quantity !== 1 && (
-                                      <span>{expense.quantity} {expense.unit || ""} × </span>
-                                    )}
-                                    <span className="font-semibold text-gray-900">${expense.amount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                                  </p>
-                                  {expense.notes && (
-                                    <p className="text-sm text-gray-600 mt-1 italic">"{expense.notes}"</p>
-                                  )}
-                                  <p className="text-xs text-gray-500 mt-1">
-                                    Added by {expense.user?.name || "Unknown"} • {formatDateTime(expense.expenseDate || expense.createdAt)}
-                                  </p>
-                                </div>
-                                <button
-                                  onClick={() => handleDeleteExpense(expense.id)}
-                                  className="ml-4 px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg border border-red-200 transition-colors text-sm font-medium min-h-[44px]"
-                                  title="Delete expense"
-                                >
-                                  🗑️
-                                </button>
-                              </div>
-                            </div>
-                          ))}
-                        </>
-                      );
-                    })()}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Photo Viewer Modal */}
       {showPhotoViewer && (

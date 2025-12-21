@@ -13,9 +13,8 @@ interface JobRowProps {
   getAllJobPhotos: (job: any) => string[];
   jobExistingPhotos: Array<{ id: string; url: string; activityId: string }>;
   onActivity?: (job: any) => void;
-  onMaterial?: (job: any) => void;
+  onMaterialsAndExpenses?: (job: any) => void;
   onQuotation?: (job: any) => void;
-  onExpenses?: (job: any) => void;
   jobExpenses?: any[];
   onPhotoSelect?: (jobId: string, e: React.ChangeEvent<HTMLInputElement>) => void;
   onSavePhotos?: (jobId: string) => void;
@@ -37,9 +36,8 @@ export default function JobRow({
   getAllJobPhotos,
   jobExistingPhotos,
   onActivity,
-  onMaterial,
+  onMaterialsAndExpenses,
   onQuotation,
-  onExpenses,
   jobExpenses = [],
   onPhotoSelect,
   onSavePhotos,
@@ -568,18 +566,18 @@ export default function JobRow({
                       <span>History</span>
                     </button>
                   )}
-                  {onMaterial && (
+                  {onMaterialsAndExpenses && (
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        onMaterial(job);
+                        onMaterialsAndExpenses(job);
                       }}
                       disabled={job.status === "AWAITING_QC" || job.status === "COMPLETED"}
-                      className="px-5 py-3 text-sm bg-gradient-to-r from-emerald-50 to-teal-50 border-2 border-emerald-200 text-emerald-700 rounded-xl hover:from-emerald-100 hover:to-teal-100 hover:border-emerald-300 transition-all font-semibold disabled:bg-gray-100 disabled:border-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed min-h-[44px] flex items-center justify-center gap-2 shadow-sm"
-                      title={job.status === "AWAITING_QC" || job.status === "COMPLETED" ? "Job is locked - submitted to QC" : "View and request materials for this job"}
+                      className="px-5 py-3 text-sm bg-gradient-to-r from-emerald-50 to-rose-50 border-2 border-emerald-200 text-emerald-700 rounded-xl hover:from-emerald-100 hover:to-rose-100 hover:border-emerald-300 transition-all font-semibold disabled:bg-gray-100 disabled:border-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed min-h-[44px] flex items-center justify-center gap-2 shadow-sm"
+                      title={job.status === "AWAITING_QC" || job.status === "COMPLETED" ? "Job is locked - submitted to QC" : "Request materials and report expenses for this job"}
                     >
-                      <span className="text-base">📦</span>
-                      <span>Materials</span>
+                      <span className="text-base">📦💵</span>
+                      <span>Materials & Expenses</span>
                     </button>
                   )}
                   {canManage && onQuotation && (
@@ -593,19 +591,6 @@ export default function JobRow({
                     >
                       <span className="text-base">💰</span>
                       <span>Create Quotation</span>
-                    </button>
-                  )}
-                  {canManage && onExpenses && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onExpenses(job);
-                      }}
-                      className="px-5 py-3 text-sm bg-gradient-to-r from-rose-50 to-pink-50 border-2 border-rose-200 text-rose-700 rounded-xl hover:from-rose-100 hover:to-pink-100 hover:border-rose-300 transition-all font-semibold min-h-[44px] flex items-center justify-center gap-2 shadow-sm"
-                      title="Manage expenses for this job"
-                    >
-                      <span className="text-base">💵</span>
-                      <span>Expenses</span>
                     </button>
                   )}
                   {canManage && (
