@@ -3,6 +3,53 @@
  */
 
 /**
+ * Extract amount from multiple OCR results using voting mechanism
+ * Returns the most common amount found across multiple attempts
+ */
+export function extractAmountFromMultipleResults(
+  results: Array<{ text: string; confidence: number }>
+): number | null {
+  if (!results || results.length === 0) return null;
+
+  const amountVotes = new Map<number, { count: number; totalConfidence: number }>();
+
+  // Collect amounts from all results
+  for (const result of results) {
+    const amount = extractAmountFromText(result.text);
+    if (amount !== null) {
+      const existing = amountVotes.get(amount);
+      if (existing) {
+        existing.count++;
+        existing.totalConfidence += result.confidence;
+      } else {
+        amountVotes.set(amount, {
+          count: 1,
+          totalConfidence: result.confidence,
+        });
+      }
+    }
+  }
+
+  if (amountVotes.size === 0) return null;
+
+  // Find amount with most votes, breaking ties with confidence
+  let bestAmount: number | null = null;
+  let bestScore = 0;
+
+  for (const [amount, { count, totalConfidence }] of amountVotes.entries()) {
+    const avgConfidence = totalConfidence / count;
+    const score = count * 10 + avgConfidence; // Votes weighted more than confidence
+
+    if (score > bestScore) {
+      bestScore = score;
+      bestAmount = amount;
+    }
+  }
+
+  return bestAmount;
+}
+
+/**
  * Extract currency amount from OCR text
  * Optimized for various receipt formats: retail, restaurant, gas station, credit card receipts
  */

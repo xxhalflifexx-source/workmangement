@@ -29,7 +29,21 @@ export default function ReceiptScanner({
   const [amountsWithContext, setAmountsWithContext] = useState<Array<{ amount: number; line: string; keyword: string }>>([]);
   const [showDebug, setShowDebug] = useState(false);
   const [imageQualityWarning, setImageQualityWarning] = useState<string | null>(null);
+  const [successfulStrategy, setSuccessfulStrategy] = useState<string | null>(null);
+  const [ocrConfidence, setOcrConfidence] = useState<number | null>(null);
+  const [imageRotation, setImageRotation] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // OCR Result interface
+  interface OCRResult {
+    text: string;
+    confidence: number;
+    amount: number | null;
+    strategy: string;
+    psm: number;
+    amountsWithContext: Array<{ amount: number; line: string; keyword: string }>;
+    allAmounts: number[];
+  }
 
   // Detect mobile device
   const isMobile = typeof window !== "undefined" && (
@@ -37,8 +51,8 @@ export default function ReceiptScanner({
     window.innerWidth < 768
   );
 
-  // Image preprocessing function
-  const preprocessImage = async (file: File): Promise<File> => {
+  // Image preprocessing function with options
+  const preprocessImage = async (file: File, options: { aggressive?: boolean; highBrightness?: boolean; edgeEnhancement?: boolean } = {}): Promise<File> => {
     return new Promise((resolve, reject) => {
       const img = new Image();
       const canvas = document.createElement("canvas");
@@ -82,9 +96,17 @@ export default function ReceiptScanner({
           const data = imageData.data;
 
           // Apply preprocessing: contrast, brightness, and convert to grayscale
-          // More aggressive for mobile
-          const contrastFactor = isMobile ? 1.3 : 1.2;
-          const brightnessOffset = isMobile ? 10 : 5;
+          // Adjust based on options
+          let contrastFactor = isMobile ? 1.3 : 1.2;
+          let brightnessOffset = isMobile ? 10 : 5;
+          
+          if (options.aggressive) {
+            contrastFactor = isMobile ? 1.5 : 1.4;
+            brightnessOffset = isMobile ? 15 : 10;
+          } else if (options.highBrightness) {
+            contrastFactor = 1.1;
+            brightnessOffset = isMobile ? 20 : 15;
+          }
 
           for (let i = 0; i < data.length; i += 4) {
             // Convert to grayscale
@@ -103,8 +125,39 @@ export default function ReceiptScanner({
             // Alpha channel (data[i + 3]) stays the same
           }
 
-          // Put processed image data back
-          ctx.putImageData(imageData, 0, 0);
+          // Apply edge enhancement if requested (unsharp mask)
+          if (options.edgeEnhancement) {
+            const enhancedData = ctx.createImageData(width, height);
+            const kernel = [
+              0, -1, 0,
+              -1, 5, -1,
+              0, -1, 0
+            ];
+            
+            for (let y = 1; y < height - 1; y++) {
+              for (let x = 1; x < width - 1; x++) {
+                let r = 0, g = 0, b = 0;
+                for (let ky = -1; ky <= 1; ky++) {
+                  for (let kx = -1; kx <= 1; kx++) {
+                    const idx = ((y + ky) * width + (x + kx)) * 4;
+                    const k = kernel[(ky + 1) * 3 + (kx + 1)];
+                    r += data[idx] * k;
+                    g += data[idx + 1] * k;
+                    b += data[idx + 2] * k;
+                  }
+                }
+                const outIdx = (y * width + x) * 4;
+                enhancedData.data[outIdx] = Math.max(0, Math.min(255, r));
+                enhancedData.data[outIdx + 1] = Math.max(0, Math.min(255, g));
+                enhancedData.data[outIdx + 2] = Math.max(0, Math.min(255, b));
+                enhancedData.data[outIdx + 3] = data[(y * width + x) * 4 + 3];
+              }
+            }
+            ctx.putImageData(enhancedData, 0, 0);
+          } else {
+            // Put processed image data back
+            ctx.putImageData(imageData, 0, 0);
+          }
 
           // Convert canvas to blob, then to File
           canvas.toBlob(
@@ -205,6 +258,219 @@ export default function ReceiptScanner({
     reader.readAsDataURL(file);
   };
 
+  // Rotate image function
+  const rotateImage = async (file: File, degrees: number): Promise<File> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      
+      if (!ctx) {
+        reject(new Error("Could not get canvas context"));
+        return;
+      }
+
+      img.onload = () => {
+        try {
+          // Calculate new dimensions based on rotation
+          let width = img.width;
+          let height = img.height;
+          
+          if (degrees === 90 || degrees === 270) {
+            [width, height] = [height, width];
+          }
+          
+          canvas.width = width;
+          canvas.height = height;
+          
+          // Translate and rotate
+          ctx.translate(width / 2, height / 2);
+          ctx.rotate((degrees * Math.PI) / 180);
+          ctx.translate(-img.width / 2, -img.height / 2);
+          
+          // Draw rotated image
+          ctx.drawImage(img, 0, 0);
+          
+          // Convert to File
+          canvas.toBlob(
+            (blob) => {
+              if (!blob) {
+                reject(new Error("Failed to rotate image"));
+                return;
+              }
+              const rotatedFile = new File([blob], file.name, {
+                type: "image/jpeg",
+                lastModified: Date.now(),
+              });
+              resolve(rotatedFile);
+            },
+            "image/jpeg",
+            0.95
+          );
+        } catch (err) {
+          reject(err);
+        }
+      };
+
+      img.onerror = () => reject(new Error("Failed to load image"));
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        img.src = reader.result as string;
+      };
+      reader.onerror = () => reject(new Error("Failed to read image file"));
+      reader.readAsDataURL(file);
+    });
+  };
+
+  // Single OCR attempt with specific strategy
+  const tryOCR = async (
+    file: File,
+    strategy: string,
+    psm: number = 6
+  ): Promise<OCRResult> => {
+    const Tesseract = (await import("tesseract.js")).default;
+    
+    const { data } = await Tesseract.recognize(file, "eng", {
+      logger: (m) => {
+        if (m.status === "recognizing text") {
+          // Update progress based on strategy
+          const progressMap: Record<string, number> = {
+            original: 10,
+            preprocessed: 30,
+            aggressive: 50,
+            "rotated-90": 60,
+            "rotated-180": 70,
+            "rotated-270": 80,
+          };
+          const baseProgress = progressMap[strategy] || 10;
+          setProgress(Math.min(95, baseProgress + Math.round(m.progress * 10)));
+        }
+      },
+      // @ts-ignore - PSM option exists but may not be in types
+      psm: psm,
+    });
+
+    // Calculate average confidence from words
+    const words = data.words || [];
+    const avgConfidence = words.length > 0
+      ? words.reduce((sum: number, w: any) => sum + (w.confidence || 0), 0) / words.length
+      : 0;
+
+    const text = data.text || "";
+    const amount = extractAmountFromText(text);
+    const allAmounts = extractAllAmounts(text);
+    const amountsWithCtx = extractAmountsWithContext(text);
+
+    return {
+      text,
+      confidence: avgConfidence,
+      amount,
+      strategy,
+      psm,
+      amountsWithContext: amountsWithCtx,
+      allAmounts,
+    };
+  };
+
+  // Multi-strategy OCR with fallback chain
+  const performMultiStrategyOCR = async (file: File): Promise<OCRResult | null> => {
+    const strategies: Array<{ name: string; file: File; psm: number }> = [];
+    const results: OCRResult[] = [];
+
+    try {
+      // Strategy 1: Original image with default PSM
+      console.log("[ReceiptScanner] Strategy 1: Original image");
+      results.push(await tryOCR(file, "original", 6));
+      
+      // If we got a good result, return early
+      if (results[0].amount && results[0].confidence > 60) {
+        return results[0];
+      }
+
+      // Strategy 2: Preprocessed image
+      console.log("[ReceiptScanner] Strategy 2: Preprocessed image");
+      const preprocessed = await preprocessImage(file, { aggressive: false });
+      results.push(await tryOCR(preprocessed, "preprocessed", 6));
+      
+      if (results[1].amount && results[1].confidence > 60) {
+        return results[1];
+      }
+
+      // Strategy 3: Aggressive preprocessing
+      console.log("[ReceiptScanner] Strategy 3: Aggressive preprocessing");
+      const aggressive = await preprocessImage(file, { aggressive: true, edgeEnhancement: true });
+      results.push(await tryOCR(aggressive, "aggressive", 6));
+      
+      if (results[2].amount && results[2].confidence > 60) {
+        return results[2];
+      }
+
+      // Strategy 4: Try different PSM modes
+      console.log("[ReceiptScanner] Strategy 4: Different PSM modes");
+      const psmModes = [11, 12]; // Sparse text modes
+      for (const psm of psmModes) {
+        const result = await tryOCR(preprocessed, `preprocessed-psm${psm}`, psm);
+        results.push(result);
+        if (result.amount && result.confidence > 60) {
+          return result;
+        }
+      }
+
+      // Strategy 5: Rotated images (if no success yet)
+      if (!results.some(r => r.amount && r.confidence > 50)) {
+        console.log("[ReceiptScanner] Strategy 5: Rotated images");
+        for (const rotation of [90, 180, 270]) {
+          try {
+            const rotated = await rotateImage(file, rotation);
+            const result = await tryOCR(rotated, `rotated-${rotation}`, 6);
+            results.push(result);
+            if (result.amount && result.confidence > 50) {
+              return result;
+            }
+          } catch (err) {
+            console.warn(`[ReceiptScanner] Rotation ${rotation}° failed:`, err);
+          }
+        }
+      }
+
+      // Strategy 6: High brightness variant
+      console.log("[ReceiptScanner] Strategy 6: High brightness");
+      const highBrightness = await preprocessImage(file, { highBrightness: true });
+      results.push(await tryOCR(highBrightness, "high-brightness", 6));
+
+    } catch (err) {
+      console.error("[ReceiptScanner] Multi-strategy OCR error:", err);
+    }
+
+    // Select best result from all attempts
+    return selectBestResult(results);
+  };
+
+  // Select best result based on confidence and amount detection
+  const selectBestResult = (results: OCRResult[]): OCRResult | null => {
+    if (results.length === 0) return null;
+
+    // Filter results that found an amount
+    const resultsWithAmount = results.filter(r => r.amount !== null);
+    
+    if (resultsWithAmount.length === 0) {
+      // Return result with highest confidence even if no amount found
+      return results.reduce((best, current) => 
+        current.confidence > (best?.confidence || 0) ? current : best
+      );
+    }
+
+    // Prefer results with high confidence and detected amount
+    const scored = resultsWithAmount.map(r => ({
+      ...r,
+      score: (r.confidence || 0) + (r.amount ? 20 : 0) + (r.amountsWithContext.length > 0 ? 10 : 0),
+    }));
+
+    return scored.reduce((best, current) => 
+      current.score > (best?.score || 0) ? current : best
+    );
+  };
+
   const processReceipt = async () => {
     if (!imageFile) return;
 
@@ -214,76 +480,59 @@ export default function ReceiptScanner({
     setOcrText("");
     setAllAmounts([]);
     setImageQualityWarning(null);
+    setSuccessfulStrategy(null);
+    setOcrConfidence(null);
 
     try {
-      // Dynamically import Tesseract to avoid SSR issues
-      const Tesseract = (await import("tesseract.js")).default;
-
-      console.log("[ReceiptScanner] Starting OCR processing...");
+      console.log("[ReceiptScanner] Starting multi-strategy OCR processing...");
       console.log("[ReceiptScanner] Mobile device:", isMobile);
 
-      // Preprocess image before OCR
-      setProgress(5);
-      let processedFile: File;
-      try {
-        console.log("[ReceiptScanner] Preprocessing image...");
-        processedFile = await preprocessImage(imageFile);
-        console.log("[ReceiptScanner] Image preprocessing complete");
-        setProgress(10);
-      } catch (preprocessError: any) {
-        console.warn("[ReceiptScanner] Preprocessing failed, using original:", preprocessError);
-        // Fallback to original file if preprocessing fails
-        processedFile = imageFile;
+      // Apply rotation if user rotated image
+      let fileToProcess = imageFile;
+      if (imageRotation !== 0) {
+        fileToProcess = await rotateImage(imageFile, imageRotation);
       }
 
-      // Process image with Tesseract OCR
-      const { data } = await Tesseract.recognize(processedFile, "eng", {
-        logger: (m) => {
-          console.log("[ReceiptScanner] OCR progress:", m);
-          if (m.status === "recognizing text") {
-            // Map progress from 10-100% (since preprocessing took first 10%)
-            setProgress(Math.min(100, 10 + Math.round(m.progress * 90)));
-          }
-        },
-      });
+      // Perform multi-strategy OCR
+      const bestResult = await performMultiStrategyOCR(fileToProcess);
 
-      console.log("[ReceiptScanner] OCR text extracted:", data.text);
-      setOcrText(data.text || "");
+      if (!bestResult) {
+        throw new Error("All OCR strategies failed");
+      }
 
-      // Extract all amounts found
-      const allFoundAmounts = extractAllAmounts(data.text);
-      setAllAmounts(allFoundAmounts);
-      console.log("[ReceiptScanner] All amounts found:", allFoundAmounts);
+      console.log("[ReceiptScanner] Best result:", bestResult);
+      setSuccessfulStrategy(bestResult.strategy);
+      setOcrConfidence(Math.round(bestResult.confidence));
+      setOcrText(bestResult.text || "");
+      setAllAmounts(bestResult.allAmounts);
+      setAmountsWithContext(bestResult.amountsWithContext);
 
-      // Extract amounts with context
-      const amountsWithCtx = extractAmountsWithContext(data.text);
-      setAmountsWithContext(amountsWithCtx);
-      console.log("[ReceiptScanner] Amounts with context:", amountsWithCtx);
-
-      // Extract primary amount from OCR text
-      const amount = extractAmountFromText(data.text);
-      console.log("[ReceiptScanner] Primary amount extracted:", amount);
-
-      if (amount) {
-        setExtractedAmount(amount);
-        setVerifiedAmount(amount.toFixed(2));
+      if (bestResult.amount) {
+        setExtractedAmount(bestResult.amount);
+        setVerifiedAmount(bestResult.amount.toFixed(2));
         setError(null);
       } else {
         // Show helpful error with detected amounts
-        if (allFoundAmounts.length > 0) {
+        if (bestResult.allAmounts.length > 0) {
+          const confidenceNote = bestResult.confidence > 0 
+            ? ` (OCR confidence: ${Math.round(bestResult.confidence)}%)`
+            : "";
           const errorMsg = isMobile
-            ? `Could not detect total amount. Found these amounts: ${allFoundAmounts.map(a => `$${a.toFixed(2)}`).join(", ")}. Please select one or enter manually. Tip: Try zooming in on the total line for better results.`
-            : `Could not detect total amount. Found these amounts: ${allFoundAmounts.map(a => `$${a.toFixed(2)}`).join(", ")}. Please select one or enter manually.`;
+            ? `Could not detect total amount. Found these amounts: ${bestResult.allAmounts.map(a => `$${a.toFixed(2)}`).join(", ")}${confidenceNote}. Please select one or enter manually.`
+            : `Could not detect total amount. Found these amounts: ${bestResult.allAmounts.map(a => `$${a.toFixed(2)}`).join(", ")}${confidenceNote}. Please select one or enter manually.`;
           setError(errorMsg);
           // Pre-fill with the largest amount found
-          const largestAmount = allFoundAmounts[0];
+          const largestAmount = bestResult.allAmounts[0];
           setVerifiedAmount(largestAmount.toFixed(2));
         } else {
+          const confidenceNote = bestResult.confidence > 0 
+            ? ` OCR confidence was ${Math.round(bestResult.confidence)}%.`
+            : "";
           const errorMsg = isMobile
-            ? "Could not detect any amounts in receipt. The image might be unclear, blurry, or the receipt format is not recognized. Try: 1) Ensure good lighting, 2) Hold phone steady, 3) Zoom in on the total line, 4) Or enter the amount manually."
-            : data.text && data.text.trim().length > 0
-            ? "Could not detect any amounts in receipt. Text was found but no amounts were recognized. Please enter the amount manually."
-            : "Could not detect any text in receipt. The image might be unclear or the receipt format is not recognized. Please enter the amount manually.";
+            ? `Could not detect any amounts in receipt.${confidenceNote} The image might be unclear, blurry, or rotated. Try: 1) Ensure good lighting, 2) Hold phone steady, 3) Rotate image if needed, 4) Or enter the amount manually.`
+            : bestResult.text && bestResult.text.trim().length > 0
+            ? `Could not detect any amounts in receipt.${confidenceNote} Text was found but no amounts were recognized. Please enter the amount manually.`
+            : `Could not detect any text in receipt.${confidenceNote} The image might be unclear or rotated. Please try rotating the image or enter the amount manually.`;
           setError(errorMsg);
         }
         setExtractedAmount(null);
@@ -291,13 +540,13 @@ export default function ReceiptScanner({
     } catch (err: any) {
       console.error("[ReceiptScanner] OCR processing error:", err);
       const errorMsg = isMobile
-        ? `Failed to process receipt: ${err?.message || "Unknown error"}. On mobile, try: 1) Ensure good lighting, 2) Hold phone steady, 3) Zoom in on the total line. Or enter amount manually.`
-        : `Failed to process receipt: ${err?.message || "Unknown error"}. Please try again or enter amount manually.`;
+        ? `Failed to process receipt: ${err?.message || "Unknown error"}. On mobile, try: 1) Ensure good lighting, 2) Hold phone steady, 3) Rotate image if needed, 4) Or enter amount manually.`
+        : `Failed to process receipt: ${err?.message || "Unknown error"}. Please try rotating the image or enter amount manually.`;
       setError(errorMsg);
       setExtractedAmount(null);
     } finally {
       setIsProcessing(false);
-      setProgress(0);
+      setProgress(100);
     }
   };
 
@@ -428,6 +677,27 @@ export default function ReceiptScanner({
               <p className="text-xs text-gray-500 mt-2">
                 On mobile devices, this will open your camera. On desktop, select an image file.
               </p>
+              {imagePreview && (
+                <div className="mt-3 flex gap-2">
+                  <button
+                    onClick={async () => {
+                      if (imageFile) {
+                        const rotated = await rotateImage(imageFile, 90);
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                          setImagePreview(reader.result as string);
+                        };
+                        reader.readAsDataURL(rotated);
+                        setImageRotation((prev) => (prev + 90) % 360);
+                      }
+                    }}
+                    className="px-3 py-1 text-xs bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded text-gray-700"
+                    title="Rotate image 90°"
+                  >
+                    ↻ Rotate
+                  </button>
+                </div>
+              )}
               {isMobile && (
                 <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                   <p className="text-xs font-medium text-blue-900 mb-1">📱 Mobile Tips:</p>
@@ -501,9 +771,21 @@ export default function ReceiptScanner({
           {/* Extracted Amount */}
           {extractedAmount && !isProcessing && (
             <div className="bg-green-50 border-2 border-green-200 rounded-xl p-6">
-              <h3 className="text-lg font-bold text-gray-900 mb-4">
-                ✓ Amount Detected
-              </h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold text-gray-900">
+                  ✓ Amount Detected
+                </h3>
+                {successfulStrategy && (
+                  <span className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded">
+                    {successfulStrategy}
+                  </span>
+                )}
+                {ocrConfidence !== null && (
+                  <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded">
+                    {ocrConfidence}% confidence
+                  </span>
+                )}
+              </div>
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -550,9 +832,33 @@ export default function ReceiptScanner({
           {/* Manual Entry Fallback */}
           {!extractedAmount && !isProcessing && imageFile && (
             <div className="bg-yellow-50 border-2 border-yellow-200 rounded-xl p-6">
-              <h3 className="text-lg font-bold text-gray-900 mb-4">
-                Manual Entry Required
-              </h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold text-gray-900">
+                  Manual Entry Required
+                </h3>
+                <div className="flex gap-2">
+                  {successfulStrategy && (
+                    <span className="text-xs px-2 py-1 bg-yellow-100 text-yellow-700 rounded">
+                      {successfulStrategy}
+                    </span>
+                  )}
+                  {ocrConfidence !== null && (
+                    <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded">
+                      {ocrConfidence}% confidence
+                    </span>
+                  )}
+                </div>
+              </div>
+              
+              {/* Retry button */}
+              <div className="mb-4">
+                <button
+                  onClick={processReceipt}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
+                >
+                  🔄 Try Again with Different Strategy
+                </button>
+              </div>
               
               {/* Show detected amounts with context if available */}
               {amountsWithContext.length > 0 ? (
