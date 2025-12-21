@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { checkRequiredTables, getMigrationPath, TABLE_MIGRATIONS } from "@/lib/db-health-check";
+import { checkRequiredTables, getMigrationPath, REQUIRED_TABLES } from "@/lib/db-health-check";
 
 /**
  * Database health check endpoint
