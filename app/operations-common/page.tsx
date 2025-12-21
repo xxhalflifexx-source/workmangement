@@ -356,7 +356,16 @@ export default function OperationsCommonPage() {
 
       if (!uploadRes.ok) {
         const errorData = await uploadRes.json().catch(() => ({}));
-        setError(errorData.error || "Failed to upload files");
+        console.error("Upload failed:", errorData);
+        let errorMessage = errorData.error || "Failed to upload files";
+        
+        // Include failed files details if available
+        if (errorData.failedFiles && errorData.failedFiles.length > 0) {
+          const failedDetails = errorData.failedFiles.map((f: any) => `${f.originalName}: ${f.error}`).join("; ");
+          errorMessage += ` - ${failedDetails}`;
+        }
+        
+        setError(errorMessage);
         setUploading(false);
         return;
       }
@@ -396,8 +405,9 @@ export default function OperationsCommonPage() {
         setSuccess(`${uploadedFiles.length} file(s) uploaded successfully`);
         setError(`${failedFiles.length} file(s) failed: ${failedNames}`);
       } else if (failedFiles.length > 0) {
-        const failedNames = failedFiles.map((f: any) => f.originalName).join(', ');
-        setError(`All files failed to upload: ${failedNames}`);
+        const failedDetails = failedFiles.map((f: any) => `${f.originalName}: ${f.error || 'Unknown error'}`).join('; ');
+        setError(`All files failed to upload: ${failedDetails}`);
+        console.error("Failed files:", failedFiles);
       }
       setShowUploadModal(false);
       setUploadingFiles([]);

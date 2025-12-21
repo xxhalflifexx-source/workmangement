@@ -36,6 +36,15 @@ export async function POST(request: NextRequest) {
 		const formData = await request.formData();
 		const files = formData.getAll("files") as File[];
 
+		console.log("Received files:", files.length);
+		if (files.length > 0) {
+			console.log("First file:", {
+				name: files[0].name,
+				type: files[0].type,
+				size: files[0].size,
+			});
+		}
+
 		if (!files || files.length === 0) {
 			return NextResponse.json({ error: "No files provided" }, { status: 400 });
 		}
@@ -53,12 +62,18 @@ export async function POST(request: NextRequest) {
 
 		for (const file of files) {
 			try {
+				console.log(`Processing file: ${file.name}, type: ${file.type}, size: ${file.size}`);
+				
 				const bytes = await file.arrayBuffer();
 				const buffer = Buffer.from(bytes);
+				
+				console.log(`File buffer created, size: ${buffer.length} bytes`);
 
 				const timestamp = Date.now();
 				const sanitizedName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
 				const objectPath = `operations-common/${(session.user as any).id || "user"}/${timestamp}-${sanitizedName}`;
+				
+				console.log(`Upload path: ${objectPath}`);
 
 				// Determine file type category with improved PDF detection
 				let fileType = "other";
@@ -66,12 +81,17 @@ export async function POST(request: NextRequest) {
 				const mimeType = (file.type || "").toLowerCase();
 				const fileNameLower = file.name.toLowerCase();
 				
+				console.log(`File detection - mimeType: "${mimeType}", fileName: "${fileNameLower}"`);
+				
 				// Check PDF: MIME type OR file extension
 				if (mimeType === "application/pdf" || mimeType.includes("pdf") || fileNameLower.endsWith(".pdf")) {
 					fileType = "pdf";
 					// Ensure Content-Type is set correctly for PDFs
 					if (!mimeType || !mimeType.includes("pdf")) {
 						contentType = "application/pdf";
+						console.log("PDF detected by extension, setting Content-Type to application/pdf");
+					} else {
+						console.log("PDF detected by MIME type");
 					}
 				} else if (mimeType.startsWith("image/")) {
 					fileType = "image";
@@ -82,8 +102,11 @@ export async function POST(request: NextRequest) {
 				} else if (mimeType.includes("cad") || fileNameLower.endsWith(".dwg") || fileNameLower.endsWith(".dxf")) {
 					fileType = "cad";
 				}
+				
+				console.log(`File type determined: ${fileType}, Content-Type: ${contentType}`);
 
-				const { error: uploadError } = await supabase
+				console.log(`Uploading to bucket: ${bucket}`);
+				const { error: uploadError, data: uploadData } = await supabase
 					.storage
 					.from(bucket)
 					.upload(objectPath, buffer, {
@@ -94,12 +117,15 @@ export async function POST(request: NextRequest) {
 
 				if (uploadError) {
 					console.error(`Supabase upload error for ${file.name}:`, uploadError);
+					console.error(`Upload error details:`, JSON.stringify(uploadError, null, 2));
 					failedFiles.push({
 						originalName: file.name,
-						error: uploadError.message || "Upload failed",
+						error: uploadError.message || uploadError.error || "Upload failed",
 					});
 					continue;
 				}
+				
+				console.log(`Upload successful for ${file.name}`);
 
 				const { data: publicUrlData } = supabase
 					.storage
