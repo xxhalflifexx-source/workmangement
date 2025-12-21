@@ -130,11 +130,11 @@ export default function SOPEditor({
   return (
     <div className="flex flex-col h-full bg-white dark:bg-gray-900">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b dark:border-gray-700">
-        <div className="flex items-center gap-4 flex-1">
+      <div className="px-4 sm:px-6 py-4 border-b dark:border-gray-700">
+        <div className="flex items-center gap-3 mb-3">
           <button
             onClick={onCancel}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition"
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition flex-shrink-0"
             title="Back"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -145,11 +145,11 @@ export default function SOPEditor({
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="Document Title"
-            className="flex-1 text-xl font-semibold bg-transparent border-none outline-none focus:ring-0 placeholder:text-gray-400 dark:placeholder:text-gray-500"
+            placeholder="Enter document title..."
+            className="flex-1 text-lg sm:text-xl font-semibold bg-transparent border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-400 dark:placeholder:text-gray-500"
           />
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           {templates.length > 0 && (
             <button
               onClick={() => setShowTemplateModal(true)}
@@ -158,7 +158,8 @@ export default function SOPEditor({
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
-              Load Template
+              <span className="hidden sm:inline">Load Template</span>
+              <span className="sm:hidden">Template</span>
             </button>
           )}
           {onSaveAsTemplate && (
@@ -169,37 +170,10 @@ export default function SOPEditor({
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
               </svg>
-              Save as Template
+              <span className="hidden sm:inline">Save as Template</span>
+              <span className="sm:hidden">Template</span>
             </button>
           )}
-          <button
-            onClick={onCancel}
-            className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition disabled:opacity-50 flex items-center gap-2"
-          >
-            {saving ? (
-              <>
-                <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                </svg>
-                Saving...
-              </>
-            ) : (
-              <>
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                {isNew ? "Create Document" : "Save Changes"}
-              </>
-            )}
-          </button>
         </div>
       </div>
 
@@ -211,7 +185,7 @@ export default function SOPEditor({
       )}
 
       {/* Editor */}
-      <div className="flex-1 overflow-auto p-6">
+      <div className="flex-1 overflow-auto p-4 sm:p-6 pb-24">
         <div className="max-w-5xl mx-auto">
           <ReactQuill
             theme="snow"
@@ -220,8 +194,42 @@ export default function SOPEditor({
             modules={modules}
             formats={formats}
             placeholder="Start writing your SOP document..."
-            className="h-[calc(100vh-280px)] bg-white dark:bg-gray-800 rounded-lg"
+            className="h-[calc(100vh-350px)] bg-white dark:bg-gray-800 rounded-lg"
           />
+        </div>
+      </div>
+
+      {/* Fixed Footer with Save Button */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t dark:border-gray-700 px-4 sm:px-6 py-4 shadow-lg z-40">
+        <div className="max-w-5xl mx-auto flex items-center justify-between gap-4">
+          <button
+            onClick={onCancel}
+            className="px-6 py-3 text-sm font-medium text-gray-600 dark:text-gray-400 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-lg transition"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="px-8 py-3 text-sm font-medium bg-green-600 hover:bg-green-700 text-white rounded-lg transition disabled:opacity-50 flex items-center gap-2 shadow-md"
+          >
+            {saving ? (
+              <>
+                <svg className="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+                Saving...
+              </>
+            ) : (
+              <>
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                {isNew ? "💾 Save Document" : "💾 Save Changes"}
+              </>
+            )}
+          </button>
         </div>
       </div>
 
