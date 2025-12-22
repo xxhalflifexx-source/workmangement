@@ -143,15 +143,54 @@ export default function SOPViewer({
 
       {/* Custom styles for content */}
       <style jsx global>{`
+        .sop-content {
+          color: #111827 !important;
+        }
+        .dark .sop-content {
+          color: #f9fafb !important;
+        }
+        .sop-content * {
+          color: inherit;
+        }
+        .sop-content p,
+        .sop-content div,
+        .sop-content span,
+        .sop-content li,
+        .sop-content td,
+        .sop-content th {
+          color: #111827 !important;
+        }
+        .dark .sop-content p,
+        .dark .sop-content div,
+        .dark .sop-content span,
+        .dark .sop-content li,
+        .dark .sop-content td,
+        .dark .sop-content th {
+          color: #f9fafb !important;
+        }
+        .sop-content h1,
+        .sop-content h2,
+        .sop-content h3,
+        .sop-content h4,
+        .sop-content h5,
+        .sop-content h6 {
+          color: #111827 !important;
+          margin-top: 24px;
+          margin-bottom: 16px;
+        }
+        .dark .sop-content h1,
+        .dark .sop-content h2,
+        .dark .sop-content h3,
+        .dark .sop-content h4,
+        .dark .sop-content h5,
+        .dark .sop-content h6 {
+          color: #f9fafb !important;
+        }
         .sop-content img {
           max-width: 100%;
           height: auto;
           border-radius: 8px;
           margin: 16px 0;
-        }
-        .sop-content h1, .sop-content h2, .sop-content h3, .sop-content h4 {
-          margin-top: 24px;
-          margin-bottom: 16px;
         }
         .sop-content p {
           margin-bottom: 16px;
@@ -168,32 +207,39 @@ export default function SOPViewer({
           border-left: 4px solid #3b82f6;
           padding-left: 16px;
           margin: 16px 0;
-          color: #6b7280;
+          color: #6b7280 !important;
         }
         .dark .sop-content blockquote {
-          color: #9ca3af;
+          color: #9ca3af !important;
         }
         .sop-content pre {
-          background: #f3f4f6;
+          background: #f3f4f6 !important;
           padding: 16px;
           border-radius: 8px;
           overflow-x: auto;
+          color: #111827 !important;
         }
         .dark .sop-content pre {
-          background: #1f2937;
+          background: #1f2937 !important;
+          color: #f9fafb !important;
         }
         .sop-content code {
-          background: #f3f4f6;
+          background: #f3f4f6 !important;
           padding: 2px 6px;
           border-radius: 4px;
           font-size: 14px;
+          color: #111827 !important;
         }
         .dark .sop-content code {
-          background: #374151;
+          background: #374151 !important;
+          color: #f9fafb !important;
         }
         .sop-content a {
-          color: #3b82f6;
+          color: #3b82f6 !important;
           text-decoration: underline;
+        }
+        .dark .sop-content a {
+          color: #60a5fa !important;
         }
         .sop-content table {
           width: 100%;
@@ -209,11 +255,27 @@ export default function SOPViewer({
           border-color: #374151;
         }
         .sop-content th {
-          background: #f9fafb;
+          background: #f9fafb !important;
           font-weight: 600;
+          color: #111827 !important;
         }
         .dark .sop-content th {
-          background: #1f2937;
+          background: #1f2937 !important;
+          color: #f9fafb !important;
+        }
+        /* Override any inline background colors that might cause visibility issues */
+        .sop-content [style*="background"] {
+          background: transparent !important;
+        }
+        .sop-content [style*="background-color"] {
+          background-color: transparent !important;
+        }
+        /* Ensure text in elements with background colors is visible */
+        .sop-content [style*="background"] * {
+          color: #111827 !important;
+        }
+        .dark .sop-content [style*="background"] * {
+          color: #f9fafb !important;
         }
       `}</style>
     </div>
