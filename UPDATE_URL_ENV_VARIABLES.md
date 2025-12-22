@@ -1,0 +1,167 @@
+# 🔄 How to Update Environment Variables for New Domain
+
+This guide will help you update the environment variables to use `https://shoptofield.com/app` instead of the old Vercel URL.
+
+---
+
+## 📋 What Needs to Be Updated
+
+You need to update these environment variables:
+- `NEXTAUTH_URL` → Change to `https://shoptofield.com/app`
+- `PRODUCTION_URL` → Change to `https://shoptofield.com/app` (if it exists)
+- `CAPACITOR_SERVER_URL` → Change to `https://shoptofield.com/app` (if it exists)
+
+---
+
+## 🎯 Step 1: Update Vercel Environment Variables (Production)
+
+This is the most important step - your live website uses these variables.
+
+### How to Access Vercel Dashboard:
+
+1. **Go to Vercel Dashboard:**
+   - Visit: **https://vercel.com**
+   - Log in with your account
+
+2. **Find Your Project:**
+   - Look for your project in the dashboard
+   - Click on the project name to open it
+
+3. **Go to Environment Variables:**
+   - Click **"Settings"** in the top menu
+   - Click **"Environment Variables"** in the left sidebar
+
+4. **Update Each Variable:**
+
+   **For `NEXTAUTH_URL`:**
+   - You may see **two entries** for `NEXTAUTH_URL` - one for Production and one for Development/Preview
+   - **For Production `NEXTAUTH_URL`:**
+     - Find the variable `NEXTAUTH_URL` that's set for **Production** environment
+     - Click the **pencil/edit icon** (or click on the variable)
+     - Change the value from `https://nextjs-auth-roles.vercel.app` to `https://shoptofield.com/app`
+     - Make sure it's enabled for **Production** environment
+     - Click **"Save"**
+   - **For Development/Preview `NEXTAUTH_URL`:**
+     - Find the variable `NEXTAUTH_URL` that's set for **Development** or **Preview** environment
+     - Click the **pencil/edit icon**
+     - Change the value to `https://shoptofield.com/app` (same as production)
+     - Make sure it's enabled for **Preview** and **Development** environments
+     - Click **"Save"**
+   - **Note:** If you only see one `NEXTAUTH_URL` entry, make sure it's enabled for all environments (Production, Preview, Development, and Build)
+
+   **For `PRODUCTION_URL` (if it exists):**
+   - Find the variable `PRODUCTION_URL` in the list
+   - Click the **pencil/edit icon**
+   - Change the value to `https://shoptofield.com/app`
+   - Make sure it's enabled for **Production**, **Preview**, and **Build** environments
+   - Click **"Save"**
+
+   **For `CAPACITOR_SERVER_URL` (if it exists):**
+   - Find the variable `CAPACITOR_SERVER_URL` in the list
+   - Click the **pencil/edit icon**
+   - Change the value to `https://shoptofield.com/app`
+   - Make sure it's enabled for **Production**, **Preview**, and **Build** environments
+   - Click **"Save"**
+
+5. **Redeploy Your Application:**
+   - After updating the variables, you need to trigger a new deployment
+   - Go to **"Deployments"** tab
+   - Click **"Redeploy"** on the latest deployment, OR
+   - Push a new commit to trigger automatic deployment
+
+---
+
+## 🖥️ Step 2: Update Local .env File (For Development)
+
+If you have a `.env` file in your project for local development:
+
+1. **Open the `.env` file:**
+   - Navigate to your project folder
+   - Open the `.env` file (if it doesn't exist, copy `ENV.EXAMPLE` to `.env`)
+
+2. **Update the Variables:**
+   ```env
+   # Change this line:
+   NEXTAUTH_URL=https://nextjs-auth-roles.vercel.app
+   
+   # To this:
+   NEXTAUTH_URL=https://shoptofield.com/app
+   ```
+
+   **If you have `PRODUCTION_URL`:**
+   ```env
+   # Change this:
+   PRODUCTION_URL=https://nextjs-auth-roles.vercel.app
+   
+   # To this:
+   PRODUCTION_URL=https://shoptofield.com/app
+   ```
+
+   **If you have `CAPACITOR_SERVER_URL`:**
+   ```env
+   # Change this:
+   CAPACITOR_SERVER_URL=https://nextjs-auth-roles.vercel.app
+   
+   # To this:
+   CAPACITOR_SERVER_URL=https://shoptofield.com/app
+   ```
+
+3. **Save the file**
+
+---
+
+## ✅ Step 3: Verify the Changes
+
+After updating:
+
+1. **Check Vercel Dashboard:**
+   - Go back to Environment Variables
+   - Verify all values show `https://shoptofield.com/app`
+
+2. **Test Your Application:**
+   - Wait for the redeployment to complete
+   - Visit `https://shoptofield.com/app`
+   - Test email links (password reset, job notifications) to make sure they use the new URL
+
+---
+
+## 🆘 Troubleshooting
+
+### "I can't find the variable in Vercel"
+- Some variables might not exist yet. That's okay!
+- Only update the ones that exist
+- The code has fallback values, so missing variables won't break anything
+
+### "I don't have access to Vercel"
+- Ask your boss or team lead for access
+- Or ask them to update the variables for you
+
+### "The changes aren't working"
+- Make sure you **redeployed** after updating variables
+- Check that variables are enabled for **Production** environment
+- Wait a few minutes for changes to propagate
+
+### "I don't have a .env file"
+- That's fine! The `.env` file is only for local development
+- The important part is updating Vercel (Step 1)
+
+---
+
+## 📝 Quick Checklist
+
+- [ ] Updated `NEXTAUTH_URL` in Vercel Dashboard
+- [ ] Updated `PRODUCTION_URL` in Vercel Dashboard (if it exists)
+- [ ] Updated `CAPACITOR_SERVER_URL` in Vercel Dashboard (if it exists)
+- [ ] Made sure variables are enabled for Production, Preview, and Build
+- [ ] Triggered a redeployment in Vercel
+- [ ] Updated local `.env` file (if you have one)
+- [ ] Tested the application to verify it works
+
+---
+
+## 🎉 You're Done!
+
+Once you've updated the Vercel environment variables and redeployed, your application will use the new domain `https://shoptofield.com/app` for all links and redirects.
+
+**Note:** The code changes have already been made. You just need to update the environment variables in Vercel and redeploy!
+
