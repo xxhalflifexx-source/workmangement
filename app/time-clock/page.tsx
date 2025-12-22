@@ -47,7 +47,7 @@ export default function TimeClockPage() {
   const [success, setSuccess] = useState<string | undefined>();
   const [elapsedTime, setElapsedTime] = useState("");
   const [notes, setNotes] = useState("");
-  const [clockInDescription, setClockInDescription] = useState("Shop Work / Unbilled Time");
+  const [clockInDescription, setClockInDescription] = useState("");
   const [descriptionError, setDescriptionError] = useState<string | undefined>();
   const [showClockOutConfirm, setShowClockOutConfirm] = useState(false);
   const [showStartBreakConfirm, setShowStartBreakConfirm] = useState(false);
@@ -168,7 +168,20 @@ export default function TimeClockPage() {
     setLoading(true);
 
     try {
-      const res = await clockIn(selectedJobId || undefined, clockInDescription.trim() || undefined);
+      // When no job is selected, automatically categorize as "Shop Work / Unbilled Time"
+      // If user provided a description, prepend the category; otherwise use just the category
+      let finalDescription = clockInDescription.trim();
+      if (!selectedJobId) {
+        if (finalDescription) {
+          // User provided description, but it's still unbilled time
+          finalDescription = `Shop Work / Unbilled Time: ${finalDescription}`;
+        } else {
+          // No description provided, use default category
+          finalDescription = "Shop Work / Unbilled Time";
+        }
+      }
+      
+      const res = await clockIn(selectedJobId || undefined, finalDescription || undefined);
 
     if (!res.ok) {
         setError(res.error || "Failed to clock in");
@@ -181,7 +194,7 @@ export default function TimeClockPage() {
         : "Clocked in successfully!"
     );
     setSelectedJobId("");
-      setClockInDescription("Shop Work / Unbilled Time");
+      setClockInDescription("");
       await loadData();
     } catch (err: any) {
       console.error("Clock in error:", err);
@@ -458,8 +471,7 @@ export default function TimeClockPage() {
                             // Clear description when job is selected (not needed for job clock-ins)
                             setClockInDescription("");
                           } else {
-                            // If job is deselected, set default description
-                            setClockInDescription("Shop Work / Unbilled Time");
+                            // If job is deselected, clear description (will be auto-categorized on clock-in)
                             if (!clockInDescription.trim()) {
                               setDescriptionError(undefined); // Clear error, will show on submit
                             }
@@ -505,7 +517,7 @@ export default function TimeClockPage() {
                     )}
                     {!selectedJobId && (
                       <p className="mt-1 text-xs text-gray-500">
-                        A description is required when clocking in without selecting a job.
+                        A description is required when clocking in without selecting a job. This will be automatically categorized as "Shop Work / Unbilled Time".
                       </p>
                     )}
                   </div>
