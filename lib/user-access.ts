@@ -47,6 +47,11 @@ export async function checkModuleAccess(module: ModulePermission): Promise<boole
     return true;
   }
 
+  // Operations Common is visible to all authenticated users by default
+  if (module === "operationsCommon") {
+    return true;
+  }
+
   const userPerms = await getUserPermissions(userId);
   if (!userPerms) {
     return false;

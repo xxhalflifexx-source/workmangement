@@ -134,8 +134,10 @@ export async function updateSOPDocument(
     }
 
     const userRole = (session.user as any).role;
-    if (userRole !== "ADMIN" && userRole !== "MANAGER" && userRole !== "EMPLOYEE") {
-      return { ok: false, error: "Unauthorized" };
+    // Only Admin and Managers can update SOP documents (full access)
+    // Employees have view-only access
+    if (userRole !== "ADMIN" && userRole !== "MANAGER") {
+      return { ok: false, error: "Unauthorized: Only admins and managers can update documents" };
     }
 
     const updateData: any = { updatedAt: new Date() };

@@ -103,7 +103,12 @@ export default function OperationsCommonPage() {
   const { data: session } = useSession();
   const userRole = (session?.user as any)?.role;
   const isAdmin = userRole === "ADMIN";
-  const canView = userRole === "ADMIN" || userRole === "MANAGER" || userRole === "EMPLOYEE";
+  const isManager = userRole === "MANAGER";
+  // Operations Common is visible to all authenticated users by default
+  // Full access: ADMIN, MANAGER (Upper management)
+  // View-only: EMPLOYEE (with optional restrictions that don't disrupt usability)
+  const canView = true; // All authenticated users can view
+  const canEdit = isAdmin || isManager; // Only Admin and Managers can create/edit/delete
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | undefined>();
@@ -206,7 +211,7 @@ export default function OperationsCommonPage() {
     if (canView) {
       loadData();
       // Ensure Employee Handbook exists (only runs once on mount for admins/managers)
-      if (isAdmin || userRole === "MANAGER") {
+      if (canEdit) {
         ensureEmployeeHandbook().catch(console.error);
       }
     }
@@ -997,7 +1002,7 @@ export default function OperationsCommonPage() {
                           >
                             {downloadingFolder === folder.id ? "Creating ZIP..." : "Download"}
                           </button>
-                          {isAdmin && (
+                          {canEdit && (
                             <>
                               <button
                                 onClick={() => {
@@ -1095,7 +1100,7 @@ export default function OperationsCommonPage() {
                           >
                             Download
                           </button>
-                          {isAdmin && (
+                          {canEdit && (
                             <>
                               <button
                                 onClick={() => {
@@ -1182,7 +1187,7 @@ export default function OperationsCommonPage() {
                           >
                             View
                           </button>
-                          {isAdmin && (
+                          {canEdit && (
                             <>
                               <button
                                 onClick={() => {
@@ -1218,7 +1223,7 @@ export default function OperationsCommonPage() {
                         <p className="text-gray-500 text-sm break-words px-4">
                           {searchQuery || filterType !== "ALL"
                             ? "No files, folders, or documents match your search criteria."
-                            : "No files, folders, or documents yet. " + (isAdmin ? "Create a folder, document, or upload files to get started." : "")}
+                            : "No files, folders, or documents yet. " + (canEdit ? "Create a folder, document, or upload files to get started." : "")}
                         </p>
                       </td>
                     </tr>
@@ -1725,8 +1730,8 @@ export default function OperationsCommonPage() {
               createdBy={viewingDocument.creator}
               createdAt={viewingDocument.createdAt}
               updatedAt={viewingDocument.updatedAt}
-              canEdit={isAdmin}
-              canDelete={isAdmin}
+              canEdit={canEdit}
+              canDelete={canEdit}
               onEdit={() => {
                 setShowSOPViewer(false);
                 setEditingDocument(viewingDocument);
