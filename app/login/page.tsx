@@ -11,7 +11,10 @@ export default function LoginPage() {
   const searchParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
   const verified = searchParams?.get("verified");
   const passwordReset = searchParams?.get("passwordReset");
-  const [error, setError] = useState<string | undefined>();
+  const errorParam = searchParams?.get("error");
+  const [error, setError] = useState<string | undefined>(
+    errorParam ? decodeURIComponent(errorParam) : undefined
+  );
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(
     verified === "true" 
@@ -27,6 +30,16 @@ export default function LoginPage() {
       router.replace("/dashboard");
     }
   }, [status, session, router]);
+
+  // Clear error from URL after displaying it
+  useEffect(() => {
+    if (errorParam && typeof window !== "undefined") {
+      // Remove error from URL without reloading
+      const url = new URL(window.location.href);
+      url.searchParams.delete("error");
+      window.history.replaceState({}, "", url.toString());
+    }
+  }, [errorParam]);
 
   // Show loading while checking session
   if (status === "loading") {
@@ -88,17 +101,36 @@ export default function LoginPage() {
                 const email = formData.get("email") as string;
                 const password = formData.get("password") as string;
                 
-                // Use NextAuth's built-in redirect - this was the original working approach
-                // For iOS, NextAuth handles the redirect internally which is more reliable
-                await signIn("credentials", {
+                // Use redirect: false to catch errors properly and display them on the login page
+                const result = await signIn("credentials", {
                   email,
                   password,
-                  redirect: true,
+                  redirect: false,
                   callbackUrl: "/dashboard",
                 });
                 
-                // If redirect is true, signIn handles everything
-                // We don't need to do anything else here
+                // Check if signIn was successful
+                if (result?.error) {
+                  // Authentication failed - show error message
+                  // NextAuth may return error codes, but our authorize function throws Error objects
+                  // The error message should be passed through, but we handle common codes as fallback
+                  let errorMessage = result.error;
+                  
+                  // Map common NextAuth error codes to user-friendly messages
+                  if (result.error === "CredentialsSignin") {
+                    errorMessage = "Wrong username/password";
+                  }
+                  
+                  setError(errorMessage);
+                  setLoading(false);
+                } else if (result?.ok) {
+                  // Authentication successful - redirect to dashboard
+                  router.push("/dashboard");
+                } else {
+                  // Unexpected result
+                  setError("An unexpected error occurred. Please try again.");
+                  setLoading(false);
+                }
               } catch (err: any) {
                 console.error("[Login] Error:", err);
                 // Show user-friendly error message
@@ -129,7 +161,27 @@ export default function LoginPage() {
                 required
               />
             </div>
-            {error && <p className="text-red-600 text-sm">{error}</p>}
+            {error && (
+              <div className={`px-4 py-3 rounded text-sm ${
+                error.includes("pending approval") || error.includes("waiting for approval")
+                  ? "bg-yellow-50 border border-yellow-200 text-yellow-800"
+                  : error.includes("rejected")
+                  ? "bg-red-50 border border-red-200 text-red-700"
+                  : error.includes("verify")
+                  ? "bg-blue-50 border border-blue-200 text-blue-700"
+                  : "bg-red-50 border border-red-200 text-red-700"
+              }`}>
+                {error.includes("pending approval") || error.includes("waiting for approval") ? (
+                  <div>
+                    <strong>⚠️ Account Pending:</strong> {error}
+                  </div>
+                ) : (
+                  <div>
+                    <strong>❌ Error:</strong> {error}
+                  </div>
+                )}
+              </div>
+            )}
             <div className="text-right">
               <a href="/forgot-password" className="text-sm text-blue-600 hover:underline">
                 Forgot password?

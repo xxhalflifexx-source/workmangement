@@ -111,7 +111,7 @@ export const authOptions: NextAuthOptions = {
         if (user.status && user.status !== "APPROVED") {
           console.log("[auth] user not approved, status:", user.status);
           if (user.status === "PENDING") {
-            throw new Error("Your account is waiting for approval from a manager or admin.");
+            throw new Error("Your account is pending approval. Please contact management.");
           }
           if (user.status === "REJECTED") {
             throw new Error("Your account has been rejected. Please contact your manager.");
