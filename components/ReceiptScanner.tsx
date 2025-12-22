@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { extractAmountFromText, extractAllAmounts, extractAmountsWithContext } from "@/lib/receipt-ocr";
-import { detectReceiptFormat, ReceiptFormat } from "@/lib/receipt-formats";
+import { detectReceiptFormat, ReceiptFormat, extractVendorName } from "@/lib/receipt-formats";
 import { 
   recordSuccess, 
   recordCorrection, 
@@ -53,6 +53,7 @@ export default function ReceiptScanner({
   const [amountApproved, setAmountApproved] = useState<boolean | null>(null);
   const [rejectedStoreName, setRejectedStoreName] = useState<string>("");
   const [manualStoreName, setManualStoreName] = useState<string>(""); // For when no format detected
+  const [extractedVendorName, setExtractedVendorName] = useState<string | null>(null); // Extracted vendor name from OCR
   const [ocrCompleted, setOcrCompleted] = useState(false); // Track if OCR has been done
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -151,6 +152,7 @@ export default function ReceiptScanner({
     setAmountApproved(null);
     setRejectedStoreName("");
     setManualStoreName("");
+    setExtractedVendorName(null);
     setOcrCompleted(false);
     setDetectedFormat(null);
 
@@ -375,6 +377,21 @@ export default function ReceiptScanner({
       // Update detected format if found in best result
       if (bestResult.format) {
         setDetectedFormat(bestResult.format);
+        
+        // If generic format detected, try to extract actual vendor name
+        if (bestResult.format.id === "metal-supplier-generic" || bestResult.format.storeName === "Metal Supplier") {
+          const vendorName = extractVendorName(bestResult.text || "");
+          if (vendorName) {
+            console.log("[ReceiptScanner] Extracted vendor name:", vendorName);
+            setExtractedVendorName(vendorName);
+          } else {
+            setExtractedVendorName(null);
+          }
+        } else {
+          setExtractedVendorName(null);
+        }
+      } else {
+        setExtractedVendorName(null);
       }
       
       setSuccessfulStrategy(bestResult.strategy);
@@ -548,9 +565,11 @@ export default function ReceiptScanner({
   const handleApproveStoreName = () => {
     if (detectedFormat && currentOcrResult) {
       setStoreNameApproved(true);
+      // Use extracted vendor name if available, otherwise use format name
+      const approvedName = extractedVendorName || detectedFormat.storeName;
       // Immediately record learning
       recordFormatDetectionSuccess(
-        detectedFormat.storeName,
+        approvedName,
         detectedFormat,
         currentOcrResult.text
       );
@@ -581,7 +600,8 @@ export default function ReceiptScanner({
   const getEffectiveStoreName = (): string | undefined => {
     if (detectedFormat) {
       if (storeNameApproved === true) {
-        return detectedFormat.storeName;
+        // Use extracted vendor name if available, otherwise use format name
+        return extractedVendorName || detectedFormat.storeName;
       } else if (storeNameApproved === false && rejectedStoreName.trim()) {
         return rejectedStoreName.trim();
       }
@@ -871,7 +891,14 @@ export default function ReceiptScanner({
                   <>
                     <div className="mb-3">
                       <p className="text-sm text-gray-600 mb-1">Detected:</p>
-                      <p className="text-lg font-bold text-gray-900">{detectedFormat.storeName}</p>
+                      <p className="text-lg font-bold text-gray-900">
+                        {extractedVendorName || detectedFormat.storeName}
+                      </p>
+                      {extractedVendorName && detectedFormat.storeName !== extractedVendorName && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          (Format: {detectedFormat.storeName})
+                        </p>
+                      )}
                     </div>
                     {storeNameApproved === null && (
                       <div className="flex gap-2">
@@ -1026,7 +1053,7 @@ export default function ReceiptScanner({
           )}
 
           {/* Manual Entry Fallback (when no amount detected) */}
-          {!extractedAmount && !detectedFormat && !isProcessing && imageFile && (
+          {ocrCompleted && !extractedAmount && !detectedFormat && !isProcessing && imageFile && (
             <div className="bg-yellow-50 border-2 border-yellow-200 rounded-xl p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-bold text-gray-900">

@@ -92,12 +92,15 @@ export const RECEIPT_FORMATS: ReceiptFormat[] = [
     id: "metal-supplier-generic",
     storeName: "Metal Supplier",
     category: "metal-supply",
-    aliases: ["METAL", "STEEL", "ALUMINUM", "SUPPLY"],
+    // Narrowed aliases - require more specific patterns, not just single words
+    aliases: ["METAL SUPPLY", "METAL SUPPLIER", "STEEL COMPANY", "STEEL SUPPLY", "ALUMINUM SUPPLY"],
     patterns: {
       totalKeywords: ["TOTAL", "AMOUNT", "DUE", "BALANCE DUE"],
       totalLocation: "bottom",
       totalLinePattern: /(?:TOTAL|AMOUNT|BALANCE\s*DUE)\s*:?\s*\$?(\d+\.\d{2})/i,
       commonSections: ["SUBTOTAL", "TAX", "SHIPPING", "TOTAL", "BALANCE DUE"],
+      // More specific pattern - require "METAL" or "STEEL" with "SUPPLY" or "COMPANY"
+      storeNamePattern: /(?:METAL|STEEL|ALUMINUM)\s+(?:SUPPLY|SUPPLIER|COMPANY)/i,
     },
     extractionRules: {
       preferBottomPercent: 40,
@@ -276,6 +279,91 @@ export function detectReceiptFormat(ocrText: string): ReceiptFormat | null {
 
   // Only return match if score is significant (at least 50 points)
   return bestScore >= 50 ? bestMatch : null;
+}
+
+/**
+ * Extract vendor name from receipt OCR text
+ * Looks for company names in the top section of the receipt
+ * @param ocrText - Full OCR text from receipt
+ * @returns Extracted vendor name or null if not found
+ */
+export function extractVendorName(ocrText: string): string | null {
+  if (!ocrText || ocrText.trim().length === 0) {
+    return null;
+  }
+
+  const lines = ocrText.split(/\n/).map(line => line.trim()).filter(line => line.length > 0);
+  if (lines.length === 0) {
+    return null;
+  }
+
+  // Look in top 20% of receipt (header section)
+  const headerLines = Math.max(1, Math.floor(lines.length * 0.2));
+  const headerSection = lines.slice(0, headerLines);
+
+  // Common words to filter out (not company names)
+  const filterWords = new Set([
+    "RECEIPT", "INVOICE", "ORDER", "DATE", "TIME", "CASHIER", "REGISTER",
+    "THANK", "YOU", "VISIT", "AGAIN", "STORE", "NUMBER", "PHONE", "ADDRESS",
+    "TEL", "FAX", "EMAIL", "WEB", "WWW", "HTTP", "HTTPS", "COM", "NET", "ORG",
+    "CARD", "PAYMENT", "METHOD", "TOTAL", "SUBTOTAL", "TAX", "AMOUNT", "DUE",
+    "BALANCE", "CHANGE", "CASH", "CREDIT", "DEBIT", "REFUND", "RETURN",
+    "ITEM", "QTY", "QUANTITY", "PRICE", "EACH", "DISCOUNT", "COUPON",
+    "SALE", "SPECIAL", "PROMOTION", "OFFER", "VALID", "EXPIRES", "EXP",
+    "FROM", "TO", "BETWEEN", "AND", "OR", "THE", "A", "AN", "OF", "IN", "ON",
+    "AT", "BY", "FOR", "WITH", "IS", "ARE", "WAS", "WERE", "BE", "BEEN",
+    "HAVE", "HAS", "HAD", "DO", "DOES", "DID", "WILL", "WOULD", "SHOULD",
+    "COULD", "MAY", "MIGHT", "MUST", "CAN", "CANNOT", "NO", "NOT", "YES",
+    "PLEASE", "CALL", "CONTACT", "INFO", "INFORMATION", "CUSTOMER", "SERVICE",
+    "SUPPORT", "HELP", "QUESTIONS", "CONCERNS", "COMPLAINTS", "FEEDBACK",
+    "REVIEW", "RATING", "STARS", "LIKE", "SHARE", "FOLLOW", "SUBSCRIBE",
+    "NEWSLETTER", "SIGN", "UP", "JOIN", "MEMBER", "MEMBERSHIP", "ACCOUNT",
+    "LOGIN", "LOGOUT", "PASSWORD", "USERNAME", "EMAIL", "ADDRESS", "ZIP",
+    "CODE", "POSTAL", "STATE", "CITY", "STREET", "AVENUE", "ROAD", "DRIVE",
+    "LANE", "BOULEVARD", "BLVD", "AVE", "ST", "RD", "DR", "LN", "CT", "CIRCLE",
+    "CIR", "PLACE", "PL", "PARKWAY", "PKWY", "WAY", "TRAIL", "TRL", "COURT",
+    "COURT", "SQUARE", "SQ", "TERRACE", "TER", "PARK", "PASS", "PASSAGE",
+    "PASSAGE", "PROMENADE", "PROM", "QUAY", "QUAY", "RIDGE", "RIDGE", "RISE",
+    "RISE", "ROUNDABOUT", "RABOUT", "ROW", "ROW", "RUN", "RUN", "SENTINEL",
+    "SENTINEL", "SPUR", "SPUR", "STRAIGHT", "STRAIGHT", "STRAND", "STRAND",
+    "STREAM", "STREAM", "STRIP", "STRIP", "SUBDIVISION", "SUBDIV", "SUMMIT",
+    "SUMMIT", "TARN", "TARN", "TERRACE", "TER", "THOROUGHFARE", "THOROUGH",
+    "THOROUGH", "TRACK", "TRACK", "TRAIL", "TRL", "TURN", "TURN", "TURNPIKE",
+    "TURNPIKE", "UNDERPASS", "UNDERPASS", "VALE", "VALE", "VALLEY", "VALLEY",
+    "VIADUCT", "VIADUCT", "VIEW", "VIEW", "VILLAGE", "VILLAGE", "VILLAS",
+    "VILLAS", "VISTA", "VISTA", "WALK", "WALK", "WALKWAY", "WALKWAY", "WAY",
+    "WAY", "WHARF", "WHARF", "WOOD", "WOOD", "WYND", "WYND", "YARD", "YARD",
+  ]);
+
+  // Look for substantial lines (2+ words, not just numbers/symbols)
+  for (const line of headerSection) {
+    // Skip lines that are mostly numbers, dates, or symbols
+    if (/^[\d\s\-\/\.\:]+$/.test(line)) {
+      continue;
+    }
+
+    // Skip lines that are too short (less than 3 characters)
+    if (line.length < 3) {
+      continue;
+    }
+
+    // Skip lines that are mostly common filter words
+    const words = line.split(/\s+/).filter(w => w.length > 0);
+    const filteredWords = words.filter(w => !filterWords.has(w.toUpperCase()));
+    
+    // Need at least 2 non-filter words to be considered a company name
+    if (filteredWords.length >= 2) {
+      // Clean up the line - remove extra spaces, keep original capitalization
+      const cleaned = line.replace(/\s+/g, " ").trim();
+      
+      // Don't return if it's just common receipt text
+      if (cleaned.length >= 5 && !/^(RECEIPT|INVOICE|ORDER|DATE|TIME)/i.test(cleaned)) {
+        return cleaned;
+      }
+    }
+  }
+
+  return null;
 }
 
 /**

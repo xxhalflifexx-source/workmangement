@@ -106,6 +106,42 @@ export function extractAmountFromText(text: string, format?: ReceiptFormat | nul
     learnedPatternMap.set(hint.pattern, hint.priority);
   }
 
+  // PRIORITY 0: FIRST PASS - Look ONLY in bottom section for "TOTAL" keyword
+  // If found, use it immediately (most reliable indicator)
+  for (let i = bottomThreshold; i < lines.length; i++) {
+    const line = lines[i];
+    
+    // Look for "total" keyword (case insensitive, flexible spacing)
+    const totalKeywordMatch = line.match(/\b(total|grand\s*total|final\s*total|amount\s*total)\b/i);
+    if (totalKeywordMatch) {
+      // Pattern 1: "Total $XX.XX" or "Total: $XX.XX" or "Total XX.XX"
+      const pattern1 = line.match(/\btotal\b[:\s]*\$?\s*(\d+\.\d{2})/i);
+      if (pattern1) {
+        const amount = parseFloat(pattern1[1]);
+        const minAmount = format ? format.extractionRules.minAmount : 0;
+        const maxAmount = format ? format.extractionRules.maxAmount : 1000000;
+        
+        if (!isNaN(amount) && amount > minAmount && amount < maxAmount) {
+          // Found TOTAL in bottom section - return immediately!
+          return amount;
+        }
+      }
+      
+      // Pattern 2: Amount at end of line after "total" keyword
+      const endMatch = line.match(/\btotal\b.*?(\d+\.\d{2})\s*$/i);
+      if (endMatch) {
+        const amount = parseFloat(endMatch[1]);
+        const minAmount = format ? format.extractionRules.minAmount : 0;
+        const maxAmount = format ? format.extractionRules.maxAmount : 1000000;
+        
+        if (!isNaN(amount) && amount > minAmount && amount < maxAmount) {
+          // Found TOTAL in bottom section - return immediately!
+          return amount;
+        }
+      }
+    }
+  }
+
   // Priority 1: Lines containing "Total" - Extract amount next to "total" keyword
   // This is the most reliable method - find "total" and get the amount near it
   for (let i = 0; i < lines.length; i++) {
@@ -132,7 +168,7 @@ export function extractAmountFromText(text: string, format?: ReceiptFormat | nul
           amountCandidates.push({
             amount,
             line,
-            priority: (isBottomSection ? 15 : 13) + learnedBoost, // Boost with learned pattern
+            priority: (isBottomSection ? 25 : 13) + learnedBoost, // MUCH higher priority for bottom section
             keyword: "total",
             lineIndex: i,
             isBottomSection,
@@ -156,7 +192,7 @@ export function extractAmountFromText(text: string, format?: ReceiptFormat | nul
           amountCandidates.push({
             amount,
             line,
-            priority: (isBottomSection ? 15 : 13) + learnedBoost,
+            priority: (isBottomSection ? 25 : 13) + learnedBoost, // MUCH higher priority for bottom section
             keyword: "total",
             lineIndex: i,
             isBottomSection,
@@ -187,7 +223,7 @@ export function extractAmountFromText(text: string, format?: ReceiptFormat | nul
             amountCandidates.push({
               amount,
               line,
-              priority: (isBottomSection ? 14 : 12) + learnedBoost, // Boost with learned pattern
+              priority: (isBottomSection ? 24 : 12) + learnedBoost, // MUCH higher priority for bottom section
               keyword: "total",
               lineIndex: i,
               isBottomSection,
@@ -210,7 +246,7 @@ export function extractAmountFromText(text: string, format?: ReceiptFormat | nul
         amountCandidates.push({
           amount,
           line,
-          priority: isBottomSection ? 11 : 9,
+          priority: isBottomSection ? 20 : 9, // Higher priority for bottom section
           keyword: "amount due",
           lineIndex: i,
           isBottomSection,
