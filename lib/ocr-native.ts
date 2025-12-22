@@ -1,12 +1,13 @@
 /**
  * Native OCR wrapper for Capacitor
- * Uses ML Kit (Android) / Vision Framework (iOS) ONLY
- * NO FALLBACK - Native OCR only on mobile devices
+ * Uses ML Kit (Android) / Vision Framework (iOS) for native apps
+ * Falls back to Tesseract.js for web browsers
  */
 
 import { Capacitor } from '@capacitor/core';
 import { isNativeApp } from './camera-native';
 import { TextRecognition } from '@/src/plugins/text-recognition';
+import Tesseract from 'tesseract.js';
 
 export interface OCRResult {
   text: string;
@@ -38,7 +39,7 @@ function isNativeOCRAvailable(): boolean {
   });
   
   if (!isNative) {
-    console.log('[OCR] Not a native platform - OCR not available');
+    console.log('[OCR] Not a native platform - will use Tesseract.js fallback');
     return false;
   }
   
@@ -48,8 +49,7 @@ function isNativeOCRAvailable(): boolean {
 }
 
 /**
- * Recognize text from image using native OCR (ML Kit/Vision) ONLY
- * NO FALLBACK - Will throw error if not in native app
+ * Recognize text from image using native OCR (ML Kit/Vision) or Tesseract.js fallback
  */
 export async function recognizeText(imageFile: File): Promise<OCRResult> {
   console.log('[OCR] Starting OCR recognition...');
@@ -65,35 +65,94 @@ export async function recognizeText(imageFile: File): Promise<OCRResult> {
   console.log('[OCR] Environment check:', {
     isNativeApp: isNative,
     isNativeOCRAvailable: isAvailable,
-    platform: Capacitor.getPlatform(),
   });
   
-  // ONLY use native OCR - no fallback
-  if (!isNative || !isAvailable) {
-    const errorMsg = 'OCR is only available in the native mobile app. Please use the Android or iOS app.';
-    console.error('[OCR] ERROR:', errorMsg);
-    throw new Error(errorMsg);
-  }
-  
-  console.log('[OCR] Using NATIVE OCR (ML Kit/Vision)');
   const startTime = Date.now();
   
+  // Use native OCR if available, otherwise use Tesseract.js
+  if (isNative && isAvailable) {
+    console.log('[OCR] Using NATIVE OCR (ML Kit/Vision)');
+    try {
+      const result = await recognizeTextNative(imageFile);
+      const duration = Date.now() - startTime;
+      console.log('[OCR] Native OCR completed successfully:', {
+        textLength: result.text.length,
+        confidence: result.confidence,
+        duration: `${duration}ms`,
+      });
+      return result;
+    } catch (error: any) {
+      const duration = Date.now() - startTime;
+      console.error('[OCR] Native OCR failed:', {
+        error: error?.message,
+        duration: `${duration}ms`,
+      });
+      throw error;
+    }
+  } else {
+    // Use Tesseract.js for web browsers
+    console.log('[OCR] Using Tesseract.js (web fallback)');
+    try {
+      const result = await recognizeTextTesseract(imageFile);
+      const duration = Date.now() - startTime;
+      console.log('[OCR] Tesseract.js OCR completed successfully:', {
+        textLength: result.text.length,
+        confidence: result.confidence,
+        duration: `${duration}ms`,
+      });
+      return result;
+    } catch (error: any) {
+      const duration = Date.now() - startTime;
+      console.error('[OCR] Tesseract.js OCR failed:', {
+        error: error?.message,
+        duration: `${duration}ms`,
+      });
+      throw error;
+    }
+  }
+}
+
+/**
+ * Tesseract.js OCR for web browsers
+ */
+async function recognizeTextTesseract(imageFile: File): Promise<OCRResult> {
+  console.log('[OCR] Tesseract.js: Starting recognition...');
+  
   try {
-    const result = await recognizeTextNative(imageFile);
-    const duration = Date.now() - startTime;
-    console.log('[OCR] Native OCR completed successfully:', {
-      textLength: result.text.length,
-      confidence: result.confidence,
-      duration: `${duration}ms`,
+    // Create image URL from file
+    const imageUrl = URL.createObjectURL(imageFile);
+    
+    // Use Tesseract.js to recognize text
+    const result = await Tesseract.recognize(
+      imageUrl,
+      'eng',
+      {
+        logger: m => {
+          if (m.status === 'recognizing text') {
+            console.log(`[OCR] Tesseract progress: ${Math.round(m.progress * 100)}%`);
+          }
+        }
+      }
+    );
+    
+    // Clean up blob URL
+    URL.revokeObjectURL(imageUrl);
+    
+    const text = result.data.text || '';
+    const confidence = result.data.confidence || 0;
+    
+    console.log('[OCR] Tesseract.js result:', {
+      textLength: text.length,
+      confidence: confidence,
     });
-    return result;
+    
+    return {
+      text,
+      confidence,
+    };
   } catch (error: any) {
-    const duration = Date.now() - startTime;
-    console.error('[OCR] Native OCR failed:', {
-      error: error?.message,
-      duration: `${duration}ms`,
-    });
-    throw error;
+    console.error('[OCR] Tesseract.js error:', error);
+    throw new Error(`Tesseract OCR failed: ${error?.message || 'Unknown error'}`);
   }
 }
 
