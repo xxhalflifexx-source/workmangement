@@ -343,11 +343,14 @@ export async function getCompanySettings() {
 
   try {
     // Try to get company settings for this organization
-    const settings = ctx.organizationId 
-      ? await prisma.companySettings.findFirst({
-          where: { organizationId: ctx.organizationId }
-        }).catch(() => null)
-      : await prisma.companySettings.findFirst().catch(() => null);
+    // Super admins without orgId can see any settings, regular admins see their org's settings
+    const settings = ctx.isSuperAdmin && !ctx.organizationId
+      ? await prisma.companySettings.findFirst().catch(() => null)
+      : ctx.organizationId 
+        ? await prisma.companySettings.findFirst({
+            where: { organizationId: ctx.organizationId }
+          }).catch(() => null)
+        : await prisma.companySettings.findFirst().catch(() => null);
 
     // If no settings exist or table doesn't exist, return defaults
     if (!settings) {

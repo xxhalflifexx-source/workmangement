@@ -31,8 +31,13 @@ export async function GET(
     return NextResponse.json({ error: "Invoice not found" }, { status: 404 });
   }
 
-  // Get company settings
-  let companySettings = await prisma.companySettings.findFirst();
+  // Get company settings - filter by organization if user has one
+  const userOrganizationId = (session.user as any)?.organizationId || null;
+  let companySettings = userOrganizationId
+    ? await prisma.companySettings.findFirst({
+        where: { organizationId: userOrganizationId }
+      })
+    : await prisma.companySettings.findFirst();
   if (!companySettings) {
     companySettings = {
       id: "",

@@ -6,8 +6,16 @@ import { authOptions } from "@/lib/authOptions";
 
 export async function getCompanySettingsForInvoice() {
   try {
-    // Get company settings
-    let settings = await prisma.companySettings.findFirst();
+    // Get user's organization from session
+    const session = await getServerSession(authOptions);
+    const userOrganizationId = session?.user ? (session.user as any)?.organizationId || null : null;
+    
+    // Get company settings - filter by organization if user has one
+    let settings = userOrganizationId
+      ? await prisma.companySettings.findFirst({
+          where: { organizationId: userOrganizationId }
+        })
+      : await prisma.companySettings.findFirst();
 
     // If no settings exist, return defaults
     if (!settings) {

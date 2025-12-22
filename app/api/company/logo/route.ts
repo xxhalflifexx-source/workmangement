@@ -77,8 +77,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Failed to retrieve logo URL" }, { status: 500 });
     }
 
-    // Persist to company settings (create if missing)
-    const existing = await prisma.companySettings.findFirst().catch(() => null);
+    // Persist to company settings (create if missing) - filter by organization
+    const userOrganizationId = (session.user as any)?.organizationId || null;
+    const existing = userOrganizationId
+      ? await prisma.companySettings.findFirst({
+          where: { organizationId: userOrganizationId }
+        }).catch(() => null)
+      : await prisma.companySettings.findFirst().catch(() => null);
+    
     if (existing) {
       await prisma.companySettings.update({
         where: { id: existing.id },
@@ -89,6 +95,7 @@ export async function POST(request: NextRequest) {
         data: {
           companyName: "Your Company Name",
           logoUrl,
+          organizationId: userOrganizationId, // Multi-tenant support
         },
       });
     }

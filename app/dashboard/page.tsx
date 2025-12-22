@@ -51,11 +51,16 @@ export default async function Dashboard() {
   const unreadCountsRes = await getUnreadCountsByModule();
   const unreadCounts = unreadCountsRes.ok && unreadCountsRes.counts ? unreadCountsRes.counts : {};
 
-  // Get company settings for logo
+  // Get company settings for logo - filter by organization if user has one
   let companyLogoUrl = "";
   let companyName = "Employee Portal";
   try {
-    const companySettings = await prisma.companySettings.findFirst();
+    const userOrganizationId = (user as any)?.organizationId || null;
+    const companySettings = userOrganizationId
+      ? await prisma.companySettings.findFirst({
+          where: { organizationId: userOrganizationId } as any
+        })
+      : await prisma.companySettings.findFirst();
     companyLogoUrl = companySettings?.logoUrl || "";
     companyName = companySettings?.companyName || "Employee Portal";
   } catch (error) {
