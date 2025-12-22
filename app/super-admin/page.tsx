@@ -113,10 +113,10 @@ export default function SuperAdminPage() {
         getSuperAdminDashboardStats(),
       ]);
 
-      if (orgsRes.ok && orgsRes.organizations) {
+      if (orgsRes.ok && 'organizations' in orgsRes) {
         setOrganizations(orgsRes.organizations);
       }
-      if (statsRes.ok && statsRes.stats) {
+      if (statsRes.ok && 'stats' in statsRes) {
         setStats(statsRes.stats);
       }
     } catch (err) {
