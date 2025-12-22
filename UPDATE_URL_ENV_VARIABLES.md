@@ -63,11 +63,13 @@ This is the most important step - your live website uses these variables.
    - Make sure it's enabled for **Production**, **Preview**, and **Build** environments
    - Click **"Save"**
 
-5. **Redeploy Your Application:**
-   - After updating the variables, you need to trigger a new deployment
+5. **Redeploy Your Application (CRITICAL!):**
+   - **Environment variables only take effect after redeployment!**
    - Go to **"Deployments"** tab
-   - Click **"Redeploy"** on the latest deployment, OR
-   - Push a new commit to trigger automatic deployment
+   - Find the latest deployment
+   - Click **"..."** (three dots menu) → **"Redeploy"**
+   - Wait for the deployment to complete (usually 2-5 minutes)
+   - **OR** push a new commit to trigger automatic deployment
 
 ---
 
@@ -125,6 +127,64 @@ After updating:
 
 ---
 
+## 🌐 Step 4: Check/Update Domain Configuration in Vercel
+
+**Important distinction:**
+- **Domain Configuration** (Settings → Domains) = Which domain serves your app
+- **Environment Variables** (Settings → Environment Variables) = What URL your app uses in emails/links
+
+### If `shoptofield.com` is Already Configured:
+
+1. **Check Existing Domain:**
+   - Go to Vercel Dashboard → Your Project
+   - Click **"Settings"** → **"Domains"**
+   - Look for `shoptofield.com` in the list
+   - If it's there and verified ✅, you're good! Just update environment variables (Step 1)
+
+2. **Edit Existing Domain (if needed):**
+   - If the domain exists but needs changes, click on it
+   - You can edit DNS records or domain settings
+   - No need to add a new domain
+
+### If `shoptofield.com` is NOT Configured Yet:
+
+1. **Go to Vercel Dashboard:**
+   - Visit: **https://vercel.com**
+   - Open your project
+
+2. **Go to Domain Settings:**
+   - Click **"Settings"** in the top menu
+   - Click **"Domains"** in the left sidebar
+
+3. **Add Your Domain:**
+   - Enter `shoptofield.com` in the domain field
+   - Click **"Add"** or **"Configure"**
+   - Follow Vercel's instructions to add DNS records
+
+4. **Wait for DNS Propagation:**
+   - DNS changes can take up to 48 hours (usually much faster)
+   - Vercel will show when the domain is verified
+
+### About the `/app` Path:
+
+**Important:** Vercel serves Next.js apps at the root domain. If you see `shoptofield.com/app` in your browser:
+- The domain might already be configured to serve at root (`shoptofield.com`)
+- The `/app` might be a path in your Next.js app, not a domain configuration
+- **Just update the environment variables to match what you see in the browser**
+
+### Quick Check:
+
+- **If you can already access `shoptofield.com` or `shoptofield.com/app` in your browser:**
+  - ✅ Domain is already configured
+  - ✅ Just update environment variables (Step 1) and redeploy
+  - ✅ No need to change domain settings
+
+- **If you still see `nextjs-auth-roles.vercel.app` in your browser:**
+  - You need to configure the custom domain first
+  - Then update environment variables
+
+---
+
 ## 🆘 Troubleshooting
 
 ### "I can't find the variable in Vercel"
@@ -136,14 +196,44 @@ After updating:
 - Ask your boss or team lead for access
 - Or ask them to update the variables for you
 
+### "The URL in my browser still shows the old domain"
+**This is the most common issue!** Here's what to check:
+
+1. **Is the domain already configured?**
+   - Go to Vercel → Settings → Domains
+   - Check if `shoptofield.com` is already in the list
+   - If YES: Domain is configured, just update environment variables (Step 1)
+   - If NO: You need to add the domain first (see Step 4)
+
+2. **Did you redeploy after updating variables?**
+   - Environment variables only take effect after redeployment
+   - Go to Deployments → Click "Redeploy" on the latest deployment
+
+3. **Is the domain pointing to Vercel?**
+   - Check your DNS settings
+   - Make sure DNS records are configured correctly
+   - Vercel will show you what DNS records to add
+
+4. **Try clearing browser cache:**
+   - Hard refresh: `Ctrl+Shift+R` (Windows) or `Cmd+Shift+R` (Mac)
+   - Or clear browser cache completely
+
 ### "The changes aren't working"
 - Make sure you **redeployed** after updating variables
 - Check that variables are enabled for **Production** environment
 - Wait a few minutes for changes to propagate
+- Check Vercel deployment logs for any errors
 
 ### "I don't have a .env file"
 - That's fine! The `.env` file is only for local development
 - The important part is updating Vercel (Step 1)
+
+### "I want to use /app path but Vercel serves at root"
+- Vercel serves Next.js apps at the root domain (`shoptofield.com`)
+- If you need `/app` path, you have options:
+  1. Use a subdomain: `app.shoptofield.com`
+  2. Configure a reverse proxy
+  3. Use Next.js rewrites in `next.config.mjs`
 
 ---
 
