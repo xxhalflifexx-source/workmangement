@@ -7,6 +7,7 @@ import { z } from "zod";
 import { hash } from "bcryptjs";
 import { randomBytes } from "crypto";
 import { parseCentralDate, parseDateOnly, nowInCentral } from "@/lib/date-utils";
+import { getOrgContext, buildOrgFilter, requireRole } from "@/lib/org-utils";
 
 // Set timezone for Node.js process
 if (typeof process !== "undefined") {
@@ -26,21 +27,19 @@ const companySettingsSchema = z.object({
 });
 
 export async function getAllUsersForAdmin() {
-  const session = await getServerSession(authOptions);
-  
-  if (!session?.user) {
-    return { ok: false, error: "Not authenticated" };
-  }
-
-  const userRole = (session.user as any).role;
+  const ctx = await getOrgContext();
+  if (!ctx.ok) return ctx;
 
   // Admins and managers can access user management
-  if (userRole !== "ADMIN" && userRole !== "MANAGER") {
-    return { ok: false, error: "Unauthorized: Only admins and managers can manage users" };
-  }
+  const roleCheck = requireRole(ctx, "MANAGER");
+  if (roleCheck) return roleCheck;
 
   try {
+    // Build organization filter (Super Admins see all users)
+    const whereClause = buildOrgFilter(ctx, { isSuperAdmin: false }); // Don't show Super Admins in regular user list
+
     const users = await prisma.user.findMany({
+      where: whereClause,
       select: {
         id: true,
         name: true,
@@ -81,17 +80,12 @@ const createUserSchema = z.object({
 });
 
 export async function createUserByAdmin(formData: FormData) {
-  const session = await getServerSession(authOptions);
+  const ctx = await getOrgContext();
+  if (!ctx.ok) return ctx;
 
-  if (!session?.user) {
-    return { ok: false, error: "Not authenticated" };
-  }
-
-  const userRole = (session.user as any).role;
-
-  if (userRole !== "ADMIN") {
-    return { ok: false, error: "Unauthorized: Only admins can create users" };
-  }
+  // Only admins can create users
+  const roleCheck = requireRole(ctx, "ADMIN");
+  if (roleCheck) return roleCheck;
 
   const data = {
     name: (formData.get("name") as string) || "",
@@ -128,6 +122,7 @@ export async function createUserByAdmin(formData: FormData) {
         gender: parsed.data.gender || null,
         birthDate: parsed.data.birthDate ? parseDateOnly(parsed.data.birthDate) : null,
         isVerified: true,
+        organizationId: ctx.organizationId, // Multi-tenant support
       },
     });
 
@@ -339,21 +334,20 @@ export async function updateUserRole(userId: string, newRole: string) {
 }
 
 export async function getCompanySettings() {
-  const session = await getServerSession(authOptions);
-  
-  if (!session?.user) {
-    return { ok: false, error: "Not authenticated" };
-  }
+  const ctx = await getOrgContext();
+  if (!ctx.ok) return ctx;
 
-  const userRole = (session.user as any).role;
-
-  if (userRole !== "ADMIN") {
-    return { ok: false, error: "Unauthorized: Only admins can view settings" };
-  }
+  // Only admins can view settings
+  const roleCheck = requireRole(ctx, "ADMIN");
+  if (roleCheck) return roleCheck;
 
   try {
-    // Try to get company settings
-    const settings = await prisma.companySettings.findFirst().catch(() => null);
+    // Try to get company settings for this organization
+    const settings = ctx.organizationId 
+      ? await prisma.companySettings.findFirst({
+          where: { organizationId: ctx.organizationId }
+        }).catch(() => null)
+      : await prisma.companySettings.findFirst().catch(() => null);
 
     // If no settings exist or table doesn't exist, return defaults
     if (!settings) {
@@ -408,17 +402,12 @@ export async function getCompanySettings() {
 }
 
 export async function updateCompanySettings(formData: FormData) {
-  const session = await getServerSession(authOptions);
-  
-  if (!session?.user) {
-    return { ok: false, error: "Not authenticated" };
-  }
+  const ctx = await getOrgContext();
+  if (!ctx.ok) return ctx;
 
-  const userRole = (session.user as any).role;
-
-  if (userRole !== "ADMIN") {
-    return { ok: false, error: "Unauthorized: Only admins can update settings" };
-  }
+  // Only admins can update settings
+  const roleCheck = requireRole(ctx, "ADMIN");
+  if (roleCheck) return roleCheck;
 
   const data = {
     companyName: formData.get("companyName"),
@@ -439,8 +428,12 @@ export async function updateCompanySettings(formData: FormData) {
   }
 
   try {
-    // Try to get existing settings
-    const existing = await prisma.companySettings.findFirst().catch(() => null);
+    // Try to get existing settings for this organization
+    const existing = ctx.organizationId
+      ? await prisma.companySettings.findFirst({
+          where: { organizationId: ctx.organizationId }
+        }).catch(() => null)
+      : await prisma.companySettings.findFirst().catch(() => null);
 
     if (existing) {
       // Update existing record
@@ -471,6 +464,7 @@ export async function updateCompanySettings(formData: FormData) {
           email: parsed.data.email || null,
           website: parsed.data.website || null,
           logoUrl: parsed.data.logoUrl || null,
+          organizationId: ctx.organizationId, // Multi-tenant support
         },
       });
     }

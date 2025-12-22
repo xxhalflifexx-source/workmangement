@@ -35,6 +35,8 @@ export default async function Dashboard() {
   
   const user = session.user;
   const role = (user as any)?.role || "EMPLOYEE";
+  const isSuperAdmin = (user as any)?.isSuperAdmin || false;
+  const organizationName = (user as any)?.organizationName || null;
 
   // Get user permissions
   const permissionsRes = await getUserPermissionsForSession();
@@ -201,6 +203,17 @@ export default async function Dashboard() {
                     description="System settings"
                     notificationCount={unreadCounts["/admin"] || 0}
                     className="hover:border-red-300"
+                  />
+                )}
+
+                {/* Super Admin Panel - Only for Super Admins */}
+                {isSuperAdmin && (
+                  <DashboardTabLink
+                    href="/super-admin"
+                    icon="👑"
+                    title="Super Admin"
+                    description="Manage organizations"
+                    className="hover:border-purple-300 bg-gradient-to-br from-purple-50 to-indigo-50"
                   />
                 )}
 

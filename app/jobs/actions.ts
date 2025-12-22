@@ -7,6 +7,7 @@ import { z } from "zod";
 import { sendJobStatusEmail } from "@/lib/email";
 import { revalidatePath } from "next/cache";
 import { parseCentralDate } from "@/lib/date-utils";
+import { getOrgContext, buildOrgFilter, requireRole } from "@/lib/org-utils";
 
 // Set timezone for Node.js process
 if (typeof process !== "undefined") {
@@ -38,19 +39,12 @@ const jobSchema = z.object({
 });
 
 export async function createJob(formData: FormData) {
-  const session = await getServerSession(authOptions);
-  
-  if (!session?.user) {
-    return { ok: false, error: "Not authenticated" };
-  }
-
-  const userId = (session.user as any).id;
-  const userRole = (session.user as any).role;
+  const ctx = await getOrgContext();
+  if (!ctx.ok) return ctx;
 
   // Only managers and admins can create jobs
-  if (userRole !== "MANAGER" && userRole !== "ADMIN") {
-    return { ok: false, error: "Unauthorized: Only managers and admins can create jobs" };
-  }
+  const roleCheck = requireRole(ctx, "MANAGER");
+  if (roleCheck) return roleCheck;
 
   const data = {
     title: formData.get("title"),
@@ -84,7 +78,8 @@ export async function createJob(formData: FormData) {
       priority: parsed.data.priority,
       assignedTo: parsed.data.assignedTo || null, // Keep for backward compatibility
       customerId: parsed.data.customerId || null,
-      createdBy: userId,
+      createdBy: ctx.userId,
+      organizationId: ctx.organizationId, // Multi-tenant support
       pricingType: parsed.data.pricingType || "FIXED",
       estimatedPrice: parsed.data.estimatedPrice ? parseFloat(parsed.data.estimatedPrice) : null,
       finalPrice: parsed.data.finalPrice ? parseFloat(parsed.data.finalPrice) : null,
@@ -260,25 +255,22 @@ export async function getJobs(params: GetJobsParams = {}) {
     dateTo,
   } = params;
 
-  const session = await getServerSession(authOptions);
-  
-  if (!session?.user) {
-    return { ok: false, error: "Not authenticated" };
-  }
-
-  const userId = (session.user as any).id;
-  const userRole = (session.user as any).role;
+  const ctx = await getOrgContext();
+  if (!ctx.ok) return ctx;
 
   // Base where clause for permissions
-  const baseWhere: any =
-      userRole === "ADMIN" || userRole === "MANAGER"
-      ? {} // Admins/managers see all jobs
+  let baseWhere: any =
+      ctx.role === "ADMIN" || ctx.role === "MANAGER" || ctx.isSuperAdmin
+      ? {} // Admins/managers see all jobs in their org
       : {
           OR: [
-            { assignedTo: userId }, // Old single assignment
-            { assignments: { some: { userId } } }, // New multiple assignments
+            { assignedTo: ctx.userId }, // Old single assignment
+            { assignments: { some: { userId: ctx.userId } } }, // New multiple assignments
           ],
         }; // Employees only see jobs assigned to them
+
+  // Apply organization filter (Super Admins see all orgs)
+  baseWhere = buildOrgFilter(ctx, baseWhere);
 
   // Build filter conditions
   const whereClause: any = { ...baseWhere };
@@ -466,20 +458,18 @@ export async function getJobAlertsForCurrentUser() {
 }
 
 export async function getAllUsers() {
-  const session = await getServerSession(authOptions);
-  
-  if (!session?.user) {
-    return { ok: false, error: "Not authenticated" };
-  }
-
-  const userRole = (session.user as any).role;
+  const ctx = await getOrgContext();
+  if (!ctx.ok) return ctx;
 
   // Only managers and admins can see all users
-  if (userRole !== "MANAGER" && userRole !== "ADMIN") {
-    return { ok: false, error: "Unauthorized" };
-  }
+  const roleCheck = requireRole(ctx, "MANAGER");
+  if (roleCheck) return roleCheck;
+
+  // Build organization filter (Super Admins see all users)
+  const whereClause = buildOrgFilter(ctx, { isSuperAdmin: false });
 
   const users = await prisma.user.findMany({
+    where: whereClause,
     select: {
       id: true,
       name: true,
@@ -1207,20 +1197,18 @@ export async function addJobActivity(formData: FormData) {
 
 // Customer management actions (Manager/Admin only)
 export async function getAllCustomers() {
-  const session = await getServerSession(authOptions);
-  
-  if (!session?.user) {
-    return { ok: false, error: "Not authenticated" };
-  }
-
-  const userRole = (session.user as any).role;
+  const ctx = await getOrgContext();
+  if (!ctx.ok) return ctx;
 
   // Only managers and admins can see customers
-  if (userRole !== "MANAGER" && userRole !== "ADMIN") {
-    return { ok: false, error: "Unauthorized" };
-  }
+  const roleCheck = requireRole(ctx, "MANAGER");
+  if (roleCheck) return roleCheck;
+
+  // Build organization filter (Super Admins see all customers)
+  const whereClause = buildOrgFilter(ctx);
 
   const customers = await prisma.customer.findMany({
+    where: whereClause,
     orderBy: { name: "asc" },
   });
 
@@ -1228,18 +1216,12 @@ export async function getAllCustomers() {
 }
 
 export async function createCustomer(formData: FormData) {
-  const session = await getServerSession(authOptions);
-  
-  if (!session?.user) {
-    return { ok: false, error: "Not authenticated" };
-  }
-
-  const userRole = (session.user as any).role;
+  const ctx = await getOrgContext();
+  if (!ctx.ok) return ctx;
 
   // Only managers and admins can create customers
-  if (userRole !== "MANAGER" && userRole !== "ADMIN") {
-    return { ok: false, error: "Unauthorized" };
-  }
+  const roleCheck = requireRole(ctx, "MANAGER");
+  if (roleCheck) return roleCheck;
 
   const name = formData.get("name") as string;
   const phone = formData.get("phone") as string;
@@ -1257,6 +1239,7 @@ export async function createCustomer(formData: FormData) {
         phone: phone || null,
         email: email || null,
         company: company || null,
+        organizationId: ctx.organizationId, // Multi-tenant support
       },
     });
 

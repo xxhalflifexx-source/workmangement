@@ -43,6 +43,7 @@ export const config = {
 		"/invoices/:path*",
 		"/finance/:path*",
 		"/hr/:path*",
+		"/super-admin/:path*", // Super Admin dashboard
 	],
 };
 

@@ -79,6 +79,16 @@ export const authOptions: NextAuthOptions = {
             isVerified: true,
             status: true,
             role: true,
+            isSuperAdmin: true,
+            organizationId: true,
+            organization: {
+              select: {
+                id: true,
+                name: true,
+                slug: true,
+                isActive: true,
+              },
+            },
           },
         });
         
@@ -107,6 +117,12 @@ export const authOptions: NextAuthOptions = {
             throw new Error("Your account has been rejected. Please contact your manager.");
           }
         }
+
+        // Check if user's organization is active (Super Admins bypass this check)
+        if (!user.isSuperAdmin && user.organization && !user.organization.isActive) {
+          console.log("[auth] organization is disabled");
+          throw new Error("Your organization has been disabled. Please contact support.");
+        }
         
         const isValid = await compare(password, user.passwordHash);
         console.log("[auth] compare result:", isValid);
@@ -120,6 +136,10 @@ export const authOptions: NextAuthOptions = {
           name: user.name ?? "",
           email: user.email ?? "",
           role: user.role,
+          isSuperAdmin: user.isSuperAdmin,
+          organizationId: user.organizationId,
+          organizationName: user.organization?.name ?? null,
+          organizationSlug: user.organization?.slug ?? null,
         };
       },
     }),
@@ -129,11 +149,34 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.id = (user as any).id;
         token.role = (user as any).role;
+        token.isSuperAdmin = (user as any).isSuperAdmin;
+        token.organizationId = (user as any).organizationId;
+        token.organizationName = (user as any).organizationName;
+        token.organizationSlug = (user as any).organizationSlug;
       }
-      // Refresh token on session update
-      if (trigger === "update") {
-        // Token will be refreshed
-        return { ...token };
+      // Refresh token on session update - re-fetch user data from DB
+      if (trigger === "update" && token.id) {
+        const freshUser = await prisma.user.findUnique({
+          where: { id: token.id as string },
+          select: {
+            role: true,
+            isSuperAdmin: true,
+            organizationId: true,
+            organization: {
+              select: {
+                name: true,
+                slug: true,
+              },
+            },
+          },
+        });
+        if (freshUser) {
+          token.role = freshUser.role;
+          token.isSuperAdmin = freshUser.isSuperAdmin;
+          token.organizationId = freshUser.organizationId;
+          token.organizationName = freshUser.organization?.name ?? null;
+          token.organizationSlug = freshUser.organization?.slug ?? null;
+        }
       }
       return token;
     },
@@ -141,6 +184,10 @@ export const authOptions: NextAuthOptions = {
       if (session.user) {
         (session.user as any).id = token.id as string;
         (session.user as any).role = token.role as any;
+        (session.user as any).isSuperAdmin = token.isSuperAdmin as boolean;
+        (session.user as any).organizationId = token.organizationId as string | null;
+        (session.user as any).organizationName = token.organizationName as string | null;
+        (session.user as any).organizationSlug = token.organizationSlug as string | null;
       }
       return session;
     },
