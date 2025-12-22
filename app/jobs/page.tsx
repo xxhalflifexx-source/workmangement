@@ -3487,7 +3487,6 @@ function JobsPageContent() {
         }
       `}</style>
 
-
       {/* Photo Viewer Modal */}
       {showPhotoViewer && (
         <PhotoViewerModal
