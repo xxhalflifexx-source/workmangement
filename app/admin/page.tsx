@@ -1095,9 +1095,16 @@ export default function AdminPage() {
                   setError(res.error);
                   await loadAccessUsers();
                 } else {
+                  // Update users state immediately for real-time feedback
+                  setAccessUsers((prevUsers) =>
+                    prevUsers.map((user) =>
+                      user.id === userId
+                        ? { ...user, permissions: userPermissions }
+                        : user
+                    )
+                  );
                   setSuccess(`Permissions updated for ${accessUsers.find((u) => u.id === userId)?.name || "user"}`);
                   setTimeout(() => setSuccess(undefined), 3000);
-                  await loadAccessUsers();
                 }
 
                 setAccessSaving((prev) => ({ ...prev, [userId]: false }));

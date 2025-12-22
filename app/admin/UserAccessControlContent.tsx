@@ -42,7 +42,6 @@ export default function UserAccessControlContent({
     "finance",
     "inventory",
     "adminPanel",
-    "manual",
     "operationsCommon",
   ];
 

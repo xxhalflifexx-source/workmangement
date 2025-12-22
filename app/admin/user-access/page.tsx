@@ -30,7 +30,7 @@ export default function UserAccessControlPage() {
   const [permissions, setPermissions] = useState<Record<string, UserPermissions>>({});
 
   // Explicit ordered list with labels to ensure visibility of new modules
-  // IMPORTANT: All 10 modules must be included here for the table to display correctly
+  // IMPORTANT: All modules must be included here for the table to display correctly
   const modules: { key: ModulePermission; label: string }[] = [
     { key: "timeClock", label: "Time Clock" },
     { key: "jobManagement", label: "Job Management" },
@@ -39,7 +39,6 @@ export default function UserAccessControlPage() {
     { key: "finance", label: "Finance" },
     { key: "inventory", label: "Inventory" },
     { key: "adminPanel", label: "Admin Panel" },
-    { key: "manual", label: "Manual" },
     { key: "operationsCommon", label: "Operations Common" },
   ];
 
@@ -94,13 +93,19 @@ export default function UserAccessControlPage() {
 
     if (!res.ok) {
       setError(res.error);
-      // Reload to restore original permissions
+      // Reload to restore original permissions on error
       await loadUsers();
     } else {
+      // Update users state immediately for real-time feedback
+      setUsers((prevUsers) =>
+        prevUsers.map((user) =>
+          user.id === userId
+            ? { ...user, permissions: userPermissions }
+            : user
+        )
+      );
       setSuccess(`Permissions updated for ${users.find((u) => u.id === userId)?.name || "user"}`);
       setTimeout(() => setSuccess(undefined), 3000);
-      // Reload users to update the base permissions, which will disable the save button
-      await loadUsers();
     }
 
     setSaving((prev) => ({ ...prev, [userId]: false }));
@@ -237,11 +242,6 @@ export default function UserAccessControlPage() {
                       <span className="leading-tight">Admin Panel</span>
                     </div>
                   </th>
-                  <th key="header-manual" className="px-2 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider min-w-[100px] whitespace-nowrap">
-                    <div className="flex flex-col items-center gap-1">
-                      <span className="leading-tight">Manual</span>
-                    </div>
-                  </th>
                   <th key="header-operationsCommon" className="px-2 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider min-w-[100px] whitespace-nowrap">
                     <div className="flex flex-col items-center gap-1">
                       <span className="leading-tight">Operations Common</span>
@@ -371,20 +371,6 @@ export default function UserAccessControlPage() {
                             title={`Admin Panel: ${(userPermissions.adminPanel ?? false) ? "Allowed" : "Denied"}`}
                           >
                             <span className="text-lg font-bold">{(userPermissions.adminPanel ?? false) ? "✓" : "✗"}</span>
-                          </button>
-                        </td>
-                        <td key={`${user.id}-manual`} className="px-2 py-4 whitespace-nowrap text-center min-w-[100px]">
-                          <button
-                            onClick={() => togglePermission(user.id, "manual")}
-                            disabled={saving[user.id]}
-                            className={`inline-flex items-center justify-center w-8 h-8 transition-all duration-200 ${
-                              (userPermissions.manual ?? false)
-                                ? "text-green-700 hover:text-green-800 hover:scale-110"
-                                : "text-red-700 hover:text-red-800 hover:scale-110"
-                            } disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100`}
-                            title={`Manual: ${(userPermissions.manual ?? false) ? "Allowed" : "Denied"}`}
-                          >
-                            <span className="text-lg font-bold">{(userPermissions.manual ?? false) ? "✓" : "✗"}</span>
                           </button>
                         </td>
                         <td key={`${user.id}-operationsCommon`} className="px-2 py-4 whitespace-nowrap text-center min-w-[100px]">
