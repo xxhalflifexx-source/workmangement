@@ -208,6 +208,45 @@ export const RECEIPT_FORMATS: ReceiptFormat[] = [
       maxAmount: 10000,
     },
   },
+
+  // Invoices / B2B Receipts
+  {
+    id: "invoice-generic",
+    storeName: "Invoice",
+    category: "invoice",
+    aliases: ["INVOICE", "BILL", "STATEMENT"],
+    patterns: {
+      totalKeywords: ["TOTAL", "AMOUNT DUE", "BALANCE DUE", "DUE"],
+      totalLocation: "bottom",
+      totalLinePattern: /(?:TOTAL|AMOUNT\s*DUE|BALANCE\s*DUE|DUE)[:\s]*\$?(\d+\.\d{2})/i,
+      commonSections: ["SUBTOTAL", "TAX", "SHIPPING", "TOTAL", "AMOUNT DUE"],
+    },
+    extractionRules: {
+      preferBottomPercent: 30,
+      filterTopPercent: 50,
+      minAmount: 1,
+      maxAmount: 100000,
+    },
+  },
+
+  // Generic Receipt (catch-all for any receipt with "TOTAL")
+  {
+    id: "generic-receipt",
+    storeName: "Receipt",
+    category: "generic",
+    patterns: {
+      totalKeywords: ["TOTAL", "AMOUNT", "DUE"],
+      totalLocation: "bottom",
+      totalLinePattern: /TOTAL[:\s]*\$?(\d+\.\d{2})/i,
+      commonSections: ["TOTAL"],
+    },
+    extractionRules: {
+      preferBottomPercent: 30,
+      filterTopPercent: 50,
+      minAmount: 0.01,
+      maxAmount: 100000,
+    },
+  },
 ];
 
 /**
@@ -263,11 +302,16 @@ export function detectReceiptFormat(ocrText: string): ReceiptFormat | null {
       }
     }
 
-    // Check total line pattern
+    // Check total line pattern (higher weight if matches)
     if (format.patterns.totalLinePattern) {
       if (format.patterns.totalLinePattern.test(ocrText)) {
         score += 30;
       }
+    }
+    
+    // Boost score if format has specific store name pattern and it matches
+    if (format.patterns.storeNamePattern && format.patterns.storeNamePattern.test(ocrText)) {
+      score += 20; // Additional boost for store name pattern match
     }
 
     // Update best match
@@ -277,8 +321,9 @@ export function detectReceiptFormat(ocrText: string): ReceiptFormat | null {
     }
   }
 
-  // Only return match if score is significant (at least 50 points)
-  return bestScore >= 50 ? bestMatch : null;
+  // Lower threshold to 40 points to catch more formats (was 50)
+  // This helps with generic receipts that don't match specific stores
+  return bestScore >= 40 ? bestMatch : null;
 }
 
 /**

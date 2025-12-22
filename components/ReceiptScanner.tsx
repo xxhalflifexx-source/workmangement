@@ -422,27 +422,33 @@ export default function ReceiptScanner({
         setVerifiedAmount(bestResult.amount.toFixed(2));
         setError(null);
       } else {
-        // Show helpful error with detected amounts
+        // Show helpful error with detected amounts and better feedback
         if (bestResult.allAmounts.length > 0) {
           const confidenceNote = bestResult.confidence > 0 
-            ? ` (OCR confidence: ${Math.round(bestResult.confidence)}%)`
+            ? ` OCR confidence: ${Math.round(bestResult.confidence)}%`
             : "";
-          const errorMsg = isMobile
-            ? `Could not detect total amount. Found these amounts: ${bestResult.allAmounts.map(a => `$${a.toFixed(2)}`).join(", ")}${confidenceNote}. Please select one or enter manually.`
-            : `Could not detect total amount. Found these amounts: ${bestResult.allAmounts.map(a => `$${a.toFixed(2)}`).join(", ")}${confidenceNote}. Please select one or enter manually.`;
+          const amountsList = bestResult.allAmounts.slice(0, 5).map(a => `$${a.toFixed(2)}`).join(", ");
+          const moreAmounts = bestResult.allAmounts.length > 5 ? ` (and ${bestResult.allAmounts.length - 5} more)` : "";
+          const errorMsg = `Found ${bestResult.allAmounts.length} amount(s) but couldn't determine the total.${confidenceNote} Detected amounts: ${amountsList}${moreAmounts}. Please select the correct total from the list below or enter manually.`;
           setError(errorMsg);
-          // Pre-fill with the largest amount found
+          // Pre-fill with the largest amount found (most likely to be total)
           const largestAmount = bestResult.allAmounts[0];
           setVerifiedAmount(largestAmount.toFixed(2));
         } else {
           const confidenceNote = bestResult.confidence > 0 
-            ? ` OCR confidence was ${Math.round(bestResult.confidence)}%.`
+            ? ` OCR confidence: ${Math.round(bestResult.confidence)}%`
             : "";
-          const errorMsg = isMobile
-            ? `Could not detect any amounts in receipt.${confidenceNote} The image might be unclear, blurry, or rotated. Try: 1) Ensure good lighting, 2) Hold phone steady, 3) Rotate image if needed, 4) Or enter the amount manually.`
-            : bestResult.text && bestResult.text.trim().length > 0
-            ? `Could not detect any amounts in receipt.${confidenceNote} Text was found but no amounts were recognized. Please enter the amount manually.`
-            : `Could not detect any text in receipt.${confidenceNote} The image might be unclear or rotated. Please try rotating the image or enter the amount manually.`;
+          const textLength = bestResult.text ? bestResult.text.trim().length : 0;
+          let errorMsg = "";
+          
+          if (textLength === 0) {
+            errorMsg = `No text detected in image.${confidenceNote} The image might be unclear, blurry, or rotated. Try: 1) Ensure good lighting, 2) Hold phone steady, 3) Rotate image if needed, 4) Or enter the amount manually.`;
+          } else if (textLength < 50) {
+            errorMsg = `Very little text detected (${textLength} characters).${confidenceNote} The image might be unclear or the receipt might be too small. Please try: 1) Take a closer photo, 2) Ensure good lighting, 3) Or enter the amount manually.`;
+          } else {
+            errorMsg = `Text was detected but no amounts were found.${confidenceNote} Found ${textLength} characters of text. Please check the OCR text preview below or enter the amount manually.`;
+          }
+          
           setError(errorMsg);
         }
         setExtractedAmount(null);
@@ -1088,11 +1094,14 @@ export default function ReceiptScanner({
               {/* Show detected amounts with context if available */}
               {amountsWithContext.length > 0 ? (
                 <div className="mb-4 space-y-2">
-                  <p className="text-sm font-medium text-gray-700 mb-2">Detected amounts (with context):</p>
+                  <p className="text-sm font-medium text-gray-700 mb-2">
+                    Found {amountsWithContext.length} amount(s) with context. Select the correct total:
+                  </p>
                   {amountsWithContext.map((item, idx) => (
                     <div
                       key={idx}
-                      className="p-3 bg-white rounded-lg border border-yellow-300 hover:border-yellow-400 transition-colors"
+                      className="p-3 bg-white rounded-lg border border-yellow-300 hover:border-yellow-400 transition-colors cursor-pointer"
+                      onClick={() => setVerifiedAmount(item.amount.toFixed(2))}
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex-1">
@@ -1102,12 +1111,15 @@ export default function ReceiptScanner({
                               {item.keyword}
                             </span>
                           </div>
-                          <p className="text-xs text-gray-600 font-mono truncate" title={item.line}>
-                            {item.line.length > 60 ? item.line.substring(0, 60) + "..." : item.line}
+                          <p className="text-xs text-gray-600 font-mono" title={item.line}>
+                            {item.line.length > 80 ? item.line.substring(0, 80) + "..." : item.line}
                           </p>
                         </div>
                         <button
-                          onClick={() => setVerifiedAmount(item.amount.toFixed(2))}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setVerifiedAmount(item.amount.toFixed(2));
+                          }}
                           className="ml-3 px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg text-sm font-medium transition-colors"
                         >
                           Use
@@ -1118,18 +1130,23 @@ export default function ReceiptScanner({
                 </div>
               ) : allAmounts.length > 0 ? (
                 <div className="mb-4 p-3 bg-white rounded-lg border border-yellow-300">
-                  <p className="text-sm font-medium text-gray-700 mb-2">Detected amounts:</p>
+                  <p className="text-sm font-medium text-gray-700 mb-2">
+                    Found {allAmounts.length} amount(s). Select the correct total:
+                  </p>
                   <div className="flex flex-wrap gap-2">
                     {allAmounts.map((amt, idx) => (
                       <button
                         key={idx}
                         onClick={() => setVerifiedAmount(amt.toFixed(2))}
-                        className="px-3 py-1 bg-yellow-100 hover:bg-yellow-200 border border-yellow-400 rounded text-sm font-medium text-gray-900"
+                        className="px-4 py-2 bg-yellow-100 hover:bg-yellow-200 border border-yellow-400 rounded-lg text-sm font-medium text-gray-900 transition-colors"
                       >
                         ${amt.toFixed(2)}
                       </button>
                     ))}
                   </div>
+                  <p className="text-xs text-gray-500 mt-2">
+                    💡 Tip: The total is usually the largest amount, often found at the bottom of the receipt.
+                  </p>
                 </div>
               ) : null}
 

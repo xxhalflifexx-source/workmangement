@@ -67,6 +67,38 @@ export function extractAmountFromText(text: string, format?: ReceiptFormat | nul
   const lines = text.split(/\n/).map(line => line.trim()).filter(line => line.length > 0);
   const normalizedText = text.replace(/\s+/g, " ").trim();
 
+  // Helper function to extract amount from various formats (defined early for use throughout)
+  function extractAmountFromString(str: string): number | null {
+    // Try standard format: $XX.XX or XX.XX
+    let match = str.match(/\$?\s*(\d+\.\d{2})/);
+    if (match) return parseFloat(match[1]);
+    
+    // Try comma decimal: XX,XX (European format)
+    match = str.match(/\$?\s*(\d+,\d{2})/);
+    if (match) return parseFloat(match[1].replace(',', '.'));
+    
+    // Try space decimal: XX XX (some formats)
+    match = str.match(/\$?\s*(\d+)\s+(\d{2})/);
+    if (match) return parseFloat(`${match[1]}.${match[2]}`);
+    
+    return null;
+  }
+
+  // Helper function to extract all amounts from lines (for validation)
+  function extractAllAmountsFromLines(lineArray: string[]): number[] {
+    const amounts: number[] = [];
+    for (const line of lineArray) {
+      const matches = line.matchAll(/(\d+[.,]\d{2}|\d+\s+\d{2})/g);
+      for (const match of matches) {
+        const amount = extractAmountFromString(match[0]);
+        if (amount !== null && amount > 0 && amount < 100000) {
+          amounts.push(amount);
+        }
+      }
+    }
+    return amounts;
+  }
+
   // Get learned patterns to boost confidence
   const learnedHints = applyLearnedPatterns(text, format?.storeName, format?.id);
 
@@ -130,58 +162,50 @@ export function extractAmountFromText(text: string, format?: ReceiptFormat | nul
     }
   }
 
-  // Helper function to extract all amounts from lines (for validation)
-  function extractAllAmountsFromLines(lineArray: string[]): number[] {
-    const amounts: number[] = [];
-    for (const line of lineArray) {
-      const matches = line.matchAll(/(\d+\.\d{2})/g);
-      for (const match of matches) {
-        const amount = parseFloat(match[1]);
-        if (!isNaN(amount) && amount > 0 && amount < 100000) {
-          amounts.push(amount);
-        }
-      }
-    }
-    return amounts;
-  }
 
   // PRIORITY -1: ULTRA-PRIORITY - Look for "total" with amount DIRECTLY to the right (0-10 chars away)
   // 95% of receipts have amount immediately right of "total" - check ALL lines first
+  // Expanded keyword variations: TOTAL, Total, TOTAL DUE, AMOUNT DUE, BALANCE, GRAND TOTAL, Tot:, Tot., Ttl, TOT
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     
-    // Look for "total" keyword (case insensitive)
-    const totalMatch = line.match(/\b(total|grand\s*total|final\s*total|amount\s*total)\b/i);
+    // Look for "total" keyword variations (case insensitive, more variations)
+    const totalMatch = line.match(/\b(total|grand\s*total|final\s*total|amount\s*total|total\s*due|amount\s*due|balance\s*due|balance|tot[:.]|ttl)\b/i);
     if (totalMatch && totalMatch.index !== undefined) {
       const totalIndex = totalMatch.index;
       const afterTotal = line.substring(totalIndex + totalMatch[0].length);
       
       // Pattern 1: "Total $XX.XX" or "Total: $XX.XX" - amount immediately after total (0-10 chars)
-      const immediateMatch = afterTotal.match(/^[:\s]*\$?\s*(\d+\.\d{2})/);
+      // Handle multiple amount formats
+      const immediateMatch = afterTotal.match(/^[:\s]*\$?\s*(\d+[.,]\d{2}|\d+\s+\d{2})/);
       if (immediateMatch) {
-        const amount = parseFloat(immediateMatch[1]);
-        const minAmount = format ? format.extractionRules.minAmount : 0;
-        const maxAmount = format ? format.extractionRules.maxAmount : 1000000;
-        
-        if (!isNaN(amount) && amount > minAmount && amount < maxAmount) {
-          // Found amount DIRECTLY right of total - return immediately!
-          return amount;
+        const amount = extractAmountFromString(immediateMatch[0]);
+        if (amount !== null) {
+          const minAmount = format ? format.extractionRules.minAmount : 0;
+          const maxAmount = format ? format.extractionRules.maxAmount : 1000000;
+          
+          if (amount > minAmount && amount < maxAmount) {
+            // Found amount DIRECTLY right of total - return immediately!
+            return amount;
+          }
         }
       }
       
       // Pattern 2: Amount within 10 characters of "total" (check for spacing/padding)
-      const nearbyMatch = afterTotal.substring(0, 15).match(/(\d+\.\d{2})/);
+      const nearbyMatch = afterTotal.substring(0, 15).match(/(\d+[.,]\d{2}|\d+\s+\d{2})/);
       if (nearbyMatch) {
         const distance = nearbyMatch.index || 0;
         // Only accept if amount is within 10 characters (allowing for spacing, colons, etc.)
         if (distance <= 10) {
-          const amount = parseFloat(nearbyMatch[1]);
-          const minAmount = format ? format.extractionRules.minAmount : 0;
-          const maxAmount = format ? format.extractionRules.maxAmount : 1000000;
-          
-          if (!isNaN(amount) && amount > minAmount && amount < maxAmount) {
-            // Found amount very close to total - return immediately!
-            return amount;
+          const amount = extractAmountFromString(nearbyMatch[0]);
+          if (amount !== null) {
+            const minAmount = format ? format.extractionRules.minAmount : 0;
+            const maxAmount = format ? format.extractionRules.maxAmount : 1000000;
+            
+            if (amount > minAmount && amount < maxAmount) {
+              // Found amount very close to total - return immediately!
+              return amount;
+            }
           }
         }
       }
@@ -193,8 +217,8 @@ export function extractAmountFromText(text: string, format?: ReceiptFormat | nul
   for (let i = bottomThreshold; i < lines.length; i++) {
     const line = lines[i];
     
-    // Look for "total" keyword (case insensitive, flexible spacing)
-    const totalKeywordMatch = line.match(/\b(total|grand\s*total|final\s*total|amount\s*total)\b/i);
+    // Look for "total" keyword variations (expanded list)
+    const totalKeywordMatch = line.match(/\b(total|grand\s*total|final\s*total|amount\s*total|total\s*due|amount\s*due|balance\s*due|balance|tot[:.]|ttl)\b/i);
     if (totalKeywordMatch) {
       // Pattern 1: "Total $XX.XX" or "Total: $XX.XX" or "Total XX.XX"
       const pattern1 = line.match(/\btotal\b[:\s]*\$?\s*(\d+\.\d{2})/i);
@@ -230,80 +254,98 @@ export function extractAmountFromText(text: string, format?: ReceiptFormat | nul
     const line = lines[i];
     const isBottomSection = i >= bottomThreshold;
     
-    // Look for "total" keyword (case insensitive, flexible spacing)
-    const totalKeywordMatch = line.match(/\b(total|grand\s*total|final\s*total|amount\s*total)\b/i);
+    // Look for "total" keyword variations (expanded list)
+    const totalKeywordMatch = line.match(/\b(total|grand\s*total|final\s*total|amount\s*total|total\s*due|amount\s*due|balance\s*due|balance|tot[:.]|ttl)\b/i);
     if (totalKeywordMatch) {
       // Try multiple patterns to find amount next to "total"
       
       // Pattern 1: "Total $XX.XX" or "Total: $XX.XX" or "Total XX.XX" - AMOUNT DIRECTLY RIGHT OF TOTAL
       // This is the 95% case - highest priority!
-      const pattern1 = line.match(/\btotal\b[:\s]*\$?\s*(\d+\.\d{2})/i);
-      if (pattern1) {
-        const amount = parseFloat(pattern1[1]);
-        const minAmount = format ? format.extractionRules.minAmount : 0;
-        const maxAmount = format ? format.extractionRules.maxAmount : 1000000;
-        
-        if (!isNaN(amount) && amount > minAmount && amount < maxAmount) {
-          // Check if this line matches a learned pattern
-          const normalizedLine = line.replace(/\d+\.\d{2}/g, "AMOUNT").replace(/\d+/g, "NUM").replace(/\s+/g, " ").trim().toUpperCase();
-          const learnedBoost = learnedPatternMap.get(normalizedLine) || 0;
+      // Handle multiple amount formats: $XX.XX, XX.XX, XX,XX, XX XX
+      const pattern1Match = line.match(/\b(total|grand\s*total|final\s*total|amount\s*total|total\s*due|amount\s*due|balance\s*due|balance|tot[:.]|ttl)\b[:\s]*\$?\s*(\d+[.,]\d{2}|\d+\s+\d{2})/i);
+      if (pattern1Match) {
+        const amountStr = pattern1Match[2] || pattern1Match[0].substring(pattern1Match.index! + pattern1Match[0].indexOf(pattern1Match[2] || ''));
+        const amount = extractAmountFromString(amountStr);
+        if (amount !== null) {
+          const minAmount = format ? format.extractionRules.minAmount : 0;
+          const maxAmount = format ? format.extractionRules.maxAmount : 1000000;
           
-          // ULTRA HIGH PRIORITY: Amount directly right of total (95% case)
-          // Priority: 30+ for bottom section, 28+ for other sections
-          amountCandidates.push({
-            amount,
-            line,
-            priority: (isBottomSection ? 35 : 28) + learnedBoost, // HIGHEST priority - amount directly right of total
-            keyword: "total",
-            lineIndex: i,
-            isBottomSection,
-          });
+          if (amount > minAmount && amount < maxAmount) {
+            // Check if this line matches a learned pattern
+            const normalizedLine = line.replace(/\d+[.,]\d{2}/g, "AMOUNT").replace(/\d+/g, "NUM").replace(/\s+/g, " ").trim().toUpperCase();
+            const learnedBoost = learnedPatternMap.get(normalizedLine) || 0;
+            
+            // ULTRA HIGH PRIORITY: Amount directly right of total (95% case)
+            // Priority: 35+ for bottom section, 28+ for other sections
+            amountCandidates.push({
+              amount,
+              line,
+              priority: (isBottomSection ? 35 : 28) + learnedBoost, // HIGHEST priority - amount directly right of total
+              keyword: "total",
+              lineIndex: i,
+              isBottomSection,
+            });
+          }
         }
       }
       
       // Pattern 2: Amount at end of line after "total" keyword (lower priority than Pattern 1)
       // "Total                   20.53" or "Total 20.53"
-      const endMatch = line.match(/\btotal\b.*?(\d+\.\d{2})\s*$/i);
+      // Handle multiple formats
+      const endMatch = line.match(/\b(total|grand\s*total|final\s*total|amount\s*total|total\s*due|amount\s*due|balance\s*due|balance|tot[:.]|ttl)\b.*?(\d+[.,]\d{2}|\d+\s+\d{2})\s*$/i);
       if (endMatch) {
-        const amount = parseFloat(endMatch[1]);
-        const minAmount = format ? format.extractionRules.minAmount : 0;
-        const maxAmount = format ? format.extractionRules.maxAmount : 1000000;
-        
-        if (!isNaN(amount) && amount > minAmount && amount < maxAmount) {
-          // Check if this line matches a learned pattern
-          const normalizedLine = line.replace(/\d+\.\d{2}/g, "AMOUNT").replace(/\d+/g, "NUM").replace(/\s+/g, " ").trim().toUpperCase();
-          const learnedBoost = learnedPatternMap.get(normalizedLine) || 0;
+        const amountStr = endMatch[2];
+        const amount = extractAmountFromString(amountStr);
+        if (amount !== null) {
+          const minAmount = format ? format.extractionRules.minAmount : 0;
+          const maxAmount = format ? format.extractionRules.maxAmount : 1000000;
           
-          // Lower priority than Pattern 1 (amount is further from total)
-          amountCandidates.push({
-            amount,
-            line,
-            priority: (isBottomSection ? 22 : 15) + learnedBoost, // Lower priority - amount at end of line
-            keyword: "total",
-            lineIndex: i,
-            isBottomSection,
-          });
+          if (amount > minAmount && amount < maxAmount) {
+            // Check if this line matches a learned pattern
+            const normalizedLine = line.replace(/\d+[.,]\d{2}/g, "AMOUNT").replace(/\d+/g, "NUM").replace(/\s+/g, " ").trim().toUpperCase();
+            const learnedBoost = learnedPatternMap.get(normalizedLine) || 0;
+            
+            // Lower priority than Pattern 1 (amount is further from total)
+            amountCandidates.push({
+              amount,
+              line,
+              priority: (isBottomSection ? 22 : 15) + learnedBoost, // Lower priority - amount at end of line
+              keyword: "total",
+              lineIndex: i,
+              isBottomSection,
+            });
+          }
         }
       }
       
       // Pattern 3: Amount anywhere on the line with "total" (fallback - lowest priority)
       // Extract all amounts from the line and prefer the largest reasonable one
-      const allAmountsOnLine = Array.from(line.matchAll(/(\d+\.\d{2})/g));
+      // Handle multiple amount formats
+      const allAmountsOnLine = Array.from(line.matchAll(/(\d+[.,]\d{2}|\d+\s+\d{2})/g));
       for (const match of allAmountsOnLine) {
-        const amount = parseFloat(match[1]);
+        const amount = extractAmountFromString(match[0]);
+        if (amount === null) continue;
+        
         const minAmount = format ? format.extractionRules.minAmount : 1;
         const maxAmount = format ? format.extractionRules.maxAmount : 1000000;
         
         // Prefer amounts that are reasonable (not too small, not too large)
-        if (!isNaN(amount) && amount >= minAmount && amount < maxAmount) {
-          // Check if amount is near the "total" keyword (within 30 chars)
-          const totalIndex = line.toLowerCase().indexOf("total");
-          const amountIndex = match.index || 0;
-          const distance = Math.abs(amountIndex - totalIndex);
+        if (amount >= minAmount && amount < maxAmount) {
+          // Check if amount is near any "total" keyword (within 30 chars)
+          const totalKeywords = ['total', 'grand total', 'final total', 'amount total', 'total due', 'amount due', 'balance due', 'balance', 'tot:', 'tot.', 'ttl'];
+          let minDistance = Infinity;
+          for (const keyword of totalKeywords) {
+            const keywordIndex = line.toLowerCase().indexOf(keyword);
+            if (keywordIndex >= 0) {
+              const amountIndex = match.index || 0;
+              const distance = Math.abs(amountIndex - keywordIndex);
+              minDistance = Math.min(minDistance, distance);
+            }
+          }
           
-          if (distance < 30) {
+          if (minDistance < 30) {
             // Check if this line matches a learned pattern
-            const normalizedLine = line.replace(/\d+\.\d{2}/g, "AMOUNT").replace(/\d+/g, "NUM").replace(/\s+/g, " ").trim().toUpperCase();
+            const normalizedLine = line.replace(/\d+[.,]\d{2}/g, "AMOUNT").replace(/\d+/g, "NUM").replace(/\s+/g, " ").trim().toUpperCase();
             const learnedBoost = learnedPatternMap.get(normalizedLine) || 0;
             
             // LOWEST priority - amount is somewhere on line but not directly right of total
@@ -321,23 +363,28 @@ export function extractAmountFromText(text: string, format?: ReceiptFormat | nul
     }
   }
 
-  // Priority 2: Lines containing "Amount Due" or "Balance Due"
+  // Priority 2: Lines containing "Amount Due" or "Balance Due" or "Due"
   // Prioritize bottom section
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     const isBottomSection = i >= bottomThreshold;
-    const dueMatch = line.match(/(?:amount\s*due|balance\s*due)[:\s]*\$?\s*(\d+\.\d{2})/i);
+    // Handle multiple formats: "Amount Due: $XX.XX", "Balance Due $XX.XX", "Due: XX.XX"
+    const dueMatch = line.match(/(?:amount\s*due|balance\s*due|due)[:\s]*\$?\s*(\d+[.,]\d{2}|\d+\s+\d{2})/i);
     if (dueMatch) {
-      const amount = parseFloat(dueMatch[1]);
-      if (!isNaN(amount) && amount > 0 && amount < 1000000) {
-        amountCandidates.push({
-          amount,
-          line,
-          priority: isBottomSection ? 20 : 9, // Higher priority for bottom section
-          keyword: "amount due",
-          lineIndex: i,
-          isBottomSection,
-        });
+      const amount = extractAmountFromString(dueMatch[1] || dueMatch[0]);
+      if (amount !== null && amount > 0 && amount < 1000000) {
+        const minAmount = format ? format.extractionRules.minAmount : 0;
+        const maxAmount = format ? format.extractionRules.maxAmount : 1000000;
+        if (amount > minAmount && amount < maxAmount) {
+          amountCandidates.push({
+            amount,
+            line,
+            priority: isBottomSection ? 20 : 9, // Higher priority for bottom section
+            keyword: "amount due",
+            lineIndex: i,
+            isBottomSection,
+          });
+        }
       }
     }
   }
@@ -494,20 +541,109 @@ export function extractAmountFromText(text: string, format?: ReceiptFormat | nul
   }
 
   if (amountCandidates.length === 0) {
+    // FALLBACK STRATEGY 1: Try to find largest amount in bottom 30% of receipt
+    const bottomLines = lines.slice(bottomThreshold);
+    const bottomAmounts: number[] = [];
+    for (const line of bottomLines) {
+      const matches = Array.from(line.matchAll(/(\d+[.,]\d{2}|\d+\s+\d{2})/g));
+      for (const match of matches) {
+        const amount = extractAmountFromString(match[0]);
+        if (amount !== null && amount >= 1 && amount < 100000) {
+          bottomAmounts.push(amount);
+        }
+      }
+    }
+    if (bottomAmounts.length > 0) {
+      // Return largest amount from bottom section
+      return Math.max(...bottomAmounts);
+    }
+    
+    // FALLBACK STRATEGY 2: Try last line (often contains total)
+    if (lines.length > 0) {
+      const lastLine = lines[lines.length - 1];
+      const lastLineMatches = Array.from(lastLine.matchAll(/(\d+[.,]\d{2}|\d+\s+\d{2})/g));
+      if (lastLineMatches.length > 0) {
+        const amounts = lastLineMatches.map(m => extractAmountFromString(m[0])).filter(a => a !== null && a >= 1) as number[];
+        if (amounts.length > 0) {
+          return Math.max(...amounts);
+        }
+      }
+    }
+    
+    // FALLBACK STRATEGY 3: Calculate total from subtotal + tax
+    let foundSubtotal: number | null = null;
+    let foundTax: number | null = null;
+    for (const line of lines) {
+      const subtotalMatch = line.match(/\b(subtotal|sub\s*total)[:\s]*\$?\s*(\d+[.,]\d{2}|\d+\s+\d{2})/i);
+      if (subtotalMatch && !foundSubtotal) {
+        foundSubtotal = extractAmountFromString(subtotalMatch[2] || subtotalMatch[0]);
+      }
+      const taxMatch = line.match(/\b(tax|sales\s*tax)[:\s]*\$?\s*(\d+[.,]\d{2}|\d+\s+\d{2})/i);
+      if (taxMatch && !foundTax) {
+        foundTax = extractAmountFromString(taxMatch[2] || taxMatch[0]);
+      }
+    }
+    if (foundSubtotal !== null && foundTax !== null) {
+      const calculatedTotal = foundSubtotal + foundTax;
+      if (calculatedTotal > 0 && calculatedTotal < 100000) {
+        return calculatedTotal;
+      }
+    }
+    
     return null;
   }
 
+  // VALIDATION: Find subtotal to validate total is >= subtotal
+  let subtotal: number | null = null;
+  for (const line of lines) {
+    const subtotalMatch = line.match(/\b(subtotal|sub\s*total)[:\s]*\$?\s*(\d+[.,]\d{2}|\d+\s+\d{2})/i);
+    if (subtotalMatch) {
+      const subAmount = extractAmountFromString(subtotalMatch[2] || subtotalMatch[0]);
+      if (subAmount !== null && subAmount > 0) {
+        subtotal = subAmount;
+        break;
+      }
+    }
+  }
+
+  // VALIDATION: Filter out invalid amounts
+  const validCandidates = amountCandidates.filter(candidate => {
+    // Reject amounts that are too small (< $1) unless clearly marked as total
+    if (candidate.amount < 1 && candidate.keyword !== "total" && !candidate.isBottomSection) {
+      return false;
+    }
+    
+    // Reject amounts that are less than subtotal (unless subtotal is very small or it's high priority)
+    if (subtotal !== null && candidate.amount < subtotal && subtotal > 1) {
+      // Allow if it's a very high-priority match (might be correct despite being less)
+      if (candidate.priority < 25) {
+        return false;
+      }
+    }
+    
+    // Reject unreasonable amounts
+    if (candidate.amount <= 0 || candidate.amount > 100000) {
+      return false;
+    }
+    
+    return true;
+  });
+
+  // If no valid candidates after filtering, use original candidates (fallback)
+  const candidatesToUse = validCandidates.length > 0 ? validCandidates : amountCandidates;
+
   // Sort by priority (highest first), then by amount (largest first)
-  amountCandidates.sort((a, b) => {
+  candidatesToUse.sort((a, b) => {
     if (b.priority !== a.priority) {
       return b.priority - a.priority;
     }
+    // If same priority, prefer larger amounts (likely total vs subtotal)
     return b.amount - a.amount;
   });
 
   // Check for duplicate amounts (if same amount appears multiple times, it's likely the total)
   const amountCounts = new Map<number, number>();
-  amountCandidates.forEach(c => {
+  candidatesToUse.forEach(c => {
     amountCounts.set(c.amount, (amountCounts.get(c.amount) || 0) + 1);
   });
 
@@ -518,7 +654,7 @@ export function extractAmountFromText(text: string, format?: ReceiptFormat | nul
 
   if (duplicateAmounts.length > 0) {
     // Find the highest priority duplicate amount
-    for (const candidate of amountCandidates) {
+    for (const candidate of candidatesToUse) {
       if (duplicateAmounts.includes(candidate.amount) && candidate.priority >= 5) {
         return candidate.amount;
       }
@@ -526,7 +662,7 @@ export function extractAmountFromText(text: string, format?: ReceiptFormat | nul
   }
 
   // Return the highest priority amount
-  return amountCandidates[0].amount;
+  return candidatesToUse[0].amount;
 }
 
 /**
