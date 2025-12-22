@@ -22,6 +22,8 @@ import {
   deleteSOPDocument,
   getSOPTemplates,
   createSOPTemplate,
+  ensureEmployeeHandbook,
+  getEmployeeHandbook,
 } from "./sop-actions";
 import { formatDateTime, formatDateShort } from "@/lib/date-utils";
 import dynamic from "next/dynamic";
@@ -203,7 +205,12 @@ export default function OperationsCommonPage() {
   useEffect(() => {
     if (canView) {
       loadData();
+      // Ensure Employee Handbook exists (only runs once on mount for admins/managers)
+      if (isAdmin || userRole === "MANAGER") {
+        ensureEmployeeHandbook().catch(console.error);
+      }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canView, loadData]);
 
   // Filtered and sorted data
@@ -751,6 +758,47 @@ export default function OperationsCommonPage() {
                 </button>
               </div>
             ))}
+          </div>
+        </div>
+
+        {/* Employee Handbook Quick Access */}
+        <div className="mb-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl shadow border border-blue-200 p-4">
+          <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
+            <div className="flex-1">
+              <h3 className="text-lg font-semibold text-gray-900 mb-1">📖 Employee Handbook</h3>
+              <p className="text-sm text-gray-600">Access company policies, procedures, and guidelines</p>
+            </div>
+            <button
+              onClick={async () => {
+                // Ensure handbook exists
+                const ensureRes = await ensureEmployeeHandbook();
+                if (ensureRes.ok) {
+                  // Get the handbook document
+                  const handbookRes = await getEmployeeHandbook();
+                  if (handbookRes.ok && handbookRes.document) {
+                    // Navigate to the folder first
+                    const folderRes = await getFolders(null);
+                    if (folderRes.ok) {
+                      const handbookFolder = folderRes.folders?.find(f => f.name === "Employee Handbook");
+                      if (handbookFolder) {
+                        setCurrentFolderId(handbookFolder.id);
+                        setFolderPath([{ id: handbookFolder.id, name: handbookFolder.name }]);
+                        // Open the document
+                        setViewingDocument(handbookRes.document);
+                        setShowSOPViewer(true);
+                      }
+                    }
+                  } else {
+                    setError("Employee Handbook not found. Please contact an administrator.");
+                  }
+                } else {
+                  setError(ensureRes.error || "Failed to access Employee Handbook");
+                }
+              }}
+              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 text-sm font-medium min-h-[44px] shadow-sm hover:shadow-md active:scale-95 whitespace-nowrap"
+            >
+              Open Employee Handbook
+            </button>
           </div>
         </div>
 

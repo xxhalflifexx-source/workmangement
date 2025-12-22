@@ -379,3 +379,140 @@ export async function deleteSOPTemplate(id: string) {
   }
 }
 
+// ============ Employee Handbook Management ============
+
+/**
+ * Ensure Employee Handbook folder and document exist
+ * This creates them if they don't exist, making the migration seamless
+ */
+export async function ensureEmployeeHandbook() {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return { ok: false, error: "Not authenticated" };
+    }
+
+    const userId = (session.user as any).id;
+    const userRole = (session.user as any).role;
+
+    // Only admins and managers can ensure the handbook exists
+    if (userRole !== "ADMIN" && userRole !== "MANAGER") {
+      return { ok: false, error: "Unauthorized" };
+    }
+
+    // Check if Employee Handbook folder exists
+    let handbookFolder = await prisma.operationsCommonFolder.findFirst({
+      where: { name: "Employee Handbook", parentId: null },
+    });
+
+    // Create folder if it doesn't exist
+    if (!handbookFolder) {
+      handbookFolder = await prisma.operationsCommonFolder.create({
+        data: {
+          name: "Employee Handbook",
+          parentId: null,
+          createdBy: userId,
+        },
+      });
+    }
+
+    // Check if Employee Handbook document exists
+    let handbookDoc = await prisma.sOPDocument.findFirst({
+      where: { 
+        title: "Employee Handbook",
+        folderId: handbookFolder.id,
+      },
+    });
+
+    // Create default document if it doesn't exist
+    if (!handbookDoc) {
+      const defaultContent = `
+        <h1>Employee Handbook</h1>
+        <p>Welcome to the Employee Handbook. This document contains important information about company policies, procedures, and guidelines.</p>
+        <p>Please review this document regularly and contact management if you have any questions.</p>
+        <h2>Getting Started</h2>
+        <p>This handbook is managed by administrators and can be updated at any time. Check back regularly for updates.</p>
+      `;
+      
+      handbookDoc = await prisma.sOPDocument.create({
+        data: {
+          title: "Employee Handbook",
+          content: defaultContent.trim(),
+          folderId: handbookFolder.id,
+          createdBy: userId,
+        },
+      });
+    }
+
+    revalidatePath("/operations-common");
+    return { 
+      ok: true, 
+      folderId: handbookFolder.id,
+      documentId: handbookDoc.id,
+    };
+  } catch (error: any) {
+    console.error("Error ensuring Employee Handbook:", error);
+    
+    if (isTableMissingError(error)) {
+      const tableName = extractTableNameFromError(error) || "OperationsCommonFolder";
+      return {
+        ok: false,
+        error: getMissingTableError(tableName),
+      };
+    }
+    
+    return { ok: false, error: error?.message || "Failed to ensure Employee Handbook" };
+  }
+}
+
+/**
+ * Get Employee Handbook document
+ */
+export async function getEmployeeHandbook() {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return { ok: false, error: "Not authenticated" };
+    }
+
+    // Find Employee Handbook folder
+    const handbookFolder = await prisma.operationsCommonFolder.findFirst({
+      where: { name: "Employee Handbook", parentId: null },
+    });
+
+    if (!handbookFolder) {
+      return { ok: false, error: "Employee Handbook folder not found" };
+    }
+
+    // Find Employee Handbook document
+    const handbookDoc = await prisma.sOPDocument.findFirst({
+      where: { 
+        title: "Employee Handbook",
+        folderId: handbookFolder.id,
+      },
+      include: {
+        creator: { select: { id: true, name: true, email: true } },
+        folder: { select: { id: true, name: true } },
+      },
+    });
+
+    if (!handbookDoc) {
+      return { ok: false, error: "Employee Handbook document not found" };
+    }
+
+    return { ok: true, document: handbookDoc, folderId: handbookFolder.id };
+  } catch (error: any) {
+    console.error("Error getting Employee Handbook:", error);
+    
+    if (isTableMissingError(error)) {
+      const tableName = extractTableNameFromError(error) || "SOPDocument";
+      return {
+        ok: false,
+        error: getMissingTableError(tableName),
+      };
+    }
+    
+    return { ok: false, error: error?.message || "Failed to get Employee Handbook" };
+  }
+}
+
