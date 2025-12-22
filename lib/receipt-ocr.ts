@@ -145,6 +145,49 @@ export function extractAmountFromText(text: string, format?: ReceiptFormat | nul
     return amounts;
   }
 
+  // PRIORITY -1: ULTRA-PRIORITY - Look for "total" with amount DIRECTLY to the right (0-10 chars away)
+  // 95% of receipts have amount immediately right of "total" - check ALL lines first
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    
+    // Look for "total" keyword (case insensitive)
+    const totalMatch = line.match(/\b(total|grand\s*total|final\s*total|amount\s*total)\b/i);
+    if (totalMatch && totalMatch.index !== undefined) {
+      const totalIndex = totalMatch.index;
+      const afterTotal = line.substring(totalIndex + totalMatch[0].length);
+      
+      // Pattern 1: "Total $XX.XX" or "Total: $XX.XX" - amount immediately after total (0-10 chars)
+      const immediateMatch = afterTotal.match(/^[:\s]*\$?\s*(\d+\.\d{2})/);
+      if (immediateMatch) {
+        const amount = parseFloat(immediateMatch[1]);
+        const minAmount = format ? format.extractionRules.minAmount : 0;
+        const maxAmount = format ? format.extractionRules.maxAmount : 1000000;
+        
+        if (!isNaN(amount) && amount > minAmount && amount < maxAmount) {
+          // Found amount DIRECTLY right of total - return immediately!
+          return amount;
+        }
+      }
+      
+      // Pattern 2: Amount within 10 characters of "total" (check for spacing/padding)
+      const nearbyMatch = afterTotal.substring(0, 15).match(/(\d+\.\d{2})/);
+      if (nearbyMatch) {
+        const distance = nearbyMatch.index || 0;
+        // Only accept if amount is within 10 characters (allowing for spacing, colons, etc.)
+        if (distance <= 10) {
+          const amount = parseFloat(nearbyMatch[1]);
+          const minAmount = format ? format.extractionRules.minAmount : 0;
+          const maxAmount = format ? format.extractionRules.maxAmount : 1000000;
+          
+          if (!isNaN(amount) && amount > minAmount && amount < maxAmount) {
+            // Found amount very close to total - return immediately!
+            return amount;
+          }
+        }
+      }
+    }
+  }
+
   // PRIORITY 0: FIRST PASS - Look ONLY in bottom section for "TOTAL" keyword
   // If found, use it immediately (most reliable indicator)
   for (let i = bottomThreshold; i < lines.length; i++) {
@@ -192,7 +235,8 @@ export function extractAmountFromText(text: string, format?: ReceiptFormat | nul
     if (totalKeywordMatch) {
       // Try multiple patterns to find amount next to "total"
       
-      // Pattern 1: "Total $XX.XX" or "Total: $XX.XX" or "Total XX.XX"
+      // Pattern 1: "Total $XX.XX" or "Total: $XX.XX" or "Total XX.XX" - AMOUNT DIRECTLY RIGHT OF TOTAL
+      // This is the 95% case - highest priority!
       const pattern1 = line.match(/\btotal\b[:\s]*\$?\s*(\d+\.\d{2})/i);
       if (pattern1) {
         const amount = parseFloat(pattern1[1]);
@@ -204,10 +248,12 @@ export function extractAmountFromText(text: string, format?: ReceiptFormat | nul
           const normalizedLine = line.replace(/\d+\.\d{2}/g, "AMOUNT").replace(/\d+/g, "NUM").replace(/\s+/g, " ").trim().toUpperCase();
           const learnedBoost = learnedPatternMap.get(normalizedLine) || 0;
           
+          // ULTRA HIGH PRIORITY: Amount directly right of total (95% case)
+          // Priority: 30+ for bottom section, 28+ for other sections
           amountCandidates.push({
             amount,
             line,
-            priority: (isBottomSection ? 25 : 13) + learnedBoost, // MUCH higher priority for bottom section
+            priority: (isBottomSection ? 35 : 28) + learnedBoost, // HIGHEST priority - amount directly right of total
             keyword: "total",
             lineIndex: i,
             isBottomSection,
@@ -215,7 +261,7 @@ export function extractAmountFromText(text: string, format?: ReceiptFormat | nul
         }
       }
       
-      // Pattern 2: Amount at end of line after "total" keyword
+      // Pattern 2: Amount at end of line after "total" keyword (lower priority than Pattern 1)
       // "Total                   20.53" or "Total 20.53"
       const endMatch = line.match(/\btotal\b.*?(\d+\.\d{2})\s*$/i);
       if (endMatch) {
@@ -228,10 +274,11 @@ export function extractAmountFromText(text: string, format?: ReceiptFormat | nul
           const normalizedLine = line.replace(/\d+\.\d{2}/g, "AMOUNT").replace(/\d+/g, "NUM").replace(/\s+/g, " ").trim().toUpperCase();
           const learnedBoost = learnedPatternMap.get(normalizedLine) || 0;
           
+          // Lower priority than Pattern 1 (amount is further from total)
           amountCandidates.push({
             amount,
             line,
-            priority: (isBottomSection ? 25 : 13) + learnedBoost, // MUCH higher priority for bottom section
+            priority: (isBottomSection ? 22 : 15) + learnedBoost, // Lower priority - amount at end of line
             keyword: "total",
             lineIndex: i,
             isBottomSection,
@@ -239,7 +286,7 @@ export function extractAmountFromText(text: string, format?: ReceiptFormat | nul
         }
       }
       
-      // Pattern 3: Amount anywhere on the line with "total" (fallback)
+      // Pattern 3: Amount anywhere on the line with "total" (fallback - lowest priority)
       // Extract all amounts from the line and prefer the largest reasonable one
       const allAmountsOnLine = Array.from(line.matchAll(/(\d+\.\d{2})/g));
       for (const match of allAmountsOnLine) {
@@ -259,10 +306,11 @@ export function extractAmountFromText(text: string, format?: ReceiptFormat | nul
             const normalizedLine = line.replace(/\d+\.\d{2}/g, "AMOUNT").replace(/\d+/g, "NUM").replace(/\s+/g, " ").trim().toUpperCase();
             const learnedBoost = learnedPatternMap.get(normalizedLine) || 0;
             
+            // LOWEST priority - amount is somewhere on line but not directly right of total
             amountCandidates.push({
               amount,
               line,
-              priority: (isBottomSection ? 24 : 12) + learnedBoost, // MUCH higher priority for bottom section
+              priority: (isBottomSection ? 18 : 10) + learnedBoost, // Lower priority - amount not directly right of total
               keyword: "total",
               lineIndex: i,
               isBottomSection,
