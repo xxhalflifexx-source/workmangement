@@ -270,6 +270,14 @@ export async function getOrganizationUsers(orgId: string) {
         role: true,
         status: true,
         isVerified: true,
+        organizationId: true,
+        organization: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+          },
+        },
         createdAt: true,
         _count: {
           select: {

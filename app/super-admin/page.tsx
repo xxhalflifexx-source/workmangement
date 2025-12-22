@@ -47,7 +47,7 @@ interface OrgUser {
     name: string;
     slug: string;
   } | null;
-  createdAt: string;
+  createdAt: Date;
   _count: {
     timeEntries: number;
     assignedJobs: number;
