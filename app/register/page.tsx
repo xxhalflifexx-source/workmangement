@@ -68,12 +68,6 @@ export default function RegisterPage() {
           className="border p-2 w-full rounded min-h-[44px]"
           required
         />
-        <input
-          name="registrationCode"
-          type="password"
-          placeholder="Registration Code (optional)"
-          className="border p-2 w-full rounded min-h-[44px]"
-        />
         {error && <p className="text-red-600 text-sm">{error}</p>}
         <button className="border px-4 py-2 w-full rounded bg-blue-600 text-white hover:bg-blue-700 min-h-[44px]">
           Register

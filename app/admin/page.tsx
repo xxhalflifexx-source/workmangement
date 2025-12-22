@@ -13,7 +13,6 @@ import {
 } from "./actions";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
-import RegistrationCodes from "../dashboard/RegistrationCodes";
 import { formatDateShort, formatDateInput, formatDateOnlyInput, todayCentralISO, nowInCentral, utcToCentral } from "@/lib/date-utils";
 import {
   getAllUsersWithPermissions,
@@ -70,7 +69,7 @@ export default function AdminPage() {
   const [success, setSuccess] = useState<string | undefined>();
   const [logoUrl, setLogoUrl] = useState<string>("");
   const [logoUploading, setLogoUploading] = useState(false);
-  const [activeTab, setActiveTab] = useState<"users" | "settings" | "registration-codes" | "user-access">("users");
+  const [activeTab, setActiveTab] = useState<"users" | "settings" | "user-access">("users");
   
   // User Access Control state
   const [accessUsers, setAccessUsers] = useState<UserWithPermissions[]>([]);
@@ -434,18 +433,6 @@ export default function AdminPage() {
               >
                 🏢 <span className="ml-1 sm:ml-0">Company Settings</span>
               </button>
-              {isAdmin && (
-                <button
-                  onClick={() => setActiveTab("registration-codes")}
-                  className={`py-3 sm:py-4 px-2 sm:px-1 border-b-2 font-medium text-xs sm:text-sm whitespace-nowrap min-h-[44px] flex items-center ${
-                    activeTab === "registration-codes"
-                      ? "border-purple-500 text-purple-600"
-                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                  }`}
-                >
-                  🔑 <span className="ml-1 sm:ml-0">Registration Codes</span>
-                </button>
-              )}
               {isAdmin && (
                 <button
                   onClick={() => setActiveTab("user-access")}
@@ -1031,30 +1018,6 @@ export default function AdminPage() {
         )}
 
 
-        {/* Registration Codes Tab - Admin Only */}
-        {activeTab === "registration-codes" && isAdmin && (
-          <div className="bg-white rounded-xl shadow border border-gray-200">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h2 className="text-xl font-semibold text-gray-900">Registration Codes</h2>
-              <p className="text-sm text-gray-500 mt-1">
-                Manage registration codes for new user signups. Only admins can view and manage these codes.
-              </p>
-            </div>
-            <div className="p-6">
-              <RegistrationCodes />
-            </div>
-          </div>
-        )}
-
-        {/* Access Denied Message for Non-Admins */}
-        {activeTab === "registration-codes" && !isAdmin && (
-          <div className="bg-white rounded-xl shadow border border-gray-200 p-8 text-center">
-            <div className="text-red-600 text-xl font-bold mb-2">⚠️ Access Denied</div>
-            <p className="text-gray-600">
-              You do not have permission to view registration codes. Only administrators can access this section.
-            </p>
-          </div>
-        )}
 
         {/* User Access Control Tab */}
         {activeTab === "user-access" && isAdmin && (

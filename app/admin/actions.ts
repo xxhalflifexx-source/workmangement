@@ -309,6 +309,7 @@ export async function updateUserRole(userId: string, newRole: string) {
   }
 
   const userRole = (session.user as any).role;
+  const currentUserId = (session.user as any).id;
 
   // Only admins and managers can change roles (including their own)
   if (userRole !== "ADMIN" && userRole !== "MANAGER") {
@@ -321,6 +322,35 @@ export async function updateUserRole(userId: string, newRole: string) {
   }
 
   try {
+    // Check if user is trying to change their own role
+    if (userId === currentUserId) {
+      // Prevent admins from removing their own admin status
+      // This ensures at least one admin always exists
+      const currentUser = await prisma.user.findUnique({
+        where: { id: currentUserId },
+        select: { role: true },
+      });
+
+      if (currentUser?.role === "ADMIN" && newRole !== "ADMIN") {
+        // Count how many other admins exist
+        const adminCount = await prisma.user.count({
+          where: {
+            role: "ADMIN",
+            id: { not: currentUserId },
+            organizationId: (session.user as any).organizationId,
+          },
+        });
+
+        // If this is the only admin, prevent role change
+        if (adminCount === 0) {
+          return { 
+            ok: false, 
+            error: "Cannot change your role: You are the only admin. Please assign another user as admin first." 
+          };
+        }
+      }
+    }
+
     await prisma.user.update({
       where: { id: userId },
       data: { role: newRole },

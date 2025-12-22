@@ -13,7 +13,6 @@ const schema = z.object({
   confirmPassword: z.string().min(6),
   gender: z.enum(["Male", "Female", "Others"]),
   birthDate: z.string().min(1),
-  registrationCode: z.string().optional(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],
@@ -24,13 +23,6 @@ const verifySchema = z.object({
   code: z.string().length(6),
 });
 
-// Registration codes for role assignment
-const ROLE_CODES = {
-  sunrise: "EMPLOYEE",
-  sunset: "MANAGER",
-  moonlight: "ADMIN",
-} as const;
-
 export async function registerUser(formData: FormData) {
   try {
     const data = Object.fromEntries(formData.entries());
@@ -40,7 +32,7 @@ export async function registerUser(formData: FormData) {
       return { ok: false, error: "Invalid input" };
     }
     
-    const { name, email, password, gender, birthDate, registrationCode } = parsed.data;
+    const { name, email, password, gender, birthDate } = parsed.data;
     // confirmPassword is validated but not needed after validation
     
     // Parse birthDate string to Date object (date-only, no timezone shift)
@@ -58,14 +50,9 @@ export async function registerUser(formData: FormData) {
       }
     }
     
-    // Determine role based on registration code
-    let role = "EMPLOYEE"; // Default role
-    if (registrationCode) {
-      const code = registrationCode.toLowerCase().trim();
-      if (code in ROLE_CODES) {
-        role = ROLE_CODES[code as keyof typeof ROLE_CODES];
-      }
-    }
+    // All new users default to EMPLOYEE role
+    // Roles are assigned by admins after registration
+    const role = "EMPLOYEE";
     
     const passwordHash = await hash(password, 10);
     
