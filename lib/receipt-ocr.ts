@@ -540,9 +540,26 @@ export function extractAmountFromText(text: string, format?: ReceiptFormat | nul
     }
   }
 
+  // DEBUG: Log all candidates found
+  if (amountCandidates.length > 0) {
+    console.log(`[ReceiptOCR] Found ${amountCandidates.length} amount candidates:`, 
+      amountCandidates.map(c => ({
+        amount: c.amount,
+        priority: c.priority,
+        keyword: c.keyword,
+        line: c.line.substring(0, 50),
+        isBottom: c.isBottomSection
+      }))
+    );
+  }
+
   if (amountCandidates.length === 0) {
+    console.log("[ReceiptOCR] No candidates found, trying fallback strategies...");
+    console.log("[ReceiptOCR] Total lines:", totalLines, "Bottom threshold:", bottomThreshold);
+    
     // FALLBACK STRATEGY 1: Try to find largest amount in bottom 30% of receipt
     const bottomLines = lines.slice(bottomThreshold);
+    console.log("[ReceiptOCR] Checking bottom", bottomLines.length, "lines");
     const bottomAmounts: number[] = [];
     for (const line of bottomLines) {
       const matches = Array.from(line.matchAll(/(\d+[.,]\d{2}|\d+\s+\d{2})/g));
@@ -550,12 +567,14 @@ export function extractAmountFromText(text: string, format?: ReceiptFormat | nul
         const amount = extractAmountFromString(match[0]);
         if (amount !== null && amount >= 1 && amount < 100000) {
           bottomAmounts.push(amount);
+          console.log("[ReceiptOCR] Found amount in bottom section:", amount, "from line:", line.substring(0, 60));
         }
       }
     }
     if (bottomAmounts.length > 0) {
-      // Return largest amount from bottom section
-      return Math.max(...bottomAmounts);
+      const maxAmount = Math.max(...bottomAmounts);
+      console.log("[ReceiptOCR] Fallback 1 success: returning", maxAmount, "from bottom section");
+      return maxAmount;
     }
     
     // FALLBACK STRATEGY 2: Try last line (often contains total)
@@ -586,10 +605,33 @@ export function extractAmountFromText(text: string, format?: ReceiptFormat | nul
     if (foundSubtotal !== null && foundTax !== null) {
       const calculatedTotal = foundSubtotal + foundTax;
       if (calculatedTotal > 0 && calculatedTotal < 100000) {
+        console.log("[ReceiptOCR] Fallback 3 success: calculated total", calculatedTotal, "from subtotal", foundSubtotal, "+ tax", foundTax);
         return calculatedTotal;
       }
     }
     
+    // FALLBACK STRATEGY 4: Last resort - find ANY amount in last 3 lines (often the total)
+    console.log("[ReceiptOCR] Fallback 4: Checking last 3 lines for any amount");
+    const last3Lines = lines.slice(Math.max(0, lines.length - 3));
+    const last3Amounts: number[] = [];
+    for (const line of last3Lines) {
+      const matches = Array.from(line.matchAll(/(\d+[.,]\d{2}|\d+\s+\d{2})/g));
+      for (const match of matches) {
+        const amount = extractAmountFromString(match[0]);
+        if (amount !== null && amount >= 1 && amount < 100000) {
+          last3Amounts.push(amount);
+          console.log("[ReceiptOCR] Found amount in last 3 lines:", amount, "from:", line.substring(0, 60));
+        }
+      }
+    }
+    if (last3Amounts.length > 0) {
+      // Prefer largest amount from last 3 lines
+      const maxAmount = Math.max(...last3Amounts);
+      console.log("[ReceiptOCR] Fallback 4 success: returning", maxAmount, "from last 3 lines");
+      return maxAmount;
+    }
+    
+    console.log("[ReceiptOCR] All fallback strategies failed - no amount found");
     return null;
   }
 
@@ -610,6 +652,7 @@ export function extractAmountFromText(text: string, format?: ReceiptFormat | nul
   const validCandidates = amountCandidates.filter(candidate => {
     // Reject amounts that are too small (< $1) unless clearly marked as total
     if (candidate.amount < 1 && candidate.keyword !== "total" && !candidate.isBottomSection) {
+      console.log(`[ReceiptOCR] Rejected candidate ${candidate.amount}: too small (< $1) and not marked as total`);
       return false;
     }
     
@@ -617,17 +660,21 @@ export function extractAmountFromText(text: string, format?: ReceiptFormat | nul
     if (subtotal !== null && candidate.amount < subtotal && subtotal > 1) {
       // Allow if it's a very high-priority match (might be correct despite being less)
       if (candidate.priority < 25) {
+        console.log(`[ReceiptOCR] Rejected candidate ${candidate.amount}: less than subtotal ${subtotal} and priority ${candidate.priority} < 25`);
         return false;
       }
     }
     
     // Reject unreasonable amounts
     if (candidate.amount <= 0 || candidate.amount > 100000) {
+      console.log(`[ReceiptOCR] Rejected candidate ${candidate.amount}: unreasonable amount`);
       return false;
     }
     
     return true;
   });
+  
+  console.log(`[ReceiptOCR] After validation: ${validCandidates.length} valid candidates out of ${amountCandidates.length} total`);
 
   // If no valid candidates after filtering, use original candidates (fallback)
   const candidatesToUse = validCandidates.length > 0 ? validCandidates : amountCandidates;
@@ -662,7 +709,9 @@ export function extractAmountFromText(text: string, format?: ReceiptFormat | nul
   }
 
   // Return the highest priority amount
-  return candidatesToUse[0].amount;
+  const finalAmount = candidatesToUse[0].amount;
+  console.log(`[ReceiptOCR] Selected final amount: ${finalAmount} (priority: ${candidatesToUse[0].priority}, keyword: ${candidatesToUse[0].keyword})`);
+  return finalAmount;
 }
 
 /**

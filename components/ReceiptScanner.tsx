@@ -1179,8 +1179,80 @@ export default function ReceiptScanner({
                   </button>
                   {showDebug && (
                     <div className="mt-2 space-y-3">
-                      <div className="p-3 bg-gray-100 rounded text-xs font-mono text-gray-700 max-h-32 overflow-y-auto">
-                        {ocrText || "No text extracted"}
+                      {/* OCR Text Preview */}
+                      <div className="p-3 bg-gray-100 rounded text-xs">
+                        <p className="font-semibold text-gray-900 mb-1">📄 OCR Text ({ocrText.length} chars):</p>
+                        <div className="font-mono text-gray-700 max-h-40 overflow-y-auto whitespace-pre-wrap break-words">
+                          {ocrText || "No text extracted"}
+                        </div>
+                      </div>
+                      
+                      {/* Detected Amounts */}
+                      {allAmounts.length > 0 && (
+                        <div className="p-3 bg-blue-50 border border-blue-200 rounded">
+                          <p className="text-xs font-semibold text-blue-900 mb-1">
+                            💰 Detected Amounts ({allAmounts.length}):
+                          </p>
+                          <div className="text-xs text-blue-800 space-y-1">
+                            {allAmounts.slice(0, 10).map((amt, idx) => (
+                              <div key={idx} className="flex items-center gap-2">
+                                <span className="font-mono">${amt.toFixed(2)}</span>
+                                {amt === extractedAmount && (
+                                  <span className="text-green-600 font-semibold">✓ Selected</span>
+                                )}
+                              </div>
+                            ))}
+                            {allAmounts.length > 10 && (
+                              <p className="text-gray-600">... and {allAmounts.length - 10} more</p>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Amounts with Context */}
+                      {amountsWithContext.length > 0 && (
+                        <div className="p-3 bg-purple-50 border border-purple-200 rounded">
+                          <p className="text-xs font-semibold text-purple-900 mb-1">
+                            🔍 Amounts with Context ({amountsWithContext.length}):
+                          </p>
+                          <div className="text-xs text-purple-800 space-y-2 max-h-40 overflow-y-auto">
+                            {amountsWithContext.slice(0, 5).map((item, idx) => (
+                              <div key={idx} className="border-b border-purple-200 pb-1">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className="font-mono font-semibold">${item.amount.toFixed(2)}</span>
+                                  <span className="px-1.5 py-0.5 bg-purple-200 rounded text-xs">{item.keyword}</span>
+                                </div>
+                                <div className="font-mono text-gray-600 text-xs truncate" title={item.line}>
+                                  {item.line.length > 60 ? item.line.substring(0, 60) + "..." : item.line}
+                                </div>
+                              </div>
+                            ))}
+                            {amountsWithContext.length > 5 && (
+                              <p className="text-gray-600 text-xs">... and {amountsWithContext.length - 5} more</p>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Extraction Info */}
+                      <div className="p-3 bg-green-50 border border-green-200 rounded">
+                        <p className="text-xs font-semibold text-green-900 mb-1">ℹ️ Extraction Info:</p>
+                        <div className="text-xs text-green-800 space-y-1">
+                          {successfulStrategy && (
+                            <p>Strategy: <span className="font-mono">{successfulStrategy}</span></p>
+                          )}
+                          {ocrConfidence !== null && (
+                            <p>OCR Confidence: <span className="font-mono">{ocrConfidence}%</span></p>
+                          )}
+                          {detectedFormat && (
+                            <p>Format: <span className="font-mono">{detectedFormat.storeName}</span></p>
+                          )}
+                          {extractedAmount !== null ? (
+                            <p className="font-semibold">✓ Amount Extracted: <span className="font-mono">${extractedAmount.toFixed(2)}</span></p>
+                          ) : (
+                            <p className="font-semibold text-red-600">✗ No amount extracted</p>
+                          )}
+                        </div>
                       </div>
                       
                       {/* Learning Controls */}
