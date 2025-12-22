@@ -132,10 +132,10 @@ export default function SOPViewer({
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-auto p-6">
-        <div className="max-w-4xl mx-auto bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 p-8">
+      <div className="flex-1 overflow-auto p-6 bg-gray-50">
+        <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-sm border border-gray-200 p-8">
           <div 
-            className="prose dark:prose-invert max-w-none sop-content"
+            className="prose max-w-none sop-content"
             dangerouslySetInnerHTML={{ __html: content }}
           />
         </div>
@@ -143,48 +143,48 @@ export default function SOPViewer({
 
       {/* Custom styles for content */}
       <style jsx global>{`
+        /* Force white background for content container */
         .sop-content {
-          color: #111827 !important;
-        }
-        .dark .sop-content {
-          color: #f9fafb !important;
+          background: #ffffff !important;
+          color: #1f2937 !important;
         }
         .sop-content * {
           color: inherit;
         }
+        /* Body text - dark gray for high contrast */
         .sop-content p,
         .sop-content div,
         .sop-content span,
         .sop-content li,
         .sop-content td,
         .sop-content th {
-          color: #111827 !important;
+          color: #1f2937 !important;
+          background: transparent !important;
         }
-        .dark .sop-content p,
-        .dark .sop-content div,
-        .dark .sop-content span,
-        .dark .sop-content li,
-        .dark .sop-content td,
-        .dark .sop-content th {
-          color: #f9fafb !important;
-        }
+        /* Headings - darker for emphasis */
         .sop-content h1,
         .sop-content h2,
         .sop-content h3,
         .sop-content h4,
         .sop-content h5,
         .sop-content h6 {
-          color: #111827 !important;
+          color: #0f172a !important;
+          background: transparent !important;
           margin-top: 24px;
           margin-bottom: 16px;
+          font-weight: 700;
         }
-        .dark .sop-content h1,
-        .dark .sop-content h2,
-        .dark .sop-content h3,
-        .dark .sop-content h4,
-        .dark .sop-content h5,
-        .dark .sop-content h6 {
-          color: #f9fafb !important;
+        .sop-content h1 {
+          font-size: 2rem;
+          color: #0f172a !important;
+        }
+        .sop-content h2 {
+          font-size: 1.75rem;
+          color: #1e293b !important;
+        }
+        .sop-content h3 {
+          font-size: 1.5rem;
+          color: #1e293b !important;
         }
         .sop-content img {
           max-width: 100%;
@@ -207,39 +207,32 @@ export default function SOPViewer({
           border-left: 4px solid #3b82f6;
           padding-left: 16px;
           margin: 16px 0;
-          color: #6b7280 !important;
-        }
-        .dark .sop-content blockquote {
-          color: #9ca3af !important;
+          color: #374151 !important;
+          background: #f8fafc !important;
         }
         .sop-content pre {
-          background: #f3f4f6 !important;
+          background: #f1f5f9 !important;
           padding: 16px;
           border-radius: 8px;
           overflow-x: auto;
-          color: #111827 !important;
-        }
-        .dark .sop-content pre {
-          background: #1f2937 !important;
-          color: #f9fafb !important;
+          color: #1e293b !important;
+          border: 1px solid #e2e8f0;
         }
         .sop-content code {
-          background: #f3f4f6 !important;
+          background: #f1f5f9 !important;
           padding: 2px 6px;
           border-radius: 4px;
           font-size: 14px;
-          color: #111827 !important;
-        }
-        .dark .sop-content code {
-          background: #374151 !important;
-          color: #f9fafb !important;
+          color: #1e293b !important;
+          border: 1px solid #e2e8f0;
         }
         .sop-content a {
-          color: #3b82f6 !important;
+          color: #2563eb !important;
           text-decoration: underline;
+          font-weight: 600;
         }
-        .dark .sop-content a {
-          color: #60a5fa !important;
+        .sop-content a:hover {
+          color: #1d4ed8 !important;
         }
         .sop-content table {
           width: 100%;
@@ -247,21 +240,17 @@ export default function SOPViewer({
           margin: 16px 0;
         }
         .sop-content th, .sop-content td {
-          border: 1px solid #e5e7eb;
+          border: 1px solid #e2e8f0;
           padding: 8px 12px;
           text-align: left;
         }
-        .dark .sop-content th, .dark .sop-content td {
-          border-color: #374151;
-        }
         .sop-content th {
-          background: #f9fafb !important;
+          background: #f8fafc !important;
           font-weight: 600;
-          color: #111827 !important;
+          color: #0f172a !important;
         }
-        .dark .sop-content th {
-          background: #1f2937 !important;
-          color: #f9fafb !important;
+        .sop-content td {
+          color: #1f2937 !important;
         }
         /* Override any inline background colors that might cause visibility issues */
         .sop-content [style*="background"] {
@@ -272,10 +261,30 @@ export default function SOPViewer({
         }
         /* Ensure text in elements with background colors is visible */
         .sop-content [style*="background"] * {
-          color: #111827 !important;
+          color: #1f2937 !important;
         }
-        .dark .sop-content [style*="background"] * {
-          color: #f9fafb !important;
+        /* Override any inline color styles that might be too light */
+        .sop-content [style*="color"] {
+          color: #1f2937 !important;
+        }
+        .sop-content [style*="color:"] {
+          color: #1f2937 !important;
+        }
+        /* Strong emphasis for important text */
+        .sop-content strong,
+        .sop-content b {
+          color: #0f172a !important;
+          font-weight: 700;
+        }
+        /* List items */
+        .sop-content ul li,
+        .sop-content ol li {
+          color: #1f2937 !important;
+        }
+        /* Ensure all text elements have proper contrast */
+        .sop-content em,
+        .sop-content i {
+          color: #1f2937 !important;
         }
       `}</style>
     </div>
