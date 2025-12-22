@@ -70,32 +70,22 @@ export default async function Dashboard() {
     console.error("[Dashboard] Error getting unread counts:", error);
   }
 
-  // Get company settings for logo - filter by organization if user has one
+  // Get company settings for logo
+  // Simplified query to avoid Prisma type issues - will show first available settings
   let companyLogoUrl = "";
   let companyName = "Employee Portal";
   try {
-    const userOrganizationId = (user as any)?.organizationId || null;
-    let companySettings = null;
-    
-    if (userOrganizationId) {
-      try {
-        // Use type assertion to work around Prisma type issues
-        companySettings = await prisma.companySettings.findFirst({
-          where: { organizationId: userOrganizationId } as any
-        });
-      } catch (queryError) {
-        console.error("Error querying company settings by organization:", queryError);
-        // Fallback to any settings if org-specific query fails
-        companySettings = await prisma.companySettings.findFirst().catch(() => null);
+    // Check if companySettings model exists before querying
+    if (prisma && typeof (prisma as any).companySettings !== 'undefined') {
+      const companySettings = await (prisma as any).companySettings.findFirst().catch(() => null);
+      if (companySettings) {
+        companyLogoUrl = companySettings.logoUrl || "";
+        companyName = companySettings.companyName || "Employee Portal";
       }
-    } else {
-      companySettings = await prisma.companySettings.findFirst().catch(() => null);
     }
-    
-    companyLogoUrl = companySettings?.logoUrl || "";
-    companyName = companySettings?.companyName || "Employee Portal";
   } catch (error) {
-    console.error("Error fetching company settings:", error);
+    console.error("[Dashboard] Error fetching company settings:", error);
+    // Use defaults - page will still render
   }
 
   // Categorize notifications by their module/responsibility (linkUrl)
@@ -271,7 +261,30 @@ export default async function Dashboard() {
     );
   } catch (error: any) {
     console.error("[Dashboard] Server component error:", error);
+    console.error("[Dashboard] Error message:", error?.message);
     console.error("[Dashboard] Error stack:", error?.stack);
-    throw error; // Let error boundary handle it
+    
+    // Instead of throwing, return a basic error page so user can still navigate
+    return (
+      <DashboardWrapper>
+        <main className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="bg-white rounded-xl shadow-lg border border-red-200 p-8 max-w-lg text-center">
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">Dashboard Error</h1>
+            <p className="text-gray-600 mb-4">
+              There was an error loading the dashboard. Please try refreshing the page.
+            </p>
+            <p className="text-sm text-gray-500 mb-4">
+              If the problem persists, please contact support.
+            </p>
+            <Link
+              href="/login"
+              className="inline-flex items-center px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors"
+            >
+              Return to Login
+            </Link>
+          </div>
+        </main>
+      </DashboardWrapper>
+    );
   }
 }
