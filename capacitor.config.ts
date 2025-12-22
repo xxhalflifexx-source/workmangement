@@ -6,7 +6,7 @@ const config: CapacitorConfig = {
   webDir: 'public', // Use public directory (will be empty, server handles rendering)
   server: {
     // Point to your deployed server URL
-    url: process.env.CAPACITOR_SERVER_URL || 'https://nextjs-auth-roles.vercel.app',
+    url: process.env.CAPACITOR_SERVER_URL || 'https://shoptofield.com/app',
     androidScheme: 'https',
     iosScheme: 'https',
   },

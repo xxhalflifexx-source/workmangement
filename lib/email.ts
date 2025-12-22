@@ -135,7 +135,7 @@ export async function sendPasswordResetEmail(
 
   // Always use production URL for password reset emails so links work reliably
   // Preview deployments can fail, but production is always available
-  const productionUrl = process.env.PRODUCTION_URL || "https://nextjs-auth-roles.vercel.app";
+  const productionUrl = process.env.PRODUCTION_URL || "https://shoptofield.com/app";
   const resetUrl = `${productionUrl}/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}`;
   
   try {
@@ -238,7 +238,7 @@ export async function sendJobStatusEmail(
       : "There has been an update to this job. Please log in to review the details.";
 
   const productionUrl =
-    process.env.PRODUCTION_URL || "https://nextjs-auth-roles.vercel.app";
+    process.env.PRODUCTION_URL || "https://shoptofield.com/app";
 
   const jobLink = `${productionUrl}/jobs`;
 
