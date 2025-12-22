@@ -12,6 +12,9 @@ import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import DashboardWrapper from "./DashboardWrapper";
 
+// Mark this page as dynamic since it uses getServerSession which accesses headers/cookies
+export const dynamic = 'force-dynamic';
+
 export default async function Dashboard() {
   console.log("[Dashboard] Server component starting...");
   
