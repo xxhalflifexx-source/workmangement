@@ -41,29 +41,57 @@ export default async function Dashboard() {
   const isSuperAdmin = (user as any)?.isSuperAdmin || false;
   const organizationName = (user as any)?.organizationName || null;
 
-  // Get user permissions
-  const permissionsRes = await getUserPermissionsForSession();
-  const permissions = permissionsRes.ok ? permissionsRes.permissions : null;
+  // Get user permissions - wrap in try-catch to prevent crashes
+  let permissions = null;
+  try {
+    const permissionsRes = await getUserPermissionsForSession();
+    permissions = permissionsRes.ok ? permissionsRes.permissions : null;
+  } catch (error) {
+    console.error("[Dashboard] Error getting permissions:", error);
+  }
 
-  // Load notifications
-  const notificationsRes = await getNotifications();
-  const notifications = notificationsRes.ok && notificationsRes.notifications ? notificationsRes.notifications : [];
-  const unreadCount = notificationsRes.ok ? (notificationsRes.unreadCount || 0) : 0;
+  // Load notifications - wrap in try-catch to prevent crashes
+  let notifications: any[] = [];
+  let unreadCount = 0;
+  try {
+    const notificationsRes = await getNotifications();
+    notifications = notificationsRes.ok && notificationsRes.notifications ? notificationsRes.notifications : [];
+    unreadCount = notificationsRes.ok ? (notificationsRes.unreadCount || 0) : 0;
+  } catch (error) {
+    console.error("[Dashboard] Error getting notifications:", error);
+  }
 
-  // Get unread counts by module
-  const unreadCountsRes = await getUnreadCountsByModule();
-  const unreadCounts = unreadCountsRes.ok && unreadCountsRes.counts ? unreadCountsRes.counts : {};
+  // Get unread counts by module - wrap in try-catch to prevent crashes
+  let unreadCounts: Record<string, number> = {};
+  try {
+    const unreadCountsRes = await getUnreadCountsByModule();
+    unreadCounts = unreadCountsRes.ok && unreadCountsRes.counts ? unreadCountsRes.counts : {};
+  } catch (error) {
+    console.error("[Dashboard] Error getting unread counts:", error);
+  }
 
   // Get company settings for logo - filter by organization if user has one
   let companyLogoUrl = "";
   let companyName = "Employee Portal";
   try {
     const userOrganizationId = (user as any)?.organizationId || null;
-    const companySettings = userOrganizationId
-      ? await prisma.companySettings.findFirst({
+    let companySettings = null;
+    
+    if (userOrganizationId) {
+      try {
+        // Use type assertion to work around Prisma type issues
+        companySettings = await prisma.companySettings.findFirst({
           where: { organizationId: userOrganizationId } as any
-        })
-      : await prisma.companySettings.findFirst();
+        });
+      } catch (queryError) {
+        console.error("Error querying company settings by organization:", queryError);
+        // Fallback to any settings if org-specific query fails
+        companySettings = await prisma.companySettings.findFirst().catch(() => null);
+      }
+    } else {
+      companySettings = await prisma.companySettings.findFirst().catch(() => null);
+    }
+    
     companyLogoUrl = companySettings?.logoUrl || "";
     companyName = companySettings?.companyName || "Employee Portal";
   } catch (error) {
