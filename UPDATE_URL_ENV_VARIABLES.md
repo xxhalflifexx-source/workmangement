@@ -159,7 +159,15 @@ After updating:
 3. **Add Your Domain:**
    - Enter `shoptofield.com` in the domain field
    - Click **"Add"** or **"Configure"**
-   - Follow Vercel's instructions to add DNS records
+   - Vercel will show you DNS records to add
+
+4. **Add DNS Records at Your Domain Registrar (NOT in Supabase!):**
+   - **Important:** DNS records are set at your **domain registrar** (where you bought the domain), NOT in Supabase
+   - Common registrars: GoDaddy, Namecheap, Cloudflare, Google Domains, etc.
+   - Log into your domain registrar's dashboard
+   - Find "DNS Management" or "DNS Settings"
+   - Add the CNAME record Vercel shows (usually `www` → `c195731f423e8fcb.vercel-dns-017.com.`)
+   - Save the DNS changes
 
 4. **Wait for DNS Propagation:**
    - DNS changes can take up to 48 hours (usually much faster)
