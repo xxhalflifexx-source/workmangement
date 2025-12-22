@@ -128,13 +128,13 @@ export default function SOPEditor({
   };
 
   return (
-    <div className="flex flex-col h-full bg-white dark:bg-gray-900 pt-24">
+    <div className="flex flex-col h-full bg-white pt-24">
       {/* Header with Title Input */}
-      <div className="px-4 sm:px-6 py-4 border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+      <div className="px-4 sm:px-6 py-4 border-b border-gray-200 bg-gray-50">
         <div className="flex items-center gap-3">
           <button
             onClick={onCancel}
-            className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition flex-shrink-0"
+            className="p-2 hover:bg-gray-200 rounded-lg transition flex-shrink-0 text-gray-700"
             title="Back to folder"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -142,7 +142,7 @@ export default function SOPEditor({
             </svg>
           </button>
           <div className="flex-1">
-            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+            <label className="block text-xs font-medium text-gray-700 mb-1">
               Document Title
             </label>
             <input
@@ -150,7 +150,7 @@ export default function SOPEditor({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Enter a title for your document..."
-              className="w-full text-base sm:text-lg font-semibold bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 placeholder:text-gray-400 dark:placeholder:text-gray-500"
+              className="w-full text-base sm:text-lg font-semibold bg-white border-2 border-gray-300 rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 placeholder:text-gray-400 text-gray-900"
               autoFocus
             />
           </div>
@@ -159,7 +159,7 @@ export default function SOPEditor({
 
       {/* Error message */}
       {error && (
-        <div className="mx-6 mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-600 dark:text-red-400 text-sm">
+        <div className="mx-6 mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
           {error}
         </div>
       )}
@@ -180,19 +180,19 @@ export default function SOPEditor({
       </div>
 
       {/* Fixed Footer with Save Button */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t dark:border-gray-700 px-4 sm:px-6 py-4 shadow-lg z-40">
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 sm:px-6 py-4 shadow-lg z-40">
         <div className="max-w-5xl mx-auto flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <button
               onClick={onCancel}
-              className="px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-lg transition"
+              className="px-4 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition"
             >
               Cancel
             </button>
             {templates.length > 0 && (
               <button
                 onClick={() => setShowTemplateModal(true)}
-                className="px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-lg transition hidden sm:flex items-center gap-2"
+                className="px-4 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition hidden sm:flex items-center gap-2"
               >
                 📋 Load Template
               </button>
@@ -200,7 +200,7 @@ export default function SOPEditor({
             {onSaveAsTemplate && (
               <button
                 onClick={() => setShowSaveTemplateModal(true)}
-                className="px-4 py-2.5 text-sm font-medium text-purple-600 dark:text-purple-400 bg-purple-50 hover:bg-purple-100 dark:bg-purple-900/30 dark:hover:bg-purple-900/50 rounded-lg transition hidden sm:flex items-center gap-2"
+                className="px-4 py-2.5 text-sm font-medium text-purple-600 bg-purple-50 hover:bg-purple-100 rounded-lg transition hidden sm:flex items-center gap-2"
               >
                 📝 Save as Template
               </button>
