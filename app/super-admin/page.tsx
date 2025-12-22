@@ -24,8 +24,8 @@ interface Organization {
   name: string;
   slug: string;
   isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
+  createdAt: Date;
+  updatedAt: Date;
   _count: {
     users: number;
     jobs: number;
@@ -457,7 +457,7 @@ export default function SuperAdminPage() {
                     <td className="px-6 py-4">
                       <p className="font-medium text-gray-900">{org.name}</p>
                       <p className="text-xs text-gray-500">
-                        Created {new Date(org.createdAt).toLocaleDateString()}
+                        Created {org.createdAt.toLocaleDateString()}
                       </p>
                     </td>
                     <td className="px-6 py-4">
