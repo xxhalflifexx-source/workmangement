@@ -36,6 +36,7 @@ export async function GET(
   if (!companySettings) {
     companySettings = {
       id: "",
+      organizationId: null,
       companyName: "TCB METAL WORKS",
       address: null,
       city: null,
