@@ -171,7 +171,7 @@ export const authOptions: NextAuthOptions = {
           },
         });
         if (freshUser) {
-          token.role = freshUser.role;
+          token.role = freshUser.role as "EMPLOYEE" | "MANAGER" | "ADMIN";
           token.isSuperAdmin = freshUser.isSuperAdmin;
           token.organizationId = freshUser.organizationId;
           token.organizationName = freshUser.organization?.name ?? null;
