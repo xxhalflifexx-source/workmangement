@@ -174,7 +174,7 @@ export default function SOPEditor({
             modules={modules}
             formats={formats}
             placeholder="Start writing your SOP document..."
-            className="h-[calc(100vh-380px)] bg-white dark:bg-gray-800 rounded-lg"
+            className="h-[calc(100vh-380px)] bg-white rounded-lg"
           />
         </div>
       </div>
@@ -330,10 +330,56 @@ export default function SOPEditor({
         .ql-container {
           font-size: 16px;
           font-family: inherit;
+          background: #ffffff !important;
         }
         .ql-editor {
           min-height: 400px;
           padding: 20px;
+          background: #ffffff !important;
+          color: #1f2937 !important;
+        }
+        /* Force all text in editor to be visible */
+        .ql-editor * {
+          color: #1f2937 !important;
+        }
+        .ql-editor p,
+        .ql-editor div,
+        .ql-editor span,
+        .ql-editor li,
+        .ql-editor td,
+        .ql-editor th {
+          color: #1f2937 !important;
+          background: transparent !important;
+        }
+        .ql-editor h1,
+        .ql-editor h2,
+        .ql-editor h3,
+        .ql-editor h4,
+        .ql-editor h5,
+        .ql-editor h6 {
+          color: #0f172a !important;
+          background: transparent !important;
+          font-weight: 700;
+        }
+        .ql-editor strong,
+        .ql-editor b {
+          color: #0f172a !important;
+          font-weight: 700;
+        }
+        /* Override any inline styles that might hide text */
+        .ql-editor [style*="background"] {
+          background: transparent !important;
+        }
+        .ql-editor [style*="background-color"] {
+          background-color: transparent !important;
+        }
+        .ql-editor [style*="color"] {
+          color: #1f2937 !important;
+        }
+        /* Ensure links are visible */
+        .ql-editor a {
+          color: #2563eb !important;
+          text-decoration: underline;
         }
         .ql-editor img {
           max-width: 100%;
@@ -344,57 +390,69 @@ export default function SOPEditor({
         .ql-toolbar {
           border-top-left-radius: 8px;
           border-top-right-radius: 8px;
-          background: #f8fafc;
+          background: #f8fafc !important;
           border-color: #e2e8f0;
           position: sticky;
           top: 0;
           z-index: 10;
         }
-        .dark .ql-toolbar {
-          background: #1f2937;
-          border-color: #374151;
+        .ql-toolbar button {
+          color: #1f2937 !important;
         }
-        .dark .ql-toolbar button {
-          color: #9ca3af;
+        .ql-toolbar button:hover,
+        .ql-toolbar button.ql-active {
+          color: #0f172a !important;
         }
-        .dark .ql-toolbar button:hover,
-        .dark .ql-toolbar button.ql-active {
-          color: #fff;
+        .ql-toolbar .ql-stroke {
+          stroke: #1f2937 !important;
         }
-        .dark .ql-toolbar .ql-stroke {
-          stroke: #9ca3af;
+        .ql-toolbar .ql-fill {
+          fill: #1f2937 !important;
         }
-        .dark .ql-toolbar .ql-fill {
-          fill: #9ca3af;
+        .ql-toolbar button:hover .ql-stroke,
+        .ql-toolbar button.ql-active .ql-stroke {
+          stroke: #0f172a !important;
         }
-        .dark .ql-toolbar button:hover .ql-stroke,
-        .dark .ql-toolbar button.ql-active .ql-stroke {
-          stroke: #fff;
+        .ql-toolbar button:hover .ql-fill,
+        .ql-toolbar button.ql-active .ql-fill {
+          fill: #0f172a !important;
         }
-        .dark .ql-toolbar button:hover .ql-fill,
-        .dark .ql-toolbar button.ql-active .ql-fill {
-          fill: #fff;
+        .ql-toolbar .ql-picker {
+          color: #1f2937 !important;
         }
-        .dark .ql-toolbar .ql-picker {
-          color: #9ca3af;
+        .ql-toolbar .ql-picker-options {
+          background: #ffffff !important;
+          border-color: #e2e8f0;
+          color: #1f2937 !important;
         }
-        .dark .ql-toolbar .ql-picker-options {
-          background: #1f2937;
-          border-color: #374151;
+        .ql-toolbar .ql-picker-item {
+          color: #1f2937 !important;
         }
         .ql-container {
           border-bottom-left-radius: 8px;
           border-bottom-right-radius: 8px;
           border-color: #e2e8f0;
+          background: #ffffff !important;
         }
-        .dark .ql-container {
-          border-color: #374151;
+        .ql-editor.ql-blank::before {
+          color: #9ca3af !important;
         }
-        .dark .ql-editor {
-          color: #f3f4f6;
+        /* Code blocks */
+        .ql-editor pre {
+          background: #f1f5f9 !important;
+          color: #1e293b !important;
+          border: 1px solid #e2e8f0;
         }
-        .dark .ql-editor.ql-blank::before {
-          color: #6b7280;
+        .ql-editor code {
+          background: #f1f5f9 !important;
+          color: #1e293b !important;
+          border: 1px solid #e2e8f0;
+        }
+        /* Blockquotes */
+        .ql-editor blockquote {
+          border-left: 4px solid #3b82f6;
+          background: #f8fafc !important;
+          color: #374151 !important;
         }
       `}</style>
     </div>
