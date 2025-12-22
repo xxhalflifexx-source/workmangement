@@ -80,32 +80,48 @@ export async function generateQuotationPDF(data: QuotationPDFData): Promise<jsPD
   // Top Right: Logo image if provided, else fallback text logo
   if (data.logoDataUrl) {
     try {
-      // Load image to get actual dimensions and preserve aspect ratio
-      const img = new Image();
-      img.src = data.logoDataUrl;
+      // Check if we're in a browser environment (Image constructor available)
+      let img: HTMLImageElement | null = null;
+      let imgWidth = 0;
+      let imgHeight = 0;
       
-      // Wait for image to load (should be fast since it's a data URL)
-      await new Promise<void>((resolve, reject) => {
-        if (img.complete && img.naturalWidth > 0) {
-          resolve();
-        } else {
-          img.onload = () => resolve();
-          img.onerror = () => reject(new Error("Failed to load image"));
-          // Timeout after 2 seconds
-          setTimeout(() => reject(new Error("Image load timeout")), 2000);
-        }
-      });
+      if (typeof window !== 'undefined' && typeof Image !== 'undefined') {
+        // Browser environment - use Image API
+        img = new Image();
+        img.src = data.logoDataUrl;
+        
+        // Wait for image to load (should be fast since it's a data URL)
+        await new Promise<void>((resolve, reject) => {
+          if (img!.complete && img!.naturalWidth > 0) {
+            resolve();
+          } else {
+            img!.onload = () => resolve();
+            img!.onerror = () => reject(new Error("Failed to load image"));
+            // Timeout after 3 seconds
+            setTimeout(() => reject(new Error("Image load timeout")), 3000);
+          }
+        });
+        
+        imgWidth = img.naturalWidth;
+        imgHeight = img.naturalHeight;
+      } else {
+        // Node.js/server environment - try to extract dimensions from data URL
+        // For data URLs, we'll use default dimensions and let jsPDF handle it
+        // Most logos are roughly square or landscape, so we'll use a reasonable default
+        imgWidth = 200; // Default width
+        imgHeight = 100; // Default height (2:1 ratio, common for logos)
+      }
       
       // Calculate dimensions preserving aspect ratio
       const maxWidth = 50;
       const maxHeight = 30;
-      const aspectRatio = img.naturalWidth / img.naturalHeight;
+      const aspectRatio = imgWidth / imgHeight;
       
       let logoWidth: number;
       let logoHeight: number;
       
       // Scale to fit within max dimensions while preserving aspect ratio
-      if (img.naturalWidth / maxWidth > img.naturalHeight / maxHeight) {
+      if (imgWidth / maxWidth > imgHeight / maxHeight) {
         // Width is the limiting factor
         logoWidth = maxWidth;
         logoHeight = maxWidth / aspectRatio;
@@ -118,8 +134,14 @@ export async function generateQuotationPDF(data: QuotationPDFData): Promise<jsPD
       const logoX = pageWidth - margin - logoWidth;
       const logoY = margin;
       
+      // Determine image format from data URL
+      let imageFormat: 'PNG' | 'JPEG' = 'PNG';
+      if (data.logoDataUrl.startsWith('data:image/jpeg') || data.logoDataUrl.startsWith('data:image/jpg')) {
+        imageFormat = 'JPEG';
+      }
+      
       // Use 'FAST' compression - jsPDF will preserve aspect ratio
-      doc.addImage(data.logoDataUrl, 'PNG', logoX, logoY, logoWidth, logoHeight, undefined, 'FAST');
+      doc.addImage(data.logoDataUrl, imageFormat, logoX, logoY, logoWidth, logoHeight, undefined, 'FAST');
     } catch (error) {
       console.error("Error adding logo to quotation PDF:", error);
       // Fallback to text logo if image fails

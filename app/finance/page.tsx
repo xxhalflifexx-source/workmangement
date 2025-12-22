@@ -167,6 +167,14 @@ setLoading(false);
     loadInvoices();
 	}, []);
 
+  // Auto-load financials when switching to financials tab (only once per tab switch)
+  useEffect(() => {
+    if (activeTab === "financials" && !finSummary && !finLoading) {
+      loadFinancials();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab]);
+
   // Preload next invoice number whenever the create modal opens so we can show the exact number instead of "Auto-generated".
   useEffect(() => {
     const preloadInvoiceNumber = async () => {
@@ -1486,15 +1494,19 @@ setLoading(false);
                 />
                 <button 
                   onClick={loadFinancials} 
-                  className="px-4 py-2.5 sm:py-2 border rounded-lg text-sm hover:bg-gray-50 min-h-[44px] bg-blue-600 text-white hover:bg-blue-700"
+                  disabled={finLoading}
+                  className="px-4 py-2.5 sm:py-2 border rounded-lg text-sm hover:bg-gray-50 min-h-[44px] bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Run
+                  {finLoading ? "Calculating..." : "Run"}
                 </button>
               </div>
             </div>
 
             {finLoading ? (
-              <div className="p-8 text-center text-gray-600">Calculating...</div>
+              <div className="p-8 text-center text-gray-600">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                <div>Calculating financial summary...</div>
+              </div>
             ) : finSummary ? (
               <div className="p-6 space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

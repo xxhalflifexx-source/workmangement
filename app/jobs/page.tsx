@@ -1458,28 +1458,68 @@ function JobsPageContent() {
     let logoDataUrl: string | undefined;
     if (companySettings.logoUrl) {
       try {
-        const resp = await fetch(companySettings.logoUrl);
+        // Handle both absolute URLs and relative paths
+        let logoUrl = companySettings.logoUrl;
+        
+        // If it's a relative URL or needs CORS, try to fetch it
+        // For Supabase public URLs, they should work with fetch
+        const resp = await fetch(logoUrl, {
+          method: 'GET',
+          mode: 'cors',
+          cache: 'no-cache',
+        });
+        
         if (resp.ok) {
           const blob = await resp.blob();
-          const reader = new FileReader();
-          logoDataUrl = await new Promise<string>((resolve, reject) => {
-            reader.onloadend = () => resolve(reader.result as string);
-            reader.onerror = reject;
-            reader.readAsDataURL(blob);
-          });
           
-          // Preload image to ensure dimensions are available
-          if (logoDataUrl) {
-            const img = new Image();
-            img.src = logoDataUrl;
-            await new Promise((resolve, reject) => {
-              img.onload = resolve;
-              img.onerror = reject;
+          // Check if blob is actually an image
+          if (blob.type.startsWith('image/')) {
+            const reader = new FileReader();
+            logoDataUrl = await new Promise<string>((resolve, reject) => {
+              reader.onloadend = () => {
+                if (reader.result && typeof reader.result === 'string') {
+                  resolve(reader.result);
+                } else {
+                  reject(new Error("Failed to convert logo to data URL"));
+                }
+              };
+              reader.onerror = () => reject(new Error("FileReader error"));
+              reader.readAsDataURL(blob);
             });
+            
+            // Preload image to ensure dimensions are available and validate it
+            if (logoDataUrl) {
+              const img = new Image();
+              img.src = logoDataUrl;
+              await new Promise<void>((resolve, reject) => {
+                const timeout = setTimeout(() => {
+                  reject(new Error("Image load timeout"));
+                }, 5000);
+                
+                img.onload = () => {
+                  clearTimeout(timeout);
+                  // Validate image loaded successfully
+                  if (img.naturalWidth > 0 && img.naturalHeight > 0) {
+                    resolve();
+                  } else {
+                    reject(new Error("Invalid image dimensions"));
+                  }
+                };
+                img.onerror = () => {
+                  clearTimeout(timeout);
+                  reject(new Error("Image failed to load"));
+                };
+              });
+            }
+          } else {
+            console.warn("Logo URL does not point to an image file:", blob.type);
           }
+        } else {
+          console.warn("Failed to fetch logo from URL:", logoUrl, "Status:", resp.status);
         }
       } catch (error) {
         console.error("Error loading logo for quotation:", error);
+        // Continue without logo - fallback text logo will be used
       }
     }
 
