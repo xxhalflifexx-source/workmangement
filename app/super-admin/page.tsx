@@ -166,7 +166,7 @@ export default function SuperAdminPage() {
       setOrgSlug("");
       fetchData();
     } else {
-      setError(res.error);
+      setError('error' in res ? res.error : 'Unknown error');
     }
   };
 
@@ -190,7 +190,7 @@ export default function SuperAdminPage() {
       setOrgSlug("");
       fetchData();
     } else {
-      setError(res.error);
+      setError('error' in res ? res.error : 'Unknown error');
     }
   };
 
@@ -200,10 +200,10 @@ export default function SuperAdminPage() {
 
     const res = await toggleOrganizationStatus(org.id);
     if (res.ok) {
-      setSuccess(res.message);
+      setSuccess('message' in res ? res.message : 'Status updated successfully');
       fetchData();
     } else {
-      setError(res.error);
+      setError('error' in res ? res.error : 'Unknown error');
     }
   };
 
@@ -217,10 +217,10 @@ export default function SuperAdminPage() {
 
     const res = await deleteOrganization(org.id);
     if (res.ok) {
-      setSuccess(res.message);
+      setSuccess('message' in res ? res.message : 'Organization deleted successfully');
       fetchData();
     } else {
-      setError(res.error);
+      setError('error' in res ? res.error : 'Unknown error');
     }
   };
 
@@ -230,7 +230,7 @@ export default function SuperAdminPage() {
     setShowUsersModal(true);
 
     const res = await getOrganizationUsers(org.id);
-    if (res.ok && res.users) {
+    if (res.ok && 'users' in res && res.users) {
       setOrgUsers(res.users);
     }
     setLoadingUsers(false);
@@ -241,7 +241,7 @@ export default function SuperAdminPage() {
     setShowAllUsersModal(true);
 
     const res = await getAllUsersAcrossOrganizations();
-    if (res.ok && res.users) {
+    if (res.ok && 'users' in res && res.users) {
       setAllUsers(res.users);
     }
     setLoadingUsers(false);
@@ -262,7 +262,7 @@ export default function SuperAdminPage() {
 
     const res = await createOrganizationAdmin(formData);
     if (res.ok) {
-      setSuccess(res.message);
+      setSuccess('message' in res ? res.message : 'Admin created successfully');
       setShowCreateAdminModal(false);
       setAdminName("");
       setAdminEmail("");
@@ -270,13 +270,13 @@ export default function SuperAdminPage() {
       // Refresh users if viewing
       if (showUsersModal) {
         const usersRes = await getOrganizationUsers(selectedOrg.id);
-        if (usersRes.ok && usersRes.users) {
+        if (usersRes.ok && 'users' in usersRes && usersRes.users) {
           setOrgUsers(usersRes.users);
         }
       }
       fetchData();
     } else {
-      setError(res.error);
+      setError('error' in res ? res.error : 'Unknown error');
     }
   };
 
@@ -284,22 +284,22 @@ export default function SuperAdminPage() {
     setError(undefined);
     const res = await toggleUserStatus(userId);
     if (res.ok) {
-      setSuccess(res.message);
+      setSuccess('message' in res ? res.message : 'User status updated successfully');
       // Refresh the users list
       if (selectedOrg) {
         const usersRes = await getOrganizationUsers(selectedOrg.id);
-        if (usersRes.ok && usersRes.users) {
+        if (usersRes.ok && 'users' in usersRes && usersRes.users) {
           setOrgUsers(usersRes.users);
         }
       }
       if (showAllUsersModal) {
         const usersRes = await getAllUsersAcrossOrganizations();
-        if (usersRes.ok && usersRes.users) {
+        if (usersRes.ok && 'users' in usersRes && usersRes.users) {
           setAllUsers(usersRes.users);
         }
       }
     } else {
-      setError(res.error);
+      setError('error' in res ? res.error : 'Unknown error');
     }
   };
 
