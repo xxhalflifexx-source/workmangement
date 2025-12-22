@@ -171,7 +171,40 @@ function extractPatternFromLine(line: string): string {
 }
 
 /**
+ * Generate a fingerprint for a receipt to avoid duplicate learning
+ */
+function generateReceiptFingerprint(text: string): string {
+  // Create a simple hash from the first 200 chars of normalized text
+  const normalized = text.replace(/\s+/g, "").toUpperCase().substring(0, 200);
+  let hash = 0;
+  for (let i = 0; i < normalized.length; i++) {
+    const char = normalized.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32bit integer
+  }
+  return hash.toString(16);
+}
+
+/**
+ * Check if we've recently learned from this receipt (avoid duplicates)
+ */
+function hasRecentlyLearnedFromReceipt(data: LearningData, fingerprint: string, withinHours: number = 24): boolean {
+  const cutoff = Date.now() - (withinHours * 60 * 60 * 1000);
+  
+  for (const extraction of data.successfulExtractions) {
+    if (extraction.timestamp > cutoff) {
+      const existingFingerprint = generateReceiptFingerprint(extraction.receiptText);
+      if (existingFingerprint === fingerprint) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+/**
  * Record successful extraction
+ * Includes validation to avoid learning from duplicate receipts
  */
 export function recordSuccess(
   receiptText: string,
@@ -183,12 +216,31 @@ export function recordSuccess(
 ): void {
   const data = getLearningData();
   
+  // VALIDATION 1: Check for duplicate receipt (don't learn same receipt multiple times)
+  const fingerprint = generateReceiptFingerprint(receiptText);
+  if (hasRecentlyLearnedFromReceipt(data, fingerprint, 24)) {
+    console.log("[ReceiptLearning] Skipping duplicate receipt (already learned within 24h)");
+    return;
+  }
+  
+  // VALIDATION 2: Amount must be reasonable
+  if (amount <= 0 || amount > 100000) {
+    console.log("[ReceiptLearning] Skipping invalid amount:", amount);
+    return;
+  }
+  
   // Find the line that contained the amount
   const lines = receiptText.split(/\n/).map(l => l.trim());
   const matchingLine = lines.find(line => 
     line.includes(linePattern) || 
     line.match(new RegExp(`\\b${amount.toFixed(2)}\\b`))
   ) || linePattern;
+  
+  // VALIDATION 3: Line pattern must contain the actual amount
+  if (!matchingLine.includes(amount.toFixed(2))) {
+    console.log("[ReceiptLearning] Skipping - line pattern doesn't contain amount");
+    return;
+  }
 
   const extraction: SuccessfulExtraction = {
     receiptText: receiptText.substring(0, 500), // Store snippet only
@@ -217,10 +269,17 @@ export function recordSuccess(
     data: extraction,
     timestamp: Date.now(),
   });
+  
+  console.log("[ReceiptLearning] Recorded successful extraction:", {
+    amount,
+    pattern,
+    storeName,
+  });
 }
 
 /**
  * Record user correction
+ * This records when the system got the amount wrong and the user corrected it
  */
 export function recordCorrection(
   receiptText: string,
@@ -231,7 +290,25 @@ export function recordCorrection(
   strategy?: string,
   format?: ReceiptFormat | null
 ): void {
+  // VALIDATION 1: Corrected amount must be valid and different from original
+  if (correctedAmount <= 0 || correctedAmount > 100000) {
+    console.log("[ReceiptLearning] Skipping invalid correction amount:", correctedAmount);
+    return;
+  }
+  
+  if (Math.abs(correctedAmount - originalAmount) < 0.01) {
+    console.log("[ReceiptLearning] Skipping - correction is same as original");
+    return;
+  }
+
   const data = getLearningData();
+  
+  // VALIDATION 2: Check for duplicate correction (don't record same correction multiple times)
+  const fingerprint = generateReceiptFingerprint(receiptText);
+  if (hasRecentlyLearnedFromReceipt(data, fingerprint, 1)) {
+    console.log("[ReceiptLearning] Skipping duplicate correction (already corrected within 1h)");
+    return;
+  }
 
   const correction: Correction = {
     receiptText: receiptText.substring(0, 500), // Store snippet only
@@ -246,7 +323,7 @@ export function recordCorrection(
 
   data.corrections.push(correction);
 
-  // Find the pattern that was incorrectly used
+  // Find the pattern that was incorrectly used and STRONGLY mark it as failed
   const lines = receiptText.split(/\n/).map(l => l.trim());
   const incorrectLine = lines.find(line => 
     line.match(new RegExp(`\\b${originalAmount.toFixed(2)}\\b`))
@@ -254,12 +331,15 @@ export function recordCorrection(
 
   if (incorrectLine) {
     const incorrectPattern = extractPatternFromLine(incorrectLine);
-    data.patternFailures[incorrectPattern] = (data.patternFailures[incorrectPattern] || 0) + 1;
+    // Add 2 failures for corrections (more weight than regular failures)
+    data.patternFailures[incorrectPattern] = (data.patternFailures[incorrectPattern] || 0) + 2;
   }
 
-  // Record correct pattern
-  const correctPattern = extractPatternFromLine(correctLinePattern);
-  data.patternSuccess[correctPattern] = (data.patternSuccess[correctPattern] || 0) + 1;
+  // Only record correct pattern if the line actually contains the corrected amount
+  if (correctLinePattern.includes(correctedAmount.toFixed(2))) {
+    const correctPattern = extractPatternFromLine(correctLinePattern);
+    data.patternSuccess[correctPattern] = (data.patternSuccess[correctPattern] || 0) + 1;
+  }
 
   // Record strategy failure if strategy provided
   if (strategy) {
@@ -386,9 +466,17 @@ export function getRecommendedStrategies(): string[] {
     .map(([strategy]) => strategy);
 }
 
+// Minimum success rate to trust a pattern (0.7 = 70%)
+const MIN_SUCCESS_RATE = 0.7;
+// Minimum number of successes before trusting a pattern
+const MIN_SUCCESS_COUNT = 2;
+// Pattern expiration time (7 days in milliseconds)
+const PATTERN_EXPIRATION_MS = 7 * 24 * 60 * 60 * 1000;
+
 /**
  * Apply learned patterns to extraction hints
  * Returns patterns that should be prioritized
+ * STRICT MATCHING: Only applies patterns with high confidence and exact matches
  */
 export function applyLearnedPatterns(
   text: string,
@@ -398,9 +486,27 @@ export function applyLearnedPatterns(
   const learnedPatterns = getLearnedPatterns();
   const lines = text.split(/\n/).map(l => l.trim());
   const hints: Array<{ pattern: string; priority: number }> = [];
+  const now = Date.now();
 
   for (const learned of learnedPatterns) {
-    // Filter by store/format if provided
+    // VALIDATION 1: Skip patterns with low success rate
+    if (learned.successRate < MIN_SUCCESS_RATE) {
+      continue;
+    }
+
+    // VALIDATION 2: Skip patterns that haven't been confirmed multiple times
+    if (learned.successCount < MIN_SUCCESS_COUNT) {
+      continue;
+    }
+
+    // VALIDATION 3: Skip old/stale patterns (reduce priority significantly)
+    const patternAge = now - learned.lastUsed;
+    if (patternAge > PATTERN_EXPIRATION_MS) {
+      // Pattern is old - don't apply it automatically
+      continue;
+    }
+
+    // VALIDATION 4: Filter by store/format if provided (strict matching)
     if (storeName && learned.storeName && learned.storeName !== storeName) {
       continue;
     }
@@ -408,13 +514,18 @@ export function applyLearnedPatterns(
       continue;
     }
 
-    // Check if any line matches this pattern
+    // VALIDATION 5: Check if any line EXACTLY matches this pattern (no substring matches)
     for (const line of lines) {
       const linePattern = extractPatternFromLine(line);
-      if (linePattern === learned.pattern || linePattern.includes(learned.pattern)) {
-        // Calculate priority based on success rate and usage
-        const usageScore = Math.min(learned.successCount + learned.failureCount, 10) / 10;
-        const priority = learned.successRate * 10 + usageScore * 2;
+      
+      // STRICT: Only exact pattern matches (not substring matches)
+      if (linePattern === learned.pattern) {
+        // Calculate priority based on success rate, usage, and recency
+        const usageScore = Math.min(learned.successCount, 10) / 10;
+        const recencyScore = Math.max(0, 1 - (patternAge / PATTERN_EXPIRATION_MS));
+        
+        // Priority formula: success rate matters most, then recency, then usage
+        const priority = learned.successRate * 5 + recencyScore * 3 + usageScore * 2;
         
         hints.push({
           pattern: learned.pattern,
@@ -430,10 +541,63 @@ export function applyLearnedPatterns(
 
 /**
  * Clear all learning data (for testing/reset)
+ * Clears local learning data, sync queue, and global patterns cache
  */
 export function clearLearningData(): void {
   if (typeof window === "undefined") return;
+  
+  // Clear local learning data
   localStorage.removeItem(STORAGE_KEY);
+  
+  // Clear sync queue
+  localStorage.removeItem(SYNC_QUEUE_KEY);
+  
+  // Clear global patterns cache
+  localStorage.removeItem(GLOBAL_PATTERNS_KEY);
+  
+  // Clear last sync timestamp
+  localStorage.removeItem(LAST_SYNC_KEY);
+  
+  console.log("[ReceiptLearning] All learning data cleared");
+}
+
+/**
+ * Get learning data summary for UI display
+ */
+export function getLearningDataSummary(): {
+  totalPatterns: number;
+  totalSuccesses: number;
+  totalCorrections: number;
+  avgSuccessRate: number;
+  oldestPatternAge: number; // in days
+  syncQueueSize: number;
+} {
+  const data = getLearningData();
+  const patterns = getLearnedPatterns();
+  const syncQueue = getSyncQueue();
+  
+  const now = Date.now();
+  let oldestTimestamp = now;
+  
+  for (const extraction of data.successfulExtractions) {
+    if (extraction.timestamp < oldestTimestamp) {
+      oldestTimestamp = extraction.timestamp;
+    }
+  }
+  
+  const totalPatternSuccess = patterns.reduce((sum, p) => sum + p.successCount, 0);
+  const totalPatternFailure = patterns.reduce((sum, p) => sum + p.failureCount, 0);
+  const totalPattern = totalPatternSuccess + totalPatternFailure;
+  const avgSuccessRate = totalPattern > 0 ? totalPatternSuccess / totalPattern : 0;
+  
+  return {
+    totalPatterns: patterns.length,
+    totalSuccesses: data.successfulExtractions.length,
+    totalCorrections: data.corrections.length,
+    avgSuccessRate,
+    oldestPatternAge: Math.floor((now - oldestTimestamp) / (24 * 60 * 60 * 1000)),
+    syncQueueSize: syncQueue.length,
+  };
 }
 
 /**

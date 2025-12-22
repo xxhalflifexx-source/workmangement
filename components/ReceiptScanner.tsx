@@ -13,6 +13,8 @@ import {
   shouldSync,
   shouldRefreshGlobalPatterns,
   getMergedPatterns,
+  clearLearningData,
+  getLearningDataSummary,
 } from "@/lib/receipt-learning";
 import { isNativeApp, takePhoto, pickFromGallery, requestCameraPermissions } from "@/lib/camera-native";
 import { recognizeText } from "@/lib/ocr-native";
@@ -1156,11 +1158,42 @@ export default function ReceiptScanner({
                     onClick={() => setShowDebug(!showDebug)}
                     className="text-xs text-gray-600 hover:text-gray-800 underline"
                   >
-                    {showDebug ? "Hide" : "Show"} OCR text (for debugging)
+                    {showDebug ? "Hide" : "Show"} debug info
                   </button>
                   {showDebug && (
-                    <div className="mt-2 p-3 bg-gray-100 rounded text-xs font-mono text-gray-700 max-h-32 overflow-y-auto">
-                      {ocrText || "No text extracted"}
+                    <div className="mt-2 space-y-3">
+                      <div className="p-3 bg-gray-100 rounded text-xs font-mono text-gray-700 max-h-32 overflow-y-auto">
+                        {ocrText || "No text extracted"}
+                      </div>
+                      
+                      {/* Learning Controls */}
+                      <div className="p-3 bg-orange-50 border border-orange-200 rounded">
+                        <p className="text-xs font-medium text-orange-900 mb-2">🧠 Learning System</p>
+                        {(() => {
+                          const stats = getLearningDataSummary();
+                          return (
+                            <div className="text-xs text-orange-800 space-y-1">
+                              <p>Patterns: {stats.totalPatterns} | Successes: {stats.totalSuccesses} | Corrections: {stats.totalCorrections}</p>
+                              <p>Avg Success Rate: {(stats.avgSuccessRate * 100).toFixed(0)}% | Sync Queue: {stats.syncQueueSize}</p>
+                              {stats.oldestPatternAge > 0 && (
+                                <p>Oldest Pattern: {stats.oldestPatternAge} days ago</p>
+                              )}
+                            </div>
+                          );
+                        })()}
+                        <button
+                          onClick={() => {
+                            if (confirm("This will clear all learned patterns. Are you sure?")) {
+                              clearLearningData();
+                              setError(null);
+                              alert("Learning data cleared. Receipts will be scanned without learned patterns.");
+                            }
+                          }}
+                          className="mt-2 px-3 py-1 bg-red-100 hover:bg-red-200 border border-red-300 rounded text-xs text-red-800"
+                        >
+                          🗑️ Clear Learning Data
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>

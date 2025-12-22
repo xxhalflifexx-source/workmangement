@@ -101,9 +101,48 @@ export function extractAmountFromText(text: string, format?: ReceiptFormat | nul
   }
 
   // Create a map of learned patterns for quick lookup
+  // VALIDATION: Only include learned patterns that match actual amounts in the receipt
   const learnedPatternMap = new Map<string, number>();
+  const allReceiptAmounts = extractAllAmountsFromLines(lines); // Get all amounts in receipt for validation
+  
   for (const hint of learnedHints) {
-    learnedPatternMap.set(hint.pattern, hint.priority);
+    // Only add learned pattern if it's actually relevant to this receipt
+    // (Pattern must match a line that contains a valid amount)
+    let patternMatchesReceipt = false;
+    for (const line of lines) {
+      const linePattern = line.replace(/\d+\.\d{2}/g, "AMOUNT").replace(/\d+/g, "NUM").replace(/\s+/g, " ").trim().toUpperCase();
+      if (linePattern === hint.pattern) {
+        // Check if this line contains a valid amount
+        const amountMatch = line.match(/(\d+\.\d{2})/);
+        if (amountMatch) {
+          const amount = parseFloat(amountMatch[1]);
+          // Validate amount is in the receipt and reasonable
+          if (amount > 0 && amount < 100000) {
+            patternMatchesReceipt = true;
+            break;
+          }
+        }
+      }
+    }
+    
+    if (patternMatchesReceipt) {
+      learnedPatternMap.set(hint.pattern, hint.priority);
+    }
+  }
+
+  // Helper function to extract all amounts from lines (for validation)
+  function extractAllAmountsFromLines(lineArray: string[]): number[] {
+    const amounts: number[] = [];
+    for (const line of lineArray) {
+      const matches = line.matchAll(/(\d+\.\d{2})/g);
+      for (const match of matches) {
+        const amount = parseFloat(match[1]);
+        if (!isNaN(amount) && amount > 0 && amount < 100000) {
+          amounts.push(amount);
+        }
+      }
+    }
+    return amounts;
   }
 
   // PRIORITY 0: FIRST PASS - Look ONLY in bottom section for "TOTAL" keyword
