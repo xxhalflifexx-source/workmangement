@@ -298,7 +298,7 @@ function JobsPageContent() {
   const [selectedJobForMaterialsAndExpenses, setSelectedJobForMaterialsAndExpenses] = useState<Job | null>(null);
   const [jobMaterialRequests, setJobMaterialRequests] = useState<MaterialRequest[]>([]);
   const [loadingMaterials, setLoadingMaterials] = useState(false);
-  const [activeTab, setActiveTab] = useState<"materials" | "expenses">("materials");
+  const [activeTab, setActiveTab] = useState<"materials" | "expenses" | "history">("materials");
   
   const [materialItemName, setMaterialItemName] = useState("");
   const [materialQuantity, setMaterialQuantity] = useState(1);
@@ -2499,6 +2499,16 @@ function JobsPageContent() {
                 >
                   💵 Report Expense
                 </button>
+                <button
+                  onClick={() => setActiveTab("history")}
+                  className={`px-4 py-2 font-medium text-sm transition-colors border-b-2 ${
+                    activeTab === "history"
+                      ? "border-indigo-500 text-indigo-700"
+                      : "border-transparent text-gray-600 hover:text-gray-900"
+                  }`}
+                >
+                  📋 History
+                </button>
               </div>
             </div>
 
@@ -2965,6 +2975,127 @@ function JobsPageContent() {
                     )}
                   </div>
                 </>
+              )}
+
+              {/* Tab 3: History (Unified View) */}
+              {activeTab === "history" && (
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900 mb-4">📋 Complete History</h3>
+                  {loadingMaterials || loadingExpenses ? (
+                    <div className="text-center py-12">
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+                      <p className="text-gray-600 mt-4">Loading history...</p>
+                    </div>
+                  ) : jobMaterialRequests.length === 0 && jobExpenses.length === 0 ? (
+                    <div className="text-center py-12 bg-gray-50 rounded-xl">
+                      <div className="text-4xl mb-3">📋</div>
+                      <p className="text-gray-600">No materials or expenses recorded yet</p>
+                      <p className="text-gray-500 text-sm mt-1">Use the tabs above to add materials or expenses</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {/* Combine and sort by date */}
+                      {[
+                        ...jobMaterialRequests.map((req: any) => ({
+                          ...req,
+                          type: "material",
+                          date: new Date(req.requestedDate).getTime(),
+                        })),
+                        ...jobExpenses.map((exp: any) => ({
+                          ...exp,
+                          type: "expense",
+                          date: new Date(exp.expenseDate || exp.createdAt).getTime(),
+                        })),
+                      ]
+                        .sort((a, b) => b.date - a.date)
+                        .map((item: any) => {
+                          if (item.type === "material") {
+                            return (
+                              <div key={item.id} className="bg-green-50 border-2 border-green-200 rounded-xl p-4">
+                                <div className="flex items-start gap-3">
+                                  <div className="text-2xl">📦</div>
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <p className="font-semibold text-gray-900">{item.itemName}</p>
+                                      <span className="text-xs px-2 py-1 rounded-full font-medium bg-green-100 text-green-700">
+                                        Material Request
+                                      </span>
+                                      <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                                        item.status === "FULFILLED"
+                                          ? "bg-green-100 text-green-700"
+                                          : item.status === "APPROVED"
+                                          ? "bg-blue-100 text-blue-700"
+                                          : item.status === "REJECTED"
+                                          ? "bg-red-100 text-red-700"
+                                          : "bg-gray-100 text-gray-700"
+                                      }`}>
+                                        {item.status}
+                                      </span>
+                                    </div>
+                                    <p className="text-sm text-gray-600 mb-1">
+                                      Quantity: <span className="font-medium">{item.quantity} {item.unit}</span>
+                                    </p>
+                                    <p className="text-xs text-gray-500">
+                                      Requested by {item.user.name || item.user.email} • {formatDateTime(item.requestedDate)}
+                                    </p>
+                                    {item.description && (
+                                      <p className="text-sm text-gray-700 mt-2">{item.description}</p>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          } else {
+                            return (
+                              <div key={item.id} className="bg-rose-50 border-2 border-rose-200 rounded-xl p-4">
+                                <div className="flex items-start gap-3">
+                                  <div className="text-2xl">💵</div>
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <p className="font-semibold text-gray-900">{item.description}</p>
+                                      <span className="text-xs px-2 py-1 rounded-full font-medium bg-rose-100 text-rose-700">
+                                        Expense
+                                      </span>
+                                      <span className="text-xs px-2 py-1 rounded-full font-medium bg-gray-100 text-gray-700">
+                                        {item.category}
+                                      </span>
+                                    </div>
+                                    <p className="text-sm text-gray-600 mb-1">
+                                      {item.quantity && item.quantity !== 1 && (
+                                        <span>{item.quantity} {item.unit || ""} × </span>
+                                      )}
+                                      <span className="font-semibold text-gray-900">${item.amount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                    </p>
+                                    <p className="text-xs text-gray-500">
+                                      Added by {item.user?.name || "Unknown"} • {formatDateTime(item.expenseDate || item.createdAt)}
+                                    </p>
+                                    {item.receiptUrl && (
+                                      <div className="mt-2">
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setPhotoViewerPhotos([item.receiptUrl]);
+                                            setPhotoViewerIndex(0);
+                                            setShowPhotoViewer(true);
+                                          }}
+                                          className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 font-medium"
+                                        >
+                                          📷 View Receipt
+                                        </button>
+                                      </div>
+                                    )}
+                                    {item.notes && (
+                                      <p className="text-sm text-gray-600 mt-1 italic">"{item.notes}"</p>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          }
+                        })}
+                    </div>
+                  )}
+                </div>
               )}
             </div>
           </div>

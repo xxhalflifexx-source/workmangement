@@ -552,20 +552,6 @@ export default function JobRow({
               {/* Actions */}
               <div className="border-t-2 border-indigo-100 pt-6">
                 <div className="flex flex-wrap gap-3">
-                  {onActivity && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onActivity(job);
-                      }}
-                      disabled={job.status === "AWAITING_QC" || job.status === "COMPLETED"}
-                      className="px-5 py-3 text-sm bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 text-blue-700 rounded-xl hover:from-blue-100 hover:to-indigo-100 hover:border-blue-300 transition-all font-semibold disabled:bg-gray-100 disabled:border-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed min-h-[44px] flex items-center justify-center gap-2 shadow-sm"
-                      title={job.status === "AWAITING_QC" || job.status === "COMPLETED" ? "Job is locked - submitted to QC" : "View notes, photos, and updates for this job"}
-                    >
-                      <span className="text-base">📋</span>
-                      <span>History</span>
-                    </button>
-                  )}
                   {onMaterialsAndExpenses && (
                     <button
                       onClick={(e) => {
