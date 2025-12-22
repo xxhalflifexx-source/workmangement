@@ -1244,9 +1244,9 @@ export default function ReceiptScanner({
                           {ocrConfidence !== null && (
                             <p>OCR Confidence: <span className="font-mono">{ocrConfidence}%</span></p>
                           )}
-                          {detectedFormat && (
+                          {detectedFormat ? (
                             <p>Format: <span className="font-mono">{detectedFormat.storeName}</span></p>
-                          )}
+                          ) : null}
                           {extractedAmount !== null ? (
                             <p className="font-semibold">✓ Amount Extracted: <span className="font-mono">${extractedAmount.toFixed(2)}</span></p>
                           ) : (
