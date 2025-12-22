@@ -773,37 +773,72 @@ export default function OperationsCommonPage() {
               <h3 className="text-lg font-semibold text-gray-900 mb-1">📖 Employee Handbook</h3>
               <p className="text-sm text-gray-600">Access company policies, procedures, and guidelines</p>
             </div>
-            <button
-              onClick={async () => {
-                // Ensure handbook exists
-                const ensureRes = await ensureEmployeeHandbook();
-                if (ensureRes.ok) {
-                  // Get the handbook document
-                  const handbookRes = await getEmployeeHandbook();
-                  if (handbookRes.ok && handbookRes.document) {
-                    // Navigate to the folder first
-                    const folderRes = await getFolders(null);
-                    if (folderRes.ok) {
-                      const handbookFolder = folderRes.folders?.find(f => f.name === "Employee Handbook");
-                      if (handbookFolder) {
-                        setCurrentFolderId(handbookFolder.id);
-                        setFolderPath([{ id: handbookFolder.id, name: handbookFolder.name }]);
-                        // Open the document
-                        setViewingDocument(handbookRes.document);
-                        setShowSOPViewer(true);
+            <div className="flex gap-2 flex-wrap">
+              <button
+                onClick={async () => {
+                  // Ensure handbook exists
+                  const ensureRes = await ensureEmployeeHandbook();
+                  if (ensureRes.ok) {
+                    // Get the handbook document
+                    const handbookRes = await getEmployeeHandbook();
+                    if (handbookRes.ok && handbookRes.document) {
+                      // Navigate to the folder first
+                      const folderRes = await getFolders(null);
+                      if (folderRes.ok) {
+                        const handbookFolder = folderRes.folders?.find(f => f.name === "Employee Handbook");
+                        if (handbookFolder) {
+                          setCurrentFolderId(handbookFolder.id);
+                          setFolderPath([{ id: handbookFolder.id, name: handbookFolder.name }]);
+                          // Open the document
+                          setViewingDocument(handbookRes.document);
+                          setShowSOPViewer(true);
+                        }
                       }
+                    } else {
+                      setError("Employee Handbook not found. Please contact an administrator.");
                     }
                   } else {
-                    setError("Employee Handbook not found. Please contact an administrator.");
+                    setError(ensureRes.error || "Failed to access Employee Handbook");
                   }
-                } else {
-                  setError(ensureRes.error || "Failed to access Employee Handbook");
-                }
-              }}
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 text-sm font-medium min-h-[44px] shadow-sm hover:shadow-md active:scale-95 whitespace-nowrap"
-            >
-              Open Employee Handbook
-            </button>
+                }}
+                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 text-sm font-medium min-h-[44px] shadow-sm hover:shadow-md active:scale-95 whitespace-nowrap"
+              >
+                Open Employee Handbook
+              </button>
+              {canEdit && (
+                <button
+                  onClick={async () => {
+                    // Ensure handbook exists
+                    const ensureRes = await ensureEmployeeHandbook();
+                    if (ensureRes.ok) {
+                      // Get the handbook document
+                      const handbookRes = await getEmployeeHandbook();
+                      if (handbookRes.ok && handbookRes.document) {
+                        // Navigate to the folder first
+                        const folderRes = await getFolders(null);
+                        if (folderRes.ok) {
+                          const handbookFolder = folderRes.folders?.find(f => f.name === "Employee Handbook");
+                          if (handbookFolder) {
+                            setCurrentFolderId(handbookFolder.id);
+                            setFolderPath([{ id: handbookFolder.id, name: handbookFolder.name }]);
+                            // Open the document in edit mode
+                            setEditingDocument(handbookRes.document);
+                            setShowSOPEditor(true);
+                          }
+                        }
+                      } else {
+                        setError("Employee Handbook not found. Please contact an administrator.");
+                      }
+                    } else {
+                      setError(ensureRes.error || "Failed to access Employee Handbook");
+                    }
+                  }}
+                  className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-all duration-200 text-sm font-medium min-h-[44px] shadow-sm hover:shadow-md active:scale-95 whitespace-nowrap"
+                >
+                  ✏️ Edit Employee Handbook
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
