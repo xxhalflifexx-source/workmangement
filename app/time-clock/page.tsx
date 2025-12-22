@@ -47,7 +47,7 @@ export default function TimeClockPage() {
   const [success, setSuccess] = useState<string | undefined>();
   const [elapsedTime, setElapsedTime] = useState("");
   const [notes, setNotes] = useState("");
-  const [clockInDescription, setClockInDescription] = useState("");
+  const [clockInDescription, setClockInDescription] = useState("Shop Work / Unbilled Time");
   const [descriptionError, setDescriptionError] = useState<string | undefined>();
   const [showClockOutConfirm, setShowClockOutConfirm] = useState(false);
   const [showStartBreakConfirm, setShowStartBreakConfirm] = useState(false);
@@ -181,7 +181,7 @@ export default function TimeClockPage() {
         : "Clocked in successfully!"
     );
     setSelectedJobId("");
-      setClockInDescription("");
+      setClockInDescription("Shop Work / Unbilled Time");
       await loadData();
     } catch (err: any) {
       console.error("Clock in error:", err);
@@ -455,8 +455,11 @@ export default function TimeClockPage() {
                           // Clear description error when job is selected
                           if (e.target.value) {
                             setDescriptionError(undefined);
+                            // Clear description when job is selected (not needed for job clock-ins)
+                            setClockInDescription("");
                           } else {
-                            // If job is deselected, description becomes mandatory again
+                            // If job is deselected, set default description
+                            setClockInDescription("Shop Work / Unbilled Time");
                             if (!clockInDescription.trim()) {
                               setDescriptionError(undefined); // Clear error, will show on submit
                             }
