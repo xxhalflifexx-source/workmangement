@@ -30,6 +30,8 @@ export default function InventoryPage() {
 
   const [showModal, setShowModal] = useState(false);
   const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
+  const [itemPhotos, setItemPhotos] = useState<string[]>([]);
+  const [uploadingPhotos, setUploadingPhotos] = useState(false);
   
   const [showAdjustModal, setShowAdjustModal] = useState(false);
   const [adjustingItem, setAdjustingItem] = useState<InventoryItem | null>(null);
@@ -252,12 +254,58 @@ export default function InventoryPage() {
     }
   }, [loadMaterialRequests]);
 
+  const handlePhotoUpload = useCallback(async (files: FileList) => {
+    if (files.length === 0) return;
+
+    setUploadingPhotos(true);
+    setError(undefined);
+
+    try {
+      const formData = new FormData();
+      Array.from(files).forEach((file) => {
+        formData.append("files", file);
+      });
+
+      const response = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || "Failed to upload photos");
+      }
+
+      const data = await response.json();
+      if (data.success && data.paths) {
+        setItemPhotos((prev) => [...prev, ...data.paths]);
+        setSuccess(`${data.paths.length} photo(s) uploaded successfully`);
+      } else {
+        throw new Error("Invalid response from upload server");
+      }
+    } catch (err: any) {
+      console.error("Photo upload error:", err);
+      setError(err?.message || "Failed to upload photos");
+    } finally {
+      setUploadingPhotos(false);
+    }
+  }, []);
+
+  const handleRemovePhoto = useCallback((index: number) => {
+    setItemPhotos((prev) => prev.filter((_, i) => i !== index));
+  }, []);
+
   const handleSubmit = useCallback(async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(undefined);
     setSuccess(undefined);
 
     const formData = new FormData(e.currentTarget);
+    
+    // Add photos as JSON string
+    if (itemPhotos.length > 0) {
+      formData.append("photos", JSON.stringify(itemPhotos));
+    }
 
     const res = editingItem
       ? await updateInventoryItem(editingItem.id, formData)
@@ -271,8 +319,9 @@ export default function InventoryPage() {
     setSuccess(editingItem ? "Item updated successfully!" : "Item created successfully!");
     setShowModal(false);
     setEditingItem(null);
+    setItemPhotos([]);
     loadData();
-  }, [editingItem, loadData]);
+  }, [editingItem, loadData, itemPhotos]);
 
   const handleDelete = useCallback(async (itemId: string) => {
     if (!confirm("Are you sure you want to delete this item? This will also delete all adjustment history.")) return;
@@ -933,6 +982,7 @@ export default function InventoryPage() {
                   onClick={() => {
                     setShowModal(false);
                     setEditingItem(null);
+                    setItemPhotos([]);
                   }}
                   className="text-gray-400 hover:text-gray-600 transition-all duration-200 hover:scale-110 active:scale-95"
                   aria-label="Close"
@@ -944,6 +994,77 @@ export default function InventoryPage() {
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-4">
+                {/* Photos Section */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <span className="font-semibold">Photos</span>
+                    <span className="text-xs text-gray-500 ml-2">(Upload one or more photos showing: what the item is, current condition, identifying marks or variations)</span>
+                  </label>
+                  
+                  {/* Photo Upload */}
+                  <div className="mb-3">
+                    <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors">
+                      <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                        {uploadingPhotos ? (
+                          <>
+                            <svg className="w-8 h-8 mb-2 text-gray-500 animate-spin" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <p className="text-sm text-gray-500">Uploading...</p>
+                          </>
+                        ) : (
+                          <>
+                            <svg className="w-8 h-8 mb-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                            </svg>
+                            <p className="text-sm text-gray-500">
+                              <span className="font-semibold">Click to upload</span> or drag and drop
+                            </p>
+                            <p className="text-xs text-gray-500">PNG, JPG, GIF up to 10MB each</p>
+                          </>
+                        )}
+                      </div>
+                      <input
+                        type="file"
+                        className="hidden"
+                        accept="image/*"
+                        multiple
+                        disabled={uploadingPhotos}
+                        onChange={(e) => {
+                          if (e.target.files && e.target.files.length > 0) {
+                            handlePhotoUpload(e.target.files);
+                          }
+                        }}
+                      />
+                    </label>
+                  </div>
+
+                  {/* Photo Gallery */}
+                  {itemPhotos.length > 0 && (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mt-3">
+                      {itemPhotos.map((photoUrl, index) => (
+                        <div key={index} className="relative group">
+                          <img
+                            src={photoUrl}
+                            alt={`Item photo ${index + 1}`}
+                            className="w-full h-32 object-cover rounded-lg border border-gray-300"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleRemovePhoto(index)}
+                            className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                            title="Remove photo"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -971,14 +1092,89 @@ export default function InventoryPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Description
+                    <span className="font-semibold">Clear Text Description *</span>
+                    <span className="text-xs text-gray-500 ml-2">(Describe what the item is, its purpose, and key characteristics)</span>
                   </label>
                   <textarea
                     name="description"
                     defaultValue={editingItem?.description || ""}
-                    rows={3}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2.5 min-h-[44px] focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
+                    rows={4}
+                    required
+                    placeholder="Provide a clear, detailed description of the item. Include what it is, its purpose, dimensions, materials, or any other relevant details that help identify and understand the item."
+                    className="w-full border-2 border-gray-300 rounded-lg px-3 py-2.5 min-h-[44px] focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white text-base"
                   />
+                </div>
+
+                {/* Photos Section */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <span className="font-semibold">Photos</span>
+                    <span className="text-xs text-gray-500 ml-2">(Upload one or more photos showing: what the item is, current condition, identifying marks or variations)</span>
+                  </label>
+                  
+                  {/* Photo Upload */}
+                  <div className="mb-3">
+                    <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors">
+                      <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                        {uploadingPhotos ? (
+                          <>
+                            <svg className="w-8 h-8 mb-2 text-gray-500 animate-spin" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <p className="text-sm text-gray-500">Uploading...</p>
+                          </>
+                        ) : (
+                          <>
+                            <svg className="w-8 h-8 mb-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                            </svg>
+                            <p className="text-sm text-gray-500">
+                              <span className="font-semibold">Click to upload</span> or drag and drop
+                            </p>
+                            <p className="text-xs text-gray-500">PNG, JPG, GIF up to 10MB each</p>
+                          </>
+                        )}
+                      </div>
+                      <input
+                        type="file"
+                        className="hidden"
+                        accept="image/*"
+                        multiple
+                        disabled={uploadingPhotos}
+                        onChange={(e) => {
+                          if (e.target.files && e.target.files.length > 0) {
+                            handlePhotoUpload(e.target.files);
+                          }
+                        }}
+                      />
+                    </label>
+                  </div>
+
+                  {/* Photo Gallery */}
+                  {itemPhotos.length > 0 && (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mt-3">
+                      {itemPhotos.map((photoUrl, index) => (
+                        <div key={index} className="relative group">
+                          <img
+                            src={photoUrl}
+                            alt={`Item photo ${index + 1}`}
+                            className="w-full h-32 object-cover rounded-lg border border-gray-300"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleRemovePhoto(index)}
+                            className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                            title="Remove photo"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1089,6 +1285,7 @@ export default function InventoryPage() {
                     onClick={() => {
                       setShowModal(false);
                       setEditingItem(null);
+                      setItemPhotos([]);
                     }}
                     className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 transition-all duration-200 hover:shadow-sm active:scale-95 font-medium"
                   >
@@ -1260,6 +1457,58 @@ export default function InventoryPage() {
 
             {/* Content */}
             <div className="p-6">
+              {/* Item Details Section */}
+              <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <h3 className="font-semibold text-gray-900 mb-2">Item Details</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-gray-600"><strong>Name:</strong> {historyItem.name}</p>
+                    {historyItem.sku && <p className="text-sm text-gray-600"><strong>SKU:</strong> {historyItem.sku}</p>}
+                    {historyItem.description && (
+                      <p className="text-sm text-gray-600 mt-2"><strong>Description:</strong> {historyItem.description}</p>
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600"><strong>Current Quantity:</strong> {historyItem.quantity} {historyItem.unit}</p>
+                    {historyItem.location && <p className="text-sm text-gray-600"><strong>Location:</strong> {historyItem.location}</p>}
+                  </div>
+                </div>
+                
+                {/* Photos Display */}
+                {historyItem.photos && historyItem.photos.length > 0 && (
+                  <div className="mt-4">
+                    <p className="text-sm font-semibold text-gray-700 mb-2">Photos ({historyItem.photos.length})</p>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                      {historyItem.photos.map((photoUrl, index) => (
+                        <div key={index} className="relative group">
+                          <img
+                            src={photoUrl}
+                            alt={`${historyItem.name} photo ${index + 1}`}
+                            className="w-full h-24 object-cover rounded border border-gray-300 cursor-pointer hover:opacity-80 transition-opacity"
+                            onClick={() => {
+                              const modal = document.createElement('div');
+                              modal.className = 'fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4';
+                              const img = document.createElement('img');
+                              img.src = photoUrl;
+                              img.alt = `${historyItem.name} photo ${index + 1}`;
+                              img.className = 'max-w-full max-h-[90vh] object-contain rounded-lg';
+                              const closeBtn = document.createElement('button');
+                              closeBtn.className = 'absolute top-4 right-4 text-white hover:text-gray-300 z-10 bg-black/50 rounded-full p-2';
+                              closeBtn.innerHTML = '×';
+                              closeBtn.onclick = () => modal.remove();
+                              modal.appendChild(closeBtn);
+                              modal.appendChild(img);
+                              modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+                              document.body.appendChild(modal);
+                            }}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
               {loadingHistory ? (
                 <div className="text-center py-12">
                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>

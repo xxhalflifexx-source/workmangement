@@ -3,6 +3,7 @@ export interface InventoryItem {
   name: string;
   sku: string | null;
   description: string | null;
+  photos: string[] | null; // Array of photo URLs
   category: string | null;
   quantity: number;
   unit: string;

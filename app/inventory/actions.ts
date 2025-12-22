@@ -9,6 +9,7 @@ const itemSchema = z.object({
   name: z.string().min(1, "Name is required"),
   sku: z.string().optional(),
   description: z.string().optional(),
+  photos: z.array(z.string()).nullable().optional(),
   category: z.string().optional(),
   quantity: z.number().int().min(0, "Quantity cannot be negative"),
   unit: z.string().min(1, "Unit is required"),
@@ -38,7 +39,20 @@ export async function getInventoryItems() {
       orderBy: { name: "asc" },
     });
 
-    return { ok: true, items };
+    // Parse photos JSON strings to arrays
+    const itemsWithParsedPhotos = items.map((item: any) => ({
+      ...item,
+      photos: item.photos ? (() => {
+        try {
+          const parsed = JSON.parse(item.photos);
+          return Array.isArray(parsed) ? parsed : [];
+        } catch {
+          return [];
+        }
+      })() : null,
+    }));
+
+    return { ok: true, items: itemsWithParsedPhotos };
   } catch (error: any) {
     console.error("[Inventory] getInventoryItems error:", error);
     return { ok: false, error: "Failed to load inventory items" };
@@ -85,6 +99,7 @@ export async function createInventoryItem(formData: FormData) {
         name: parsed.data.name,
         sku: parsed.data.sku || null,
         description: parsed.data.description || null,
+        photos: parsed.data.photos ? JSON.stringify(parsed.data.photos) : null,
         category: parsed.data.category || null,
         quantity: parsed.data.quantity,
         unit: parsed.data.unit,
@@ -92,7 +107,7 @@ export async function createInventoryItem(formData: FormData) {
         location: parsed.data.location || null,
         supplier: parsed.data.supplier || null,
         costPerUnit: parsed.data.costPerUnit || null,
-      },
+      } as any, // Type assertion needed until Prisma client is regenerated
     });
 
     console.log("[Inventory] createInventoryItem success:", item.id);
@@ -120,10 +135,25 @@ export async function updateInventoryItem(itemId: string, formData: FormData) {
     return { ok: false, error: "Unauthorized: Only managers and admins can update inventory items" };
   }
 
+  // Parse photos from JSON string if provided
+  let photos: string[] | null = null;
+  const photosJson = formData.get("photos");
+  if (photosJson && typeof photosJson === "string") {
+    try {
+      const parsed = JSON.parse(photosJson);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        photos = parsed;
+      }
+    } catch (e) {
+      console.error("Failed to parse photos JSON:", e);
+    }
+  }
+
   const data = {
     name: formData.get("name"),
     sku: formData.get("sku") || undefined,
     description: formData.get("description") || undefined,
+    photos: photos,
     category: formData.get("category") || undefined,
     quantity: Number(formData.get("quantity")) || 0,
     unit: formData.get("unit") || "pcs",
@@ -147,6 +177,7 @@ export async function updateInventoryItem(itemId: string, formData: FormData) {
         name: parsed.data.name,
         sku: parsed.data.sku || null,
         description: parsed.data.description || null,
+        photos: parsed.data.photos ? JSON.stringify(parsed.data.photos) : null,
         category: parsed.data.category || null,
         quantity: parsed.data.quantity,
         unit: parsed.data.unit,
@@ -154,7 +185,7 @@ export async function updateInventoryItem(itemId: string, formData: FormData) {
         location: parsed.data.location || null,
         supplier: parsed.data.supplier || null,
         costPerUnit: parsed.data.costPerUnit || null,
-      },
+      } as any, // Type assertion needed until Prisma client is regenerated
     });
 
     console.log("[Inventory] updateInventoryItem success:", itemId);

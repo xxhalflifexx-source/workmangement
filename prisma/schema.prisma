@@ -231,7 +231,8 @@ model InventoryItem {
   id             String                @id @default(cuid())
   name           String
   sku            String?               @unique
-  description    String?
+  description    String?               @db.Text // Clear text description
+  photos         String?               // JSON array of image URLs - supports multiple photos showing item, condition, identifying marks
   category       String?
   quantity       Int                   @default(0)
   unit           String                @default("pcs") // pcs, kg, lbs, etc.

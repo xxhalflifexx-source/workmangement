@@ -1,6 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import type { InventoryItem } from "./types";
+import PhotoViewerModal from "../qc/PhotoViewerModal";
 
 interface InventoryTabProps {
   loading: boolean;
@@ -65,7 +67,29 @@ export default function InventoryTab({
   openEditModal,
   handleDelete,
 }: InventoryTabProps) {
+  const [viewingPhotos, setViewingPhotos] = useState<string[]>([]);
+  const [photoIndex, setPhotoIndex] = useState(0);
+  const [showPhotoViewer, setShowPhotoViewer] = useState(false);
+
+  const openPhotoViewer = (photos: string[], index: number = 0) => {
+    setViewingPhotos(photos);
+    setPhotoIndex(index);
+    setShowPhotoViewer(true);
+  };
+
   return (
+    <>
+      {showPhotoViewer && viewingPhotos.length > 0 && (
+        <PhotoViewerModal
+          photos={viewingPhotos}
+          initialIndex={photoIndex}
+          onClose={() => {
+            setShowPhotoViewer(false);
+            setViewingPhotos([]);
+            setPhotoIndex(0);
+          }}
+        />
+      )}
     <div className="space-y-4 sm:space-y-6">
       {/* Header with Create Button */}
       <div className="flex justify-between items-center">
@@ -253,10 +277,33 @@ export default function InventoryTab({
                     return (
                           <tr key={item.id} className="hover:bg-indigo-50/50 transition-colors">
                         <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                          <div>{item.name}</div>
-                          {item.sku && (
-                            <div className="text-xs text-gray-500">SKU: {item.sku}</div>
-                          )}
+                          <div className="flex items-center gap-3">
+                            {/* Photo Thumbnail */}
+                            {item.photos && item.photos.length > 0 && (
+                              <div className="flex-shrink-0 relative">
+                                <img
+                                  src={item.photos[0]}
+                                  alt={item.name}
+                                  className="w-12 h-12 object-cover rounded border border-gray-300 cursor-pointer hover:opacity-80 transition-opacity"
+                                  onClick={() => openPhotoViewer(item.photos || [], 0)}
+                                />
+                                {item.photos.length > 1 && (
+                                  <div className="absolute -bottom-1 -right-1 bg-blue-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold">
+                                    +{item.photos.length - 1}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <div className="font-medium">{item.name}</div>
+                              {item.sku && (
+                                <div className="text-xs text-gray-500">SKU: {item.sku}</div>
+                              )}
+                              {item.description && (
+                                <div className="text-xs text-gray-600 mt-1 line-clamp-2">{item.description}</div>
+                              )}
+                            </div>
+                          </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {item.category || "—"}
@@ -379,6 +426,7 @@ export default function InventoryTab({
         </div>
       )}
     </div>
+    </>
   );
 }
 
