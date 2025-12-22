@@ -88,7 +88,7 @@ export function extractAmountFromText(text: string, format?: ReceiptFormat | nul
   function extractAllAmountsFromLines(lineArray: string[]): number[] {
     const amounts: number[] = [];
     for (const line of lineArray) {
-      const matches = line.matchAll(/(\d+[.,]\d{2}|\d+\s+\d{2})/g);
+      const matches = Array.from(line.matchAll(/(\d+[.,]\d{2}|\d+\s+\d{2})/g));
       for (const match of matches) {
         const amount = extractAmountFromString(match[0]);
         if (amount !== null && amount > 0 && amount < 100000) {
