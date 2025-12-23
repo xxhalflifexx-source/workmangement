@@ -1649,7 +1649,7 @@ function JobsPageContent() {
                 type="button"
                 onClick={async () => {
                   const res = await exportJobsToCSV();
-                  if (res.ok && 'csv' in res) {
+                  if (res.ok && 'csv' in res && res.csv) {
                     // Create and download CSV file
                     const blob = new Blob([res.csv], { type: "text/csv;charset=utf-8;" });
                     const url = URL.createObjectURL(blob);
