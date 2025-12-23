@@ -179,7 +179,6 @@ export async function createIncidentReport(data: {
   incidentDate: Date;
   location: string;
   injuryDetails?: string;
-  witnesses?: string;
   severity: IncidentSeverity;
   photos?: string[];
   jobId?: string;
@@ -205,7 +204,6 @@ export async function createIncidentReport(data: {
         incidentDate: data.incidentDate,
         location: data.location,
         injuryDetails: data.injuryDetails || null,
-        witnesses: data.witnesses || null,
         severity: data.severity,
         status: "OPEN",
         photos: data.photos || [],
@@ -255,7 +253,6 @@ export async function updateIncidentReport(
     incidentDate?: Date;
     location?: string;
     injuryDetails?: string;
-    witnesses?: string;
     status?: IncidentStatus;
     severity?: IncidentSeverity;
     photos?: string[];
@@ -298,7 +295,6 @@ export async function updateIncidentReport(
         ...(data.incidentDate && { incidentDate: data.incidentDate }),
         ...(data.location && { location: data.location }),
         ...(data.injuryDetails !== undefined && { injuryDetails: data.injuryDetails || null }),
-        ...(data.witnesses !== undefined && { witnesses: data.witnesses || null }),
         ...(data.status && { status: data.status }),
         ...(data.severity && { severity: data.severity }),
         ...(data.photos && { photos: data.photos }),
@@ -401,21 +397,26 @@ export async function getJobsForIncident() {
 export async function getEmployeesForIncident() {
   const { error, session } = await getAdminSession();
   if (error || !session) {
+    console.log("[getEmployeesForIncident] Auth error:", error);
     return { ok: false, error: error || "Not authenticated" };
   }
 
   const organizationId = (session.user as any).organizationId;
+  console.log("[getEmployeesForIncident] organizationId:", organizationId);
+  
   if (!organizationId) {
     return { ok: false, error: "No organization found" };
   }
 
   try {
+    // Get all users in the organization (not just APPROVED)
     const employees = await prisma.user.findMany({
-      where: { organizationId, status: "APPROVED" },
-      select: { id: true, name: true, email: true, role: true },
+      where: { organizationId },
+      select: { id: true, name: true, email: true, role: true, status: true },
       orderBy: { name: "asc" },
     });
 
+    console.log("[getEmployeesForIncident] Found employees:", employees.length);
     return { ok: true, employees };
   } catch (err) {
     console.error("[getEmployeesForIncident] Error:", err);

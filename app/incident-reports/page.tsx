@@ -67,7 +67,6 @@ export default function IncidentReportsPage() {
     incidentDate: new Date().toISOString().split("T")[0],
     location: "",
     injuryDetails: "",
-    witnesses: "",
     severity: "LOW" as IncidentSeverity,
     status: "OPEN" as IncidentStatus,
     jobId: "",
@@ -166,7 +165,6 @@ export default function IncidentReportsPage() {
       incidentDate: new Date().toISOString().split("T")[0],
       location: "",
       injuryDetails: "",
-      witnesses: "",
       severity: "LOW",
       status: "OPEN",
       jobId: "",
@@ -237,7 +235,6 @@ export default function IncidentReportsPage() {
         incidentDate: new Date(formData.incidentDate),
         location: formData.location,
         injuryDetails: formData.injuryDetails || undefined,
-        witnesses: formData.witnesses || undefined,
         severity: formData.severity,
         jobId: formData.jobId || undefined,
         employeesInvolved: formData.employeesInvolved.filter(e => e.userId).length > 0 
@@ -277,7 +274,6 @@ export default function IncidentReportsPage() {
         incidentDate: new Date(formData.incidentDate),
         location: formData.location,
         injuryDetails: formData.injuryDetails || undefined,
-        witnesses: formData.witnesses || undefined,
         status: formData.status,
         severity: formData.severity,
         jobId: formData.jobId || null,
@@ -327,7 +323,6 @@ export default function IncidentReportsPage() {
       incidentDate: new Date(report.incidentDate).toISOString().split("T")[0],
       location: report.location,
       injuryDetails: report.injuryDetails || "",
-      witnesses: report.witnesses || "",
       severity: report.severity as IncidentSeverity,
       status: report.status as IncidentStatus,
       jobId: report.jobId || "",
@@ -718,17 +713,6 @@ export default function IncidentReportsPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Witnesses</label>
-                <input
-                  type="text"
-                  value={formData.witnesses}
-                  onChange={(e) => setFormData({ ...formData, witnesses: e.target.value })}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                  placeholder="Names of witnesses (comma-separated)"
-                />
-              </div>
-
-              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Related Job</label>
                 <select
                   value={formData.jobId}
@@ -934,16 +918,6 @@ export default function IncidentReportsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Witnesses</label>
-                  <input
-                    type="text"
-                    value={formData.witnesses}
-                    onChange={(e) => setFormData({ ...formData, witnesses: e.target.value })}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                  />
-                </div>
-
-                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Related Job</label>
                   <select
                     value={formData.jobId}
@@ -1079,13 +1053,6 @@ export default function IncidentReportsPage() {
                   <div>
                     <span className="text-sm text-gray-500">Injury Details:</span>
                     <p className="mt-1 text-gray-900">{selectedReport.injuryDetails}</p>
-                  </div>
-                )}
-
-                {selectedReport.witnesses && (
-                  <div>
-                    <span className="text-sm text-gray-500">Witnesses:</span>
-                    <p className="mt-1 text-gray-900">{selectedReport.witnesses}</p>
                   </div>
                 )}
 
