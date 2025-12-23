@@ -444,7 +444,7 @@ export default function IncidentReportsPage() {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-black border-b-2 border-[#001f3f] shadow-lg sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+        <div className="w-full px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
           <div className="flex items-center gap-4">
             <Link href="/dashboard" className="text-white hover:text-gray-300 transition-colors">
               ← Back
@@ -464,7 +464,7 @@ export default function IncidentReportsPage() {
       </header>
 
       {/* Filters */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+      <div className="w-full px-4 sm:px-6 lg:px-8 py-4">
         <div className="bg-white rounded-lg shadow p-4 flex flex-wrap gap-4 items-end">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
@@ -505,7 +505,7 @@ export default function IncidentReportsPage() {
 
       {/* Error message */}
       {error && (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-4">
+        <div className="w-full px-4 sm:px-6 lg:px-8 mb-4">
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex justify-between items-center">
             <span>{error}</span>
             <button onClick={() => setError(null)} className="text-red-900 font-bold hover:bg-red-100 rounded px-2">
@@ -517,7 +517,7 @@ export default function IncidentReportsPage() {
 
       {/* Loading indicator */}
       {loading && initialized && (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-4">
+        <div className="w-full px-4 sm:px-6 lg:px-8 mb-4">
           <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded-lg">
             Loading...
           </div>
@@ -525,7 +525,7 @@ export default function IncidentReportsPage() {
       )}
 
       {/* Reports List */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
+      <div className="w-full px-4 sm:px-6 lg:px-8 pb-8">
         <div className="bg-white rounded-lg shadow overflow-hidden">
           {reports.length === 0 && !loading ? (
             <div className="p-8 text-center text-gray-500">
@@ -534,31 +534,31 @@ export default function IncidentReportsPage() {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
+              <table className="w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/4">
                       Title
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Date
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Location
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Status
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Severity
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Job
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Employees
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Photos
                     </th>
                   </tr>
@@ -570,41 +570,41 @@ export default function IncidentReportsPage() {
                       onClick={() => openDetail(report)}
                       className="hover:bg-gray-50 cursor-pointer transition-colors"
                     >
-                      <td className="px-4 py-4">
-                        <div className="font-medium text-gray-900">{report.title}</div>
-                        <div className="text-sm text-gray-500 line-clamp-1">{report.description}</div>
+                      <td className="px-6 py-5">
+                        <div className="font-medium text-gray-900 text-base">{report.title}</div>
+                        <div className="text-sm text-gray-500 mt-1 line-clamp-2">{report.description}</div>
                       </td>
-                      <td className="px-4 py-4 text-sm text-gray-600">
+                      <td className="px-6 py-5 text-sm text-gray-600 whitespace-nowrap">
                         {new Date(report.incidentDate).toLocaleDateString()}
                       </td>
-                      <td className="px-4 py-4 text-sm text-gray-600">{report.location}</td>
-                      <td className="px-4 py-4">
+                      <td className="px-6 py-5 text-sm text-gray-600">{report.location}</td>
+                      <td className="px-6 py-5">
                         <span
-                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${
+                          className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${
                             statusColors[report.status] || statusColors.OPEN
                           }`}
                         >
                           {report.status.replace("_", " ")}
                         </span>
                       </td>
-                      <td className="px-4 py-4">
+                      <td className="px-6 py-5">
                         <span
-                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${
+                          className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${
                             severityColors[report.severity] || severityColors.LOW
                           }`}
                         >
                           {report.severity}
                         </span>
                       </td>
-                      <td className="px-4 py-4 text-sm text-gray-600">
+                      <td className="px-6 py-5 text-sm text-gray-600 whitespace-nowrap">
                         {report.job ? (report.job.jobNumber || `#${report.job.id.slice(0, 8).toUpperCase()}`) : "-"}
                       </td>
-                      <td className="px-4 py-4 text-sm text-gray-600">
+                      <td className="px-6 py-5 text-sm text-gray-600">
                         {report.employeesInvolved.length > 0
                           ? report.employeesInvolved.length + " person(s)"
                           : "-"}
                       </td>
-                      <td className="px-4 py-4 text-sm text-gray-600">
+                      <td className="px-6 py-5 text-sm text-gray-600">
                         {report.photos?.length > 0 ? `📷 ${report.photos.length}` : "-"}
                       </td>
                     </tr>
