@@ -253,6 +253,18 @@ export default async function Dashboard() {
                     notificationCount={unreadCounts["/operations-common"] || 0}
                   />
                 )}
+
+                {/* Incident Reports - Admin only */}
+                {role === "ADMIN" && (
+                  <DashboardTabLink
+                    href="/incident-reports"
+                    icon="⚠️"
+                    title="Incident Reports"
+                    description="Workplace safety incidents"
+                    notificationCount={unreadCounts["/incident-reports"] || 0}
+                    className="hover:border-red-300"
+                  />
+                )}
               </div>
             </div>
       </div>

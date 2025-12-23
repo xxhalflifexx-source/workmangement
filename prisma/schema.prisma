@@ -35,6 +35,7 @@ model Organization {
   operationsCommonFiles   OperationsCommonFile[]
   sopDocuments     SOPDocument[]
   sopTemplates     SOPTemplate[]
+  incidentReports  IncidentReport[]
 
   @@index([slug])
   @@index([isActive])
@@ -89,6 +90,8 @@ model User {
   ocrCorrections       OCRCorrection[]
   ocrFormatDetections  OCRFormatDetection[]
   pushTokens           PushToken[]
+  incidentReportsCreated IncidentReport[]
+  incidentInvolvements   IncidentEmployee[]
 
   @@index([organizationId])
   @@index([isSuperAdmin])
@@ -197,6 +200,7 @@ model Job {
   qcRecords        QCRecord[]
   reworkEntries    ReworkEntry[]
   assignments      JobAssignment[]
+  incidentReports  IncidentReport[]
 
   @@index([organizationId])
 }
@@ -666,4 +670,52 @@ model PushToken {
   
   @@index([userId])
   @@index([platform])
+}
+
+// Incident Reports for workplace safety
+model IncidentReport {
+  id              String   @id @default(cuid())
+  title           String
+  description     String   @db.Text
+  incidentDate    DateTime
+  location        String
+  injuryDetails   String?  @db.Text
+  witnesses       String?  // Comma-separated names or JSON
+  status          String   @default("OPEN") // OPEN, UNDER_REVIEW, RESOLVED, CLOSED
+  severity        String   @default("LOW") // LOW, MEDIUM, HIGH, CRITICAL
+  photos          String[] // Array of photo URLs
+  
+  // Relations
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdById     String
+  createdBy       User @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  jobId           String?
+  job             Job? @relation(fields: [jobId], references: [id], onDelete: SetNull)
+  
+  // Employees involved (many-to-many)
+  employeesInvolved IncidentEmployee[]
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([createdById])
+  @@index([jobId])
+  @@index([status])
+  @@index([severity])
+}
+
+// Junction table for employees involved in incidents
+model IncidentEmployee {
+  id               String @id @default(cuid())
+  incidentReportId String
+  incidentReport   IncidentReport @relation(fields: [incidentReportId], references: [id], onDelete: Cascade)
+  userId           String
+  user             User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role             String @default("INVOLVED") // INVOLVED, WITNESS, INJURED
+
+  @@unique([incidentReportId, userId])
+  @@index([incidentReportId])
+  @@index([userId])
 }
