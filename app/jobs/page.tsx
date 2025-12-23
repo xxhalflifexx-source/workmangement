@@ -1999,20 +1999,19 @@ function JobsPageContent() {
         }}
         title={editingJob ? "Edit Job" : "Create New Job"}
       >
-        <div>
-              {editingJob && (editingJob.status === "AWAITING_QC" || editingJob.status === "COMPLETED") && (
-                <div className="mb-4 p-3 bg-purple-50 border border-purple-200 rounded-lg">
-                  <p className="text-sm text-purple-800 font-medium">
-                    🔒 This job has been submitted to QC and is locked for editing. It will be unlocked if returned for rework.
-                  </p>
-                </div>
-              )}
+        {editingJob && (editingJob.status === "AWAITING_QC" || editingJob.status === "COMPLETED") && (
+          <div className="mb-4 p-3 bg-purple-50 border border-purple-200 rounded-lg">
+            <p className="text-sm text-purple-800 font-medium">
+              🔒 This job has been submitted to QC and is locked for editing. It will be unlocked if returned for rework.
+            </p>
+          </div>
+        )}
 
-              {(() => {
-                const isLocked = !!(editingJob && (editingJob.status === "AWAITING_QC" || editingJob.status === "COMPLETED"));
-                const isEmployee = !canManage;
-                return (
-              <form onSubmit={handleSubmit} className="space-y-4" data-job-form>
+        {(() => {
+          const isLocked = !!(editingJob && (editingJob.status === "AWAITING_QC" || editingJob.status === "COMPLETED"));
+          const isEmployee = !canManage;
+          return (
+            <form onSubmit={handleSubmit} className="space-y-4" data-job-form>
                     {isEmployee && (
                       <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
                         <p className="text-sm text-red-800 font-medium">
@@ -2415,10 +2414,9 @@ function JobsPageContent() {
                     {editingJob ? "Update Job" : "Create Job"}
                   </button>
                 </div>
-              </form>
-                );
-              })()}
-        </div>
+            </form>
+          );
+        })()}
       </MobileModal>
 
       {/* Customer Update Confirmation Modal */}
