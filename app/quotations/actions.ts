@@ -402,6 +402,24 @@ export async function convertQuotationToInvoice(quotationId: string) {
 		const { getNextInvoiceNumber } = await import("../invoices/actions");
 		const invoiceNumber = await getNextInvoiceNumber();
 
+		// Prepare invoice lines - copy all quotation lines
+		const invoiceLines = quotation.lines.map((line) => ({
+			description: line.description,
+			quantity: line.quantity,
+			rate: line.rate,
+			amount: line.amount,
+		}));
+
+		// Add shipping fee as a line item if > 0 (matching invoice creation behavior)
+		if (quotation.shippingFee && quotation.shippingFee > 0) {
+			invoiceLines.push({
+				description: "Shipping Fee",
+				quantity: 1,
+				rate: quotation.shippingFee,
+				amount: quotation.shippingFee,
+			});
+		}
+
 		// Create invoice from quotation data
 		const invoice = await prisma.invoice.create({
 			data: {
@@ -415,15 +433,10 @@ export async function convertQuotationToInvoice(quotationId: string) {
 				dueDate: null,
 				sentDate: centralToUTC(nowInCentral().toDate()),
 				notes: quotation.notes,
-				total: quotation.total,
+				total: quotation.total, // Total already includes shipping fee from quotation
 				balance: quotation.total,
 				lines: {
-					create: quotation.lines.map((line) => ({
-						description: line.description,
-						quantity: line.quantity,
-						rate: line.rate,
-						amount: line.amount,
-					})),
+					create: invoiceLines,
 				},
 			},
 			include: { lines: true },
