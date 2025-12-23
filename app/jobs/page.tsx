@@ -4,7 +4,7 @@ import React, { useEffect, useState, useRef, Suspense, useMemo, useCallback } fr
 import { getJobs, getAllUsers, createJob, updateJob, deleteJob, getJobActivities, addJobActivity, getAllCustomers, createCustomer, updateCustomer, saveJobPhotos, submitJobPhotosToQC, getJobPhotos, removeJobPhoto as removeJobPhotoFromDB, getJobExpenses, addJobExpense, deleteJobExpense, exportJobsToCSV } from "./actions";
 import { createMaterialRequest, getJobMaterialRequests } from "../material-requests/actions";
 import { getCompanySettingsForInvoice } from "./invoice-actions";
-import { createQuotation, updateQuotation, getQuotationsByJobId, getQuotation } from "../quotations/actions";
+import { createQuotation, updateQuotation, getQuotationsByJobId, getQuotation, convertQuotationToInvoice, getNextQuotationNumber } from "../quotations/actions";
 import { generateQuotationPDF, QuotationPDFData } from "@/lib/quotation-pdf-generator";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
@@ -319,6 +319,8 @@ function JobsPageContent() {
   const [showQuotationModal, setShowQuotationModal] = useState(false);
   const [selectedJobForQuotation, setSelectedJobForQuotation] = useState<Job | null>(null);
   const [currentQuotationId, setCurrentQuotationId] = useState<string | null>(null); // For editing existing quotations
+  const [currentQuotationNumber, setCurrentQuotationNumber] = useState<string | null>(null); // Display quotation number
+  const [jobQuotations, setJobQuotations] = useState<any[]>([]); // All quotations for the job
   const [quotationDate, setQuotationDate] = useState(todayCentralISO());
   const [quotationValidUntil, setQuotationValidUntil] = useState("");
   const [quotationLineItems, setQuotationLineItems] = useState<any[]>([]);
@@ -335,6 +337,7 @@ function JobsPageContent() {
   const [quotationCustomerEmail, setQuotationCustomerEmail] = useState("");
   const [savingQuotation, setSavingQuotation] = useState(false);
   const [autoSavingQuotation, setAutoSavingQuotation] = useState(false);
+  const [convertingQuotation, setConvertingQuotation] = useState(false);
   const [companySettings, setCompanySettings] = useState<any>(null);
   const quotationRef = useRef<HTMLDivElement>(null);
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -1225,89 +1228,156 @@ function JobsPageContent() {
       setCompanySettings(settings);
     }
     
-    // Try to load the last saved quotation for this job
+    // Load ALL quotations for this job
     const quotationsRes = await getQuotationsByJobId(job.id);
+    let allQuotations: any[] = [];
     let lastQuotation = null;
     if (quotationsRes.ok && quotationsRes.quotations && quotationsRes.quotations.length > 0) {
+      allQuotations = quotationsRes.quotations;
       // Get the most recent quotation (first one since they're ordered by createdAt desc)
-      lastQuotation = quotationsRes.quotations[0];
+      lastQuotation = allQuotations[0];
     }
+    setJobQuotations(allQuotations);
     
     if (lastQuotation) {
       // Load existing quotation data
-      setCurrentQuotationId(lastQuotation.id);
-      setQuotationDate(lastQuotation.issueDate ? formatDateInput(new Date(lastQuotation.issueDate)) : todayCentralISO());
-      setQuotationValidUntil(lastQuotation.validUntil ? formatDateInput(new Date(lastQuotation.validUntil)) : "");
-      setQuotationLineItems(lastQuotation.lines || []);
-      setQuotationNotes(lastQuotation.notes || "");
-      setQuotationShippingFee(lastQuotation.shippingFee || 0);
-      setQuotationPaymentBank(lastQuotation.paymentBank || "");
-      setQuotationPaymentAccountName(lastQuotation.paymentAccountName || "");
-      setQuotationPaymentAccountNumber(lastQuotation.paymentAccountNumber || "");
-      setQuotationPreparedByName(lastQuotation.preparedByName || "");
-      setQuotationPreparedByTitle(lastQuotation.preparedByTitle || "");
-      setQuotationCustomerName(lastQuotation.customerName || "");
-      setQuotationCustomerAddress(lastQuotation.customerAddress || "");
-      setQuotationCustomerPhone(lastQuotation.customerPhone || "");
-      setQuotationCustomerEmail(lastQuotation.customerEmail || "");
+      loadQuotationData(lastQuotation);
     } else {
       // New quotation - set defaults
-      setCurrentQuotationId(null);
-      setQuotationDate(todayCentralISO());
-      
-      // Set valid until date to 30 days from now in Central Time
-      const validUntil = nowInCentral().add(30, 'day');
-      setQuotationValidUntil(validUntil.format('YYYY-MM-DD'));
-      
-      // Auto-populate customer info
-      if (job.customer) {
-        setQuotationCustomerName(job.customer.name || "");
-        setQuotationCustomerAddress(job.customer.company || "");
-        setQuotationCustomerPhone(job.customer.phone || "");
-        setQuotationCustomerEmail(job.customer.email || "");
-      }
-      
-      // Auto-populate prepared by with current user's name
-      if (session?.user?.name) {
-        setQuotationPreparedByName(session.user.name);
-      }
-      
-      // Auto-generate quotation line items based on job pricing
-      const lineItems = [];
-      
-      if (job.estimatedPrice && job.estimatedPrice > 0) {
-        lineItems.push({
-          description: job.title,
-          quantity: 1,
-          rate: job.estimatedPrice,
-          amount: job.estimatedPrice,
-        });
-      } else {
-        lineItems.push({
-          description: job.title,
-          quantity: 1,
-          rate: 0,
-          amount: 0,
-        });
-      }
-      
-      setQuotationLineItems(lineItems);
-      setQuotationNotes("This quotation is valid for 30 days from the date above. Final pricing may vary based on actual work performed.");
-      setQuotationShippingFee(0);
-      setQuotationPaymentBank("");
-      setQuotationPaymentAccountName("");
-      setQuotationPaymentAccountNumber("");
-      setQuotationPreparedByName("");
-      setQuotationPreparedByTitle("");
+      await initNewQuotation(job);
+    }
+  };
+
+  // Load data for a specific quotation
+  const loadQuotationData = (quotation: any) => {
+    setCurrentQuotationId(quotation.id);
+    setCurrentQuotationNumber(quotation.quotationNumber || null);
+    setQuotationDate(quotation.issueDate ? formatDateInput(new Date(quotation.issueDate)) : todayCentralISO());
+    setQuotationValidUntil(quotation.validUntil ? formatDateInput(new Date(quotation.validUntil)) : "");
+    setQuotationLineItems(quotation.lines || []);
+    setQuotationNotes(quotation.notes || "");
+    setQuotationShippingFee(quotation.shippingFee || 0);
+    setQuotationPaymentBank(quotation.paymentBank || "");
+    setQuotationPaymentAccountName(quotation.paymentAccountName || "");
+    setQuotationPaymentAccountNumber(quotation.paymentAccountNumber || "");
+    setQuotationPreparedByName(quotation.preparedByName || "");
+    setQuotationPreparedByTitle(quotation.preparedByTitle || "");
+    setQuotationCustomerName(quotation.customerName || "");
+    setQuotationCustomerAddress(quotation.customerAddress || "");
+    setQuotationCustomerPhone(quotation.customerPhone || "");
+    setQuotationCustomerEmail(quotation.customerEmail || "");
+  };
+
+  // Initialize a new quotation with defaults
+  const initNewQuotation = async (job: Job) => {
+    setCurrentQuotationId(null);
+    
+    // Get next quotation number
+    try {
+      const nextNumber = await getNextQuotationNumber();
+      setCurrentQuotationNumber(nextNumber);
+    } catch (err) {
+      console.error("Failed to get next quotation number:", err);
+      setCurrentQuotationNumber(null);
     }
     
-    // Auto-save after a short delay
-    if (autoSaveTimeoutRef.current) {
-      clearTimeout(autoSaveTimeoutRef.current);
+    setQuotationDate(todayCentralISO());
+    
+    // Set valid until date to 30 days from now in Central Time
+    const validUntil = nowInCentral().add(30, 'day');
+    setQuotationValidUntil(validUntil.format('YYYY-MM-DD'));
+    
+    // Auto-populate customer info
+    if (job.customer) {
+      setQuotationCustomerName(job.customer.name || "");
+      setQuotationCustomerAddress(job.customer.company || "");
+      setQuotationCustomerPhone(job.customer.phone || "");
+      setQuotationCustomerEmail(job.customer.email || "");
+    } else {
+      setQuotationCustomerName("");
+      setQuotationCustomerAddress("");
+      setQuotationCustomerPhone("");
+      setQuotationCustomerEmail("");
     }
-    autoSaveTimeoutRef.current = setTimeout(() => {
-      handleAutoSaveQuotation();
-    }, 2000); // Auto-save after 2 seconds of inactivity
+    
+    // Auto-populate prepared by with current user's name
+    if (session?.user?.name) {
+      setQuotationPreparedByName(session.user.name);
+    } else {
+      setQuotationPreparedByName("");
+    }
+    
+    // Auto-generate quotation line items based on job pricing
+    const lineItems = [];
+    
+    if (job.estimatedPrice && job.estimatedPrice > 0) {
+      lineItems.push({
+        description: job.title,
+        quantity: 1,
+        rate: job.estimatedPrice,
+        amount: job.estimatedPrice,
+      });
+    } else {
+      lineItems.push({
+        description: job.title,
+        quantity: 1,
+        rate: 0,
+        amount: 0,
+      });
+    }
+    
+    setQuotationLineItems(lineItems);
+    setQuotationNotes("This quotation is valid for 30 days from the date above. Final pricing may vary based on actual work performed.");
+    setQuotationShippingFee(0);
+    setQuotationPaymentBank("");
+    setQuotationPaymentAccountName("");
+    setQuotationPaymentAccountNumber("");
+    setQuotationPreparedByTitle("");
+  };
+
+  // Handle selecting a different quotation from the list
+  const handleSelectQuotation = async (quotationId: string) => {
+    if (quotationId === "new" && selectedJobForQuotation) {
+      await initNewQuotation(selectedJobForQuotation);
+    } else {
+      const quotation = jobQuotations.find(q => q.id === quotationId);
+      if (quotation) {
+        loadQuotationData(quotation);
+      }
+    }
+  };
+
+  // Convert current quotation to invoice
+  const handleConvertToInvoice = async () => {
+    if (!currentQuotationId) {
+      setError("Please save the quotation first before converting to invoice");
+      return;
+    }
+
+    if (!confirm("Are you sure you want to convert this quotation to an invoice? This action cannot be undone.")) {
+      return;
+    }
+
+    setConvertingQuotation(true);
+    setError(undefined);
+
+    try {
+      const res = await convertQuotationToInvoice(currentQuotationId);
+      if (res.ok) {
+        setSuccess(`Quotation converted to Invoice ${res.invoice?.invoiceNumber}`);
+        setShowQuotationModal(false);
+        setSelectedJobForQuotation(null);
+        setJobQuotations([]);
+        setCurrentQuotationId(null);
+        setCurrentQuotationNumber(null);
+      } else {
+        setError(res.error || "Failed to convert quotation to invoice");
+      }
+    } catch (err: any) {
+      setError(err?.message || "Failed to convert quotation to invoice");
+    } finally {
+      setConvertingQuotation(false);
+    }
   };
   
 
@@ -1437,6 +1507,14 @@ function JobsPageContent() {
         setSuccess(currentQuotationId ? "Quotation updated successfully!" : "Quotation created successfully!");
         if (res.quotation) {
           setCurrentQuotationId(res.quotation.id);
+          setCurrentQuotationNumber(res.quotation.quotationNumber || null);
+          // Refresh the quotations list
+          if (selectedJobForQuotation) {
+            const quotationsRes = await getQuotationsByJobId(selectedJobForQuotation.id);
+            if (quotationsRes.ok && quotationsRes.quotations) {
+              setJobQuotations(quotationsRes.quotations);
+            }
+          }
         }
       } else {
         setError(res.error || "Failed to save quotation");
@@ -3262,33 +3340,78 @@ function JobsPageContent() {
             <div ref={quotationRef}>
               {/* Estimate Header */}
               <div className="p-6 border-b bg-gray-50 no-print">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <h2 className="text-2xl font-bold text-gray-900">
-                      {currentQuotationId ? "Edit Quotation" : "Create Quotation"}
-                    </h2>
-                    {autoSavingQuotation && (
-                      <span className="text-sm text-gray-500">Auto-saving...</span>
-                    )}
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={handleDownloadQuotationPDF}
-                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
-                    >
-                      📥 Download PDF
-                    </button>
+                <div className="flex flex-col gap-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <h2 className="text-2xl font-bold text-gray-900">
+                        {currentQuotationId ? "Edit Quotation" : "Create Quotation"}
+                      </h2>
+                      {currentQuotationNumber && (
+                        <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">
+                          {currentQuotationNumber}
+                        </span>
+                      )}
+                      {autoSavingQuotation && (
+                        <span className="text-sm text-gray-500">Auto-saving...</span>
+                      )}
+                    </div>
                     <button
                       onClick={() => {
                         setShowQuotationModal(false);
                         setSelectedJobForQuotation(null);
                         setQuotationLineItems([]);
                         setCurrentQuotationId(null);
+                        setCurrentQuotationNumber(null);
+                        setJobQuotations([]);
                       }}
                       className="text-gray-400 hover:text-gray-600 text-2xl"
                     >
                       ✕
                     </button>
+                  </div>
+                  
+                  {/* Quotation Selection and Actions */}
+                  <div className="flex flex-wrap items-center justify-between gap-4">
+                    {/* Quotation Selector */}
+                    <div className="flex items-center gap-3">
+                      <label className="text-sm font-medium text-gray-700">Quotation:</label>
+                      <select
+                        value={currentQuotationId || "new"}
+                        onChange={(e) => handleSelectQuotation(e.target.value)}
+                        className="border border-gray-300 rounded-lg px-3 py-2 text-sm min-w-[200px]"
+                      >
+                        <option value="new">➕ Create New Quotation</option>
+                        {jobQuotations.map((q) => (
+                          <option key={q.id} value={q.id}>
+                            {q.quotationNumber || `Draft`} - {q.status} - ${q.total?.toFixed(2) || "0.00"}
+                          </option>
+                        ))}
+                      </select>
+                      {jobQuotations.length > 0 && (
+                        <span className="text-xs text-gray-500">
+                          ({jobQuotations.length} quotation{jobQuotations.length > 1 ? "s" : ""} for this job)
+                        </span>
+                      )}
+                    </div>
+                    
+                    {/* Action Buttons */}
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handleDownloadQuotationPDF}
+                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium text-sm"
+                      >
+                        📥 PDF
+                      </button>
+                      {currentQuotationId && (
+                        <button
+                          onClick={handleConvertToInvoice}
+                          disabled={convertingQuotation}
+                          className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium text-sm disabled:bg-gray-300"
+                        >
+                          {convertingQuotation ? "Converting..." : "→ Convert to Invoice"}
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -3535,6 +3658,8 @@ function JobsPageContent() {
                       setSelectedJobForQuotation(null);
                       setQuotationLineItems([]);
                       setCurrentQuotationId(null);
+                      setCurrentQuotationNumber(null);
+                      setJobQuotations([]);
                     }}
                     className="px-4 py-2.5 border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors font-semibold text-gray-700"
                   >
@@ -3546,7 +3671,7 @@ function JobsPageContent() {
                     disabled={savingQuotation}
                     className="px-4 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-semibold disabled:bg-gray-300 disabled:cursor-not-allowed"
                   >
-                    {savingQuotation ? "Saving..." : "Save Changes"}
+                    {savingQuotation ? "Saving..." : currentQuotationId ? "Save Changes" : "Create Quotation"}
                   </button>
                 </div>
               </div>
