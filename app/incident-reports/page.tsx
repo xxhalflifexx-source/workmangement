@@ -16,6 +16,8 @@ import {
   IncidentSeverity,
   EmployeeRole,
 } from "./actions";
+import MobileCardView from "@/components/MobileCardView";
+import MobileModal from "@/components/MobileModal";
 
 // Status badge colors
 const statusColors: Record<string, string> = {
@@ -444,19 +446,19 @@ export default function IncidentReportsPage() {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-black border-b-2 border-[#001f3f] shadow-lg sticky top-0 z-40">
-        <div className="w-full px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-          <div className="flex items-center gap-4">
-            <Link href="/dashboard" className="text-white hover:text-gray-300 transition-colors">
+        <div className="w-full px-4 sm:px-6 lg:px-8 py-3 sm:py-4 flex justify-between items-center gap-3">
+          <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
+            <Link href="/dashboard" className="text-white hover:text-gray-300 transition-colors text-base sm:text-sm min-h-[44px] flex items-center">
               ← Back
             </Link>
-            <h1 className="text-xl sm:text-2xl font-bold text-white">⚠️ Incident Reports</h1>
+            <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-white truncate">⚠️ Incident Reports</h1>
           </div>
           <button
             onClick={() => {
               resetForm();
               setShowCreateModal(true);
             }}
-            className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
+            className="bg-red-600 hover:bg-red-700 text-white px-5 py-3 rounded-lg font-medium transition-colors flex items-center gap-2 min-h-[44px] text-base sm:text-sm"
           >
             <span>+</span> New Report
           </button>
@@ -465,13 +467,13 @@ export default function IncidentReportsPage() {
 
       {/* Filters */}
       <div className="w-full px-4 sm:px-6 lg:px-8 py-4">
-        <div className="bg-white rounded-lg shadow p-4 flex flex-wrap gap-4 items-end">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+        <div className="bg-white rounded-lg shadow p-4 sm:p-4 flex flex-col sm:flex-row sm:flex-wrap gap-4 items-stretch sm:items-end">
+          <div className="flex-1 sm:flex-initial">
+            <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
             <select
               value={statusFilter}
               onChange={(e) => handleFilterChange("status", e.target.value)}
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              className="w-full border border-gray-300 rounded-lg px-4 py-3 text-base sm:text-sm min-h-[44px]"
             >
               <option value="">All Statuses</option>
               <option value="OPEN">Open</option>
@@ -480,12 +482,12 @@ export default function IncidentReportsPage() {
               <option value="CLOSED">Closed</option>
             </select>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Severity</label>
+          <div className="flex-1 sm:flex-initial">
+            <label className="block text-sm font-medium text-gray-700 mb-2">Severity</label>
             <select
               value={severityFilter}
               onChange={(e) => handleFilterChange("severity", e.target.value)}
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              className="w-full border border-gray-300 rounded-lg px-4 py-3 text-base sm:text-sm min-h-[44px]"
             >
               <option value="">All Severities</option>
               <option value="LOW">Low</option>
@@ -496,7 +498,7 @@ export default function IncidentReportsPage() {
           </div>
           <button
             onClick={applyFilters}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg text-base sm:text-sm font-medium transition-colors min-h-[44px] w-full sm:w-auto"
           >
             Apply Filters
           </button>
@@ -533,8 +535,10 @@ export default function IncidentReportsPage() {
               <p className="text-sm mt-2">Create a new report to get started</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full divide-y divide-gray-200">
+            <>
+              {/* Desktop Table View */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/4">
@@ -611,27 +615,91 @@ export default function IncidentReportsPage() {
                   ))}
                 </tbody>
               </table>
-            </div>
+              </div>
+
+              {/* Mobile Card View */}
+              <MobileCardView
+                items={reports}
+                emptyMessage="No incident reports found"
+                className="md:hidden p-4"
+                renderCard={(report) => (
+                  <div
+                    onClick={() => openDetail(report)}
+                    className="bg-white border-2 border-gray-200 rounded-xl p-4 mb-4 shadow-sm hover:shadow-md active:shadow-lg transition-all touch-manipulation"
+                  >
+                    <div className="flex justify-between items-start mb-3">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-bold text-lg text-gray-900 mb-1">{report.title}</h3>
+                        <p className="text-sm text-gray-600 line-clamp-2">{report.description}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      <span
+                        className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium border ${
+                          statusColors[report.status] || statusColors.OPEN
+                        }`}
+                      >
+                        {report.status.replace("_", " ")}
+                      </span>
+                      <span
+                        className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium border ${
+                          severityColors[report.severity] || severityColors.LOW
+                        }`}
+                      >
+                        {report.severity}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div>
+                        <span className="text-gray-500">Date:</span>
+                        <span className="ml-2 text-gray-900 font-medium">
+                          {new Date(report.incidentDate).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Location:</span>
+                        <span className="ml-2 text-gray-900 font-medium">{report.location}</span>
+                      </div>
+                      {report.job && (
+                        <div>
+                          <span className="text-gray-500">Job:</span>
+                          <span className="ml-2 text-gray-900 font-medium">
+                            {report.job.jobNumber || `#${report.job.id.slice(0, 8).toUpperCase()}`}
+                          </span>
+                        </div>
+                      )}
+                      <div>
+                        <span className="text-gray-500">Employees:</span>
+                        <span className="ml-2 text-gray-900 font-medium">
+                          {report.employeesInvolved.length > 0
+                            ? report.employeesInvolved.length + " person(s)"
+                            : "-"}
+                        </span>
+                      </div>
+                      {report.photos?.length > 0 && (
+                        <div className="col-span-2">
+                          <span className="text-gray-500">Photos:</span>
+                          <span className="ml-2 text-gray-900 font-medium">📷 {report.photos.length}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              />
+            </>
           )}
         </div>
       </div>
 
       {/* Create Modal */}
-      {showCreateModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200">
-              <div className="flex justify-between items-center">
-                <h2 className="text-xl font-bold text-gray-900">New Incident Report</h2>
-                <button
-                  onClick={() => setShowCreateModal(false)}
-                  className="text-gray-400 hover:text-gray-600 text-2xl"
-                >
-                  ×
-                </button>
-              </div>
-            </div>
-            <form onSubmit={handleCreate} className="p-6 space-y-4">
+      <MobileModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        title="New Incident Report"
+      >
+        <form onSubmit={handleCreate} className="space-y-5">
               {/* Error in modal */}
               {error && (
                 <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
@@ -646,7 +714,7 @@ export default function IncidentReportsPage() {
                   required
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 text-base min-h-[44px]"
                   placeholder="Brief description of incident"
                 />
               </div>
@@ -659,7 +727,7 @@ export default function IncidentReportsPage() {
                     required
                     value={formData.incidentDate}
                     onChange={(e) => setFormData({ ...formData, incidentDate: e.target.value })}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                    className="w-full border border-gray-300 rounded-lg px-4 py-3 text-base min-h-[44px]"
                   />
                 </div>
                 <div>
@@ -669,7 +737,7 @@ export default function IncidentReportsPage() {
                     required
                     value={formData.location}
                     onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                    className="w-full border border-gray-300 rounded-lg px-4 py-3 text-base min-h-[44px]"
                     placeholder="Where did it occur?"
                   />
                 </div>
@@ -680,7 +748,7 @@ export default function IncidentReportsPage() {
                 <select
                   value={formData.severity}
                   onChange={(e) => setFormData({ ...formData, severity: e.target.value as IncidentSeverity })}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 text-base min-h-[44px]"
                 >
                   <option value="LOW">Low</option>
                   <option value="MEDIUM">Medium</option>
@@ -696,7 +764,7 @@ export default function IncidentReportsPage() {
                   rows={4}
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 text-base min-h-[44px]"
                   placeholder="Detailed description of what happened..."
                 />
               </div>
@@ -707,7 +775,7 @@ export default function IncidentReportsPage() {
                   rows={2}
                   value={formData.injuryDetails}
                   onChange={(e) => setFormData({ ...formData, injuryDetails: e.target.value })}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 text-base min-h-[44px]"
                   placeholder="Any injuries sustained..."
                 />
               </div>
@@ -717,7 +785,7 @@ export default function IncidentReportsPage() {
                 <select
                   value={formData.jobId}
                   onChange={(e) => setFormData({ ...formData, jobId: e.target.value })}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 text-base min-h-[44px]"
                 >
                   <option value="">No related job</option>
                   {jobs.map((job) => (
@@ -737,7 +805,7 @@ export default function IncidentReportsPage() {
                   <button
                     type="button"
                     onClick={addEmployee}
-                    className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                    className="text-base sm:text-sm text-blue-600 hover:text-blue-800 font-medium min-h-[44px] flex items-center"
                   >
                     + Add Employee
                   </button>
@@ -750,7 +818,7 @@ export default function IncidentReportsPage() {
                     <select
                       value={emp.userId}
                       onChange={(e) => updateEmployee(index, "userId", e.target.value)}
-                      className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                      className="flex-1 border border-gray-300 rounded-lg px-4 py-3 text-base min-h-[44px]"
                     >
                       <option value="">Select employee</option>
                       {employees.map((e) => (
@@ -786,47 +854,33 @@ export default function IncidentReportsPage() {
                 <button
                   type="button"
                   onClick={() => setShowCreateModal(false)}
-                  className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="px-6 py-3 text-base sm:text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors min-h-[44px] flex items-center justify-center"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
+                  className="px-6 py-3 text-base sm:text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 min-h-[44px] flex items-center justify-center"
                 >
                   {submitting ? "Creating..." : "Create Report"}
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
+      </MobileModal>
 
       {/* Detail/Edit Modal */}
-      {showDetailModal && selectedReport && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200">
-              <div className="flex justify-between items-center">
-                <h2 className="text-xl font-bold text-gray-900">
-                  {isEditing ? "Edit Incident Report" : "Incident Report Details"}
-                </h2>
-                <button
-                  onClick={() => {
-                    setShowDetailModal(false);
-                    setIsEditing(false);
-                    setSelectedReport(null);
-                  }}
-                  className="text-gray-400 hover:text-gray-600 text-2xl"
-                >
-                  ×
-                </button>
-              </div>
-            </div>
-
-            {isEditing ? (
-              <form onSubmit={handleUpdate} className="p-6 space-y-4">
+      <MobileModal
+        isOpen={showDetailModal && !!selectedReport}
+        onClose={() => {
+          setShowDetailModal(false);
+          setIsEditing(false);
+          setSelectedReport(null);
+        }}
+        title={isEditing ? "Edit Incident Report" : "Incident Report Details"}
+      >
+        {isEditing ? (
+          <form onSubmit={handleUpdate} className="space-y-5">
                 {error && (
                   <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
                     {error}
@@ -840,11 +894,11 @@ export default function IncidentReportsPage() {
                     required
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                    className="w-full border border-gray-300 rounded-lg px-4 py-3 text-base min-h-[44px]"
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Date *</label>
                     <input
@@ -852,7 +906,7 @@ export default function IncidentReportsPage() {
                       required
                       value={formData.incidentDate}
                       onChange={(e) => setFormData({ ...formData, incidentDate: e.target.value })}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                      className="w-full border border-gray-300 rounded-lg px-4 py-3 text-base min-h-[44px]"
                     />
                   </div>
                   <div>
@@ -862,18 +916,18 @@ export default function IncidentReportsPage() {
                       required
                       value={formData.location}
                       onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                      className="w-full border border-gray-300 rounded-lg px-4 py-3 text-base min-h-[44px]"
                     />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Status *</label>
                     <select
                       value={formData.status}
                       onChange={(e) => setFormData({ ...formData, status: e.target.value as IncidentStatus })}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                      className="w-full border border-gray-300 rounded-lg px-4 py-3 text-base min-h-[44px]"
                     >
                       <option value="OPEN">Open</option>
                       <option value="UNDER_REVIEW">Under Review</option>
@@ -886,7 +940,7 @@ export default function IncidentReportsPage() {
                     <select
                       value={formData.severity}
                       onChange={(e) => setFormData({ ...formData, severity: e.target.value as IncidentSeverity })}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                      className="w-full border border-gray-300 rounded-lg px-4 py-3 text-base min-h-[44px]"
                     >
                       <option value="LOW">Low</option>
                       <option value="MEDIUM">Medium</option>
@@ -903,7 +957,7 @@ export default function IncidentReportsPage() {
                     rows={4}
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                    className="w-full border border-gray-300 rounded-lg px-4 py-3 text-base min-h-[44px]"
                   />
                 </div>
 
@@ -913,7 +967,7 @@ export default function IncidentReportsPage() {
                     rows={2}
                     value={formData.injuryDetails}
                     onChange={(e) => setFormData({ ...formData, injuryDetails: e.target.value })}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                    className="w-full border border-gray-300 rounded-lg px-4 py-3 text-base min-h-[44px]"
                   />
                 </div>
 
@@ -922,7 +976,7 @@ export default function IncidentReportsPage() {
                   <select
                     value={formData.jobId}
                     onChange={(e) => setFormData({ ...formData, jobId: e.target.value })}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                    className="w-full border border-gray-300 rounded-lg px-4 py-3 text-base min-h-[44px]"
                   >
                     <option value="">No related job</option>
                     {jobs.map((job) => (
@@ -950,7 +1004,7 @@ export default function IncidentReportsPage() {
                       <select
                         value={emp.userId}
                         onChange={(e) => updateEmployee(index, "userId", e.target.value)}
-                        className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                        className="flex-1 border border-gray-300 rounded-lg px-4 py-3 text-base min-h-[44px]"
                       >
                         <option value="">Select employee</option>
                         {employees.map((e) => (
@@ -986,7 +1040,7 @@ export default function IncidentReportsPage() {
                   <button
                     type="button"
                     onClick={() => handleDelete(selectedReport.id)}
-                    className="px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                    className="px-6 py-3 text-base sm:text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors min-h-[44px] flex items-center justify-center"
                   >
                     Delete
                   </button>
@@ -994,14 +1048,14 @@ export default function IncidentReportsPage() {
                     <button
                       type="button"
                       onClick={() => setIsEditing(false)}
-                      className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                      className="px-6 py-3 text-base sm:text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors min-h-[44px] flex items-center justify-center"
                     >
                       Cancel
                     </button>
                     <button
                       type="submit"
                       disabled={submitting}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                      className="px-6 py-3 text-base sm:text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 min-h-[44px] flex items-center justify-center"
                     >
                       {submitting ? "Saving..." : "Save Changes"}
                     </button>
@@ -1116,7 +1170,7 @@ export default function IncidentReportsPage() {
                       setShowDetailModal(false);
                       setSelectedReport(null);
                     }}
-                    className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                    className="px-6 py-3 text-base sm:text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors min-h-[44px] flex items-center justify-center"
                   >
                     Close
                   </button>
@@ -1129,9 +1183,7 @@ export default function IncidentReportsPage() {
                 </div>
               </div>
             )}
-          </div>
-        </div>
-      )}
+      </MobileModal>
     </div>
   );
 }

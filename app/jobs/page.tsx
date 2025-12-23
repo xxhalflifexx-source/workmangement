@@ -14,6 +14,8 @@ import JobFilters from "./JobFilters";
 import JobRow from "./JobRow";
 import ReceiptScanner from "@/components/ReceiptScanner";
 import { formatDateShort, formatDateTime, formatDateInput, todayCentralISO, nowInCentral, centralToUTC } from "@/lib/date-utils";
+import MobileCardView from "@/components/MobileCardView";
+import MobileModal from "@/components/MobileModal";
 
 interface Job {
   id: string;
@@ -1640,7 +1642,7 @@ function JobsPageContent() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search by job title, description, customer, or job number..."
-              className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 text-sm flex-1 min-w-0 sm:min-w-[200px] min-h-[44px] focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all bg-white shadow-sm"
+              className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 text-base sm:text-sm flex-1 min-w-0 sm:min-w-[200px] min-h-[44px] focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all bg-white shadow-sm"
             />
           </div>
           {canManage && (
@@ -1753,10 +1755,12 @@ function JobsPageContent() {
             )}
           </div>
         ) : (
-          <div className="bg-white rounded-2xl shadow-lg border-2 border-indigo-100 overflow-hidden">
-            <div className="overflow-x-auto -mx-4 sm:mx-0">
-              <div className="inline-block min-w-full align-middle px-4 sm:px-0">
-                <table className="min-w-full divide-y divide-gray-200">
+          <>
+            {/* Desktop Table View */}
+            <div className="hidden md:block bg-white rounded-2xl shadow-lg border-2 border-indigo-100 overflow-hidden">
+              <div className="overflow-x-auto -mx-4 sm:mx-0">
+                <div className="inline-block min-w-full align-middle px-4 sm:px-0">
+                  <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gradient-to-r from-indigo-600 to-blue-600">
                   <tr>
                     <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap">
@@ -1831,8 +1835,93 @@ function JobsPageContent() {
                   )}
                 </tbody>
               </table>
+                </div>
               </div>
             </div>
+
+            {/* Mobile Card View */}
+            <MobileCardView
+              items={filteredJobs}
+              emptyMessage="No jobs to display"
+              className="md:hidden p-4"
+              renderCard={(job) => (
+                <div
+                  onClick={() => {
+                    const jobRow = document.querySelector(`[data-job-id="${job.id}"]`);
+                    if (jobRow) {
+                      (jobRow as HTMLElement).click();
+                    }
+                  }}
+                  className="bg-white border-2 border-gray-200 rounded-xl p-4 mb-4 shadow-sm hover:shadow-md active:shadow-lg transition-all touch-manipulation"
+                  data-job-id={job.id}
+                >
+                  <div className="flex justify-between items-start mb-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="font-mono font-medium text-gray-900 text-sm mb-1">
+                        {job.jobNumber || `#${job.id.substring(0, 8).toUpperCase()}`}
+                      </div>
+                      <h3 className="font-bold text-lg text-gray-900 mb-1">{job.title}</h3>
+                      {job.description && (
+                        <p className="text-sm text-gray-600 line-clamp-2">{job.description}</p>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    <span
+                      className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium border ${
+                        job.status === "COMPLETED"
+                          ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                          : job.status === "REWORK"
+                          ? "bg-amber-50 text-amber-700 border-amber-200"
+                          : job.status === "AWAITING_QC"
+                          ? "bg-indigo-50 text-indigo-700 border-indigo-200"
+                          : job.status === "IN_PROGRESS"
+                          ? "bg-blue-50 text-blue-700 border-blue-200"
+                          : job.status === "CANCELLED"
+                          ? "bg-red-50 text-red-700 border-red-200"
+                          : "bg-slate-50 text-slate-700 border-slate-200"
+                      }`}
+                    >
+                      {job.status === "AWAITING_QC" ? "Submit to QC" : job.status.replace("_", " ")}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    {job.customer && (
+                      <div>
+                        <span className="text-gray-500">Client:</span>
+                        <span className="ml-2 text-gray-900 font-medium">{job.customer.name || "-"}</span>
+                      </div>
+                    )}
+                    <div>
+                      <span className="text-gray-500">Start:</span>
+                      <span className="ml-2 text-gray-900 font-medium">
+                        {formatDateShort(job.createdAt)}
+                      </span>
+                    </div>
+                    {job.dueDate && (
+                      <div>
+                        <span className="text-gray-500">Deadline:</span>
+                        <span className="ml-2 text-gray-900 font-medium">
+                          {formatDateShort(job.dueDate)}
+                        </span>
+                      </div>
+                    )}
+                    <div>
+                      <span className="text-gray-500">Workers:</span>
+                      <span className="ml-2 text-gray-900 font-medium">
+                        {job.assignments && job.assignments.length > 0
+                          ? job.assignments.map((a: any) => a.user?.name).filter(Boolean).join(", ") || "Unassigned"
+                          : job.assignee
+                          ? job.assignee.name
+                          : "Unassigned"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            />
             
             {/* Pagination */}
             {totalPages > 1 && (
@@ -1902,13 +1991,15 @@ function JobsPageContent() {
       </div>
 
       {/* Create/Edit Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
-          <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full my-4 max-h-[calc(100vh-2rem)] overflow-y-auto">
-            <div className="p-4 sm:p-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">
-                {editingJob ? "Edit Job" : "Create New Job"}
-              </h2>
+      <MobileModal
+        isOpen={showModal}
+        onClose={() => {
+          setShowModal(false);
+          setEditingJob(null);
+        }}
+        title={editingJob ? "Edit Job" : "Create New Job"}
+      >
+        <div>
               {editingJob && (editingJob.status === "AWAITING_QC" || editingJob.status === "COMPLETED") && (
                 <div className="mb-4 p-3 bg-purple-50 border border-purple-200 rounded-lg">
                   <p className="text-sm text-purple-800 font-medium">
@@ -1939,7 +2030,7 @@ function JobsPageContent() {
                     defaultValue={editingJob?.title}
                     required
                       disabled={isLocked || isEmployee}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                      className="w-full border border-gray-300 rounded-lg px-4 py-3 text-base min-h-[44px] disabled:bg-gray-100 disabled:cursor-not-allowed"
                   />
                 </div>
 
@@ -1952,7 +2043,7 @@ function JobsPageContent() {
                     defaultValue={editingJob?.description || ""}
                     rows={4}
                       disabled={isLocked || isEmployee}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                      className="w-full border border-gray-300 rounded-lg px-4 py-3 text-base min-h-[44px] disabled:bg-gray-100 disabled:cursor-not-allowed"
                   />
                 </div>
 
@@ -1966,7 +2057,7 @@ function JobsPageContent() {
                   defaultValue={editingJob?.status || "NOT_STARTED"}
                       required
                       disabled={isLocked || isEmployee}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                      className="w-full border border-gray-300 rounded-lg px-4 py-3 text-base min-h-[44px] disabled:bg-gray-100 disabled:cursor-not-allowed"
                     >
                   <option value="NOT_STARTED">Not Started</option>
                       <option value="IN_PROGRESS">In Progress</option>
@@ -1986,7 +2077,7 @@ function JobsPageContent() {
                       defaultValue={editingJob?.priority || "MEDIUM"}
                       required
                       disabled={isLocked || isEmployee}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                      className="w-full border border-gray-300 rounded-lg px-4 py-3 text-base min-h-[44px] disabled:bg-gray-100 disabled:cursor-not-allowed"
                     >
                       <option value="LOW">Low</option>
                       <option value="MEDIUM">Medium</option>
@@ -2131,7 +2222,7 @@ function JobsPageContent() {
                               e.currentTarget.value = e.target.value;
                             }}
                             disabled={isLocked || isEmployee}
-                            className="w-full border border-gray-300 rounded-lg px-3 py-2 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                            className="w-full border border-gray-300 rounded-lg px-4 py-3 text-base min-h-[44px] disabled:bg-gray-100 disabled:cursor-not-allowed"
                           >
                             <option value="">No Customer</option>
                             {customers.map((customer) => (
@@ -2202,7 +2293,7 @@ function JobsPageContent() {
                           defaultValue={editingJob?.pricingType || "FIXED"}
                           required
                           disabled={isLocked || isEmployee}
-                          className="w-full border border-gray-300 rounded-lg px-3 py-2 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                          className="w-full border border-gray-300 rounded-lg px-4 py-3 text-base min-h-[44px] disabled:bg-gray-100 disabled:cursor-not-allowed"
                         >
                           <option value="FIXED">Fixed Price</option>
                           <option value="T&M">Time & Materials (T&M)</option>
@@ -2223,7 +2314,7 @@ function JobsPageContent() {
                             defaultValue={editingJob?.estimatedPrice || ""}
                             placeholder="0.00"
                             disabled={isLocked || isEmployee}
-                            className="w-full border border-gray-300 rounded-lg pl-7 pr-3 py-2 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                            className="w-full border border-gray-300 rounded-lg pl-8 pr-4 py-3 text-base min-h-[44px] disabled:bg-gray-100 disabled:cursor-not-allowed"
                           />
                         </div>
                       </div>
@@ -2244,7 +2335,7 @@ function JobsPageContent() {
                           defaultValue={editingJob?.finalPrice || ""}
                           placeholder="0.00"
                             disabled={isLocked || isEmployee}
-                            className="w-full border border-gray-300 rounded-lg pl-7 pr-3 py-2 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                            className="w-full border border-gray-300 rounded-lg pl-8 pr-4 py-3 text-base min-h-[44px] disabled:bg-gray-100 disabled:cursor-not-allowed"
                         />
                       </div>
                       <p className="text-xs text-gray-500 mt-1">
@@ -2319,7 +2410,7 @@ function JobsPageContent() {
                   <button
                     type="submit"
                     disabled={isLocked || isEmployee}
-                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:bg-gray-300 disabled:cursor-not-allowed"
+                    className="flex-1 px-6 py-3 text-base sm:text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:bg-gray-300 disabled:cursor-not-allowed min-h-[44px] flex items-center justify-center"
                   >
                     {editingJob ? "Update Job" : "Create Job"}
                   </button>
@@ -2327,10 +2418,8 @@ function JobsPageContent() {
               </form>
                 );
               })()}
-            </div>
-          </div>
         </div>
-      )}
+      </MobileModal>
 
       {/* Customer Update Confirmation Modal */}
       {showCustomerUpdateConfirm && (
@@ -2607,7 +2696,7 @@ function JobsPageContent() {
                             placeholder="e.g., Steel Handrail, Concrete Mix"
                             required
                             disabled={selectedJobForMaterialsAndExpenses.status === "AWAITING_QC" || selectedJobForMaterialsAndExpenses.status === "COMPLETED"}
-                            className="w-full border border-gray-300 rounded-lg px-3 py-2 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                            className="w-full border border-gray-300 rounded-lg px-4 py-3 text-base min-h-[44px] disabled:bg-gray-100 disabled:cursor-not-allowed"
                           />
                         </div>
 
@@ -2619,7 +2708,7 @@ function JobsPageContent() {
                             value={materialPriority}
                             onChange={(e) => setMaterialPriority(e.target.value)}
                             disabled={selectedJobForMaterialsAndExpenses.status === "AWAITING_QC" || selectedJobForMaterialsAndExpenses.status === "COMPLETED"}
-                            className="w-full border border-gray-300 rounded-lg px-3 py-2 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                            className="w-full border border-gray-300 rounded-lg px-4 py-3 text-base min-h-[44px] disabled:bg-gray-100 disabled:cursor-not-allowed"
                           >
                             <option value="LOW">Low - Can wait</option>
                             <option value="MEDIUM">Medium - Normal priority</option>
@@ -2666,7 +2755,7 @@ function JobsPageContent() {
                             maxLength={1}
                             required
                             disabled={selectedJobForMaterialsAndExpenses.status === "AWAITING_QC" || selectedJobForMaterialsAndExpenses.status === "COMPLETED"}
-                            className="w-full border border-gray-300 rounded-lg px-3 py-2 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                            className="w-full border border-gray-300 rounded-lg px-4 py-3 text-base min-h-[44px] disabled:bg-gray-100 disabled:cursor-not-allowed"
                           />
                         </div>
 
@@ -2679,7 +2768,7 @@ function JobsPageContent() {
                             placeholder="pcs, kg, lbs"
                             required
                             disabled={selectedJobForMaterialsAndExpenses.status === "AWAITING_QC" || selectedJobForMaterialsAndExpenses.status === "COMPLETED"}
-                            className="w-full border border-gray-300 rounded-lg px-3 py-2 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                            className="w-full border border-gray-300 rounded-lg px-4 py-3 text-base min-h-[44px] disabled:bg-gray-100 disabled:cursor-not-allowed"
                           />
                         </div>
                       </div>
@@ -2694,7 +2783,7 @@ function JobsPageContent() {
                           placeholder="Additional details about the material needed..."
                           rows={3}
                           disabled={selectedJobForMaterialsAndExpenses.status === "AWAITING_QC" || selectedJobForMaterialsAndExpenses.status === "COMPLETED"}
-                          className="w-full border border-gray-300 rounded-lg px-3 py-2 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                          className="w-full border border-gray-300 rounded-lg px-4 py-3 text-base min-h-[44px] disabled:bg-gray-100 disabled:cursor-not-allowed"
                         />
                       </div>
 
@@ -2708,7 +2797,7 @@ function JobsPageContent() {
                           placeholder="Any additional notes or requirements..."
                           rows={2}
                           disabled={selectedJobForMaterialsAndExpenses.status === "AWAITING_QC" || selectedJobForMaterialsAndExpenses.status === "COMPLETED"}
-                          className="w-full border border-gray-300 rounded-lg px-3 py-2 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                          className="w-full border border-gray-300 rounded-lg px-4 py-3 text-base min-h-[44px] disabled:bg-gray-100 disabled:cursor-not-allowed"
                         />
                       </div>
 

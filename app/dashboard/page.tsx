@@ -116,7 +116,7 @@ export default async function Dashboard() {
         <main className="min-h-screen bg-gray-50">
       {/* Top Header Bar - Black Background */}
       <header className="bg-black border-b-2 border-[#001f3f] shadow-lg sticky top-0 z-50">
-        <div className="max-w-full mx-auto px-2 sm:px-4 lg:px-8 py-2.5 sm:py-3 lg:py-4 flex justify-between items-center gap-2">
+        <div className="max-w-full mx-auto px-4 sm:px-4 lg:px-8 py-3 sm:py-3 lg:py-4 flex justify-between items-center gap-3">
           <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3 flex-shrink-0 min-w-0">
             <HeaderLeft 
               userName={user?.name} 
@@ -147,13 +147,13 @@ export default async function Dashboard() {
       </header>
 
       {/* Main Content - Professional Design */}
-      <div className="max-w-full mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6 bg-gradient-to-br from-gray-50 to-gray-100 min-h-[calc(100vh-80px)]">
+      <div className="max-w-full mx-auto px-4 sm:px-4 lg:px-8 py-4 sm:py-6 bg-gradient-to-br from-gray-50 to-gray-100 min-h-[calc(100vh-80px)]">
         {/* Quick Actions Section */}
-        <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-4 sm:p-6">
-              <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-4 sm:mb-5 pb-3 border-b-2 border-[#001f3f]">
+        <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-5 sm:p-6">
+              <h2 className="text-xl sm:text-xl font-bold text-gray-900 mb-5 sm:mb-5 pb-3 border-b-2 border-[#001f3f]">
                 QUICK ACTIONS
               </h2>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-4">
                 {/* Time Clock - Check permission */}
                 {(role === "ADMIN" || (permissions && hasPermission(permissions, "timeClock"))) && (
                   <DashboardTabLink
