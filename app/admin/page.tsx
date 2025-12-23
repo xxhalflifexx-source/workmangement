@@ -115,7 +115,7 @@ export default function AdminPage() {
       setLogoUrl((settingsRes.settings as any).logoUrl || "");
     }
 
-    if (jobNumRes.ok && 'settings' in jobNumRes) {
+    if (jobNumRes.ok && 'settings' in jobNumRes && jobNumRes.settings) {
       setJobNumberPrefix(jobNumRes.settings.jobNumberPrefix);
       setJobNumberPreview(jobNumRes.settings.previewJobNumber);
     }
@@ -873,6 +873,7 @@ export default function AdminPage() {
 
         {/* Company Settings Tab */}
         {activeTab === "settings" && settings && (
+          <>
           <div className="bg-white rounded-xl shadow border border-gray-200">
             <div className="px-6 py-4 border-b border-gray-200">
               <h2 className="text-xl font-semibold text-gray-900">Company Information</h2>
@@ -1052,7 +1053,8 @@ export default function AdminPage() {
                       setJobNumberPrefix(value);
                       // Update preview
                       const year = new Date().getFullYear();
-                      setJobNumberPreview(`${value || "JOB"}${year}-0001`);
+                      const prefix = value || "JOB";
+                      setJobNumberPreview(prefix + year + "-0001");
                     }}
                     placeholder="TCB"
                     maxLength={6}
@@ -1070,7 +1072,7 @@ export default function AdminPage() {
                         setSuccess('message' in res ? res.message : "Prefix updated");
                         // Refresh to get new preview
                         const refreshRes = await getJobNumberSettings();
-                        if (refreshRes.ok && 'settings' in refreshRes) {
+                        if (refreshRes.ok && 'settings' in refreshRes && refreshRes.settings) {
                           setJobNumberPreview(refreshRes.settings.previewJobNumber);
                         }
                       } else {
@@ -1098,6 +1100,7 @@ export default function AdminPage() {
               </div>
             </div>
           </div>
+          </>
         )}
 
 
