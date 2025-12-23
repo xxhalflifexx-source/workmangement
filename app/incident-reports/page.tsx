@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -46,6 +46,7 @@ export default function IncidentReportsPage() {
   const [reports, setReports] = useState<IncidentReportWithRelations[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [initialized, setInitialized] = useState(false);
   
   // Modal state
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -74,10 +75,60 @@ export default function IncidentReportsPage() {
     photos: [] as string[],
   });
   const [submitting, setSubmitting] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Check authentication and role
+  // Load data function
+  const loadData = useCallback(async (filters?: { status?: string; severity?: string }) => {
+    console.log("[IncidentReports] Loading data...");
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const [reportsRes, jobsRes, employeesRes] = await Promise.all([
+        getIncidentReports({
+          status: (filters?.status || statusFilter || undefined) as IncidentStatus | undefined,
+          severity: (filters?.severity || severityFilter || undefined) as IncidentSeverity | undefined,
+        }),
+        getJobsForIncident(),
+        getEmployeesForIncident(),
+      ]);
+
+      console.log("[IncidentReports] Reports response:", reportsRes);
+      console.log("[IncidentReports] Jobs response:", jobsRes);
+      console.log("[IncidentReports] Employees response:", employeesRes);
+
+      if (reportsRes.ok && reportsRes.reports) {
+        setReports(reportsRes.reports as IncidentReportWithRelations[]);
+      } else {
+        console.error("[IncidentReports] Failed to load reports:", reportsRes.error);
+        setError(reportsRes.error || "Failed to load reports");
+      }
+
+      if (jobsRes.ok && jobsRes.jobs) {
+        setJobs(jobsRes.jobs);
+      } else {
+        console.error("[IncidentReports] Failed to load jobs:", jobsRes.error);
+      }
+
+      if (employeesRes.ok && employeesRes.employees) {
+        setEmployees(employeesRes.employees);
+        console.log("[IncidentReports] Loaded employees:", employeesRes.employees.length);
+      } else {
+        console.error("[IncidentReports] Failed to load employees:", employeesRes.error);
+      }
+    } catch (err) {
+      console.error("[IncidentReports] Error loading data:", err);
+      setError("Failed to load data");
+    } finally {
+      setLoading(false);
+    }
+  }, [statusFilter, severityFilter]);
+
+  // Check authentication and role - only run once
   useEffect(() => {
     if (status === "loading") return;
+    if (initialized) return;
     
     if (!session?.user) {
       router.push("/login");
@@ -90,47 +141,23 @@ export default function IncidentReportsPage() {
       return;
     }
     
+    setInitialized(true);
     loadData();
-  }, [session, status, router]);
+  }, [session, status, router, initialized, loadData]);
 
-  const loadData = async () => {
-    setLoading(true);
-    try {
-      const [reportsRes, jobsRes, employeesRes] = await Promise.all([
-        getIncidentReports({
-          status: statusFilter || undefined,
-          severity: severityFilter || undefined,
-        }),
-        getJobsForIncident(),
-        getEmployeesForIncident(),
-      ]);
-
-      if (reportsRes.ok && reportsRes.reports) {
-        setReports(reportsRes.reports as IncidentReportWithRelations[]);
-      } else {
-        setError(reportsRes.error || "Failed to load reports");
-      }
-
-      if (jobsRes.ok && jobsRes.jobs) {
-        setJobs(jobsRes.jobs);
-      }
-
-      if (employeesRes.ok && employeesRes.employees) {
-        setEmployees(employeesRes.employees);
-      }
-    } catch (err) {
-      setError("Failed to load data");
-    } finally {
-      setLoading(false);
+  // Handle filter changes
+  const handleFilterChange = (type: "status" | "severity", value: string) => {
+    if (type === "status") {
+      setStatusFilter(value as IncidentStatus | "");
+    } else {
+      setSeverityFilter(value as IncidentSeverity | "");
     }
   };
 
-  // Reload when filters change
-  useEffect(() => {
-    if (session?.user && (session.user as any).role === "ADMIN") {
-      loadData();
-    }
-  }, [statusFilter, severityFilter]);
+  // Apply filters button
+  const applyFilters = () => {
+    loadData({ status: statusFilter, severity: severityFilter });
+  };
 
   const resetForm = () => {
     setFormData({
@@ -148,11 +175,62 @@ export default function IncidentReportsPage() {
     });
   };
 
+  // Photo upload handler
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setUploading(true);
+    setError(null);
+
+    try {
+      const formDataUpload = new FormData();
+      for (let i = 0; i < files.length; i++) {
+        formDataUpload.append("files", files[i]);
+      }
+
+      const response = await fetch("/api/upload", {
+        method: "POST",
+        body: formDataUpload,
+      });
+
+      const result = await response.json();
+
+      if (result.success && result.paths) {
+        setFormData((prev) => ({
+          ...prev,
+          photos: [...prev.photos, ...result.paths],
+        }));
+      } else {
+        setError(result.error || "Failed to upload photos");
+      }
+    } catch (err) {
+      console.error("[IncidentReports] Upload error:", err);
+      setError("Failed to upload photos");
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
+
+  // Remove photo
+  const removePhoto = (index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      photos: prev.photos.filter((_, i) => i !== index),
+    }));
+  };
+
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
+    setError(null);
     
     try {
+      console.log("[IncidentReports] Creating report with data:", formData);
+      
       const res = await createIncidentReport({
         title: formData.title,
         description: formData.description,
@@ -162,9 +240,13 @@ export default function IncidentReportsPage() {
         witnesses: formData.witnesses || undefined,
         severity: formData.severity,
         jobId: formData.jobId || undefined,
-        employeesInvolved: formData.employeesInvolved.length > 0 ? formData.employeesInvolved : undefined,
+        employeesInvolved: formData.employeesInvolved.filter(e => e.userId).length > 0 
+          ? formData.employeesInvolved.filter(e => e.userId) 
+          : undefined,
         photos: formData.photos.length > 0 ? formData.photos : undefined,
       });
+
+      console.log("[IncidentReports] Create response:", res);
 
       if (res.ok) {
         setShowCreateModal(false);
@@ -174,6 +256,7 @@ export default function IncidentReportsPage() {
         setError(res.error || "Failed to create incident report");
       }
     } catch (err) {
+      console.error("[IncidentReports] Create error:", err);
       setError("Failed to create incident report");
     } finally {
       setSubmitting(false);
@@ -185,6 +268,7 @@ export default function IncidentReportsPage() {
     if (!selectedReport) return;
     
     setSubmitting(true);
+    setError(null);
     
     try {
       const res = await updateIncidentReport(selectedReport.id, {
@@ -197,7 +281,7 @@ export default function IncidentReportsPage() {
         status: formData.status,
         severity: formData.severity,
         jobId: formData.jobId || null,
-        employeesInvolved: formData.employeesInvolved,
+        employeesInvolved: formData.employeesInvolved.filter(e => e.userId),
         photos: formData.photos,
       });
 
@@ -211,6 +295,7 @@ export default function IncidentReportsPage() {
         setError(res.error || "Failed to update incident report");
       }
     } catch (err) {
+      console.error("[IncidentReports] Update error:", err);
       setError("Failed to update incident report");
     } finally {
       setSubmitting(false);
@@ -278,7 +363,81 @@ export default function IncidentReportsPage() {
     }));
   };
 
-  if (status === "loading" || loading) {
+  // Photo upload section component
+  const PhotoUploadSection = () => (
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-2">Photos</label>
+      
+      {/* Photo previews */}
+      {formData.photos.length > 0 && (
+        <div className="grid grid-cols-3 gap-2 mb-3">
+          {formData.photos.map((photo, index) => (
+            <div key={index} className="relative group">
+              <img
+                src={photo}
+                alt={`Incident photo ${index + 1}`}
+                className="w-full h-24 object-cover rounded-lg border border-gray-200"
+              />
+              <button
+                type="button"
+                onClick={() => removePhoto(index)}
+                className="absolute top-1 right-1 bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                ×
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+      
+      {/* Upload buttons */}
+      <div className="flex gap-2">
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          multiple
+          onChange={handlePhotoUpload}
+          className="hidden"
+          id="photo-upload"
+        />
+        <label
+          htmlFor="photo-upload"
+          className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition-colors ${
+            uploading ? "opacity-50 cursor-not-allowed" : ""
+          }`}
+        >
+          {uploading ? (
+            <>
+              <span className="animate-spin">⏳</span>
+              <span className="text-sm text-gray-600">Uploading...</span>
+            </>
+          ) : (
+            <>
+              <span>📷</span>
+              <span className="text-sm text-gray-600">Add Photos</span>
+            </>
+          )}
+        </label>
+        <label
+          htmlFor="photo-upload"
+          className={`flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg cursor-pointer hover:bg-blue-700 transition-colors ${
+            uploading ? "opacity-50 cursor-not-allowed" : ""
+          }`}
+          onClick={() => {
+            if (fileInputRef.current) {
+              fileInputRef.current.setAttribute("capture", "environment");
+            }
+          }}
+        >
+          <span>📸</span>
+          <span className="text-sm">Capture</span>
+        </label>
+      </div>
+    </div>
+  );
+
+  if (status === "loading" || (loading && !initialized)) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -311,12 +470,12 @@ export default function IncidentReportsPage() {
 
       {/* Filters */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-        <div className="bg-white rounded-lg shadow p-4 flex flex-wrap gap-4">
+        <div className="bg-white rounded-lg shadow p-4 flex flex-wrap gap-4 items-end">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
             <select
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as IncidentStatus | "")}
+              onChange={(e) => handleFilterChange("status", e.target.value)}
               className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
             >
               <option value="">All Statuses</option>
@@ -330,7 +489,7 @@ export default function IncidentReportsPage() {
             <label className="block text-sm font-medium text-gray-700 mb-1">Severity</label>
             <select
               value={severityFilter}
-              onChange={(e) => setSeverityFilter(e.target.value as IncidentSeverity | "")}
+              onChange={(e) => handleFilterChange("severity", e.target.value)}
               className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
             >
               <option value="">All Severities</option>
@@ -340,17 +499,32 @@ export default function IncidentReportsPage() {
               <option value="CRITICAL">Critical</option>
             </select>
           </div>
+          <button
+            onClick={applyFilters}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+          >
+            Apply Filters
+          </button>
         </div>
       </div>
 
       {/* Error message */}
       {error && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-4">
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-            {error}
-            <button onClick={() => setError(null)} className="ml-2 text-red-900 font-bold">
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex justify-between items-center">
+            <span>{error}</span>
+            <button onClick={() => setError(null)} className="text-red-900 font-bold hover:bg-red-100 rounded px-2">
               ×
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Loading indicator */}
+      {loading && initialized && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-4">
+          <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded-lg">
+            Loading...
           </div>
         </div>
       )}
@@ -358,7 +532,7 @@ export default function IncidentReportsPage() {
       {/* Reports List */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
         <div className="bg-white rounded-lg shadow overflow-hidden">
-          {reports.length === 0 ? (
+          {reports.length === 0 && !loading ? (
             <div className="p-8 text-center text-gray-500">
               <p className="text-lg">No incident reports found</p>
               <p className="text-sm mt-2">Create a new report to get started</p>
@@ -388,6 +562,9 @@ export default function IncidentReportsPage() {
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Employees
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Photos
                     </th>
                   </tr>
                 </thead>
@@ -432,6 +609,9 @@ export default function IncidentReportsPage() {
                           ? report.employeesInvolved.length + " person(s)"
                           : "-"}
                       </td>
+                      <td className="px-4 py-4 text-sm text-gray-600">
+                        {report.photos?.length > 0 ? `📷 ${report.photos.length}` : "-"}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -450,13 +630,20 @@ export default function IncidentReportsPage() {
                 <h2 className="text-xl font-bold text-gray-900">New Incident Report</h2>
                 <button
                   onClick={() => setShowCreateModal(false)}
-                  className="text-gray-400 hover:text-gray-600"
+                  className="text-gray-400 hover:text-gray-600 text-2xl"
                 >
-                  ✕
+                  ×
                 </button>
               </div>
             </div>
             <form onSubmit={handleCreate} className="p-6 space-y-4">
+              {/* Error in modal */}
+              {error && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+                  {error}
+                </div>
+              )}
+              
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Title *</label>
                 <input
@@ -560,15 +747,20 @@ export default function IncidentReportsPage() {
               {/* Employees Involved */}
               <div>
                 <div className="flex justify-between items-center mb-2">
-                  <label className="block text-sm font-medium text-gray-700">Employees Involved</label>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Employees Involved ({employees.length} available)
+                  </label>
                   <button
                     type="button"
                     onClick={addEmployee}
-                    className="text-sm text-blue-600 hover:text-blue-800"
+                    className="text-sm text-blue-600 hover:text-blue-800 font-medium"
                   >
                     + Add Employee
                   </button>
                 </div>
+                {employees.length === 0 && (
+                  <p className="text-sm text-gray-500 italic">No employees available</p>
+                )}
                 {formData.employeesInvolved.map((emp, index) => (
                   <div key={index} className="flex gap-2 mb-2">
                     <select
@@ -579,7 +771,7 @@ export default function IncidentReportsPage() {
                       <option value="">Select employee</option>
                       {employees.map((e) => (
                         <option key={e.id} value={e.id}>
-                          {e.name || e.email}
+                          {e.name || e.email || "Unknown"}
                         </option>
                       ))}
                     </select>
@@ -597,11 +789,14 @@ export default function IncidentReportsPage() {
                       onClick={() => removeEmployee(index)}
                       className="text-red-600 hover:text-red-800 px-2"
                     >
-                      ✕
+                      ×
                     </button>
                   </div>
                 ))}
               </div>
+
+              {/* Photo Upload */}
+              <PhotoUploadSection />
 
               <div className="flex justify-end gap-3 pt-4 border-t">
                 <button
@@ -639,15 +834,21 @@ export default function IncidentReportsPage() {
                     setIsEditing(false);
                     setSelectedReport(null);
                   }}
-                  className="text-gray-400 hover:text-gray-600"
+                  className="text-gray-400 hover:text-gray-600 text-2xl"
                 >
-                  ✕
+                  ×
                 </button>
               </div>
             </div>
 
             {isEditing ? (
               <form onSubmit={handleUpdate} className="p-6 space-y-4">
+                {error && (
+                  <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+                    {error}
+                  </div>
+                )}
+                
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Title *</label>
                   <input
@@ -780,7 +981,7 @@ export default function IncidentReportsPage() {
                         <option value="">Select employee</option>
                         {employees.map((e) => (
                           <option key={e.id} value={e.id}>
-                            {e.name || e.email}
+                            {e.name || e.email || "Unknown"}
                           </option>
                         ))}
                       </select>
@@ -798,11 +999,14 @@ export default function IncidentReportsPage() {
                         onClick={() => removeEmployee(index)}
                         className="text-red-600 hover:text-red-800 px-2"
                       >
-                        ✕
+                        ×
                       </button>
                     </div>
                   ))}
                 </div>
+
+                {/* Photo Upload */}
+                <PhotoUploadSection />
 
                 <div className="flex justify-between pt-4 border-t">
                   <button
@@ -910,6 +1114,30 @@ export default function IncidentReportsPage() {
                   </div>
                 )}
 
+                {/* Photos display */}
+                {selectedReport.photos && selectedReport.photos.length > 0 && (
+                  <div>
+                    <span className="text-sm text-gray-500">Photos:</span>
+                    <div className="mt-2 grid grid-cols-3 gap-2">
+                      {selectedReport.photos.map((photo, index) => (
+                        <a
+                          key={index}
+                          href={photo}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block"
+                        >
+                          <img
+                            src={photo}
+                            alt={`Incident photo ${index + 1}`}
+                            className="w-full h-24 object-cover rounded-lg border border-gray-200 hover:opacity-80 transition-opacity"
+                          />
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <div className="text-sm text-gray-500">
                   Created by {selectedReport.createdBy.name || selectedReport.createdBy.email} on{" "}
                   {new Date(selectedReport.createdAt).toLocaleDateString()}
@@ -940,4 +1168,3 @@ export default function IncidentReportsPage() {
     </div>
   );
 }
-
