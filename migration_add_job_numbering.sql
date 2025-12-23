@@ -20,17 +20,49 @@ SET "jobNumberPrefix" = 'TCB'
 WHERE name = 'TCB Metal Works' OR slug = 'tcb-metal-works';
 
 -- Step 5: Backfill existing jobs with job numbers
--- This generates job numbers for existing jobs based on creation order within each organization
+-- First, assign TCB2025-0001 to the FIRST job created today (2025)
+WITH today_job AS (
+  SELECT j.id
+  FROM "Job" j
+  WHERE j."jobNumber" IS NULL
+    AND DATE(j."createdAt") = CURRENT_DATE
+    AND EXTRACT(YEAR FROM j."createdAt") = EXTRACT(YEAR FROM CURRENT_DATE)
+  ORDER BY j."createdAt" ASC
+  LIMIT 1
+)
+UPDATE "Job" j
+SET "jobNumber" = CONCAT(
+  COALESCE(o."jobNumberPrefix", 'JOB'),
+  EXTRACT(YEAR FROM CURRENT_DATE)::TEXT,
+  '-0001'
+)
+FROM "Organization" o, today_job tj
+WHERE j.id = tj.id
+  AND j."organizationId" = o.id;
+
+-- Then assign job numbers to all remaining jobs based on creation order
+-- For jobs created today: exclude the one that got 0001, then number remaining as 0002, 0003, etc.
+-- For jobs from other dates: number sequentially from 0001
 WITH ranked_jobs AS (
   SELECT 
     j.id,
     j."organizationId",
     o."jobNumberPrefix",
     EXTRACT(YEAR FROM j."createdAt")::INTEGER as job_year,
-    ROW_NUMBER() OVER (
-      PARTITION BY j."organizationId", EXTRACT(YEAR FROM j."createdAt") 
-      ORDER BY j."createdAt"
-    ) as row_num
+    CASE 
+      -- Jobs created today: exclude first one (already has 0001), number rest starting from 2
+      WHEN DATE(j."createdAt") = CURRENT_DATE THEN 
+        ROW_NUMBER() OVER (
+          PARTITION BY j."organizationId", DATE(j."createdAt")
+          ORDER BY j."createdAt"
+        ) + 1  -- +1 because first job already got 0001
+      -- Jobs from other dates: sequential from 0001
+      ELSE
+        ROW_NUMBER() OVER (
+          PARTITION BY j."organizationId", EXTRACT(YEAR FROM j."createdAt")
+          ORDER BY j."createdAt"
+        )
+    END as row_num
   FROM "Job" j
   LEFT JOIN "Organization" o ON j."organizationId" = o.id
   WHERE j."jobNumber" IS NULL
