@@ -1604,7 +1604,8 @@ function JobsPageContent() {
   };
 
   return (
-    <main className="min-h-screen bg-gray-50">
+    <>
+      <main className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-black border-b-2 border-[#001f3f] shadow-lg sticky top-0 z-50">
         <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-24 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -3659,7 +3660,8 @@ function JobsPageContent() {
           onCancel={() => setShowReceiptScanner(false)}
         />
       )}
-    </main>
+      </main>
+    </>
   );
 }
 
