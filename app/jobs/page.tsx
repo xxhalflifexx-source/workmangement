@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef, Suspense, useMemo, useCallback } from "react";
+import React, { useEffect, useState, useRef, Suspense, useMemo, useCallback } from "react";
 import { getJobs, getAllUsers, createJob, updateJob, deleteJob, getJobActivities, addJobActivity, getAllCustomers, createCustomer, updateCustomer, saveJobPhotos, submitJobPhotosToQC, getJobPhotos, removeJobPhoto as removeJobPhotoFromDB, getJobExpenses, addJobExpense, deleteJobExpense, exportJobsToCSV } from "./actions";
 import { createMaterialRequest, getJobMaterialRequests } from "../material-requests/actions";
 import { getCompanySettingsForInvoice } from "./invoice-actions";
@@ -1604,8 +1604,7 @@ function JobsPageContent() {
   };
 
   return (
-    <>
-      <main className="min-h-screen bg-gray-50">
+    <main className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-black border-b-2 border-[#001f3f] shadow-lg sticky top-0 z-50">
         <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-24 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -1756,7 +1755,7 @@ function JobsPageContent() {
             )}
           </div>
         ) : (
-          <>
+          <React.Fragment>
             {/* Desktop Table View */}
             <div className="hidden md:block bg-white rounded-2xl shadow-lg border-2 border-indigo-100 overflow-hidden">
               <div className="overflow-x-auto -mx-4 sm:mx-0">
@@ -1988,6 +1987,7 @@ function JobsPageContent() {
               </div>
             )}
           </div>
+          </React.Fragment>
         )}
       </div>
 
@@ -3659,8 +3659,7 @@ function JobsPageContent() {
           onCancel={() => setShowReceiptScanner(false)}
         />
       )}
-      </main>
-    </>
+    </main>
   );
 }
 
