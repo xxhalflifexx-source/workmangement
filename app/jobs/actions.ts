@@ -14,6 +14,50 @@ if (typeof process !== "undefined") {
   process.env.TZ = "America/Chicago";
 }
 
+/**
+ * Generate a unique job number for an organization
+ * Format: PREFIX+YEAR-NUMBER (e.g., TCB2025-0001)
+ * - Resets counter at the start of each year
+ * - Atomically increments counter to prevent duplicates
+ */
+async function generateJobNumber(organizationId: string): Promise<string> {
+  const currentYear = new Date().getFullYear();
+  
+  // Get organization and update counter atomically
+  const org = await prisma.organization.findUnique({
+    where: { id: organizationId },
+    select: {
+      jobNumberPrefix: true,
+      jobNumberCounter: true,
+      jobNumberYear: true,
+    },
+  });
+
+  if (!org) {
+    throw new Error("Organization not found");
+  }
+
+  // Check if we need to reset counter for new year
+  const isNewYear = org.jobNumberYear !== currentYear;
+  const newCounter = isNewYear ? 1 : (org.jobNumberCounter || 0) + 1;
+
+  // Update organization with new counter (atomic operation)
+  await prisma.organization.update({
+    where: { id: organizationId },
+    data: {
+      jobNumberCounter: newCounter,
+      jobNumberYear: currentYear,
+    },
+  });
+
+  // Generate job number: PREFIX + YEAR + - + PADDED_NUMBER
+  const prefix = org.jobNumberPrefix || "JOB";
+  const paddedNumber = newCounter.toString().padStart(4, "0");
+  const jobNumber = `${prefix}${currentYear}-${paddedNumber}`;
+
+  return jobNumber;
+}
+
 const jobSchema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().optional(),
@@ -70,9 +114,21 @@ export async function createJob(formData: FormData) {
   const assignedUserIds = formData.getAll("assignedUsers") as string[];
   const validAssignedUserIds = assignedUserIds.filter(id => id && id.trim() !== "");
 
+  // Generate job number if organization exists
+  let jobNumber: string | null = null;
+  if (ctx.organizationId) {
+    try {
+      jobNumber = await generateJobNumber(ctx.organizationId);
+    } catch (err) {
+      console.error("[createJob] Failed to generate job number:", err);
+      // Continue without job number if generation fails
+    }
+  }
+
   const job = await prisma.job.create({
     data: {
       title: parsed.data.title,
+      jobNumber, // Auto-generated job number
       description: parsed.data.description || null,
       status: parsed.data.status,
       priority: parsed.data.priority,
@@ -227,9 +283,14 @@ export async function deleteJob(jobId: string) {
     return { ok: false, error: "Unauthorized" };
   }
 
-  await prisma.job.delete({ where: { id: jobId } });
+  // Soft delete: Set status to CANCELLED instead of deleting
+  // This preserves the job number and prevents reuse
+  await prisma.job.update({ 
+    where: { id: jobId },
+    data: { status: "CANCELLED" }
+  });
 
-  return { ok: true };
+  return { ok: true, message: "Job cancelled successfully" };
 }
 
 interface GetJobsParams {
@@ -308,13 +369,14 @@ export async function getJobs(params: GetJobsParams = {}) {
     }
   }
 
-  // Search filter (title, description, customer name, or job ID)
+  // Search filter (title, description, customer name, job ID, or job number)
   if (search) {
     whereClause.OR = [
       ...(whereClause.OR || []),
       { title: { contains: search, mode: "insensitive" } },
       { description: { contains: search, mode: "insensitive" } },
       { id: { contains: search, mode: "insensitive" } },
+      { jobNumber: { contains: search, mode: "insensitive" } },
       { customer: { name: { contains: search, mode: "insensitive" } } },
     ];
   }
@@ -414,6 +476,88 @@ export async function getJobs(params: GetJobsParams = {}) {
   } catch (error: any) {
     console.error("[getJobs] Database error:", error);
     return { ok: false, error: error?.message || "Failed to fetch jobs" };
+  }
+}
+
+/**
+ * Export all jobs to CSV format (including CANCELLED jobs)
+ * Returns CSV string for download
+ */
+export async function exportJobsToCSV() {
+  const ctx = await getOrgContext();
+  if (!ctx.ok) return ctx;
+
+  // Only managers and admins can export
+  const roleCheck = requireRole(ctx, "MANAGER");
+  if (roleCheck) return roleCheck;
+
+  try {
+    const whereClause = buildOrgFilter(ctx, {});
+
+    const jobs = await prisma.job.findMany({
+      where: whereClause,
+      include: {
+        customer: { select: { name: true, company: true } },
+        creator: { select: { name: true } },
+        assignments: {
+          include: {
+            user: { select: { name: true } }
+          }
+        },
+      },
+      orderBy: [
+        { jobNumber: "asc" },
+        { createdAt: "asc" }
+      ],
+    });
+
+    // CSV Headers
+    const headers = [
+      "Job Number",
+      "Title",
+      "Status",
+      "Priority",
+      "Customer",
+      "Assigned To",
+      "Created By",
+      "Pricing Type",
+      "Estimated Price",
+      "Final Price",
+      "Estimated Hours",
+      "Due Date",
+      "Created At",
+    ];
+
+    // Generate CSV rows
+    const rows = jobs.map(job => {
+      const assignedTo = job.assignments.length > 0
+        ? job.assignments.map(a => a.user.name || "Unknown").join("; ")
+        : "-";
+      
+      return [
+        job.jobNumber || "-",
+        `"${(job.title || "").replace(/"/g, '""')}"`, // Escape quotes in title
+        job.status,
+        job.priority,
+        job.customer?.name || job.customer?.company || "-",
+        `"${assignedTo}"`,
+        job.creator?.name || "-",
+        job.pricingType || "FIXED",
+        job.estimatedPrice?.toFixed(2) || "-",
+        job.finalPrice?.toFixed(2) || "-",
+        job.estimatedHours?.toString() || "-",
+        job.dueDate ? new Date(job.dueDate).toLocaleDateString() : "-",
+        new Date(job.createdAt).toLocaleDateString(),
+      ].join(",");
+    });
+
+    // Combine headers and rows
+    const csv = [headers.join(","), ...rows].join("\n");
+
+    return { ok: true, csv, filename: `jobs_export_${new Date().toISOString().split("T")[0]}.csv` };
+  } catch (error: any) {
+    console.error("[exportJobsToCSV] Error:", error);
+    return { ok: false, error: error?.message || "Failed to export jobs" };
   }
 }
 

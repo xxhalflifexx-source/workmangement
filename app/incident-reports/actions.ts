@@ -32,6 +32,7 @@ export interface IncidentReportWithRelations {
   };
   job: {
     id: string;
+    jobNumber: string | null;
     title: string;
   } | null;
   employeesInvolved: {
@@ -96,7 +97,7 @@ export async function getIncidentReports(filters?: {
           select: { id: true, name: true, email: true },
         },
         job: {
-          select: { id: true, title: true },
+          select: { id: true, jobNumber: true, title: true },
         },
         employeesInvolved: {
           include: {
@@ -140,7 +141,7 @@ export async function getIncidentReport(id: string) {
           select: { id: true, name: true, email: true },
         },
         job: {
-          select: { id: true, title: true },
+          select: { id: true, jobNumber: true, title: true },
         },
         employeesInvolved: {
           include: {
@@ -215,7 +216,7 @@ export async function createIncidentReport(data: {
           select: { id: true, name: true, email: true },
         },
         job: {
-          select: { id: true, title: true },
+          select: { id: true, jobNumber: true, title: true },
         },
         employeesInvolved: {
           include: {
@@ -304,7 +305,7 @@ export async function updateIncidentReport(
           select: { id: true, name: true, email: true },
         },
         job: {
-          select: { id: true, title: true },
+          select: { id: true, jobNumber: true, title: true },
         },
         employeesInvolved: {
           include: {
@@ -377,7 +378,7 @@ export async function getJobsForIncident() {
 
     const jobs = await prisma.job.findMany({
       where,
-      select: { id: true, title: true, status: true },
+      select: { id: true, jobNumber: true, title: true, status: true },
       orderBy: { createdAt: "desc" },
     });
 

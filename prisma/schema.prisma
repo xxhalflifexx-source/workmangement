@@ -17,6 +17,11 @@ model Organization {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  // Job numbering settings
+  jobNumberPrefix  String  @default("JOB")  // e.g., "TCB" for TCB Metal Works
+  jobNumberCounter Int     @default(0)      // Current counter for the year
+  jobNumberYear    Int?                     // Year of current counter (resets when year changes)
+
   // Relations
   users            User[]
   jobs             Job[]
@@ -165,6 +170,7 @@ model Customer {
 
 model Job {
   id               String            @id @default(cuid())
+  jobNumber        String?           @unique // Auto-generated: PREFIX+YEAR-NUMBER (e.g., TCB2025-0001)
   title            String
   description      String?
   /// Status lifecycle:

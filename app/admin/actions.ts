@@ -509,6 +509,86 @@ export async function updateCompanySettings(formData: FormData) {
   }
 }
 
+/**
+ * Get job numbering settings for the organization
+ */
+export async function getJobNumberSettings() {
+  const ctx = await getOrgContext();
+  if (!ctx.ok) return ctx;
+
+  const roleCheck = requireRole(ctx, "ADMIN");
+  if (roleCheck) return roleCheck;
+
+  if (!ctx.organizationId) {
+    return { ok: false, error: "No organization found" };
+  }
+
+  try {
+    const org = await prisma.organization.findUnique({
+      where: { id: ctx.organizationId },
+      select: {
+        jobNumberPrefix: true,
+        jobNumberCounter: true,
+        jobNumberYear: true,
+      },
+    });
+
+    if (!org) {
+      return { ok: false, error: "Organization not found" };
+    }
+
+    const currentYear = new Date().getFullYear();
+    const nextNumber = (org.jobNumberYear === currentYear ? org.jobNumberCounter : 0) + 1;
+    const previewJobNumber = `${org.jobNumberPrefix || "JOB"}${currentYear}-${nextNumber.toString().padStart(4, "0")}`;
+
+    return {
+      ok: true,
+      settings: {
+        jobNumberPrefix: org.jobNumberPrefix || "JOB",
+        currentCounter: org.jobNumberCounter || 0,
+        currentYear: org.jobNumberYear || currentYear,
+        previewJobNumber,
+      },
+    };
+  } catch (error) {
+    console.error("Get job number settings error:", error);
+    return { ok: false, error: "Failed to get job number settings" };
+  }
+}
+
+/**
+ * Update job number prefix for the organization
+ */
+export async function updateJobNumberPrefix(prefix: string) {
+  const ctx = await getOrgContext();
+  if (!ctx.ok) return ctx;
+
+  const roleCheck = requireRole(ctx, "ADMIN");
+  if (roleCheck) return roleCheck;
+
+  if (!ctx.organizationId) {
+    return { ok: false, error: "No organization found" };
+  }
+
+  // Validate prefix (2-6 uppercase letters)
+  const cleanPrefix = prefix.trim().toUpperCase();
+  if (!/^[A-Z]{2,6}$/.test(cleanPrefix)) {
+    return { ok: false, error: "Prefix must be 2-6 uppercase letters (e.g., TCB, ABC)" };
+  }
+
+  try {
+    await prisma.organization.update({
+      where: { id: ctx.organizationId },
+      data: { jobNumberPrefix: cleanPrefix },
+    });
+
+    return { ok: true, message: `Job number prefix updated to "${cleanPrefix}"` };
+  } catch (error) {
+    console.error("Update job number prefix error:", error);
+    return { ok: false, error: "Failed to update job number prefix" };
+  }
+}
+
 export async function getFinancialSummary(startDate?: string, endDate?: string) {
   const session = await getServerSession(authOptions);
   

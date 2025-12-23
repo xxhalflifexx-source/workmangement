@@ -59,7 +59,7 @@ export default function IncidentReportsPage() {
   const [severityFilter, setSeverityFilter] = useState<IncidentSeverity | "">("");
   
   // Form state
-  const [jobs, setJobs] = useState<{ id: string; title: string; status: string }[]>([]);
+  const [jobs, setJobs] = useState<{ id: string; jobNumber: string | null; title: string; status: string }[]>([]);
   const [employees, setEmployees] = useState<{ id: string; name: string | null; email: string | null; role: string }[]>([]);
   const [formData, setFormData] = useState({
     title: "",
@@ -597,7 +597,7 @@ export default function IncidentReportsPage() {
                         </span>
                       </td>
                       <td className="px-4 py-4 text-sm text-gray-600">
-                        {report.job ? `#${report.job.id.slice(0, 8).toUpperCase()}` : "-"}
+                        {report.job ? (report.job.jobNumber || `#${report.job.id.slice(0, 8).toUpperCase()}`) : "-"}
                       </td>
                       <td className="px-4 py-4 text-sm text-gray-600">
                         {report.employeesInvolved.length > 0
@@ -722,7 +722,7 @@ export default function IncidentReportsPage() {
                   <option value="">No related job</option>
                   {jobs.map((job) => (
                     <option key={job.id} value={job.id}>
-                      #{job.id.slice(0, 8).toUpperCase()} - {job.title}
+                      {job.jobNumber || `#${job.id.slice(0, 8).toUpperCase()}`} - {job.title}
                     </option>
                   ))}
                 </select>
@@ -927,7 +927,7 @@ export default function IncidentReportsPage() {
                     <option value="">No related job</option>
                     {jobs.map((job) => (
                       <option key={job.id} value={job.id}>
-                        #{job.id.slice(0, 8).toUpperCase()} - {job.title}
+                        {job.jobNumber || `#${job.id.slice(0, 8).toUpperCase()}`} - {job.title}
                       </option>
                     ))}
                   </select>
@@ -1059,7 +1059,7 @@ export default function IncidentReportsPage() {
                 {selectedReport.job && (
                   <div>
                     <span className="text-sm text-gray-500">Related Job:</span>
-                    <p className="mt-1 text-gray-900">#{selectedReport.job.id.slice(0, 8).toUpperCase()} - {selectedReport.job.title}</p>
+                    <p className="mt-1 text-gray-900">{selectedReport.job.jobNumber || `#${selectedReport.job.id.slice(0, 8).toUpperCase()}`} - {selectedReport.job.title}</p>
                   </div>
                 )}
 

@@ -10,6 +10,8 @@ import {
   updateCompanySettings,
   updateUserProfileDetails,
   resetUserPasswordByAdmin,
+  getJobNumberSettings,
+  updateJobNumberPrefix,
 } from "./actions";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
@@ -71,6 +73,11 @@ export default function AdminPage() {
   const [logoUploading, setLogoUploading] = useState(false);
   const [activeTab, setActiveTab] = useState<"users" | "settings" | "user-access">("users");
   
+  // Job Number Settings state
+  const [jobNumberPrefix, setJobNumberPrefix] = useState<string>("JOB");
+  const [jobNumberPreview, setJobNumberPreview] = useState<string>("");
+  const [jobNumberSaving, setJobNumberSaving] = useState(false);
+  
   // User Access Control state
   const [accessUsers, setAccessUsers] = useState<UserWithPermissions[]>([]);
   const [accessLoading, setAccessLoading] = useState(false);
@@ -91,9 +98,10 @@ export default function AdminPage() {
     setLoading(true);
     setError(undefined);
 
-    const [usersRes, settingsRes] = await Promise.all([
+    const [usersRes, settingsRes, jobNumRes] = await Promise.all([
       getAllUsersForAdmin(),
       getCompanySettings(),
+      getJobNumberSettings(),
     ]);
 
     if (!usersRes.ok) {
@@ -105,6 +113,11 @@ export default function AdminPage() {
     if (settingsRes.ok) {
       setSettings(settingsRes.settings as any);
       setLogoUrl((settingsRes.settings as any).logoUrl || "");
+    }
+
+    if (jobNumRes.ok && 'settings' in jobNumRes) {
+      setJobNumberPrefix(jobNumRes.settings.jobNumberPrefix);
+      setJobNumberPreview(jobNumRes.settings.previewJobNumber);
     }
 
     setLoading(false);
@@ -1014,6 +1027,76 @@ export default function AdminPage() {
                 </button>
               </div>
             </form>
+          </div>
+
+          {/* Job Number Settings */}
+          <div className="bg-white rounded-xl shadow border border-gray-200 mt-6">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-900">Job Numbering</h2>
+              <p className="text-sm text-gray-500 mt-1">
+                Configure the prefix for auto-generated job numbers
+              </p>
+            </div>
+
+            <div className="p-6">
+              <div className="max-w-md">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Job Number Prefix
+                </label>
+                <div className="flex gap-3">
+                  <input
+                    type="text"
+                    value={jobNumberPrefix}
+                    onChange={(e) => {
+                      const value = e.target.value.toUpperCase().replace(/[^A-Z]/g, "").slice(0, 6);
+                      setJobNumberPrefix(value);
+                      // Update preview
+                      const year = new Date().getFullYear();
+                      setJobNumberPreview(`${value || "JOB"}${year}-0001`);
+                    }}
+                    placeholder="TCB"
+                    maxLength={6}
+                    className="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-red-500 focus:border-red-500 uppercase"
+                  />
+                  <button
+                    type="button"
+                    disabled={jobNumberSaving || !jobNumberPrefix}
+                    onClick={async () => {
+                      setJobNumberSaving(true);
+                      setError(undefined);
+                      setSuccess(undefined);
+                      const res = await updateJobNumberPrefix(jobNumberPrefix);
+                      if (res.ok) {
+                        setSuccess('message' in res ? res.message : "Prefix updated");
+                        // Refresh to get new preview
+                        const refreshRes = await getJobNumberSettings();
+                        if (refreshRes.ok && 'settings' in refreshRes) {
+                          setJobNumberPreview(refreshRes.settings.previewJobNumber);
+                        }
+                      } else {
+                        setError('error' in res ? res.error : "Failed to update");
+                      }
+                      setJobNumberSaving(false);
+                    }}
+                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium disabled:bg-gray-300 disabled:cursor-not-allowed"
+                  >
+                    {jobNumberSaving ? "Saving..." : "Save"}
+                  </button>
+                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  2-6 uppercase letters (e.g., TCB, ABC, JOB)
+                </p>
+              </div>
+
+              {/* Preview */}
+              <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+                <p className="text-sm text-gray-600 mb-2">Next job number preview:</p>
+                <p className="text-2xl font-mono font-bold text-gray-900">{jobNumberPreview || "JOB2025-0001"}</p>
+                <p className="text-xs text-gray-500 mt-2">
+                  Format: PREFIX + YEAR + - + NUMBER (resets to 0001 each year)
+                </p>
+              </div>
+            </div>
           </div>
         )}
 

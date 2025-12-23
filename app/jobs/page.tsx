@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef, Suspense, useMemo, useCallback } from "react";
-import { getJobs, getAllUsers, createJob, updateJob, deleteJob, getJobActivities, addJobActivity, getAllCustomers, createCustomer, updateCustomer, saveJobPhotos, submitJobPhotosToQC, getJobPhotos, removeJobPhoto as removeJobPhotoFromDB, getJobExpenses, addJobExpense, deleteJobExpense } from "./actions";
+import { getJobs, getAllUsers, createJob, updateJob, deleteJob, getJobActivities, addJobActivity, getAllCustomers, createCustomer, updateCustomer, saveJobPhotos, submitJobPhotosToQC, getJobPhotos, removeJobPhoto as removeJobPhotoFromDB, getJobExpenses, addJobExpense, deleteJobExpense, exportJobsToCSV } from "./actions";
 import { createMaterialRequest, getJobMaterialRequests } from "../material-requests/actions";
 import { getCompanySettingsForInvoice } from "./invoice-actions";
 import { createQuotation, updateQuotation, getQuotationsByJobId, getQuotation } from "../quotations/actions";
@@ -17,6 +17,7 @@ import { formatDateShort, formatDateTime, formatDateInput, todayCentralISO, nowI
 
 interface Job {
   id: string;
+  jobNumber: string | null;
   title: string;
   description: string | null;
   status: string;
@@ -1643,13 +1644,38 @@ function JobsPageContent() {
             />
           </div>
           {canManage && (
-            <button
-              type="button"
-              onClick={openCreateModal}
-              className="w-full md:w-auto min-h-[44px] bg-gradient-to-r from-indigo-600 to-blue-600 text-white px-6 py-3 rounded-xl hover:from-indigo-700 hover:to-blue-700 transition-all font-semibold shadow-md hover:shadow-lg"
-            >
-              + Create Job
-            </button>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={async () => {
+                  const res = await exportJobsToCSV();
+                  if (res.ok && 'csv' in res) {
+                    // Create and download CSV file
+                    const blob = new Blob([res.csv], { type: "text/csv;charset=utf-8;" });
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement("a");
+                    link.href = url;
+                    link.download = res.filename || "jobs_export.csv";
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
+                  } else {
+                    alert("Failed to export: " + ('error' in res ? res.error : "Unknown error"));
+                  }
+                }}
+                className="w-full md:w-auto min-h-[44px] bg-white border-2 border-gray-300 text-gray-700 px-4 py-3 rounded-xl hover:bg-gray-50 hover:border-gray-400 transition-all font-semibold shadow-sm"
+              >
+                📥 Export CSV
+              </button>
+              <button
+                type="button"
+                onClick={openCreateModal}
+                className="w-full md:w-auto min-h-[44px] bg-gradient-to-r from-indigo-600 to-blue-600 text-white px-6 py-3 rounded-xl hover:from-indigo-700 hover:to-blue-700 transition-all font-semibold shadow-md hover:shadow-lg"
+              >
+                + Create Job
+              </button>
+            </div>
           )}
         </div>
 

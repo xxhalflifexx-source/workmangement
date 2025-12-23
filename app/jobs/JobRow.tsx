@@ -53,8 +53,11 @@ export default function JobRow({
   const [showPhotoViewer, setShowPhotoViewer] = useState(false);
   const [photoViewerIndex, setPhotoViewerIndex] = useState(0);
 
-  // Format job number (use first 8 chars of ID)
-  const jobNumber = job.id.substring(0, 8).toUpperCase();
+  // Format job number - use actual jobNumber if available, otherwise fallback to ID
+  const jobNumber = job.jobNumber || `#${job.id.substring(0, 8).toUpperCase()}`;
+  
+  // Check if job is cancelled
+  const isCancelled = job.status === "CANCELLED";
 
   // Format dates
   const startDate = formatDateShort(job.createdAt);
@@ -121,20 +124,22 @@ export default function JobRow({
     <>
       <tr
         className={`cursor-pointer transition-all duration-200 ${
-          isExpanded 
-            ? "bg-gradient-to-r from-indigo-50 to-blue-50 hover:from-indigo-100 hover:to-blue-100 border-l-4 border-l-indigo-600 shadow-sm" 
-            : "hover:bg-gray-50 border-l-4 border-l-transparent"
+          isCancelled
+            ? "bg-gray-100 opacity-60 border-l-4 border-l-red-400"
+            : isExpanded 
+              ? "bg-gradient-to-r from-indigo-50 to-blue-50 hover:from-indigo-100 hover:to-blue-100 border-l-4 border-l-indigo-600 shadow-sm" 
+              : "hover:bg-gray-50 border-l-4 border-l-transparent"
         }`}
         onClick={() => setIsExpanded(!isExpanded)}
       >
         <td className="px-4 sm:px-6 py-4">
-          <div className="text-sm font-mono font-medium text-gray-900">
+          <div className={`text-sm font-mono font-medium ${isCancelled ? "text-gray-500" : "text-gray-900"}`}>
             {jobNumber}
           </div>
         </td>
         <td className="px-4 sm:px-6 py-4">
           <div className="min-w-0">
-            <div className="font-semibold text-gray-900 truncate max-w-[150px] sm:max-w-[200px]" title={job.title}>
+            <div className={`font-semibold truncate max-w-[150px] sm:max-w-[200px] ${isCancelled ? "text-gray-500 line-through" : "text-gray-900"}`} title={job.title}>
               {job.title}
             </div>
             {job.description && (
