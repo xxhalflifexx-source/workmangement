@@ -1062,7 +1062,7 @@ export default function IncidentReportsPage() {
                   </div>
                 </div>
               </form>
-            ) : (
+            ) : selectedReport ? (
               <div className="p-6 space-y-4">
                 <div className="flex gap-2">
                   <span
@@ -1182,7 +1182,7 @@ export default function IncidentReportsPage() {
                   </button>
                 </div>
               </div>
-            )}
+            ) : null}
       </MobileModal>
     </div>
   );
