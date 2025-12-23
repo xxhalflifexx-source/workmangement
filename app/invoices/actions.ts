@@ -577,5 +577,91 @@ export async function updateInvoicePDFs(invoiceId: string, pdfFiles: string[]) {
 	}
 }
 
+/**
+ * Export all invoices to CSV format (including deleted/cancelled invoices)
+ * Returns CSV string for download
+ */
+export async function exportInvoicesToCSV() {
+	const session = await getServerSession(authOptions);
+	if (!session?.user) return { ok: false, error: "Not authenticated" };
+	const role = (session.user as any).role;
+	if (role !== "ADMIN" && role !== "MANAGER") return { ok: false, error: "Unauthorized" };
+
+	try {
+		// Fetch ALL invoices including deleted ones
+		const invoices = await prisma.invoice.findMany({
+			include: {
+				customer: { select: { name: true, company: true } },
+				job: { select: { title: true, id: true, jobNumber: true } },
+				payments: { select: { amount: true, paymentDate: true, method: true } },
+				lines: { select: { description: true, quantity: true, rate: true, amount: true } },
+			},
+			orderBy: [
+				{ invoiceNumber: "asc" },
+				{ createdAt: "asc" }
+			],
+		});
+
+		// CSV Headers
+		const headers = [
+			"Invoice Number",
+			"Job Number",
+			"Job Title",
+			"Customer",
+			"Status",
+			"Issue Date",
+			"Due Date",
+			"Sent Date",
+			"Collection Date",
+			"Total",
+			"Balance",
+			"Paid Amount",
+			"Payment Count",
+			"Line Items Count",
+			"Notes",
+			"Remarks",
+			"Deleted At",
+			"Created At",
+			"Updated At",
+		];
+
+		// Generate CSV rows
+		const rows = invoices.map(invoice => {
+			const totalPaid = invoice.payments.reduce((sum, p) => sum + p.amount, 0);
+			const isDeleted = invoice.deletedAt !== null;
+			
+			return [
+				invoice.invoiceNumber || "-",
+				invoice.job?.jobNumber || "-",
+				`"${(invoice.job?.title || "").replace(/"/g, '""')}"`, // Escape quotes
+				`"${(invoice.customer?.name || invoice.customerName || "").replace(/"/g, '""')}"`, // Escape quotes
+				isDeleted ? "VOID" : invoice.status,
+				invoice.issueDate ? new Date(invoice.issueDate).toLocaleDateString() : "-",
+				invoice.dueDate ? new Date(invoice.dueDate).toLocaleDateString() : "-",
+				invoice.sentDate ? new Date(invoice.sentDate).toLocaleDateString() : "-",
+				invoice.collectionDate ? new Date(invoice.collectionDate).toLocaleDateString() : "-",
+				invoice.total.toFixed(2),
+				invoice.balance.toFixed(2),
+				totalPaid.toFixed(2),
+				invoice.payments.length.toString(),
+				invoice.lines.length.toString(),
+				`"${(invoice.notes || "").replace(/"/g, '""')}"`, // Escape quotes
+				`"${(invoice.remarks || "").replace(/"/g, '""')}"`, // Escape quotes
+				invoice.deletedAt ? new Date(invoice.deletedAt).toLocaleDateString() : "-",
+				new Date(invoice.createdAt).toLocaleDateString(),
+				new Date(invoice.updatedAt).toLocaleDateString(),
+			].join(",");
+		});
+
+		// Combine headers and rows
+		const csv = [headers.join(","), ...rows].join("\n");
+
+		return { ok: true, csv, filename: `invoices_export_${new Date().toISOString().split("T")[0]}.csv` };
+	} catch (error: any) {
+		console.error("[exportInvoicesToCSV] Error:", error);
+		return { ok: false, error: error?.message || "Failed to export invoices" };
+	}
+}
+
 
 

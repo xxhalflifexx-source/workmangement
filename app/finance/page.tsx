@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
-import { listInvoices, updateInvoicePDFs, createInvoice, updateInvoice, updateInvoiceStatus, getUninvoicedJobs, getNextInvoiceNumber, deleteInvoice } from "../invoices/actions";
+import { listInvoices, updateInvoicePDFs, createInvoice, updateInvoice, updateInvoiceStatus, getUninvoicedJobs, getNextInvoiceNumber, deleteInvoice, exportInvoicesToCSV } from "../invoices/actions";
 import { getJobForInvoice, getCompanySettingsForInvoice } from "../jobs/invoice-actions";
 import { generateInvoicePDF, InvoicePDFData } from "@/lib/pdf-generator";
 import { formatDateShort, formatDateTime, formatDateInput, todayCentralISO, nowInCentral, utcToCentral, centralToUTC } from "@/lib/date-utils";
@@ -1035,19 +1035,44 @@ setLoading(false);
         {activeTab === "invoices" && (
         <div>
           <div className="space-y-4 sm:space-y-6">
-            {/* Header with Create Button */}
-            <div className="flex justify-between items-center">
+            {/* Header with Create Button and Export */}
+            <div className="flex justify-between items-center gap-3 flex-wrap">
               <h2 className="text-xl font-semibold text-gray-900">Invoices</h2>
               {hasAccess && (
-                <button
-                  onClick={() => {
-                    setShowCreateModal(true);
-                    loadUninvoicedJobs();
-                  }}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium min-h-[44px]"
-                >
-                  + Create Invoice
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={async () => {
+                      const res = await exportInvoicesToCSV();
+                      if (res.ok && 'csv' in res && res.csv) {
+                        // Create and download CSV file
+                        const blob = new Blob([res.csv], { type: "text/csv;charset=utf-8;" });
+                        const url = URL.createObjectURL(blob);
+                        const link = document.createElement("a");
+                        link.href = url;
+                        link.download = res.filename || "invoices_export.csv";
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        URL.revokeObjectURL(url);
+                        setSuccess("Invoices exported successfully!");
+                      } else {
+                        setError("Failed to export: " + ('error' in res ? res.error : "Unknown error"));
+                      }
+                    }}
+                    className="px-4 py-2 bg-white border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 hover:border-gray-400 transition-colors font-medium min-h-[44px]"
+                  >
+                    📥 Export CSV
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowCreateModal(true);
+                      loadUninvoicedJobs();
+                    }}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium min-h-[44px]"
+                  >
+                    + Create Invoice
+                  </button>
+                </div>
               )}
             </div>
 
