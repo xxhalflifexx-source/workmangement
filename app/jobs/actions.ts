@@ -331,7 +331,43 @@ export async function getJobs(params: GetJobsParams = {}) {
         }; // Employees only see jobs assigned to them
 
   // Apply organization filter (Super Admins see all orgs)
-  baseWhere = buildOrgFilter(ctx, baseWhere);
+  // For backward compatibility: Also include jobs with null organizationId (legacy jobs)
+  if (!ctx.isSuperAdmin && ctx.organizationId) {
+    // Regular users: Include their org's jobs AND legacy jobs (null organizationId)
+    // Combine with existing filters using AND logic
+    const orgFilter = {
+      OR: [
+        { organizationId: ctx.organizationId },
+        { organizationId: null }, // Include legacy jobs created before org assignment
+      ],
+    };
+    
+    // If baseWhere already has conditions, combine with AND
+    if (Object.keys(baseWhere).length > 0) {
+      baseWhere = {
+        AND: [
+          baseWhere,
+          orgFilter,
+        ],
+      };
+    } else {
+      baseWhere = orgFilter;
+    }
+  } else if (!ctx.isSuperAdmin && !ctx.organizationId) {
+    // User has no organization - only show legacy jobs
+    const orgFilter = { organizationId: null };
+    if (Object.keys(baseWhere).length > 0) {
+      baseWhere = {
+        AND: [
+          baseWhere,
+          orgFilter,
+        ],
+      };
+    } else {
+      baseWhere = orgFilter;
+    }
+  }
+  // Super Admins see all jobs (no org filter)
 
   // Build filter conditions
   const whereClause: any = { ...baseWhere };
