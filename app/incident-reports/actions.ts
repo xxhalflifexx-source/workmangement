@@ -1,9 +1,8 @@
 "use server";
 
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/authOptions";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { getOrgContext, buildOrgFilter, requireRole } from "@/lib/org-utils";
 
 // Types
 export type IncidentStatus = "OPEN" | "UNDER_REVIEW" | "RESOLVED" | "CLOSED";
@@ -47,21 +46,6 @@ export interface IncidentReportWithRelations {
   }[];
 }
 
-// Helper to get session and check admin role
-async function getAdminSession() {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
-    return { error: "Not authenticated", session: null };
-  }
-  
-  const role = (session.user as any).role;
-  if (role !== "ADMIN") {
-    return { error: "Only admins can manage incident reports", session: null };
-  }
-  
-  return { error: null, session };
-}
-
 // Get all incident reports for the organization
 export async function getIncidentReports(filters?: {
   status?: IncidentStatus;
@@ -70,18 +54,21 @@ export async function getIncidentReports(filters?: {
   startDate?: Date;
   endDate?: Date;
 }) {
-  const { error, session } = await getAdminSession();
-  if (error || !session) {
-    return { ok: false, error: error || "Not authenticated" };
-  }
+  const ctx = await getOrgContext();
+  if (!ctx.ok) return ctx;
 
-  const organizationId = (session.user as any).organizationId;
-  if (!organizationId) {
+  // Only admins can manage incident reports
+  const roleCheck = requireRole(ctx, "ADMIN");
+  if (roleCheck) return roleCheck;
+
+  // Super Admins without org can't create org-specific data
+  if (!ctx.isSuperAdmin && !ctx.organizationId) {
     return { ok: false, error: "No organization found" };
   }
 
   try {
-    const where: any = { organizationId };
+    // Build base where clause with org filter
+    let where: any = buildOrgFilter(ctx, {});
     
     if (filters?.status) {
       where.status = filters.status;
@@ -131,19 +118,23 @@ export async function getIncidentReports(filters?: {
 
 // Get a single incident report by ID
 export async function getIncidentReport(id: string) {
-  const { error, session } = await getAdminSession();
-  if (error || !session) {
-    return { ok: false, error: error || "Not authenticated" };
-  }
+  const ctx = await getOrgContext();
+  if (!ctx.ok) return ctx;
 
-  const organizationId = (session.user as any).organizationId;
-  if (!organizationId) {
+  // Only admins can view incident reports
+  const roleCheck = requireRole(ctx, "ADMIN");
+  if (roleCheck) return roleCheck;
+
+  if (!ctx.isSuperAdmin && !ctx.organizationId) {
     return { ok: false, error: "No organization found" };
   }
 
   try {
+    // Build where clause with org filter
+    const where = buildOrgFilter(ctx, { id });
+
     const report = await prisma.incidentReport.findFirst({
-      where: { id, organizationId },
+      where,
       include: {
         createdBy: {
           select: { id: true, name: true, email: true },
@@ -184,16 +175,16 @@ export async function createIncidentReport(data: {
   jobId?: string;
   employeesInvolved?: { userId: string; role: EmployeeRole }[];
 }) {
-  const { error, session } = await getAdminSession();
-  if (error || !session) {
-    return { ok: false, error: error || "Not authenticated" };
-  }
+  const ctx = await getOrgContext();
+  if (!ctx.ok) return ctx;
 
-  const organizationId = (session.user as any).organizationId;
-  const userId = (session.user as any).id;
-  
-  if (!organizationId) {
-    return { ok: false, error: "No organization found" };
+  // Only admins can create incident reports
+  const roleCheck = requireRole(ctx, "ADMIN");
+  if (roleCheck) return roleCheck;
+
+  // Must have an organization to create reports
+  if (!ctx.organizationId) {
+    return { ok: false, error: "No organization found. Cannot create incident report without an organization." };
   }
 
   try {
@@ -207,8 +198,8 @@ export async function createIncidentReport(data: {
         severity: data.severity,
         status: "OPEN",
         photos: data.photos || [],
-        organizationId,
-        createdById: userId,
+        organizationId: ctx.organizationId,
+        createdById: ctx.userId,
         jobId: data.jobId || null,
         employeesInvolved: data.employeesInvolved?.length
           ? {
@@ -260,21 +251,21 @@ export async function updateIncidentReport(
     employeesInvolved?: { userId: string; role: EmployeeRole }[];
   }
 ) {
-  const { error, session } = await getAdminSession();
-  if (error || !session) {
-    return { ok: false, error: error || "Not authenticated" };
-  }
+  const ctx = await getOrgContext();
+  if (!ctx.ok) return ctx;
 
-  const organizationId = (session.user as any).organizationId;
-  if (!organizationId) {
+  // Only admins can update incident reports
+  const roleCheck = requireRole(ctx, "ADMIN");
+  if (roleCheck) return roleCheck;
+
+  if (!ctx.isSuperAdmin && !ctx.organizationId) {
     return { ok: false, error: "No organization found" };
   }
 
   try {
-    // Verify the report belongs to this organization
-    const existing = await prisma.incidentReport.findFirst({
-      where: { id, organizationId },
-    });
+    // Verify the report belongs to this organization (or Super Admin can access any)
+    const where = buildOrgFilter(ctx, { id });
+    const existing = await prisma.incidentReport.findFirst({ where });
 
     if (!existing) {
       return { ok: false, error: "Incident report not found" };
@@ -335,21 +326,21 @@ export async function updateIncidentReport(
 
 // Delete an incident report
 export async function deleteIncidentReport(id: string) {
-  const { error, session } = await getAdminSession();
-  if (error || !session) {
-    return { ok: false, error: error || "Not authenticated" };
-  }
+  const ctx = await getOrgContext();
+  if (!ctx.ok) return ctx;
 
-  const organizationId = (session.user as any).organizationId;
-  if (!organizationId) {
+  // Only admins can delete incident reports
+  const roleCheck = requireRole(ctx, "ADMIN");
+  if (roleCheck) return roleCheck;
+
+  if (!ctx.isSuperAdmin && !ctx.organizationId) {
     return { ok: false, error: "No organization found" };
   }
 
   try {
     // Verify the report belongs to this organization
-    const existing = await prisma.incidentReport.findFirst({
-      where: { id, organizationId },
-    });
+    const where = buildOrgFilter(ctx, { id });
+    const existing = await prisma.incidentReport.findFirst({ where });
 
     if (!existing) {
       return { ok: false, error: "Incident report not found" };
@@ -369,19 +360,23 @@ export async function deleteIncidentReport(id: string) {
 
 // Get jobs for dropdown selection
 export async function getJobsForIncident() {
-  const { error, session } = await getAdminSession();
-  if (error || !session) {
-    return { ok: false, error: error || "Not authenticated" };
-  }
+  const ctx = await getOrgContext();
+  if (!ctx.ok) return ctx;
 
-  const organizationId = (session.user as any).organizationId;
-  if (!organizationId) {
+  // Only admins can access this
+  const roleCheck = requireRole(ctx, "ADMIN");
+  if (roleCheck) return roleCheck;
+
+  if (!ctx.isSuperAdmin && !ctx.organizationId) {
     return { ok: false, error: "No organization found" };
   }
 
   try {
+    // Build where clause with org filter
+    const where = buildOrgFilter(ctx, {});
+
     const jobs = await prisma.job.findMany({
-      where: { organizationId },
+      where,
       select: { id: true, title: true, status: true },
       orderBy: { createdAt: "desc" },
     });
@@ -395,23 +390,29 @@ export async function getJobsForIncident() {
 
 // Get employees for selection
 export async function getEmployeesForIncident() {
-  const { error, session } = await getAdminSession();
-  if (error || !session) {
-    console.log("[getEmployeesForIncident] Auth error:", error);
-    return { ok: false, error: error || "Not authenticated" };
+  const ctx = await getOrgContext();
+  if (!ctx.ok) {
+    console.log("[getEmployeesForIncident] Auth error:", ctx.error);
+    return ctx;
   }
 
-  const organizationId = (session.user as any).organizationId;
-  console.log("[getEmployeesForIncident] organizationId:", organizationId);
+  // Only admins can access this
+  const roleCheck = requireRole(ctx, "ADMIN");
+  if (roleCheck) return roleCheck;
+
+  console.log("[getEmployeesForIncident] organizationId:", ctx.organizationId, "isSuperAdmin:", ctx.isSuperAdmin);
   
-  if (!organizationId) {
+  if (!ctx.isSuperAdmin && !ctx.organizationId) {
     return { ok: false, error: "No organization found" };
   }
 
   try {
+    // Build where clause with org filter
+    const where = buildOrgFilter(ctx, {});
+
     // Get all users in the organization (not just APPROVED)
     const employees = await prisma.user.findMany({
-      where: { organizationId },
+      where,
       select: { id: true, name: true, email: true, role: true, status: true },
       orderBy: { name: "asc" },
     });
@@ -423,4 +424,3 @@ export async function getEmployeesForIncident() {
     return { ok: false, error: "Failed to fetch employees" };
   }
 }
-
