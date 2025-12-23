@@ -18,7 +18,7 @@ interface Invoice {
   balance: number;
   status: string;
   customer: { name: string } | null;
-  job: { title: string | null; id?: string } | null;
+  job: { title: string | null; id?: string; jobNumber?: string | null } | null;
   createdAt: string | Date;
   updatedAt?: string | Date;
   notes: string | null;
@@ -365,14 +365,17 @@ setLoading(false);
   };
 
   const getJobNumber = (invoice: Invoice) => {
-    if (!invoice.job || !invoice.job.id) {
-      // If no job ID, try to use invoice ID as fallback
-      if (invoice.id && invoice.id.length >= 8) {
-        return invoice.id.slice(0, 8).toUpperCase();
-      }
+    if (!invoice.job) {
       return "—";
     }
-    return invoice.job.id.slice(0, 8).toUpperCase();
+    // Use actual jobNumber if available, otherwise fallback to truncated ID (matching JobRow behavior)
+    if (invoice.job.jobNumber) {
+      return invoice.job.jobNumber;
+    }
+    if (invoice.job.id && invoice.job.id.length >= 8) {
+      return `#${invoice.job.id.substring(0, 8).toUpperCase()}`;
+    }
+    return "—";
   };
 
 

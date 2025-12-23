@@ -21,7 +21,7 @@ export async function listInvoices() {
 			where: {
 				deletedAt: null, // Exclude soft-deleted invoices
 			},
-			include: { payments: true, lines: true, customer: true, job: { select: { title: true, id: true } } },
+			include: { payments: true, lines: true, customer: true, job: { select: { title: true, id: true, jobNumber: true } } },
 			orderBy: { createdAt: "desc" },
 		});
 		
@@ -64,7 +64,7 @@ export async function listInvoices() {
 						payments: true,
 						lines: true,
 						customer: true,
-						job: { select: { title: true, id: true } },
+						job: { select: { title: true, id: true, jobNumber: true } },
 					},
 					orderBy: { createdAt: "desc" },
 				});
@@ -89,7 +89,7 @@ export async function getInvoice(id: string) {
 
 	const invoice = await prisma.invoice.findUnique({
 		where: { id },
-		include: { payments: true, lines: true, customer: true, job: { select: { title: true, id: true } } },
+		include: { payments: true, lines: true, customer: true, job: { select: { title: true, id: true, jobNumber: true } } },
 	});
 	if (!invoice) return { ok: false, error: "Not found" };
 	return { ok: true, invoice };
@@ -355,14 +355,14 @@ export async function filterInvoices(filters: {
 		}
 	}
 
-	const invoices = await prisma.invoice.findMany({
-		where: {
-			...where,
-			deletedAt: null, // Exclude soft-deleted invoices
-		},
-		include: { payments: true, lines: true, customer: true, job: { select: { title: true, id: true } } },
-		orderBy: { issueDate: "desc" },
-	});
+		const invoices = await prisma.invoice.findMany({
+			where: {
+				...where,
+				deletedAt: null, // Exclude soft-deleted invoices
+			},
+			include: { payments: true, lines: true, customer: true, job: { select: { title: true, id: true, jobNumber: true } } },
+			orderBy: { issueDate: "desc" },
+		});
 
 	return { ok: true, invoices };
 }
@@ -491,7 +491,7 @@ export async function updateInvoice(formData: FormData) {
 				})),
 			},
 		},
-		include: { lines: true, customer: true, job: { select: { title: true, id: true } } },
+		include: { lines: true, customer: true, job: { select: { title: true, id: true, jobNumber: true } } },
 	});
 
 	return { ok: true, invoice };
