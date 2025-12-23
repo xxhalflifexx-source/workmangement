@@ -45,6 +45,7 @@ export const config = {
 		"/hr/:path*",
 		"/super-admin/:path*", // Super Admin dashboard
 		"/incident-reports/:path*", // Incident Reports (Admin only)
+		"/quotations/:path*", // Quotations (Admin/Manager only)
 	],
 };
 

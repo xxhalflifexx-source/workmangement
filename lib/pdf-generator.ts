@@ -1,5 +1,41 @@
 import { jsPDF } from "jspdf";
 
+// Shared interface for both invoices and quotations
+export interface DocumentPDFData {
+  documentNumber: string;
+  documentDate: string | Date;
+  documentType: "INVOICE" | "QUOTATION";
+  validUntil?: string | Date; // For quotations only
+  companyName: string;
+  companyAddress?: string;
+  companyCity?: string;
+  companyState?: string;
+  companyZipCode?: string;
+  companyPhone?: string;
+  companyEmail?: string;
+  logoDataUrl?: string;
+  customerName: string;
+  customerAddress?: string;
+  customerPhone?: string;
+  customerEmail?: string;
+  lineItems: Array<{
+    description: string;
+    quantity: number;
+    rate: number;
+    amount: number;
+  }>;
+  subtotal: number;
+  shippingFee: number;
+  total: number;
+  notes?: string;
+  paymentBank?: string;
+  paymentAccountName?: string;
+  paymentAccountNumber?: string;
+  preparedByName?: string;
+  preparedByTitle?: string;
+}
+
+// Legacy interface for backwards compatibility
 export interface InvoicePDFData {
   invoiceNumber: string;
   invoiceDate: string | Date;
@@ -413,4 +449,387 @@ export function generateInvoicePDF(data: InvoicePDFData): jsPDF {
   doc.line(margin, borderY, pageWidth - margin, borderY);
 
   return doc;
+}
+
+// Generic document PDF generator for both invoices and quotations
+export function generateDocumentPDF(data: DocumentPDFData): jsPDF {
+  const doc = new jsPDF();
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const margin = 15;
+  const contentWidth = pageWidth - 2 * margin;
+  let yPos = margin;
+
+  // Set navy blue color
+  const navyBlueR = 30;
+  const navyBlueG = 58;
+  const navyBlueB = 138;
+
+  // Determine document type labels
+  const isQuotation = data.documentType === "QUOTATION";
+  const documentTitle = isQuotation ? "QUOTATION" : "INVOICE";
+  const numberLabel = isQuotation ? "Quotation Number" : "Invoice Number";
+  const dateLabel = isQuotation ? "Quotation Date" : "Invoice Date";
+  const billToLabel = isQuotation ? "QUOTE TO" : "BILL TO";
+
+  // Header Section
+  const headerY = yPos;
+  
+  // Left: Document title and details
+  doc.setFontSize(32);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(50, 50, 50);
+  doc.text(documentTitle, margin, yPos);
+  yPos += 10;
+
+  // Document Number and Date
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "normal");
+  doc.text(`${numberLabel}: #${data.documentNumber}`, margin, yPos);
+  yPos += 5;
+  
+  const documentDateFormatted = new Date(data.documentDate).toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric"
+  });
+  doc.text(`${dateLabel}: ${documentDateFormatted}`, margin, yPos);
+  
+  // Valid Until for quotations
+  if (isQuotation && data.validUntil) {
+    yPos += 5;
+    const validUntilFormatted = new Date(data.validUntil).toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric"
+    });
+    doc.text(`Valid Until: ${validUntilFormatted}`, margin, yPos);
+  }
+  
+  // Top Right: Logo image if provided, else fallback text logo
+  if (data.logoDataUrl) {
+    try {
+      let logoWidth = 50;
+      let logoHeight = 30;
+      
+      try {
+        const base64Data = data.logoDataUrl.split(',')[1];
+        if (base64Data) {
+          const buffer = Buffer.from(base64Data, 'base64');
+          
+          if (data.logoDataUrl.startsWith('data:image/png')) {
+            if (buffer.length > 24) {
+              logoWidth = buffer.readUInt32BE(16);
+              logoHeight = buffer.readUInt32BE(20);
+            }
+          }
+          else if (data.logoDataUrl.startsWith('data:image/jpeg') || data.logoDataUrl.startsWith('data:image/jpg')) {
+            let i = 2;
+            while (i < buffer.length - 9) {
+              if (buffer[i] === 0xFF && (buffer[i + 1] === 0xC0 || buffer[i + 1] === 0xC2)) {
+                logoHeight = buffer.readUInt16BE(i + 5);
+                logoWidth = buffer.readUInt16BE(i + 7);
+                break;
+              }
+              i++;
+            }
+          }
+        }
+      } catch (parseError) {
+        console.warn("Could not parse image dimensions, using defaults:", parseError);
+        const defaultAspectRatio = 2.5;
+        logoWidth = 50;
+        logoHeight = 50 / defaultAspectRatio;
+      }
+      
+      const maxWidth = 50;
+      const maxHeight = 30;
+      const aspectRatio = logoWidth / logoHeight;
+      
+      if (logoWidth / maxWidth > logoHeight / maxHeight) {
+        logoWidth = maxWidth;
+        logoHeight = maxWidth / aspectRatio;
+      } else {
+        logoHeight = maxHeight;
+        logoWidth = maxHeight * aspectRatio;
+      }
+      
+      const logoX = pageWidth - margin - logoWidth;
+      const logoY = headerY - 2;
+      
+      doc.addImage(data.logoDataUrl, "PNG", logoX, logoY, logoWidth, logoHeight, undefined, "FAST");
+    } catch (err) {
+      console.error("Failed to render logo in PDF:", err);
+    }
+  } else {
+    doc.setFontSize(20);
+    doc.setFont("helvetica", "bold");
+    const tcbWidth = doc.getTextWidth("TCB");
+    
+    doc.setFontSize(11);
+    const metalWorksWidth = doc.getTextWidth("METAL WORKS");
+    
+    const logoWidth = Math.max(tcbWidth, metalWorksWidth);
+    const logoY = margin + 8;
+    const logoBlockCenterX = pageWidth - margin - (logoWidth / 2) - 10;
+    
+    doc.setTextColor(navyBlueR, navyBlueG, navyBlueB);
+    doc.setFontSize(20);
+    doc.setFont("helvetica", "bold");
+    doc.text("TCB", logoBlockCenterX, logoY, { align: "center" });
+    
+    doc.setFontSize(11);
+    doc.text("METAL WORKS", logoBlockCenterX, logoY + 8, { align: "center" });
+  }
+  
+  yPos += 12;
+  doc.setTextColor(50, 50, 50);
+
+  // Company and Billing Information
+  const infoYStart = yPos;
+  let leftMaxY = yPos;
+  let rightMaxY = yPos;
+  
+  // Left: Company Info
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "bold");
+  doc.text(data.companyName, margin, yPos);
+  leftMaxY = yPos + 5;
+  yPos += 5;
+  
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8);
+  if (data.companyAddress) {
+    doc.text(data.companyAddress, margin, yPos);
+    leftMaxY = yPos + 4;
+    yPos += 4;
+  }
+  
+  const locationParts = [];
+  if (data.companyCity) locationParts.push(data.companyCity);
+  if (data.companyState) locationParts.push(data.companyState);
+  if (data.companyZipCode) locationParts.push(data.companyZipCode);
+  if (locationParts.length > 0) {
+    doc.text(locationParts.join(", "), margin, yPos);
+    leftMaxY = yPos + 4;
+    yPos += 4;
+  }
+  
+  if (data.companyPhone) {
+    doc.text(data.companyPhone, margin, yPos);
+    leftMaxY = yPos + 4;
+    yPos += 4;
+  }
+  
+  if (data.companyEmail) {
+    doc.text(data.companyEmail, margin, yPos);
+    leftMaxY = yPos + 4;
+    yPos += 4;
+  }
+
+  // Right: Bill To / Quote To
+  const billToX = pageWidth / 2 + 15;
+  yPos = infoYStart;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  doc.text(billToLabel, billToX, yPos);
+  rightMaxY = yPos + 5;
+  yPos += 5;
+  
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8);
+  doc.setFont("helvetica", "bold");
+  doc.text(data.customerName, billToX, yPos);
+  rightMaxY = yPos + 4;
+  yPos += 4;
+  doc.setFont("helvetica", "normal");
+  
+  if (data.customerAddress) {
+    doc.text(data.customerAddress, billToX, yPos);
+    rightMaxY = yPos + 4;
+    yPos += 4;
+  }
+  
+  if (data.customerPhone) {
+    doc.text(data.customerPhone, billToX, yPos);
+    rightMaxY = yPos + 4;
+    yPos += 4;
+  }
+  
+  if (data.customerEmail) {
+    doc.text(data.customerEmail, billToX, yPos);
+    rightMaxY = yPos + 4;
+    yPos += 4;
+  }
+
+  yPos = Math.max(leftMaxY, rightMaxY) + 8;
+
+  // Line Items Table
+  doc.setFillColor(navyBlueR, navyBlueG, navyBlueB);
+  doc.rect(margin, yPos - 5, contentWidth, 7, "F");
+  
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8);
+  doc.setTextColor(255, 255, 255);
+  doc.text("Item & Description", margin + 2, yPos);
+  doc.text("Unit Price", margin + 95, yPos, { align: "right" });
+  doc.text("Qty", margin + 120, yPos, { align: "center" });
+  doc.text("Amount", pageWidth - margin - 2, yPos, { align: "right" });
+  yPos += 7;
+
+  doc.setFont("helvetica", "normal");
+  data.lineItems.forEach((item, index) => {
+    if (index % 2 === 1) {
+      doc.setFillColor(245, 245, 245);
+      doc.rect(margin, yPos - 3, contentWidth, 6, "F");
+    } else {
+      doc.setFillColor(255, 255, 255);
+      doc.rect(margin, yPos - 3, contentWidth, 6, "F");
+    }
+    
+    doc.setDrawColor(200, 200, 200);
+    doc.setLineWidth(0.1);
+    doc.line(margin, yPos - 3, pageWidth - margin, yPos - 3);
+    
+    doc.setTextColor(50, 50, 50);
+    const description = item.description.length > 40 
+      ? item.description.substring(0, 37) + "..." 
+      : item.description;
+    doc.text(description, margin + 2, yPos);
+    doc.text(`$${item.rate.toFixed(2)}`, margin + 95, yPos, { align: "right" });
+    doc.text(item.quantity.toString(), margin + 120, yPos, { align: "center" });
+    doc.text(`$${item.amount.toFixed(2)}`, pageWidth - margin - 2, yPos, { align: "right" });
+    yPos += 6;
+  });
+
+  doc.line(margin, yPos - 3, pageWidth - margin, yPos - 3);
+  yPos += 6;
+
+  // Notes and Summary Section
+  const notesSummaryY = yPos;
+  let notesMaxY = yPos;
+  
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9);
+  doc.text("NOTES / TERMS:", margin, yPos);
+  notesMaxY = yPos + 5;
+  yPos += 5;
+  
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8);
+  const defaultNotes = isQuotation 
+    ? "This quotation is valid for the period indicated above. Prices may change after expiry."
+    : "Payment is due within 15 days of receiving this invoice.";
+  const notesText = data.notes || defaultNotes;
+  const notesWidth = (pageWidth / 2) - margin - 8;
+  const splitNotes = doc.splitTextToSize(notesText, notesWidth);
+  doc.text(splitNotes, margin, yPos);
+  notesMaxY = yPos + (splitNotes.length * 4);
+
+  // Right: Summary Table
+  const summaryX = pageWidth / 2 + 15;
+  yPos = notesSummaryY;
+  
+  const summaryRowHeight = 6;
+  const summaryWidth = pageWidth - summaryX - margin;
+  
+  // Sub-Total row
+  doc.setFillColor(240, 240, 240);
+  doc.rect(summaryX, yPos - 3, summaryWidth, summaryRowHeight, "F");
+  doc.setDrawColor(200, 200, 200);
+  doc.rect(summaryX, yPos - 3, summaryWidth, summaryRowHeight);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8);
+  doc.text("Sub-Total", summaryX + 2, yPos);
+  doc.text(`$${data.subtotal.toFixed(2)}`, summaryX + summaryWidth - 2, yPos, { align: "right" });
+  yPos += summaryRowHeight;
+  
+  // Shipping Fee row
+  doc.setFillColor(255, 255, 255);
+  doc.rect(summaryX, yPos - 3, summaryWidth, summaryRowHeight, "F");
+  doc.rect(summaryX, yPos - 3, summaryWidth, summaryRowHeight);
+  doc.setFont("helvetica", "normal");
+  doc.text("Shipping Fee", summaryX + 2, yPos);
+  doc.text(`$${data.shippingFee.toFixed(2)}`, summaryX + summaryWidth - 2, yPos, { align: "right" });
+  yPos += summaryRowHeight;
+  
+  // Total row (highlighted)
+  doc.setFillColor(navyBlueR, navyBlueG, navyBlueB);
+  doc.rect(summaryX, yPos - 3, summaryWidth, summaryRowHeight, "F");
+  doc.setDrawColor(150, 150, 150);
+  doc.setLineWidth(0.3);
+  doc.rect(summaryX, yPos - 3, summaryWidth, summaryRowHeight);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9);
+  doc.setTextColor(255, 255, 255);
+  doc.text("Total", summaryX + 2, yPos);
+  doc.text(`$${data.total.toFixed(2)}`, summaryX + summaryWidth - 2, yPos, { align: "right" });
+  const summaryMaxY = yPos + summaryRowHeight;
+
+  yPos = Math.max(notesMaxY, summaryMaxY) + 8;
+
+  // Footer - Payment Method and Prepared By
+  const footerY = yPos;
+  let footerMaxY = yPos;
+  
+  // Left: Payment Method
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9);
+  doc.text("PAYMENT METHOD", margin, yPos);
+  footerMaxY = yPos + 5;
+  yPos += 5;
+  
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8);
+  if (data.paymentBank) {
+    doc.text(`Bank: ${data.paymentBank}`, margin, yPos);
+    footerMaxY = yPos + 4;
+    yPos += 4;
+  }
+  if (data.paymentAccountName) {
+    doc.text(`Account Name: ${data.paymentAccountName}`, margin, yPos);
+    footerMaxY = yPos + 4;
+    yPos += 4;
+  }
+  if (data.paymentAccountNumber) {
+    doc.text(`Account Number: ${data.paymentAccountNumber}`, margin, yPos);
+    footerMaxY = yPos + 4;
+    yPos += 4;
+  }
+
+  // Right: Prepared By
+  const preparedByX = pageWidth / 2 + 15;
+  yPos = footerY;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9);
+  doc.text("PREPARED BY", preparedByX, yPos);
+  footerMaxY = Math.max(footerMaxY, yPos + 5);
+  yPos += 5;
+  
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8);
+  if (data.preparedByName) {
+    doc.text(data.preparedByName, preparedByX, yPos);
+    footerMaxY = Math.max(footerMaxY, yPos + 4);
+    yPos += 4;
+  }
+  if (data.preparedByTitle) {
+    doc.text(data.preparedByTitle, preparedByX, yPos);
+    footerMaxY = Math.max(footerMaxY, yPos + 4);
+  }
+
+  // Navy blue border at bottom
+  const borderY = footerMaxY + 5;
+  doc.setDrawColor(navyBlueR, navyBlueG, navyBlueB);
+  doc.setLineWidth(1);
+  doc.line(margin, borderY, pageWidth - margin, borderY);
+
+  return doc;
+}
+
+// Helper function to generate quotation PDF (convenience wrapper)
+export function generateQuotationPDF(data: Omit<DocumentPDFData, 'documentType'>): jsPDF {
+  return generateDocumentPDF({
+    ...data,
+    documentType: "QUOTATION",
+  });
 }
