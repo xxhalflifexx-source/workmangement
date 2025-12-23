@@ -1039,7 +1039,7 @@ export default function IncidentReportsPage() {
                 <div className="flex justify-between pt-4 border-t">
                   <button
                     type="button"
-                    onClick={() => handleDelete(selectedReport.id)}
+                    onClick={() => selectedReport && handleDelete(selectedReport.id)}
                     className="px-6 py-3 text-base sm:text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors min-h-[44px] flex items-center justify-center"
                   >
                     Delete
