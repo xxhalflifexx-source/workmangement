@@ -209,17 +209,6 @@ export default async function Dashboard() {
                   />
                 )}
 
-                {/* Quotations - Check permission (same as finance) */}
-                {(role === "ADMIN" || (permissions && hasPermission(permissions, "finance"))) && (
-                  <DashboardTabLink
-                    href="/quotations"
-                    icon="📝"
-                    title="Quotations"
-                    description="Create & manage quotes"
-                    notificationCount={unreadCounts["/quotations"] || 0}
-                  />
-                )}
-
                 {/* Inventory - Check permission */}
                 {(role === "ADMIN" || (permissions && hasPermission(permissions, "inventory"))) && (
                   <DashboardTabLink

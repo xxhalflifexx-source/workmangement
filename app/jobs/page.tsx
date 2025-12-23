@@ -3416,54 +3416,68 @@ function JobsPageContent() {
                 </div>
               </div>
 
-              {/* Estimate Content */}
-              <div className="p-8 print-area">
+              {/* Quotation Content */}
+              <div className="p-6 sm:p-8 print-area">
                 {/* Company Header */}
-                <div className="mb-8 pb-6 border-b-2 border-gray-300">
-                  <h1 className="text-4xl font-bold text-gray-900 mb-2">ESTIMATE</h1>
-                  {companySettings && (
-                    <div className="text-gray-600">
-                      <p className="font-semibold text-lg">{companySettings.companyName}</p>
-                      {companySettings.address && <p>{companySettings.address}</p>}
-                      {(companySettings.city || companySettings.state || companySettings.zipCode) && (
-                        <p>
-                          {companySettings.city}{companySettings.city && companySettings.state ? ", " : ""}{companySettings.state} {companySettings.zipCode}
-                        </p>
+                <div className="mb-6 sm:mb-8 pb-4 sm:pb-6 border-b-2 border-gray-300">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1">
+                      <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-3">QUOTATION</h1>
+                      {companySettings && (
+                        <div className="text-gray-600 space-y-1">
+                          <p className="font-semibold text-base sm:text-lg">{companySettings.companyName}</p>
+                          {companySettings.address && <p className="text-sm">{companySettings.address}</p>}
+                          {(companySettings.city || companySettings.state || companySettings.zipCode) && (
+                            <p className="text-sm">
+                              {companySettings.city}{companySettings.city && companySettings.state ? ", " : ""}{companySettings.state} {companySettings.zipCode}
+                            </p>
+                          )}
+                          {companySettings.phone && <p className="text-sm">Phone: {companySettings.phone}</p>}
+                          {companySettings.email && <p className="text-sm">Email: {companySettings.email}</p>}
+                        </div>
                       )}
-                      {companySettings.phone && <p>Phone: {companySettings.phone}</p>}
-                      {companySettings.email && <p>Email: {companySettings.email}</p>}
                     </div>
-                  )}
+                    {companySettings?.logoUrl && (
+                      <div className="hidden sm:block flex-shrink-0">
+                        <img 
+                          src={companySettings.logoUrl} 
+                          alt="Company Logo" 
+                          className="h-16 w-auto object-contain"
+                        />
+                      </div>
+                    )}
+                  </div>
                 </div>
 
-                {/* Estimate Details Grid */}
-                <div className="grid grid-cols-2 gap-8 mb-8">
+                {/* Quotation Details Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8 mb-6 sm:mb-8">
                   {/* Quote For */}
-                  <div>
-                    <h3 className="text-sm font-bold text-gray-700 uppercase mb-2">Quote For:</h3>
-                    {selectedJobForQuotation.customer ? (
-                      <div className="text-gray-900">
-                        <p className="font-semibold">{selectedJobForQuotation.customer.name}</p>
-                        {selectedJobForQuotation.customer.company && (
-                          <p>{selectedJobForQuotation.customer.company}</p>
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <h3 className="text-sm font-bold text-gray-700 uppercase mb-3">Quote For:</h3>
+                    {selectedJobForQuotation.customer || quotationCustomerName ? (
+                      <div className="text-gray-900 space-y-1">
+                        <p className="font-semibold text-base">{quotationCustomerName || selectedJobForQuotation.customer?.name}</p>
+                        {(quotationCustomerAddress || selectedJobForQuotation.customer?.company) && (
+                          <p className="text-sm">{quotationCustomerAddress || selectedJobForQuotation.customer?.company}</p>
                         )}
-                        {selectedJobForQuotation.customer.phone && (
-                          <p>{selectedJobForQuotation.customer.phone}</p>
+                        {(quotationCustomerPhone || selectedJobForQuotation.customer?.phone) && (
+                          <p className="text-sm">{quotationCustomerPhone || selectedJobForQuotation.customer?.phone}</p>
                         )}
-                        {selectedJobForQuotation.customer.email && (
-                          <p>{selectedJobForQuotation.customer.email}</p>
+                        {(quotationCustomerEmail || selectedJobForQuotation.customer?.email) && (
+                          <p className="text-sm">{quotationCustomerEmail || selectedJobForQuotation.customer?.email}</p>
                         )}
                       </div>
                     ) : (
-                      <p className="text-gray-500 italic">No customer assigned</p>
+                      <p className="text-gray-500 italic text-sm">No customer assigned</p>
                     )}
                   </div>
 
-                  {/* Estimate Info */}
-                  <div className="text-right">
-                    <div className="space-y-2">
-                      <div className="grid grid-cols-2 gap-4">
-                        <span className="text-gray-600 text-right">Date:</span>
+                  {/* Quotation Info */}
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <h3 className="text-sm font-bold text-gray-700 uppercase mb-3">Quotation Details:</h3>
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600">Date:</span>
                         <input
                           type="date"
                           value={quotationDate}
@@ -3472,11 +3486,11 @@ function JobsPageContent() {
                             if (autoSaveTimeoutRef.current) clearTimeout(autoSaveTimeoutRef.current);
                             autoSaveTimeoutRef.current = setTimeout(() => handleAutoSaveQuotation(), 2000);
                           }}
-                          className="font-semibold text-right border-b border-gray-300 focus:border-green-500 outline-none print-no-border"
+                          className="font-semibold text-sm border-b border-gray-300 focus:border-blue-500 outline-none print-no-border bg-transparent min-h-[44px] px-2"
                         />
                       </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <span className="text-gray-600 text-right">Valid Until:</span>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600">Valid Until:</span>
                         <input
                           type="date"
                           value={quotationValidUntil}
@@ -3485,108 +3499,121 @@ function JobsPageContent() {
                             if (autoSaveTimeoutRef.current) clearTimeout(autoSaveTimeoutRef.current);
                             autoSaveTimeoutRef.current = setTimeout(() => handleAutoSaveQuotation(), 2000);
                           }}
-                          className="font-semibold text-right border-b border-gray-300 focus:border-green-500 outline-none print-no-border"
+                          className="font-semibold text-sm border-b border-gray-300 focus:border-blue-500 outline-none print-no-border bg-transparent min-h-[44px] px-2"
                         />
                       </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <span className="text-gray-600 text-right">Job:</span>
-                        <span className="font-semibold text-right">{selectedJobForQuotation.title}</span>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600">Job:</span>
+                        <span className="font-semibold text-sm text-right">{selectedJobForQuotation.title}</span>
                       </div>
+                      {selectedJobForQuotation.jobNumber && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-600">Job Number:</span>
+                          <span className="font-semibold text-sm text-right">#{selectedJobForQuotation.jobNumber}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
 
                 {/* Line Items Table */}
-                <div className="mb-8">
-                  <table className="w-full border-collapse">
-                    <thead>
-                      <tr className="bg-gradient-to-r from-indigo-600 to-blue-600">
-                        <th className="border border-gray-300 px-4 py-3 text-left text-sm font-bold text-black uppercase tracking-wider whitespace-nowrap">Description</th>
-                        <th className="border border-gray-300 px-4 py-3 text-center text-sm font-bold text-black uppercase tracking-wider whitespace-nowrap w-24">Qty</th>
-                        <th className="border border-gray-300 px-4 py-3 text-right text-sm font-bold text-black uppercase tracking-wider whitespace-nowrap w-32">Rate</th>
-                        <th className="border border-gray-300 px-4 py-3 text-right text-sm font-bold text-black uppercase tracking-wider whitespace-nowrap w-32">Amount</th>
-                        <th className="border border-gray-300 px-4 py-3 text-center text-sm font-bold text-black uppercase tracking-wider whitespace-nowrap w-20 no-print">Action</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {quotationLineItems.map((item, index) => (
-                        <tr key={index}>
-                          <td className="border border-gray-300 px-4 py-2">
-                            <input
-                              type="text"
-                              value={item.description}
-                              onChange={(e) => updateQuotationLineItem(index, "description", e.target.value)}
-                              className="w-full outline-none print-no-border"
-                              placeholder="Description"
-                            />
-                          </td>
-                          <td className="border border-gray-300 px-4 py-2 text-center">
-                            <input
-                              type="number"
-                              value={item.quantity}
-                              onChange={(e) => updateQuotationLineItem(index, "quantity", parseFloat(e.target.value) || 0)}
-                              className="w-full text-center outline-none print-no-border"
-                              step="0.01"
-                            />
-                          </td>
-                          <td className="border border-gray-300 px-4 py-2 text-right">
-                            <input
-                              type="number"
-                              value={item.rate}
-                              onChange={(e) => updateQuotationLineItem(index, "rate", parseFloat(e.target.value) || 0)}
-                              className="w-full text-right outline-none print-no-border"
-                              step="0.01"
-                            />
-                          </td>
-                          <td className="border border-gray-300 px-4 py-2 text-right font-medium">
-                            ${item.amount.toFixed(2)}
-                          </td>
-                          <td className="border border-gray-300 px-4 py-2 text-center no-print">
-                            <button
-                              onClick={() => removeQuotationLineItem(index)}
-                              className="text-red-600 hover:text-red-800 text-sm"
-                            >
-                              ✕
-                            </button>
-                          </td>
+                <div className="mb-6 sm:mb-8">
+                  <div className="overflow-x-auto">
+                    <table className="w-full border-collapse">
+                      <thead>
+                        <tr className="bg-gradient-to-r from-indigo-600 to-blue-600">
+                          <th className="border border-gray-300 px-3 sm:px-4 py-3 text-left text-xs sm:text-sm font-bold text-white uppercase tracking-wider whitespace-nowrap">Description</th>
+                          <th className="border border-gray-300 px-3 sm:px-4 py-3 text-center text-xs sm:text-sm font-bold text-white uppercase tracking-wider whitespace-nowrap w-20 sm:w-24">Qty</th>
+                          <th className="border border-gray-300 px-3 sm:px-4 py-3 text-right text-xs sm:text-sm font-bold text-white uppercase tracking-wider whitespace-nowrap w-28 sm:w-32">Rate</th>
+                          <th className="border border-gray-300 px-3 sm:px-4 py-3 text-right text-xs sm:text-sm font-bold text-white uppercase tracking-wider whitespace-nowrap w-28 sm:w-32">Amount</th>
+                          <th className="border border-gray-300 px-3 sm:px-4 py-3 text-center text-xs sm:text-sm font-bold text-white uppercase tracking-wider whitespace-nowrap w-16 sm:w-20 no-print">Action</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {quotationLineItems.map((item, index) => (
+                          <tr key={index} className="hover:bg-gray-50 transition-colors">
+                            <td className="border border-gray-300 px-3 sm:px-4 py-2 sm:py-3">
+                              <input
+                                type="text"
+                                value={item.description}
+                                onChange={(e) => updateQuotationLineItem(index, "description", e.target.value)}
+                                className="w-full outline-none print-no-border text-sm min-h-[44px]"
+                                placeholder="Description"
+                              />
+                            </td>
+                            <td className="border border-gray-300 px-3 sm:px-4 py-2 sm:py-3 text-center">
+                              <input
+                                type="number"
+                                value={item.quantity}
+                                onChange={(e) => updateQuotationLineItem(index, "quantity", parseFloat(e.target.value) || 0)}
+                                className="w-full text-center outline-none print-no-border text-sm min-h-[44px]"
+                                step="0.01"
+                                min="0"
+                              />
+                            </td>
+                            <td className="border border-gray-300 px-3 sm:px-4 py-2 sm:py-3 text-right">
+                              <input
+                                type="number"
+                                value={item.rate}
+                                onChange={(e) => updateQuotationLineItem(index, "rate", parseFloat(e.target.value) || 0)}
+                                className="w-full text-right outline-none print-no-border text-sm min-h-[44px]"
+                                step="0.01"
+                                min="0"
+                              />
+                            </td>
+                            <td className="border border-gray-300 px-3 sm:px-4 py-2 sm:py-3 text-right font-medium text-sm sm:text-base">
+                              ${item.amount.toFixed(2)}
+                            </td>
+                            <td className="border border-gray-300 px-3 sm:px-4 py-2 sm:py-3 text-center no-print">
+                              <button
+                                onClick={() => removeQuotationLineItem(index)}
+                                className="text-red-600 hover:text-red-800 text-base sm:text-lg font-bold min-w-[44px] min-h-[44px] flex items-center justify-center"
+                                aria-label="Remove line item"
+                              >
+                                ✕
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                   
                   <button
                     onClick={addQuotationLineItem}
-                    className="mt-4 px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 transition-colors no-print"
+                    className="mt-4 px-4 py-2.5 border-2 border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 hover:border-gray-400 transition-colors no-print min-h-[44px]"
                   >
                     + Add Line Item
                   </button>
                 </div>
 
-                {/* Total */}
-                <div className="flex justify-end mb-8">
-                  <div className="w-64">
-                    <div className="flex justify-between py-2 border-b border-gray-300">
-                      <span className="font-semibold">Subtotal:</span>
-                      <span>${calculateQuotationSubtotal().toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between py-2 border-b border-gray-300">
-                      <span className="font-semibold">Shipping Fee:</span>
-                      <input
-                        type="number"
-                        value={quotationShippingFee}
-                        onChange={(e) => {
-                          setQuotationShippingFee(parseFloat(e.target.value) || 0);
-                          if (autoSaveTimeoutRef.current) clearTimeout(autoSaveTimeoutRef.current);
-                          autoSaveTimeoutRef.current = setTimeout(() => handleAutoSaveQuotation(), 2000);
-                        }}
-                        className="w-20 text-right border-b border-gray-300 focus:border-green-500 outline-none"
-                        step="0.01"
-                        min="0"
-                      />
-                    </div>
-                    <div className="flex justify-between py-3 border-t-2 border-green-600">
-                      <span className="text-lg font-bold">Total:</span>
-                      <span className="text-lg font-bold text-green-600">${calculateQuotationTotal().toFixed(2)}</span>
+                {/* Totals */}
+                <div className="flex justify-end mb-6 sm:mb-8">
+                  <div className="w-full sm:w-80 bg-gray-50 rounded-lg p-4 sm:p-5">
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center py-2 border-b border-gray-300">
+                        <span className="font-semibold text-sm sm:text-base text-gray-700">Subtotal:</span>
+                        <span className="font-semibold text-sm sm:text-base text-gray-900">${calculateQuotationSubtotal().toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between items-center py-2 border-b border-gray-300">
+                        <span className="font-semibold text-sm sm:text-base text-gray-700">Shipping Fee:</span>
+                        <input
+                          type="number"
+                          value={quotationShippingFee}
+                          onChange={(e) => {
+                            setQuotationShippingFee(parseFloat(e.target.value) || 0);
+                            if (autoSaveTimeoutRef.current) clearTimeout(autoSaveTimeoutRef.current);
+                            autoSaveTimeoutRef.current = setTimeout(() => handleAutoSaveQuotation(), 2000);
+                          }}
+                          className="w-24 sm:w-28 text-right border-b border-gray-300 focus:border-blue-500 outline-none bg-transparent font-semibold text-sm sm:text-base min-h-[44px] px-2"
+                          step="0.01"
+                          min="0"
+                        />
+                      </div>
+                      <div className="flex justify-between items-center py-3 border-t-2 border-blue-600 mt-2">
+                        <span className="text-lg sm:text-xl font-bold text-gray-900">Total:</span>
+                        <span className="text-lg sm:text-xl font-bold text-blue-600">${calculateQuotationTotal().toFixed(2)}</span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -3605,7 +3632,7 @@ function JobsPageContent() {
                           if (autoSaveTimeoutRef.current) clearTimeout(autoSaveTimeoutRef.current);
                           autoSaveTimeoutRef.current = setTimeout(() => handleAutoSaveQuotation(), 2000);
                         }}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm min-h-[44px]"
                         placeholder="Prepared By Name"
                       />
                     </div>
@@ -3619,16 +3646,67 @@ function JobsPageContent() {
                           if (autoSaveTimeoutRef.current) clearTimeout(autoSaveTimeoutRef.current);
                           autoSaveTimeoutRef.current = setTimeout(() => handleAutoSaveQuotation(), 2000);
                         }}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm min-h-[44px]"
                         placeholder="Title/Position"
                       />
                     </div>
                   </div>
                 </div>
 
+                {/* Payment Method */}
+                <div className="mb-8 no-print">
+                  <h3 className="text-sm font-bold text-gray-700 uppercase mb-3">Payment Method:</h3>
+                  <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div>
+                        <label className="block text-xs text-gray-600 mb-1">Bank Name</label>
+                        <input
+                          type="text"
+                          value={quotationPaymentBank}
+                          onChange={(e) => {
+                            setQuotationPaymentBank(e.target.value);
+                            if (autoSaveTimeoutRef.current) clearTimeout(autoSaveTimeoutRef.current);
+                            autoSaveTimeoutRef.current = setTimeout(() => handleAutoSaveQuotation(), 2000);
+                          }}
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm min-h-[44px]"
+                          placeholder="Bank Name"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-600 mb-1">Account Name</label>
+                        <input
+                          type="text"
+                          value={quotationPaymentAccountName}
+                          onChange={(e) => {
+                            setQuotationPaymentAccountName(e.target.value);
+                            if (autoSaveTimeoutRef.current) clearTimeout(autoSaveTimeoutRef.current);
+                            autoSaveTimeoutRef.current = setTimeout(() => handleAutoSaveQuotation(), 2000);
+                          }}
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm min-h-[44px]"
+                          placeholder="Account Name"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-600 mb-1">Account Number</label>
+                        <input
+                          type="text"
+                          value={quotationPaymentAccountNumber}
+                          onChange={(e) => {
+                            setQuotationPaymentAccountNumber(e.target.value);
+                            if (autoSaveTimeoutRef.current) clearTimeout(autoSaveTimeoutRef.current);
+                            autoSaveTimeoutRef.current = setTimeout(() => handleAutoSaveQuotation(), 2000);
+                          }}
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm min-h-[44px]"
+                          placeholder="Account Number"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Terms & Notes */}
-                <div className="mb-8">
-                  <h3 className="text-sm font-bold text-gray-700 uppercase mb-2">Terms & Conditions:</h3>
+                <div className="mb-6 sm:mb-8">
+                  <h3 className="text-sm font-bold text-gray-700 uppercase mb-3">Terms & Conditions:</h3>
                   <textarea
                     value={quotationNotes}
                     onChange={(e) => {
@@ -3637,7 +3715,7 @@ function JobsPageContent() {
                       autoSaveTimeoutRef.current = setTimeout(() => handleAutoSaveQuotation(), 2000);
                     }}
                     rows={4}
-                    className="w-full border border-gray-300 rounded-lg p-3 text-sm resize-none print-no-border"
+                    className="w-full border border-gray-300 rounded-lg p-3 sm:p-4 text-sm resize-none print-no-border min-h-[100px] focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
                     placeholder="Add any terms, conditions, or notes..."
                   />
                 </div>
