@@ -615,7 +615,7 @@ export default function AdminPage() {
                         <select
                           value={user.status || "APPROVED"}
                           onChange={(e) => handleStatusChange(user.id, e.target.value)}
-                          className={`px-2.5 py-1 rounded-full text-xs font-semibold border min-h-[44px] ${
+                          className={`px-2.5 py-1 rounded-full text-xs font-medium border min-h-[44px] ${
                             (user.status || "APPROVED") === "APPROVED"
                               ? "bg-green-50 text-green-700 border-green-200"
                               : (user.status || "APPROVED") === "PENDING"
@@ -818,7 +818,7 @@ export default function AdminPage() {
                           <select
                             value={user.status || "APPROVED"}
                             onChange={(e) => handleStatusChange(user.id, e.target.value)}
-                            className={`px-2 py-1 rounded-full text-xs font-semibold border ${
+                            className={`px-2 py-1 rounded-full text-xs font-medium border ${
                               (user.status || "APPROVED") === "APPROVED"
                                 ? "bg-green-50 text-green-700 border-green-200"
                                 : (user.status || "APPROVED") === "PENDING"
@@ -826,9 +826,9 @@ export default function AdminPage() {
                                 : "bg-red-50 text-red-700 border-red-200"
                             }`}
                           >
-                            <option value="APPROVED">APPROVED</option>
-                            <option value="PENDING">PENDING</option>
-                            <option value="REJECTED">REJECTED</option>
+                            <option value="APPROVED">Approved</option>
+                            <option value="PENDING">Pending</option>
+                            <option value="REJECTED">Rejected</option>
                           </select>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-600">
