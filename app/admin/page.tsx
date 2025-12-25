@@ -615,7 +615,7 @@ export default function AdminPage() {
                         <select
                           value={user.status || "APPROVED"}
                           onChange={(e) => handleStatusChange(user.id, e.target.value)}
-                          className={`px-3 py-1.5 rounded-full text-xs font-semibold border min-h-[44px] ${
+                          className={`px-2.5 py-1 rounded-full text-xs font-semibold border min-h-[44px] ${
                             (user.status || "APPROVED") === "APPROVED"
                               ? "bg-green-50 text-green-700 border-green-200"
                               : (user.status || "APPROVED") === "PENDING"
