@@ -124,8 +124,8 @@ export default function LoginPage() {
                   setError(errorMessage);
                   setLoading(false);
                 } else if (result?.ok) {
-                  // Authentication successful - redirect to dashboard
-                  router.push("/dashboard");
+                  // Authentication successful - use full page reload to ensure cookies are set
+                  window.location.href = "/dashboard";
                 } else {
                   // Unexpected result
                   setError("An unexpected error occurred. Please try again.");
