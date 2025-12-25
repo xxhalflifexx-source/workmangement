@@ -623,9 +623,9 @@ export default function AdminPage() {
                               : "bg-red-50 text-red-700 border-red-200"
                           }`}
                         >
-                          <option value="APPROVED">APPROVED</option>
-                          <option value="PENDING">PENDING</option>
-                          <option value="REJECTED">REJECTED</option>
+                          <option value="APPROVED">Approved</option>
+                          <option value="PENDING">Pending</option>
+                          <option value="REJECTED">Rejected</option>
                         </select>
                       </div>
                     </div>
