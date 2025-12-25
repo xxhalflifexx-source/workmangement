@@ -58,21 +58,21 @@ export default function UserAccessControlContent({
     <div className="p-6">
       <div className="overflow-x-auto -mx-4 sm:mx-0">
         <div className="inline-block min-w-full align-middle px-4 sm:px-0">
-          <table className="min-w-full divide-y divide-gray-200">
+          <table className="min-w-full divide-y divide-gray-200 table-fixed">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="w-[20%] px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Employee
               </th>
               {modules.map((module) => (
                 <th
                   key={module}
-                  className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  className="w-[9%] px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
                 >
                   {moduleNames[module]}
                 </th>
               ))}
-              <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="w-[8%] px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Actions
               </th>
             </tr>
@@ -91,7 +91,7 @@ export default function UserAccessControlContent({
 
                 return (
                   <tr key={user.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="w-[20%] px-6 py-4 whitespace-nowrap">
                       <div>
                         <div className="text-sm font-medium text-gray-900">
                           {user.name || "Unknown"}
@@ -103,7 +103,7 @@ export default function UserAccessControlContent({
                     {modules.map((module) => {
                       const hasAccess = userPermissions[module] ?? false;
                       return (
-                        <td key={module} className="px-4 py-4 whitespace-nowrap text-center">
+                        <td key={module} className="w-[9%] px-4 py-4 whitespace-nowrap text-center">
                           <button
                             onClick={() => onToggle(user.id, module)}
                             disabled={saving[user.id]}
@@ -119,7 +119,7 @@ export default function UserAccessControlContent({
                         </td>
                       );
                     })}
-                    <td className="px-6 py-4 whitespace-nowrap text-center">
+                    <td className="w-[8%] px-6 py-4 whitespace-nowrap text-center">
                       <button
                         onClick={() => onSave(user.id)}
                         disabled={saving[user.id] || !hasChanges}
