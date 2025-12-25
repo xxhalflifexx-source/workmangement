@@ -12,6 +12,7 @@ import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import DashboardWrapper from "./DashboardWrapper";
 import { cookies, headers } from "next/headers";
+import DashboardSessionGuard from "./DashboardSessionGuard";
 
 // Mark this page as dynamic since it uses getServerSession which accesses headers/cookies
 export const dynamic = 'force-dynamic';
