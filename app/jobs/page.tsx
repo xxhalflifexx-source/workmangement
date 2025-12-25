@@ -1965,7 +1965,7 @@ function JobsPageContent() {
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div className="grid grid-cols-2 gap-3 text-sm mb-4">
                     {job.customer && (
                       <div>
                         <span className="text-gray-500">Client:</span>
@@ -1997,6 +1997,76 @@ function JobsPageContent() {
                       </span>
                     </div>
                   </div>
+
+                  {/* Action Buttons - Same as desktop */}
+                  {canManage && (
+                    <div className="border-t border-gray-200 pt-3 mt-3">
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openMaterialsAndExpensesModal(job);
+                          }}
+                          disabled={job.status === "AWAITING_QC" || job.status === "COMPLETED"}
+                          className="flex-1 min-w-[140px] px-3 py-2.5 text-xs bg-gradient-to-r from-emerald-50 to-rose-50 border-2 border-emerald-200 text-emerald-700 rounded-lg hover:from-emerald-100 hover:to-rose-100 hover:border-emerald-300 transition-all font-semibold disabled:bg-gray-100 disabled:border-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed min-h-[44px] flex items-center justify-center gap-1.5 shadow-sm"
+                          title={job.status === "AWAITING_QC" || job.status === "COMPLETED" ? "Job is locked" : "Materials & Expenses"}
+                        >
+                          <span>📦💵</span>
+                          <span className="hidden sm:inline">Materials & Expenses</span>
+                          <span className="sm:hidden">Materials</span>
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openQuotationModal(job);
+                          }}
+                          className="flex-1 min-w-[140px] px-3 py-2.5 text-xs bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-200 text-amber-700 rounded-lg hover:from-amber-100 hover:to-orange-100 hover:border-amber-300 transition-all font-semibold min-h-[44px] flex items-center justify-center gap-1.5 shadow-sm"
+                          title="Create Quotation"
+                        >
+                          <span>💰</span>
+                          <span className="hidden sm:inline">Create Quotation</span>
+                          <span className="sm:hidden">Quotation</span>
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openActivityModal(job);
+                          }}
+                          className="flex-1 min-w-[140px] px-3 py-2.5 text-xs bg-gradient-to-r from-blue-50 to-cyan-50 border-2 border-blue-200 text-blue-700 rounded-lg hover:from-blue-100 hover:to-cyan-100 hover:border-blue-300 transition-all font-semibold min-h-[44px] flex items-center justify-center gap-1.5 shadow-sm"
+                          title="View Activity"
+                        >
+                          <span>📋</span>
+                          <span className="hidden sm:inline">Activity</span>
+                          <span className="sm:hidden">Activity</span>
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openEditModal(job);
+                          }}
+                          disabled={job.status === "AWAITING_QC" || job.status === "COMPLETED"}
+                          className="flex-1 min-w-[100px] px-3 py-2.5 text-xs bg-gradient-to-r from-indigo-50 to-purple-50 border-2 border-indigo-200 text-indigo-700 rounded-lg hover:from-indigo-100 hover:to-purple-100 hover:border-indigo-300 transition-all font-semibold disabled:bg-gray-100 disabled:border-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed min-h-[44px] flex items-center justify-center gap-1.5 shadow-sm"
+                          title={job.status === "AWAITING_QC" || job.status === "COMPLETED" ? "Job is locked" : "Edit"}
+                        >
+                          <span>✏️</span>
+                          <span>Edit</span>
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (confirm("Are you sure you want to delete this job?")) {
+                              handleDelete(job.id);
+                            }
+                          }}
+                          className="flex-1 min-w-[100px] px-3 py-2.5 text-xs bg-gradient-to-r from-red-50 to-pink-50 border-2 border-red-200 text-red-700 rounded-lg hover:from-red-100 hover:to-pink-100 hover:border-red-300 transition-all font-semibold min-h-[44px] flex items-center justify-center gap-1.5 shadow-sm"
+                          title="Delete"
+                        >
+                          <span>🗑️</span>
+                          <span>Delete</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             />
