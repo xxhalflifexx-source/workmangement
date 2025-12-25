@@ -11,6 +11,7 @@ import DashboardTabLink from "./DashboardTabLink";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import DashboardWrapper from "./DashboardWrapper";
+import { cookies, headers } from "next/headers";
 
 // Mark this page as dynamic since it uses getServerSession which accesses headers/cookies
 export const dynamic = 'force-dynamic';
@@ -19,19 +20,66 @@ export default async function Dashboard() {
   console.log("[Dashboard] Server component starting...");
   
   try {
+    // Debug: Check cookies and environment variables
+    const cookieStore = await cookies();
+    const headersList = await headers();
+    const cookieHeader = headersList.get("cookie") || "";
+    
+    // Check for NextAuth session cookie
+    const sessionCookieName = process.env.NODE_ENV === "production" 
+      ? "__Secure-next-auth.session-token" 
+      : "next-auth.session-token";
+    const sessionCookie = cookieStore.get(sessionCookieName) || cookieStore.get("next-auth.session-token");
+    
+    console.log("[Dashboard] Cookie check:");
+    console.log("[Dashboard] - Session cookie present:", sessionCookie ? "Yes" : "No");
+    console.log("[Dashboard] - Cookie name searched:", sessionCookieName);
+    console.log("[Dashboard] - All cookie names:", cookieStore.getAll().map(c => c.name).join(", "));
+    console.log("[Dashboard] - Cookie header present:", cookieHeader ? "Yes" : "No");
+    console.log("[Dashboard] - Cookie header length:", cookieHeader.length);
+    
+    // Check environment variables (without exposing secrets)
+    console.log("[Dashboard] Environment check:");
+    console.log("[Dashboard] - NEXTAUTH_SECRET present:", process.env.NEXTAUTH_SECRET ? "Yes" : "No");
+    console.log("[Dashboard] - NEXTAUTH_SECRET length:", process.env.NEXTAUTH_SECRET?.length || 0);
+    console.log("[Dashboard] - NEXTAUTH_URL:", process.env.NEXTAUTH_URL || "Not set");
+    console.log("[Dashboard] - NODE_ENV:", process.env.NODE_ENV);
+    
     const session = await getServerSession(authOptions);
-    console.log("[Dashboard] Session check:", session ? "Found" : "Not found");
-    console.log("[Dashboard] Session user:", session?.user?.email || "None");
+    console.log("[Dashboard] Session check result:");
+    console.log("[Dashboard] - Session found:", session ? "Yes" : "No");
+    console.log("[Dashboard] - Session user email:", session?.user?.email || "None");
+    console.log("[Dashboard] - Session user id:", (session?.user as any)?.id || "None");
+    console.log("[Dashboard] - Session user role:", (session?.user as any)?.role || "None");
     
     if (!session?.user) {
-      console.log("[Dashboard] No session, redirecting to login");
-      redirect("/login");
+      console.log("[Dashboard] ERROR: No session found");
+      console.log("[Dashboard] - This may indicate cookie not set or not readable");
+      console.log("[Dashboard] - Allowing client-side check to handle this (may be cookie propagation delay)");
+      // Don't immediately redirect - let client-side session guard handle it
+      // This prevents redirect loop if cookie is still propagating
     }
     
     // Additional validation - if session exists but user data is incomplete
-    if (!session.user.email) {
+    if (session?.user && !session.user.email) {
       console.error("[Dashboard] Session exists but user email missing - redirecting to login");
       redirect("/login");
+    }
+    
+    // If no session, return a component that will check client-side
+    if (!session?.user) {
+      return (
+        <DashboardWrapper>
+          <DashboardSessionGuard>
+            <div className="min-h-screen flex items-center justify-center">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                <p className="text-gray-600">Checking session...</p>
+              </div>
+            </div>
+          </DashboardSessionGuard>
+        </DashboardWrapper>
+      );
     }
     
     console.log("[Dashboard] User:", session.user.email);
@@ -109,10 +157,11 @@ export default async function Dashboard() {
   const rejectedNotifications = notifications.filter((n: any) => !n.isRead && (n.type === "REJECTED" || n.type === "CANCELLED")).length;
   const draftNotifications = notifications.filter((n: any) => !n.isRead && n.type === "DRAFT").length;
 
-    console.log("[Dashboard] Rendering dashboard content");
+    console.log("[Dashboard] Rendering dashboard content with session");
     
     return (
       <DashboardWrapper>
+        <DashboardSessionGuard>
         <main className="min-h-screen bg-gray-50">
       {/* Top Header Bar - Black Background */}
       <header className="bg-black border-b-2 border-[#001f3f] shadow-lg sticky top-0 z-50">
@@ -269,6 +318,7 @@ export default async function Dashboard() {
             </div>
       </div>
     </main>
+        </DashboardSessionGuard>
       </DashboardWrapper>
     );
   } catch (error: any) {

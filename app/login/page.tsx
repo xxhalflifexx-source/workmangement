@@ -101,17 +101,59 @@ export default function LoginPage() {
                 const email = formData.get("email") as string;
                 const password = formData.get("password") as string;
                 
-                // Use NextAuth's built-in redirect to ensure cookie is properly set
-                // Errors will be handled via URL parameters and displayed above
-                await signIn("credentials", {
+                console.log("[Login] Attempting sign in for:", email);
+                
+                // Use redirect: false to handle redirect manually after session is confirmed
+                const result = await signIn("credentials", {
                   email,
                   password,
-                  redirect: true,
+                  redirect: false,
                   callbackUrl: "/dashboard",
                 });
-                // If we reach here, signIn didn't redirect (shouldn't happen with redirect: true)
-                // But if it does, set loading to false
-                setLoading(false);
+                
+                console.log("[Login] Sign in result:", result?.ok ? "Success" : "Failed");
+                console.log("[Login] Sign in error:", result?.error || "None");
+                
+                // Check if signIn was successful
+                if (result?.error) {
+                  // Authentication failed - show error message
+                  let errorMessage = result.error;
+                  
+                  // Map common NextAuth error codes to user-friendly messages
+                  if (result.error === "CredentialsSignin") {
+                    errorMessage = "Wrong username/password";
+                  }
+                  
+                  console.log("[Login] Authentication failed:", errorMessage);
+                  setError(errorMessage);
+                  setLoading(false);
+                } else if (result?.ok) {
+                  // Authentication successful - wait for session to be established
+                  console.log("[Login] Authentication successful, establishing session...");
+                  
+                  // Update session to ensure it's refreshed and cookie is set
+                  try {
+                    await update();
+                    console.log("[Login] Session update called");
+                  } catch (updateErr) {
+                    console.error("[Login] Session update error:", updateErr);
+                    // Continue anyway - cookie might still be set
+                  }
+                  
+                  // Wait for cookie to be set and session to propagate
+                  // Give NextAuth time to set the cookie before redirecting
+                  await new Promise(resolve => setTimeout(resolve, 300));
+                  
+                  // Use full page reload to ensure cookie is sent with request
+                  // This ensures the browser sends the cookie in the request header
+                  console.log("[Login] Redirecting to dashboard with full page reload");
+                  window.location.href = "/dashboard";
+                } else {
+                  // Unexpected result
+                  console.error("[Login] Unexpected sign in result:", result);
+                  setError("An unexpected error occurred. Please try again.");
+                  setLoading(false);
+                }
               } catch (err: any) {
                 console.error("[Login] Error:", err);
                 // Show user-friendly error message

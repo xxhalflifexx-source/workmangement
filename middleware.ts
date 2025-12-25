@@ -6,7 +6,24 @@ import type { NextRequest } from "next/server";
 const shouldBypass = process.env.DEV_BYPASS_AUTH === "true" || process.env.NODE_ENV !== "production";
 
 export default function middleware(req: NextRequest) {
+	const path = req.nextUrl.pathname;
+	console.log("[Middleware] Request to:", path);
+	
+	// Check for session cookie in request
+	const cookieHeader = req.headers.get("cookie") || "";
+	const sessionCookieName = process.env.NODE_ENV === "production" 
+		? "__Secure-next-auth.session-token" 
+		: "next-auth.session-token";
+	const hasSessionCookie = cookieHeader.includes(sessionCookieName) || cookieHeader.includes("next-auth.session-token");
+	
+	console.log("[Middleware] Cookie check:");
+	console.log("[Middleware] - Cookie header present:", cookieHeader ? "Yes" : "No");
+	console.log("[Middleware] - Session cookie present:", hasSessionCookie ? "Yes" : "No");
+	console.log("[Middleware] - Cookie header length:", cookieHeader.length);
+	console.log("[Middleware] - Bypass auth:", shouldBypass);
+	
 	if (shouldBypass) {
+		console.log("[Middleware] Bypassing auth check");
 		return NextResponse.next();
 	}
 	
@@ -20,6 +37,7 @@ export default function middleware(req: NextRequest) {
 	                    req.headers.get("x-capacitor-platform");
 	
 	if (isIOS || isAndroidWebView || isCapacitor) {
+		console.log("[Middleware] Mobile/WebView detected - allowing through");
 		// For mobile WebViews/Capacitor, let the request through - pages will handle auth client-side
 		// This allows WebView time to read cookies properly
 		const response = NextResponse.next();
@@ -28,6 +46,7 @@ export default function middleware(req: NextRequest) {
 		return response;
 	}
 	
+	console.log("[Middleware] Delegating to NextAuth middleware");
 	// Defer to NextAuth middleware for protected routes (non-iOS)
 	// @ts-ignore - next-auth middleware types accept NextRequest
 	return NextAuthMiddleware(req);

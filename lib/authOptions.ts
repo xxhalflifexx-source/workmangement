@@ -22,9 +22,11 @@ export const authOptions: NextAuthOptions = {
       name: `next-auth.session-token`,
       options: {
         httpOnly: true,
-        sameSite: "lax",
-        path: "/",
-        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax", // "lax" allows cookies to be sent on top-level navigations (like redirects)
+        path: "/", // Cookie available for all paths
+        secure: process.env.NODE_ENV === "production", // HTTPS only in production
+        // Don't set domain - let browser handle it automatically
+        // This ensures cookie works across subdomains if needed
         maxAge: 30 * 24 * 60 * 60, // 30 days
       },
     },
@@ -35,6 +37,7 @@ export const authOptions: NextAuthOptions = {
         sameSite: "lax",
         path: "/",
         secure: process.env.NODE_ENV === "production",
+        // Don't set domain - let browser handle it automatically
       },
     },
     csrfToken: {
@@ -44,6 +47,7 @@ export const authOptions: NextAuthOptions = {
         sameSite: "lax",
         path: "/",
         secure: process.env.NODE_ENV === "production",
+        // Don't set domain - let browser handle it automatically
       },
     },
   },
@@ -147,6 +151,10 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user, trigger }) {
       if (user) {
+        console.log("[Auth] JWT callback - User data added to token");
+        console.log("[Auth] - User ID:", (user as any).id);
+        console.log("[Auth] - User email:", (user as any).email);
+        console.log("[Auth] - User role:", (user as any).role);
         token.id = (user as any).id;
         token.role = (user as any).role;
         token.isSuperAdmin = (user as any).isSuperAdmin;
@@ -156,6 +164,7 @@ export const authOptions: NextAuthOptions = {
       }
       // Refresh token on session update - re-fetch user data from DB
       if (trigger === "update" && token.id) {
+        console.log("[Auth] JWT callback - Token update triggered for user:", token.id);
         const freshUser = await prisma.user.findUnique({
           where: { id: token.id as string },
           select: {
@@ -178,9 +187,13 @@ export const authOptions: NextAuthOptions = {
           token.organizationSlug = freshUser.organization?.slug ?? null;
         }
       }
+      console.log("[Auth] JWT callback - Token returned with ID:", token.id || "None");
       return token;
     },
     async session({ session, token }) {
+      console.log("[Auth] Session callback - Creating session");
+      console.log("[Auth] - Token ID:", token.id || "None");
+      console.log("[Auth] - Token role:", token.role || "None");
       if (session.user) {
         (session.user as any).id = token.id as string;
         (session.user as any).role = token.role as any;
@@ -188,6 +201,10 @@ export const authOptions: NextAuthOptions = {
         (session.user as any).organizationId = token.organizationId as string | null;
         (session.user as any).organizationName = token.organizationName as string | null;
         (session.user as any).organizationSlug = token.organizationSlug as string | null;
+        console.log("[Auth] Session callback - Session user data set");
+        console.log("[Auth] - Session user ID:", (session.user as any).id);
+        console.log("[Auth] - Session user email:", session.user.email);
+        console.log("[Auth] - Session user role:", (session.user as any).role);
       }
       return session;
     },
@@ -202,3 +219,13 @@ export const authOptions: NextAuthOptions = {
   },
   secret: process.env.NEXTAUTH_SECRET,
 };
+
+// Log configuration on server startup (without exposing secrets)
+if (typeof window === "undefined") {
+  console.log("[Auth] NextAuth configuration:");
+  console.log("[Auth] - NEXTAUTH_SECRET present:", !!process.env.NEXTAUTH_SECRET);
+  console.log("[Auth] - NEXTAUTH_SECRET length:", process.env.NEXTAUTH_SECRET?.length || 0);
+  console.log("[Auth] - NEXTAUTH_URL:", process.env.NEXTAUTH_URL || "Not set");
+  console.log("[Auth] - NODE_ENV:", process.env.NODE_ENV);
+  console.log("[Auth] - Cookie secure flag:", process.env.NODE_ENV === "production");
+}
