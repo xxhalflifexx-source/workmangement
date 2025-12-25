@@ -6,7 +6,7 @@ import { useState, useEffect } from "react";
 import LoginLoadingOverlay from "./LoginLoadingOverlay";
 
 export default function LoginPage() {
-  const { data: session, status } = useSession();
+  const { data: session, status, update } = useSession();
   const router = useRouter();
   const searchParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
   const verified = searchParams?.get("verified");
@@ -101,7 +101,7 @@ export default function LoginPage() {
                 const email = formData.get("email") as string;
                 const password = formData.get("password") as string;
                 
-                // Use redirect: false to catch errors properly and display them on the login page
+                // Use redirect: false to catch errors, but handle redirect manually after session is set
                 const result = await signIn("credentials", {
                   email,
                   password,
@@ -124,8 +124,12 @@ export default function LoginPage() {
                   setError(errorMessage);
                   setLoading(false);
                 } else if (result?.ok) {
-                  // Authentication successful - use full page reload to ensure cookies are set
-                  window.location.href = "/dashboard";
+                  // Authentication successful - redirect through NextAuth callback to ensure cookie is set
+                  // NextAuth sets the cookie during the signIn call, but we need to ensure it's sent
+                  // Redirect to the callback URL which NextAuth will handle
+                  const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
+                  const callbackUrl = encodeURIComponent(`${baseUrl}/dashboard`);
+                  window.location.href = `/api/auth/callback/credentials?callbackUrl=${callbackUrl}`;
                 } else {
                   // Unexpected result
                   setError("An unexpected error occurred. Please try again.");
