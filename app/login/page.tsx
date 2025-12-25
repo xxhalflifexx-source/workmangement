@@ -101,40 +101,17 @@ export default function LoginPage() {
                 const email = formData.get("email") as string;
                 const password = formData.get("password") as string;
                 
-                // Use redirect: false to catch errors, but handle redirect manually after session is set
-                const result = await signIn("credentials", {
+                // Use NextAuth's built-in redirect to ensure cookie is properly set
+                // Errors will be handled via URL parameters and displayed above
+                await signIn("credentials", {
                   email,
                   password,
-                  redirect: false,
+                  redirect: true,
                   callbackUrl: "/dashboard",
                 });
-                
-                // Check if signIn was successful
-                if (result?.error) {
-                  // Authentication failed - show error message
-                  // NextAuth may return error codes, but our authorize function throws Error objects
-                  // The error message should be passed through, but we handle common codes as fallback
-                  let errorMessage = result.error;
-                  
-                  // Map common NextAuth error codes to user-friendly messages
-                  if (result.error === "CredentialsSignin") {
-                    errorMessage = "Wrong username/password";
-                  }
-                  
-                  setError(errorMessage);
-                  setLoading(false);
-                } else if (result?.ok) {
-                  // Authentication successful - redirect through NextAuth callback to ensure cookie is set
-                  // NextAuth sets the cookie during the signIn call, but we need to ensure it's sent
-                  // Redirect to the callback URL which NextAuth will handle
-                  const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
-                  const callbackUrl = encodeURIComponent(`${baseUrl}/dashboard`);
-                  window.location.href = `/api/auth/callback/credentials?callbackUrl=${callbackUrl}`;
-                } else {
-                  // Unexpected result
-                  setError("An unexpected error occurred. Please try again.");
-                  setLoading(false);
-                }
+                // If we reach here, signIn didn't redirect (shouldn't happen with redirect: true)
+                // But if it does, set loading to false
+                setLoading(false);
               } catch (err: any) {
                 console.error("[Login] Error:", err);
                 // Show user-friendly error message
