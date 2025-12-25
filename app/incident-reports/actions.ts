@@ -368,13 +368,26 @@ export async function getJobsForIncident() {
   const roleCheck = requireRole(ctx, "ADMIN");
   if (roleCheck) return roleCheck;
 
-  if (!ctx.isSuperAdmin && !ctx.organizationId) {
-    return { ok: false, error: "No organization found" };
-  }
-
   try {
-    // Build where clause with org filter
-    const where = buildOrgFilter(ctx, {});
+    // Build where clause that includes both org jobs and legacy jobs (organizationId = null)
+    // This ensures backward compatibility with old jobs created before org assignment
+    let where: any = {};
+    
+    if (ctx.isSuperAdmin) {
+      // Super admins can see all jobs
+      where = {};
+    } else if (ctx.organizationId) {
+      // Regular users: show jobs from their org OR legacy jobs (null orgId)
+      where = {
+        OR: [
+          { organizationId: ctx.organizationId },
+          { organizationId: null }, // Include legacy jobs created before org assignment
+        ],
+      };
+    } else {
+      // User has no organization - only show legacy jobs
+      where = { organizationId: null };
+    }
 
     const jobs = await prisma.job.findMany({
       where,
