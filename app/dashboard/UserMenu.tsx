@@ -56,15 +56,15 @@ export default function UserMenu({ userName, userEmail, userRole, hideWhenNotifi
         <button
           ref={buttonRef}
           onClick={() => setShowDropdown(!showDropdown)}
-          className="flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg hover:bg-gray-800 transition-colors text-base sm:text-lg font-semibold text-white min-h-[48px] sm:min-h-[52px]"
+          className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg hover:bg-gray-800 transition-colors text-sm sm:text-base font-semibold text-white min-h-[36px] sm:min-h-[40px]"
           aria-label="User menu"
         >
-          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold text-base sm:text-lg flex-shrink-0">
+          <div className="w-8 h-8 sm:w-9 sm:h-9 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold text-sm sm:text-base flex-shrink-0">
             {userName?.charAt(0).toUpperCase() || "U"}
           </div>
-          <span className="hidden sm:inline text-white truncate text-base sm:text-lg font-semibold">{userName || "User"}</span>
+          <span className="hidden sm:inline text-white truncate text-sm sm:text-base font-semibold">{userName || "User"}</span>
           <svg
-            className={`w-5 h-5 sm:w-6 sm:h-6 text-gray-300 transition-transform flex-shrink-0 ${showDropdown ? "rotate-180" : ""}`}
+            className={`w-4 h-4 sm:w-5 sm:h-5 text-gray-300 transition-transform flex-shrink-0 ${showDropdown ? "rotate-180" : ""}`}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
