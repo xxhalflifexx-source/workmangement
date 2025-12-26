@@ -604,25 +604,25 @@ export default function AdminPage() {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         {user.isVerified ? (
-                          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800 leading-tight h-[22px]">
+                          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800 leading-tight" style={{ lineHeight: '1.25rem', height: '22px' }}>
                             ✓ Verified
                           </span>
                         ) : (
-                          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800 leading-tight h-[22px]">
+                          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800 leading-tight" style={{ lineHeight: '1.25rem', height: '22px' }}>
                             ⚠ Unverified
                           </span>
                         )}
                         <select
                           value={user.status || "APPROVED"}
                           onChange={(e) => handleStatusChange(user.id, e.target.value)}
-                          className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold appearance-none leading-tight h-[22px] ${
+                          className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold appearance-none leading-tight ${
                             (user.status || "APPROVED") === "APPROVED"
                               ? "bg-green-100 text-green-800"
                               : (user.status || "APPROVED") === "PENDING"
                               ? "bg-yellow-100 text-yellow-800"
                               : "bg-red-100 text-red-800"
                           }`}
-                          style={{ lineHeight: '1.25rem' }}
+                          style={{ lineHeight: '1.25rem', height: '22px' }}
                         >
                           <option value="APPROVED">Approved</option>
                           <option value="PENDING">Pending</option>
@@ -681,7 +681,7 @@ export default function AdminPage() {
                       Hourly Rate
                     </th>
                     <th className="px-4 sm:px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap">
-                      Email&nbsp;Verified
+                      Email&nbsp;Verification
                     </th>
                     <th className="px-4 sm:px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap">
                       Approval&nbsp;Status
@@ -806,11 +806,11 @@ export default function AdminPage() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-center">
                           {user.isVerified ? (
-                            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800 leading-tight">
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800 leading-tight" style={{ lineHeight: '1.25rem', height: '22px' }}>
                               ✓ Verified
                             </span>
                           ) : (
-                            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800 leading-tight">
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800 leading-tight" style={{ lineHeight: '1.25rem', height: '22px' }}>
                               ⚠ Unverified
                             </span>
                           )}
@@ -819,14 +819,14 @@ export default function AdminPage() {
                           <select
                             value={user.status || "APPROVED"}
                             onChange={(e) => handleStatusChange(user.id, e.target.value)}
-                            className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold appearance-none leading-tight h-[22px] ${
+                            className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold appearance-none leading-tight ${
                               (user.status || "APPROVED") === "APPROVED"
                                 ? "bg-green-100 text-green-800"
                                 : (user.status || "APPROVED") === "PENDING"
                                 ? "bg-yellow-100 text-yellow-800"
                                 : "bg-red-100 text-red-800"
                             }`}
-                            style={{ lineHeight: '1.25rem' }}
+                            style={{ lineHeight: '1.25rem', height: '22px' }}
                           >
                             <option value="APPROVED">Approved</option>
                             <option value="PENDING">Pending</option>
