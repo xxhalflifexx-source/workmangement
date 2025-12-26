@@ -1158,7 +1158,7 @@ setLoading(false);
 
             {/* Error Message */}
 				{error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+              <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
                 {error}
               </div>
 				)}
@@ -1366,7 +1366,7 @@ setLoading(false);
                                       target="_blank"
                                       rel="noopener noreferrer"
                                       onClick={(e) => e.stopPropagation()}
-                                      className="px-2 py-1 bg-red-100 text-red-700 rounded text-xs hover:bg-red-200"
+                                      className="px-2 py-1 bg-red-100 text-red-800 rounded text-xs hover:bg-red-200"
                                     >
                                       PDF {idx + 1}
                                     </a>
@@ -1402,7 +1402,7 @@ setLoading(false);
                             <label
                               htmlFor={`pdf-upload-${invoice.id}`}
                               onClick={(e) => e.stopPropagation()}
-                              className="cursor-pointer inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs hover:bg-blue-200"
+                              className="cursor-pointer inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs hover:bg-blue-200"
                             >
                               + Add PDF
                             </label>
@@ -1620,7 +1620,7 @@ setLoading(false);
                       </div>
                       <div className="flex items-center justify-between gap-3">
                         <span className="text-slate-500">Status</span>
-                        <span className="inline-flex items-center gap-2 rounded-full bg-blue-50 text-blue-700 text-xs font-semibold px-3 py-1">
+                        <span className="inline-flex items-center gap-2 rounded-full bg-blue-50 text-blue-800 text-xs font-semibold px-3 py-1">
                           {getStatusBadge(selectedInvoice)}
                         </span>
                       </div>

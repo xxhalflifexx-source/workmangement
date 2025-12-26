@@ -1645,9 +1645,9 @@ function JobsPageContent() {
       case "IN_PROGRESS":
         return "bg-blue-100 text-blue-800";
       case "AWAITING_QC":
-        return "bg-purple-100 text-purple-800";
+        return "bg-blue-100 text-blue-800";
       case "REWORK":
-        return "bg-orange-100 text-orange-800";
+        return "bg-yellow-100 text-yellow-800";
       case "COMPLETED":
         return "bg-green-100 text-green-800";
       case "CANCELLED":
@@ -1662,7 +1662,7 @@ function JobsPageContent() {
       case "URGENT":
         return "bg-red-100 text-red-800";
       case "HIGH":
-        return "bg-orange-100 text-orange-800";
+        return "bg-red-100 text-red-800";
       case "MEDIUM":
         return "bg-yellow-100 text-yellow-800";
       case "LOW":
@@ -1702,12 +1702,12 @@ function JobsPageContent() {
         <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-24 py-6 sm:py-8">
         {/* Status Messages */}
         {error && (
-          <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+          <div className="mb-6 bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
             {error}
           </div>
         )}
         {success && (
-          <div className="mb-6 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg">
+          <div className="mb-6 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg">
             ✓ {success}
           </div>
         )}
@@ -1949,16 +1949,16 @@ function JobsPageContent() {
                     <span
                       className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium border ${
                         job.status === "COMPLETED"
-                          ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                          ? "bg-green-50 text-green-800 border-green-200"
                           : job.status === "REWORK"
-                          ? "bg-amber-50 text-amber-700 border-amber-200"
+                          ? "bg-yellow-50 text-yellow-800 border-yellow-200"
                           : job.status === "AWAITING_QC"
-                          ? "bg-indigo-50 text-indigo-700 border-indigo-200"
+                          ? "bg-blue-50 text-blue-800 border-blue-200"
                           : job.status === "IN_PROGRESS"
-                          ? "bg-blue-50 text-blue-700 border-blue-200"
+                          ? "bg-blue-50 text-blue-800 border-blue-200"
                           : job.status === "CANCELLED"
-                          ? "bg-red-50 text-red-700 border-red-200"
-                          : "bg-slate-50 text-slate-700 border-slate-200"
+                          ? "bg-red-50 text-red-800 border-red-200"
+                          : "bg-gray-50 text-gray-700 border-gray-200"
                       }`}
                     >
                       {job.status === "AWAITING_QC" ? "Submit to QC" : job.status.replace("_", " ")}
@@ -2678,8 +2678,8 @@ function JobsPageContent() {
                                 </p>
                                 <span className={`text-xs px-2 py-1 rounded-full font-medium ${
                                   activity.type === "TIME_ENTRY"
-                                    ? "bg-green-100 text-green-700"
-                                    : "bg-blue-100 text-blue-700"
+                                    ? "bg-green-100 text-green-800"
+                                    : "bg-blue-100 text-blue-800"
                                 }`}>
                                   {activity.type === "TIME_ENTRY" ? "⏰ Clock Out" : "📝 Update"}
                                 </span>
@@ -2692,7 +2692,7 @@ function JobsPageContent() {
                               )}
                             </div>
                             {images.length > 0 && (
-                              <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full font-medium">
+                              <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full font-medium">
                                 📸 {images.length}
                               </span>
                             )}
@@ -2988,7 +2988,7 @@ function JobsPageContent() {
                                     request.priority === "URGENT"
                                       ? "bg-red-100 text-red-700"
                                       : request.priority === "HIGH"
-                                      ? "bg-orange-100 text-orange-700"
+                                      ? "bg-red-100 text-red-800"
                                       : request.priority === "MEDIUM"
                                       ? "bg-yellow-100 text-yellow-700"
                                       : "bg-green-100 text-green-700"
@@ -2997,11 +2997,11 @@ function JobsPageContent() {
                                   </span>
                                   <span className={`text-xs px-2 py-1 rounded-full font-medium ${
                                     request.status === "FULFILLED"
-                                      ? "bg-green-100 text-green-700"
+                                      ? "bg-green-100 text-green-800"
                                       : request.status === "APPROVED"
-                                      ? "bg-blue-100 text-blue-700"
+                                      ? "bg-blue-100 text-blue-800"
                                       : request.status === "REJECTED"
-                                      ? "bg-red-100 text-red-700"
+                                      ? "bg-red-100 text-red-800"
                                       : "bg-gray-100 text-gray-700"
                                   }`}>
                                     {request.status}
@@ -3318,16 +3318,16 @@ function JobsPageContent() {
                                   <div className="flex-1">
                                     <div className="flex items-center gap-2 mb-1">
                                       <p className="font-semibold text-gray-900">{item.itemName}</p>
-                                      <span className="text-xs px-2 py-1 rounded-full font-medium bg-green-100 text-green-700">
+                                      <span className="text-xs px-2 py-1 rounded-full font-medium bg-green-100 text-green-800">
                                         Material Request
                                       </span>
                                       <span className={`text-xs px-2 py-1 rounded-full font-medium ${
                                         item.status === "FULFILLED"
-                                          ? "bg-green-100 text-green-700"
+                                          ? "bg-green-100 text-green-800"
                                           : item.status === "APPROVED"
-                                          ? "bg-blue-100 text-blue-700"
+                                          ? "bg-blue-100 text-blue-800"
                                           : item.status === "REJECTED"
-                                          ? "bg-red-100 text-red-700"
+                                          ? "bg-red-100 text-red-800"
                                           : "bg-gray-100 text-gray-700"
                                       }`}>
                                         {item.status}
@@ -3417,7 +3417,7 @@ function JobsPageContent() {
                         {currentQuotationId ? "Edit Quotation" : "Create Quotation"}
                       </h2>
                       {currentQuotationNumber && (
-                        <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">
+                        <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
                           {currentQuotationNumber}
                         </span>
                       )}

@@ -82,7 +82,7 @@ export default function LoginPage() {
         <div className="bg-white/98 backdrop-blur-md rounded-2xl shadow-xl p-8 sm:p-10 border border-white/30">
           <h1 className="text-3xl font-bold mb-8 text-center text-gray-900">Sign in</h1>
           {success && (
-            <div className="mb-4 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded text-sm">
+            <div className="mb-4 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded text-sm">
               ✅ {success}
             </div>
           )}
@@ -189,9 +189,9 @@ export default function LoginPage() {
                 error.includes("pending approval") || error.includes("waiting for approval")
                   ? "bg-yellow-50 border border-yellow-200 text-yellow-800"
                   : error.includes("rejected")
-                  ? "bg-red-50 border border-red-200 text-red-700"
+                  ? "bg-red-50 border border-red-200 text-red-800"
                   : error.includes("verify")
-                  ? "bg-blue-50 border border-blue-200 text-blue-700"
+                  ? "bg-blue-50 border border-blue-200 text-blue-800"
                   : "bg-red-50 border border-red-200 text-red-700"
               }`}>
                 {error.includes("pending approval") || error.includes("waiting for approval") ? (

@@ -185,7 +185,7 @@ export default function InvoicesPage() {
 			</header>
 
 			<div className="max-w-full mx-auto px-24 py-8">
-				{error && <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">{error}</div>}
+				{error && <div className="mb-6 bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">{error}</div>}
 
 				{/* Statistics Cards */}
 				<div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">

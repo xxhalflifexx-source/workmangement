@@ -508,7 +508,7 @@ export default function IncidentReportsPage() {
       {/* Error message */}
       {error && (
         <div className="w-full px-4 sm:px-6 lg:px-8 mb-4">
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex justify-between items-center">
+          <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg flex justify-between items-center">
             <span>{error}</span>
             <button onClick={() => setError(null)} className="text-red-900 font-bold hover:bg-red-100 rounded px-2">
               ×
@@ -520,7 +520,7 @@ export default function IncidentReportsPage() {
       {/* Loading indicator */}
       {loading && initialized && (
         <div className="w-full px-4 sm:px-6 lg:px-8 mb-4">
-          <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded-lg">
+          <div className="bg-blue-50 border border-blue-200 text-blue-800 px-4 py-3 rounded-lg">
             Loading...
           </div>
         </div>
@@ -702,7 +702,7 @@ export default function IncidentReportsPage() {
         <form onSubmit={handleCreate} className="space-y-5">
               {/* Error in modal */}
               {error && (
-                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+                <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg text-sm">
                   {error}
                 </div>
               )}
@@ -882,7 +882,7 @@ export default function IncidentReportsPage() {
         {isEditing ? (
           <form onSubmit={handleUpdate} className="space-y-5">
                 {error && (
-                  <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+                  <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg text-sm">
                     {error}
                   </div>
                 )}

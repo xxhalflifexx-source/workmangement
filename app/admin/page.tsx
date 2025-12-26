@@ -299,9 +299,9 @@ export default function AdminPage() {
   const getRoleBadgeColor = useCallback((role: string) => {
     switch (role) {
       case "ADMIN":
-        return "bg-red-100 text-red-700";
+        return "bg-red-100 text-red-800";
       case "MANAGER":
-        return "bg-blue-100 text-blue-700";
+        return "bg-blue-100 text-blue-800";
       default:
         return "bg-gray-100 text-gray-700";
     }
@@ -414,12 +414,12 @@ export default function AdminPage() {
       <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-24 py-6 sm:py-8">
         {/* Status Messages */}
         {error && (
-          <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+          <div className="mb-6 bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
             {error}
           </div>
         )}
         {success && (
-          <div className="mb-6 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg">
+          <div className="mb-6 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg">
             ✓ {success}
           </div>
         )}
