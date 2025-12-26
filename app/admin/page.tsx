@@ -604,18 +604,18 @@ export default function AdminPage() {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         {user.isVerified ? (
-                          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 leading-tight">
                             ✓ Verified
                           </span>
                         ) : (
-                          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 leading-tight">
                             ⚠ Unverified
                           </span>
                         )}
                         <select
                           value={user.status || "APPROVED"}
                           onChange={(e) => handleStatusChange(user.id, e.target.value)}
-                          className={`px-2.5 py-1 rounded-full text-xs font-medium border ${
+                          className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border appearance-none h-auto leading-tight ${
                             (user.status || "APPROVED") === "APPROVED"
                               ? "bg-green-50 text-green-700 border-green-200"
                               : (user.status || "APPROVED") === "PENDING"
@@ -805,11 +805,11 @@ export default function AdminPage() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-center">
                           {user.isVerified ? (
-                            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 leading-tight">
                               ✓ Verified
                             </span>
                           ) : (
-                            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 leading-tight">
                               ⚠ Unverified
                             </span>
                           )}
@@ -818,7 +818,7 @@ export default function AdminPage() {
                           <select
                             value={user.status || "APPROVED"}
                             onChange={(e) => handleStatusChange(user.id, e.target.value)}
-                            className={`px-2.5 py-1 rounded-full text-xs font-medium border ${
+                            className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border appearance-none h-auto leading-tight ${
                               (user.status || "APPROVED") === "APPROVED"
                                 ? "bg-green-50 text-green-700 border-green-200"
                                 : (user.status || "APPROVED") === "PENDING"
