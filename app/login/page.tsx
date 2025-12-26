@@ -78,9 +78,9 @@ export default function LoginPage() {
       <div className="absolute inset-0 bg-black bg-opacity-40 z-[2]"></div>
 
       {/* Login Card */}
-      <div className="relative z-10 w-full max-w-sm mx-4">
-        <div className="bg-white/95 backdrop-blur-sm rounded-xl shadow-2xl p-8 border border-white/20">
-          <h1 className="text-3xl font-bold mb-6 text-center text-gray-900">Sign in</h1>
+      <div className="relative z-10 w-full max-w-md mx-4">
+        <div className="bg-white/98 backdrop-blur-md rounded-2xl shadow-xl p-8 sm:p-10 border border-white/30">
+          <h1 className="text-3xl font-bold mb-8 text-center text-gray-900">Sign in</h1>
           {success && (
             <div className="mb-4 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded text-sm">
               ✅ {success}
@@ -170,7 +170,7 @@ export default function LoginPage() {
                 type="email"
                 placeholder="Email"
                 disabled={loading}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all min-h-[44px] disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all min-h-[44px] disabled:opacity-50 disabled:cursor-not-allowed bg-white"
                 required
               />
             </div>
@@ -180,7 +180,7 @@ export default function LoginPage() {
                 type="password"
                 placeholder="Password"
                 disabled={loading}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all min-h-[44px] disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all min-h-[44px] disabled:opacity-50 disabled:cursor-not-allowed bg-white"
                 required
               />
             </div>
@@ -213,7 +213,7 @@ export default function LoginPage() {
             <button 
               type="submit"
               disabled={loading}
-              className="w-full px-4 py-3 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors shadow-md min-h-[44px] disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full px-4 py-3 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all shadow-sm hover:shadow-md min-h-[44px] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-blue-600"
             >
               {loading ? "Signing in..." : "Sign In"}
             </button>

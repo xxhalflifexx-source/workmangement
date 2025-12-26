@@ -55,24 +55,24 @@ export default function UserAccessControlContent({
   }
 
   return (
-    <div className="p-6">
+    <div className="p-6 sm:p-8">
       <div className="overflow-x-auto -mx-4 sm:mx-0">
         <div className="inline-block min-w-full align-middle px-4 sm:px-0">
           <table className="min-w-full divide-y divide-gray-200 table-fixed">
-          <thead className="bg-gray-50">
+          <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
-              <th className="w-[20%] px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="w-[20%] px-6 py-3.5 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                 Employee
               </th>
               {modules.map((module) => (
                 <th
                   key={module}
-                  className="w-[9%] px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  className="w-[9%] px-4 py-3.5 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider"
                 >
                   {moduleNames[module]}
                 </th>
               ))}
-              <th className="w-[8%] px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="w-[8%] px-6 py-3.5 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">
                 Actions
               </th>
             </tr>
@@ -90,7 +90,7 @@ export default function UserAccessControlContent({
                 const hasChanges = JSON.stringify(userPermissions) !== JSON.stringify(user.permissions);
 
                 return (
-                  <tr key={user.id} className="hover:bg-gray-50">
+                  <tr key={user.id} className="hover:bg-gray-50/50 transition-colors duration-150">
                     <td className="w-[20%] px-6 py-4 whitespace-nowrap">
                       <div>
                         <div className="text-sm font-medium text-gray-900">
@@ -123,11 +123,11 @@ export default function UserAccessControlContent({
                       <button
                         onClick={() => onSave(user.id)}
                         disabled={saving[user.id] || !hasChanges}
-                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors min-h-[44px] ${
+                        className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all shadow-sm min-h-[44px] ${
                           hasChanges
-                            ? "bg-blue-600 text-white hover:bg-blue-700"
-                            : "bg-gray-200 text-gray-500 cursor-not-allowed"
-                        } disabled:opacity-50 disabled:cursor-not-allowed`}
+                            ? "bg-blue-600 text-white hover:bg-blue-700 hover:shadow-md"
+                            : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                        } disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-gray-100 disabled:hover:shadow-sm`}
                       >
                         {saving[user.id] ? "Saving..." : "Save"}
                       </button>

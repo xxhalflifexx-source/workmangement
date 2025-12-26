@@ -466,8 +466,8 @@ export default function AdminPage() {
 
         {/* User Management Tab */}
         {activeTab === "users" && (
-          <div className="bg-white rounded-xl shadow border border-gray-200">
-            <div className="px-6 py-4 border-b border-gray-200 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200/60">
+            <div className="px-6 sm:px-8 py-5 border-b border-gray-200 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div>
               <h2 className="text-xl font-semibold text-gray-900">User Accounts</h2>
               <p className="text-sm text-gray-500 mt-1">
@@ -480,12 +480,12 @@ export default function AdminPage() {
                   value={userSearch}
                   onChange={(e) => setUserSearch(e.target.value)}
                   placeholder="Search by name, email, or role..."
-                  className="border border-gray-300 rounded-lg px-3 py-2.5 sm:py-1.5 text-sm w-full sm:w-56 min-h-[44px]"
+                  className="border border-gray-300 rounded-xl px-4 py-2.5 sm:py-2 text-sm w-full sm:w-64 min-h-[44px] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white"
                 />
                 <button
                   type="button"
                   onClick={() => setUserSearch(userSearch.trim())}
-                  className="px-4 py-2.5 sm:py-1.5 rounded-lg bg-gray-100 text-sm font-medium text-gray-700 border border-gray-300 hover:bg-gray-200 min-h-[44px] sm:min-h-0"
+                  className="px-4 py-2.5 sm:py-2 rounded-xl bg-gray-100 text-sm font-semibold text-gray-700 border border-gray-300 hover:bg-gray-200 hover:shadow-sm transition-all min-h-[44px] sm:min-h-0"
                 >
                   Search
                 </button>
@@ -642,13 +642,13 @@ export default function AdminPage() {
                     <div className="flex gap-2 pt-2">
                       <button
                         onClick={() => setShowDeleteConfirm(user.id)}
-                        className="flex-1 px-4 py-2.5 text-sm font-medium text-red-600 border border-red-300 rounded-lg hover:bg-red-50 min-h-[44px]"
+                        className="flex-1 px-4 py-2.5 text-sm font-semibold text-red-600 border border-red-300 rounded-xl hover:bg-red-50 hover:shadow-sm transition-all min-h-[44px]"
                       >
                         Delete
                       </button>
                       <button
                         onClick={() => handleResetPassword(user.id)}
-                        className="flex-1 px-4 py-2.5 text-sm font-medium text-blue-600 border border-blue-300 rounded-lg hover:bg-blue-50 min-h-[44px]"
+                        className="flex-1 px-4 py-2.5 text-sm font-semibold text-blue-600 border border-blue-300 rounded-xl hover:bg-blue-50 hover:shadow-sm transition-all min-h-[44px]"
                       >
                         Reset PW
                       </button>
@@ -662,36 +662,36 @@ export default function AdminPage() {
             <div className="hidden md:block overflow-x-auto -mx-4 sm:mx-0">
               <div className="inline-block min-w-full align-middle px-4 sm:px-0">
                 <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gradient-to-r from-indigo-600 to-blue-600">
+                <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
-                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap">
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap">
                       User
                     </th>
-                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap">
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap">
                       Role
                     </th>
-                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap">
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap">
                       Gender
                     </th>
-                    <th className="px-4 sm:px-6 py-4 text-center text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap">
+                    <th className="px-4 sm:px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap">
                       Age / Birth&nbsp;Month
                     </th>
-                    <th className="px-4 sm:px-6 py-4 text-center text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap">
+                    <th className="px-4 sm:px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap">
                       Hourly Rate
                     </th>
-                    <th className="px-4 sm:px-6 py-4 text-center text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap">
+                    <th className="px-4 sm:px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap">
                       Email&nbsp;Verified
                     </th>
-                    <th className="px-4 sm:px-6 py-4 text-center text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap">
+                    <th className="px-4 sm:px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap">
                       Approval&nbsp;Status
                     </th>
-                    <th className="px-4 sm:px-6 py-4 text-center text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap">
+                    <th className="px-4 sm:px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap">
                       Activity
                     </th>
-                    <th className="px-4 sm:px-6 py-4 text-center text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap">
+                    <th className="px-4 sm:px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap">
                       Joined
                     </th>
-                    <th className="px-4 sm:px-6 py-4 text-right text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap">
+                    <th className="px-4 sm:px-6 py-4 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap">
                       Actions
                     </th>
                   </tr>
@@ -705,7 +705,7 @@ export default function AdminPage() {
                     </tr>
                   ) : (
                   filteredUsers.map((user) => (
-                      <tr key={user.id} className="hover:bg-gray-50">
+                      <tr key={user.id} className="hover:bg-gray-50/50 transition-colors duration-150">
                         <td className="px-6 py-4">
                           <div className="flex items-center min-w-0">
                             <div className="flex-shrink-0 h-10 w-10 rounded-full bg-red-100 flex items-center justify-center">
@@ -1024,7 +1024,7 @@ export default function AdminPage() {
               <div className="flex justify-end pt-6 border-t border-gray-200">
                 <button
                   type="submit"
-                  className="w-full sm:w-auto px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium min-h-[44px]"
+                  className="w-full sm:w-auto px-6 py-3 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-all shadow-sm hover:shadow-md font-semibold min-h-[44px]"
                 >
                   Save Company Settings
                 </button>
@@ -1082,7 +1082,7 @@ export default function AdminPage() {
                       }
                       setJobNumberSaving(false);
                     }}
-                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium disabled:bg-gray-300 disabled:cursor-not-allowed"
+                    className="px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-all shadow-sm hover:shadow-md font-semibold disabled:bg-gray-300 disabled:cursor-not-allowed disabled:hover:bg-gray-300 disabled:hover:shadow-sm"
                   >
                     {jobNumberSaving ? "Saving..." : "Save"}
                   </button>
@@ -1109,10 +1109,10 @@ export default function AdminPage() {
 
         {/* User Access Control Tab */}
         {activeTab === "user-access" && isAdmin && (
-          <div className="bg-white rounded-xl shadow border border-gray-200">
-            <div className="px-6 py-4 border-b border-gray-200">
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200/60">
+            <div className="px-6 sm:px-8 py-5 border-b border-gray-200">
               <h2 className="text-xl font-semibold text-gray-900">User Access Control</h2>
-              <p className="text-sm text-gray-500 mt-1">
+              <p className="text-sm text-gray-500 mt-2">
                 Manage module access permissions for employees. Toggle permissions and click "Save" to apply changes.
               </p>
             </div>
@@ -1184,13 +1184,13 @@ export default function AdminPage() {
             <div className="flex flex-col sm:flex-row gap-3">
               <button
                 onClick={() => setShowDeleteConfirm(null)}
-                className="flex-1 px-4 py-3 sm:py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors min-h-[44px] font-medium"
+                className="flex-1 px-4 py-3 sm:py-2 border border-gray-300 rounded-xl hover:bg-gray-50 hover:shadow-sm transition-all min-h-[44px] font-semibold"
               >
                 Cancel
               </button>
               <button
                 onClick={() => handleDeleteUser(showDeleteConfirm)}
-                className="flex-1 px-4 py-3 sm:py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium min-h-[44px]"
+                className="flex-1 px-4 py-3 sm:py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-all shadow-sm hover:shadow-md font-semibold min-h-[44px]"
               >
                 Delete User
               </button>
@@ -1232,13 +1232,13 @@ export default function AdminPage() {
             <div className="flex flex-col sm:flex-row gap-3">
               <button
                 onClick={handleRoleChangeCancel}
-                className="flex-1 px-4 py-3 sm:py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors min-h-[44px] font-medium"
+                className="flex-1 px-4 py-3 sm:py-2 border border-gray-300 rounded-xl hover:bg-gray-50 hover:shadow-sm transition-all min-h-[44px] font-semibold"
               >
                 Cancel
               </button>
               <button
                 onClick={handleRoleChangeConfirm}
-                className="flex-1 px-4 py-3 sm:py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium min-h-[44px]"
+                className="flex-1 px-4 py-3 sm:py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all shadow-sm hover:shadow-md font-semibold min-h-[44px]"
               >
                 Confirm
               </button>
