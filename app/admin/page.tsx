@@ -615,7 +615,7 @@ export default function AdminPage() {
                         <select
                           value={user.status || "APPROVED"}
                           onChange={(e) => handleStatusChange(user.id, e.target.value)}
-                          className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold appearance-none leading-tight ${
+                          className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800 leading-tight appearance-none ${
                             (user.status || "APPROVED") === "APPROVED"
                               ? "bg-green-100 text-green-800"
                               : (user.status || "APPROVED") === "PENDING"
@@ -819,7 +819,7 @@ export default function AdminPage() {
                           <select
                             value={user.status || "APPROVED"}
                             onChange={(e) => handleStatusChange(user.id, e.target.value)}
-                            className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold appearance-none leading-tight ${
+                            className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800 leading-tight appearance-none ${
                               (user.status || "APPROVED") === "APPROVED"
                                 ? "bg-green-100 text-green-800"
                                 : (user.status || "APPROVED") === "PENDING"
