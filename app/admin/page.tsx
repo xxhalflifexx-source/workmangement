@@ -528,10 +528,10 @@ export default function AdminPage() {
                           <option value="ADMIN">ADMIN</option>
                         </select>
                       ) : (
-                        <span className={`px-3 py-2 text-xs font-semibold rounded-full ${getRoleBadgeColor(
+                        <span className={`px-2.5 py-1 text-xs font-semibold rounded-full ${getRoleBadgeColor(
                           user.role
-                        )}`}>
-                          {user.role}
+                        )}`} style={{ lineHeight: '1.25rem', height: '22px' }}>
+                          {user.role === "EMPLOYEE" ? "Employee" : user.role === "MANAGER" ? "Manager" : "Admin"}
                         </span>
                       )}
                     </div>
@@ -544,7 +544,7 @@ export default function AdminPage() {
                           onChange={(e) => handleGenderChange(user.id, e.target.value)}
                           className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all min-h-[44px]"
                         >
-                          <option value="">Not specified</option>
+                          <option value="">Not Specified</option>
                           <option value="Male">Male</option>
                           <option value="Female">Female</option>
                           <option value="Other">Other</option>
@@ -566,7 +566,7 @@ export default function AdminPage() {
                               }
                             }}
                             placeholder="0.00"
-                            className="flex-1 px-2 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-red-500 focus:border-red-500 min-h-[44px]"
+                            className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all min-h-[44px]"
                           />
                         </div>
                       </div>
