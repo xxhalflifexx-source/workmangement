@@ -318,8 +318,8 @@ setLoading(false);
 
     if (isOverdue) {
       return (
-        <span className="px-2 py-1 rounded text-xs font-semibold bg-red-100 text-red-700">
-          OVERDUE
+        <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800">
+          Overdue
         </span>
       );
     }
@@ -327,26 +327,26 @@ setLoading(false);
     switch (invoice.status) {
       case "PAID":
         return (
-          <span className="px-2 py-1 rounded text-xs font-semibold bg-green-100 text-green-700">
-            PAID
+          <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">
+            Paid
           </span>
         );
       case "SENT":
         return (
-          <span className="px-2 py-1 rounded text-xs font-semibold bg-blue-100 text-blue-700">
-            PENDING
+          <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800">
+            Pending
           </span>
         );
       case "DRAFT":
         return (
-          <span className="px-2 py-1 rounded text-xs font-semibold bg-gray-100 text-gray-700">
-            DRAFT
+          <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700">
+            Draft
           </span>
         );
       default:
         return (
-          <span className="px-2 py-1 rounded text-xs font-semibold bg-gray-100 text-gray-700">
-            {invoice.status}
+          <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700">
+            {invoice.status.charAt(0) + invoice.status.slice(1).toLowerCase().replace(/_/g, " ")}
           </span>
         );
     }

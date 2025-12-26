@@ -86,24 +86,42 @@ export default function JobRow({
   const getStatusColor = (status: string) => {
     switch (status) {
       case "COMPLETED":
-        return "bg-emerald-50 text-emerald-700 border border-emerald-200";
+        return "bg-green-100 text-green-800";
       case "REWORK":
-        return "bg-amber-50 text-amber-700 border border-amber-200";
+        return "bg-yellow-100 text-yellow-800";
       case "AWAITING_QC":
-        return "bg-indigo-50 text-indigo-700 border border-indigo-200";
+        return "bg-blue-100 text-blue-800";
       case "IN_PROGRESS":
-        return "bg-blue-50 text-blue-700 border border-blue-200";
+        return "bg-blue-100 text-blue-800";
       case "CANCELLED":
-        return "bg-red-50 text-red-700 border border-red-200";
+        return "bg-red-100 text-red-800";
       case "NOT_STARTED":
-        return "bg-slate-50 text-slate-700 border border-slate-200";
+        return "bg-gray-100 text-gray-700";
       default:
-        return "bg-gray-50 text-gray-700 border border-gray-200";
+        return "bg-gray-100 text-gray-700";
     }
   };
 
-  const statusDisplay =
-    job.status === "AWAITING_QC" ? "Submit to QC" : job.status.replace("_", " ");
+  const getStatusDisplay = (status: string) => {
+    switch (status) {
+      case "AWAITING_QC":
+        return "Awaiting QC";
+      case "IN_PROGRESS":
+        return "In Progress";
+      case "NOT_STARTED":
+        return "Not Started";
+      case "COMPLETED":
+        return "Completed";
+      case "REWORK":
+        return "Rework";
+      case "CANCELLED":
+        return "Cancelled";
+      default:
+        return status.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
+    }
+  };
+
+  const statusDisplay = getStatusDisplay(job.status);
 
   // Get all photos for this job
   const allPhotos = getAllJobPhotos(job);
@@ -161,7 +179,7 @@ export default function JobRow({
         </td>
         <td className="px-4 sm:px-6 py-4">
           <span
-            className={`inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-semibold tracking-wide ${getStatusColor(
+            className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${getStatusColor(
               job.status
             )}`}
           >

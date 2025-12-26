@@ -251,12 +251,12 @@ export default function HRPage() {
       case "WORKING":
         return {
           label: "Working",
-          className: "bg-green-100 text-green-700 border-green-200",
+          className: "bg-green-100 text-green-800 border-green-200",
         };
       case "ON_BREAK":
         return {
           label: "On Break",
-          className: "bg-orange-100 text-orange-700 border-orange-200",
+          className: "bg-yellow-100 text-yellow-800 border-yellow-200",
         };
       default:
         return {
@@ -529,10 +529,10 @@ export default function HRPage() {
                         </div>
                       </div>
                       <div className="flex flex-col items-end gap-2 flex-shrink-0">
-                        <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getRoleBadgeColor(user.role)}`}>
-                          {user.role}
+                        <span className={`px-2.5 py-1 inline-flex items-center text-xs font-semibold rounded-full ${getRoleBadgeColor(user.role)}`}>
+                          {user.role === "EMPLOYEE" ? "Employee" : user.role === "MANAGER" ? "Manager" : "Admin"}
                         </span>
-                        <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full border ${statusBadge.className}`}>
+                        <span className={`px-2.5 py-1 inline-flex items-center text-xs font-semibold rounded-full border ${statusBadge.className}`}>
                           {statusBadge.label}
                         </span>
                       </div>
@@ -620,12 +620,12 @@ export default function HRPage() {
                           </div>
                         </td>
                         <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
-                          <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getRoleBadgeColor(user.role)}`}>
-                            {user.role}
+                          <span className={`px-2.5 py-1 inline-flex items-center text-xs font-semibold rounded-full ${getRoleBadgeColor(user.role)}`}>
+                            {user.role === "EMPLOYEE" ? "Employee" : user.role === "MANAGER" ? "Manager" : "Admin"}
                           </span>
                         </td>
                         <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
-                          <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full border ${statusBadge.className}`}>
+                          <span className={`px-2.5 py-1 inline-flex items-center text-xs font-semibold rounded-full border ${statusBadge.className}`}>
                             {statusBadge.label}
                           </span>
                         </td>

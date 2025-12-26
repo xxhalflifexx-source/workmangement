@@ -404,7 +404,7 @@ export default function AdminPage() {
           </div>
           <Link
             href="/dashboard"
-            className="w-full sm:w-auto min-h-[44px] flex items-center justify-center px-4 py-2 border border-gray-400 rounded-lg hover:bg-gray-800 transition-colors text-sm font-medium text-white"
+            className="w-full sm:w-auto min-h-[44px] flex items-center justify-center px-4 py-2 border border-gray-400 rounded-xl hover:bg-gray-800 transition-all shadow-sm hover:shadow-md text-sm font-semibold text-white"
           >
             ← Back to Dashboard
           </Link>
@@ -469,10 +469,10 @@ export default function AdminPage() {
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200/60">
             <div className="px-6 sm:px-8 py-5 border-b border-gray-200 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div>
-              <h2 className="text-xl font-semibold text-gray-900">User Accounts</h2>
-              <p className="text-sm text-gray-500 mt-1">
-                  Manage user accounts, login access, roles, and approvals
-                </p>
+              <h2 className="text-xl font-semibold text-gray-900">User Management</h2>
+              <p className="text-sm text-gray-500 mt-2">
+                Manage user accounts, login access, roles, and approvals.
+              </p>
               </div>
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
                 <input
@@ -519,7 +519,7 @@ export default function AdminPage() {
                         <select
                           value={user.role}
                           onChange={(e) => handleRoleChange(user.id, e.target.value)}
-                          className={`px-3 py-2 text-xs font-semibold rounded-full ${getRoleBadgeColor(
+                          className={`px-2.5 py-1 text-xs font-semibold rounded-full ${getRoleBadgeColor(
                             user.role
                           )} border-none outline-none cursor-pointer min-h-[44px]`}
                         >
@@ -542,7 +542,7 @@ export default function AdminPage() {
                         <select
                           value={user.gender || ""}
                           onChange={(e) => handleGenderChange(user.id, e.target.value)}
-                          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-gray-50 min-h-[44px]"
+                          className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all min-h-[44px]"
                         >
                           <option value="">Not specified</option>
                           <option value="Male">Male</option>
@@ -582,7 +582,7 @@ export default function AdminPage() {
                             : ""
                         }
                         onChange={(e) => handleBirthDateChange(user.id, e.target.value)}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm min-h-[44px]"
+                        className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all min-h-[44px]"
                       />
                       {user.birthDate && (
                         <span className="text-xs text-gray-500 mt-1 block">
@@ -604,11 +604,11 @@ export default function AdminPage() {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         {user.isVerified ? (
-                          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 leading-tight">
+                          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800 leading-tight">
                             ✓ Verified
                           </span>
                         ) : (
-                          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 leading-tight">
+                          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800 leading-tight">
                             ⚠ Unverified
                           </span>
                         )}
@@ -650,7 +650,7 @@ export default function AdminPage() {
                         onClick={() => handleResetPassword(user.id)}
                         className="flex-1 px-4 py-2.5 text-sm font-semibold text-blue-600 border border-blue-300 rounded-xl hover:bg-blue-50 hover:shadow-sm transition-all min-h-[44px]"
                       >
-                        Reset PW
+                        Reset Password
                       </button>
                     </div>
                   </div>
@@ -726,19 +726,19 @@ export default function AdminPage() {
                           <select
                             value={user.role}
                             onChange={(e) => handleRoleChange(user.id, e.target.value)}
-                            className={`px-2 py-1 text-xs font-semibold rounded-full ${getRoleBadgeColor(
+                            className={`px-2.5 py-1 text-xs font-semibold rounded-full ${getRoleBadgeColor(
                               user.role
                             )} border-none outline-none cursor-pointer`}
                           >
-                            <option value="EMPLOYEE">EMPLOYEE</option>
-                            <option value="MANAGER">MANAGER</option>
-                            <option value="ADMIN">ADMIN</option>
+                            <option value="EMPLOYEE">Employee</option>
+                            <option value="MANAGER">Manager</option>
+                            <option value="ADMIN">Admin</option>
                           </select>
                           ) : (
-                            <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getRoleBadgeColor(
+                            <span className={`px-2.5 py-1 text-xs font-semibold rounded-full ${getRoleBadgeColor(
                               user.role
                             )}`}>
-                              {user.role}
+                              {user.role === "EMPLOYEE" ? "Employee" : user.role === "MANAGER" ? "Manager" : "Admin"}
                             </span>
                           )}
                         </td>
@@ -746,9 +746,9 @@ export default function AdminPage() {
                           <select
                             value={user.gender || ""}
                             onChange={(e) => handleGenderChange(user.id, e.target.value)}
-                            className="border border-gray-300 rounded-full px-2 py-1 text-xs bg-gray-50"
+                            className="border border-gray-300 rounded-xl px-3 py-2 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                           >
-                            <option value="">Not specified</option>
+                            <option value="">Not Specified</option>
                             <option value="Male">Male</option>
                             <option value="Female">Female</option>
                             <option value="Other">Other</option>
@@ -764,7 +764,7 @@ export default function AdminPage() {
                                   : ""
                               }
                               onChange={(e) => handleBirthDateChange(user.id, e.target.value)}
-                              className="border border-gray-300 rounded-lg px-2 py-1 text-xs"
+                              className="border border-gray-300 rounded-xl px-3 py-2 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                             />
                             <span className="text-[11px] text-gray-500">
                               {user.birthDate
@@ -798,7 +798,7 @@ export default function AdminPage() {
                                 }
                               }}
                               placeholder="0.00"
-                              className="w-20 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-red-500 focus:border-red-500 text-center"
+                              className="w-20 px-3 py-2 text-sm border border-gray-300 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-center"
                             />
                             <span className="text-xs text-gray-500">/hr</span>
                           </div>
@@ -853,7 +853,7 @@ export default function AdminPage() {
                             onClick={() => handleResetPassword(user.id)}
                             className="ml-3 text-blue-600 hover:text-blue-900 min-h-[44px] px-2"
                           >
-                            Reset PW
+                            Reset Password
                           </button>
                         </td>
                       </tr>
@@ -917,7 +917,7 @@ export default function AdminPage() {
                   />
                   <label
                     htmlFor="logoUploadInput"
-                    className={`px-4 py-2 rounded-lg text-sm font-medium min-h-[40px] cursor-pointer ${
+                    className={`px-4 py-2 rounded-xl text-sm font-semibold min-h-[40px] cursor-pointer transition-all ${
                       logoUploading
                         ? "bg-gray-200 text-gray-500"
                         : "bg-blue-600 text-white hover:bg-blue-700"
@@ -941,7 +941,7 @@ export default function AdminPage() {
                     type="text"
                     defaultValue={settings.companyName}
                     required
-                    className="w-full border border-gray-300 rounded-lg px-4 py-3 sm:py-2 focus:ring-2 focus:ring-red-500 focus:border-transparent min-h-[44px]"
+                    className="w-full border border-gray-300 rounded-xl px-4 py-3 sm:py-2 bg-white focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all min-h-[44px]"
                   />
                 </div>
 
@@ -953,7 +953,7 @@ export default function AdminPage() {
                     name="address"
                     type="text"
                     defaultValue={settings.address}
-                    className="w-full border border-gray-300 rounded-lg px-4 py-3 sm:py-2 focus:ring-2 focus:ring-red-500 focus:border-transparent min-h-[44px]"
+                    className="w-full border border-gray-300 rounded-xl px-4 py-3 sm:py-2 bg-white focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all min-h-[44px]"
                   />
                 </div>
 
@@ -963,7 +963,7 @@ export default function AdminPage() {
                     name="city"
                     type="text"
                     defaultValue={settings.city}
-                    className="w-full border border-gray-300 rounded-lg px-4 py-3 sm:py-2 focus:ring-2 focus:ring-red-500 focus:border-transparent min-h-[44px]"
+                    className="w-full border border-gray-300 rounded-xl px-4 py-3 sm:py-2 bg-white focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all min-h-[44px]"
                   />
                 </div>
 
@@ -974,7 +974,7 @@ export default function AdminPage() {
                       name="state"
                       type="text"
                       defaultValue={settings.state}
-                      className="w-full border border-gray-300 rounded-lg px-4 py-3 sm:py-2 focus:ring-2 focus:ring-red-500 focus:border-transparent min-h-[44px]"
+                      className="w-full border border-gray-300 rounded-xl px-4 py-3 sm:py-2 bg-white focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all min-h-[44px]"
                     />
                   </div>
                   <div>
@@ -985,7 +985,7 @@ export default function AdminPage() {
                       name="zipCode"
                       type="text"
                       defaultValue={settings.zipCode}
-                      className="w-full border border-gray-300 rounded-lg px-4 py-3 sm:py-2 focus:ring-2 focus:ring-red-500 focus:border-transparent min-h-[44px]"
+                      className="w-full border border-gray-300 rounded-xl px-4 py-3 sm:py-2 bg-white focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all min-h-[44px]"
                     />
                   </div>
                 </div>
@@ -996,7 +996,7 @@ export default function AdminPage() {
                     name="phone"
                     type="tel"
                     defaultValue={settings.phone}
-                    className="w-full border border-gray-300 rounded-lg px-4 py-3 sm:py-2 focus:ring-2 focus:ring-red-500 focus:border-transparent min-h-[44px]"
+                    className="w-full border border-gray-300 rounded-xl px-4 py-3 sm:py-2 bg-white focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all min-h-[44px]"
                   />
                 </div>
 
@@ -1006,7 +1006,7 @@ export default function AdminPage() {
                     name="email"
                     type="email"
                     defaultValue={settings.email}
-                    className="w-full border border-gray-300 rounded-lg px-4 py-3 sm:py-2 focus:ring-2 focus:ring-red-500 focus:border-transparent min-h-[44px]"
+                    className="w-full border border-gray-300 rounded-xl px-4 py-3 sm:py-2 bg-white focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all min-h-[44px]"
                   />
                 </div>
 
@@ -1016,7 +1016,7 @@ export default function AdminPage() {
                     name="website"
                     type="text"
                     defaultValue={settings.website}
-                    className="w-full border border-gray-300 rounded-lg px-4 py-3 sm:py-2 focus:ring-2 focus:ring-red-500 focus:border-transparent min-h-[44px]"
+                    className="w-full border border-gray-300 rounded-xl px-4 py-3 sm:py-2 bg-white focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all min-h-[44px]"
                   />
                 </div>
               </div>
@@ -1217,14 +1217,14 @@ export default function AdminPage() {
                 </div>
                 <div>
                   <span className="font-medium text-gray-700">Current Role:</span>{" "}
-                  <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getRoleBadgeColor(showRoleChangeConfirm.currentRole)}`}>
-                    {showRoleChangeConfirm.currentRole}
+                  <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${getRoleBadgeColor(showRoleChangeConfirm.currentRole)}`}>
+                    {showRoleChangeConfirm.currentRole === "EMPLOYEE" ? "Employee" : showRoleChangeConfirm.currentRole === "MANAGER" ? "Manager" : "Admin"}
                   </span>
                 </div>
                 <div>
                   <span className="font-medium text-gray-700">New Role:</span>{" "}
-                  <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getRoleBadgeColor(showRoleChangeConfirm.newRole)}`}>
-                    {showRoleChangeConfirm.newRole}
+                  <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${getRoleBadgeColor(showRoleChangeConfirm.newRole)}`}>
+                    {showRoleChangeConfirm.newRole === "EMPLOYEE" ? "Employee" : showRoleChangeConfirm.newRole === "MANAGER" ? "Manager" : "Admin"}
                   </span>
                 </div>
               </div>
