@@ -1189,7 +1189,13 @@ export async function saveJobPhotos(formData: FormData) {
   // Verify job exists and user has access
   const job = await prisma.job.findUnique({
     where: { id: jobId },
-    select: { assignedTo: true, status: true },
+    select: { 
+      assignedTo: true, 
+      status: true,
+      assignments: {
+        select: { userId: true }
+      }
+    },
   });
 
   if (!job) {
@@ -1201,9 +1207,13 @@ export async function saveJobPhotos(formData: FormData) {
     return { ok: false, error: "Cannot add photos to a job that has been submitted to QC" };
   }
 
-  // Employees can only save photos to their assigned jobs
+  // Employees can only save photos to their assigned jobs (check both old and new assignment systems)
   const userRole = (session.user as any).role;
-  if (userRole !== "ADMIN" && userRole !== "MANAGER" && job.assignedTo !== userId) {
+  const isAssignedViaOldSystem = job.assignedTo === userId;
+  const isAssignedViaNewSystem = job.assignments.some((assignment: any) => assignment.userId === userId);
+  const isAssigned = isAssignedViaOldSystem || isAssignedViaNewSystem;
+  
+  if (userRole !== "ADMIN" && userRole !== "MANAGER" && !isAssigned) {
     return { ok: false, error: "Unauthorized: You can only add photos to jobs assigned to you" };
   }
 
