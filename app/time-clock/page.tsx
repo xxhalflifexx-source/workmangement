@@ -571,6 +571,78 @@ export default function TimeClockPage() {
 
           </div>
         </div>
+
+        {/* My Assigned Jobs Panel */}
+        {assignedJobs.length > 0 && (
+          <div className="mt-6 bg-white rounded-xl shadow-lg p-4 sm:p-6 border border-gray-200">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                <span className="text-xl">📋</span>
+                My Assigned Jobs
+              </h2>
+              <Link
+                href="/jobs"
+                className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+              >
+                View All Jobs →
+              </Link>
+            </div>
+            <div className="space-y-3">
+              {assignedJobs.map((job) => (
+                <div
+                  key={job.id}
+                  className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors"
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                        job.status === "IN_PROGRESS" ? "bg-blue-100 text-blue-800" :
+                        job.status === "NOT_STARTED" ? "bg-gray-100 text-gray-800" :
+                        job.status === "AWAITING_QC" ? "bg-purple-100 text-purple-800" :
+                        job.status === "REWORK" ? "bg-orange-100 text-orange-800" :
+                        job.status === "COMPLETED" ? "bg-green-100 text-green-800" :
+                        "bg-gray-100 text-gray-800"
+                      }`}>
+                        {job.status.replace(/_/g, " ")}
+                      </span>
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                        job.priority === "URGENT" ? "bg-red-100 text-red-800" :
+                        job.priority === "HIGH" ? "bg-orange-100 text-orange-800" :
+                        job.priority === "MEDIUM" ? "bg-yellow-100 text-yellow-800" :
+                        "bg-green-100 text-green-800"
+                      }`}>
+                        {job.priority}
+                      </span>
+                    </div>
+                    <h3 className="font-semibold text-gray-900 truncate">{job.title}</h3>
+                    {job.description && (
+                      <p className="text-sm text-gray-600 truncate">{job.description}</p>
+                    )}
+                    {job.dueDate && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        Due: {formatDate(job.dueDate)}
+                      </p>
+                    )}
+                  </div>
+                  <div className="ml-3 flex-shrink-0">
+                    <button
+                      onClick={() => {
+                        if (!isClockedIn) {
+                          setSelectedJobId(job.id);
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }
+                      }}
+                      disabled={isClockedIn || job.status === "COMPLETED" || job.status === "AWAITING_QC"}
+                      className="px-3 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed min-h-[36px]"
+                    >
+                      {isClockedIn ? "Working" : "Clock In"}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Clock Out Confirmation Modal */}

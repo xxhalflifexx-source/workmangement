@@ -317,16 +317,8 @@ export async function getJobs(params: GetJobsParams = {}) {
   const ctx = await getOrgContext();
   if (!ctx.ok) return ctx;
 
-  // Base where clause for permissions
-  let baseWhere: any =
-      ctx.role === "ADMIN" || ctx.role === "MANAGER" || ctx.isSuperAdmin
-      ? {} // Admins/managers see all jobs in their org
-      : {
-          OR: [
-            { assignedTo: ctx.userId }, // Old single assignment
-            { assignments: { some: { userId: ctx.userId } } }, // New multiple assignments
-          ],
-        }; // Employees only see jobs assigned to them
+  // Base where clause - everyone sees all jobs in their organization
+  let baseWhere: any = {};
 
   // Apply organization filter (Super Admins see all orgs)
   // For backward compatibility: Also include jobs with null organizationId (legacy jobs)
