@@ -47,8 +47,8 @@ export async function checkModuleAccess(module: ModulePermission): Promise<boole
     return true;
   }
 
-  // Operations Common is visible to all authenticated users by default
-  if (module === "operationsCommon") {
+  // Operations Common and Incident Reports are visible to all authenticated users by default
+  if (module === "operationsCommon" || module === "incidentReports") {
     return true;
   }
 
