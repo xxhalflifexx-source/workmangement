@@ -174,21 +174,7 @@ export async function updateJob(jobId: string, formData: FormData) {
     return { ok: false, error: "Job not found" };
   }
 
-  // Check if user is assigned via JobAssignment
-  const userAssignment = await prisma.jobAssignment.findFirst({
-    where: { jobId, userId },
-  });
-
-  // Only creator, assigned user (via old or new system), managers, and admins can update
-  if (
-    job.createdBy !== userId &&
-    job.assignedTo !== userId &&
-    !userAssignment &&
-    userRole !== "MANAGER" &&
-    userRole !== "ADMIN"
-  ) {
-    return { ok: false, error: "Unauthorized" };
-  }
+  // All authenticated users can edit any job in their organization
 
   const data = {
     title: formData.get("title"),
