@@ -1998,23 +1998,40 @@ function JobsPageContent() {
                     </div>
                   </div>
 
-                  {/* Action Buttons - Same as desktop */}
-                  {canManage && (
-                    <div className="border-t border-gray-200 pt-3 mt-3">
-                      <div className="flex flex-wrap gap-2">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            openMaterialsAndExpensesModal(job);
-                          }}
-                          disabled={job.status === "AWAITING_QC" || job.status === "COMPLETED"}
-                          className="flex-1 min-w-[140px] px-3 py-2.5 text-xs bg-gradient-to-r from-emerald-50 to-rose-50 border-2 border-emerald-200 text-emerald-700 rounded-lg hover:from-emerald-100 hover:to-rose-100 hover:border-emerald-300 transition-all font-semibold disabled:bg-gray-100 disabled:border-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed min-h-[44px] flex items-center justify-center gap-1.5 shadow-sm"
-                          title={job.status === "AWAITING_QC" || job.status === "COMPLETED" ? "Job is locked" : "Materials & Expenses"}
-                        >
-                          <span>📦💵</span>
-                          <span className="hidden sm:inline">Materials & Expenses</span>
-                          <span className="sm:hidden">Materials</span>
-                        </button>
+                  {/* Action Buttons - Available to all users */}
+                  <div className="border-t border-gray-200 pt-3 mt-3">
+                    <div className="flex flex-wrap gap-2">
+                      {/* Materials & Expenses - Available to all users */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openMaterialsAndExpensesModal(job);
+                        }}
+                        disabled={job.status === "AWAITING_QC" || job.status === "COMPLETED"}
+                        className="flex-1 min-w-[140px] px-3 py-2.5 text-xs bg-gradient-to-r from-emerald-50 to-rose-50 border-2 border-emerald-200 text-emerald-700 rounded-lg hover:from-emerald-100 hover:to-rose-100 hover:border-emerald-300 transition-all font-semibold disabled:bg-gray-100 disabled:border-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed min-h-[44px] flex items-center justify-center gap-1.5 shadow-sm"
+                        title={job.status === "AWAITING_QC" || job.status === "COMPLETED" ? "Job is locked" : "Materials & Expenses"}
+                      >
+                        <span>📦💵</span>
+                        <span className="hidden sm:inline">Materials & Expenses</span>
+                        <span className="sm:hidden">Materials</span>
+                      </button>
+                      {/* History - Available to all users */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openActivityModal(job);
+                        }}
+                        disabled={job.status === "AWAITING_QC" || job.status === "COMPLETED"}
+                        className="flex-1 min-w-[140px] px-3 py-2.5 text-xs bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 text-blue-700 rounded-lg hover:from-blue-100 hover:to-indigo-100 hover:border-blue-300 transition-all font-semibold disabled:bg-gray-100 disabled:border-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed min-h-[44px] flex items-center justify-center gap-1.5 shadow-sm"
+                        title={job.status === "AWAITING_QC" || job.status === "COMPLETED" ? "Job is locked" : "View History"}
+                      >
+                        <span>📋</span>
+                        <span className="hidden sm:inline">History</span>
+                        <span className="sm:hidden">History</span>
+                      </button>
+                      {/* Manager/Admin only buttons */}
+                      {canManage && (
+                        <>
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -2026,18 +2043,6 @@ function JobsPageContent() {
                           <span>💰</span>
                           <span className="hidden sm:inline">Create Quotation</span>
                           <span className="sm:hidden">Quotation</span>
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            openActivityModal(job);
-                          }}
-                          className="flex-1 min-w-[140px] px-3 py-2.5 text-xs bg-gradient-to-r from-blue-50 to-cyan-50 border-2 border-blue-200 text-blue-700 rounded-lg hover:from-blue-100 hover:to-cyan-100 hover:border-blue-300 transition-all font-semibold min-h-[44px] flex items-center justify-center gap-1.5 shadow-sm"
-                          title="View Activity"
-                        >
-                          <span>📋</span>
-                          <span className="hidden sm:inline">Activity</span>
-                          <span className="sm:hidden">Activity</span>
                         </button>
                         <button
                           onClick={(e) => {
