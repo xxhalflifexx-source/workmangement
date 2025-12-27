@@ -2029,6 +2029,33 @@ function JobsPageContent() {
                         <span className="hidden sm:inline">History</span>
                         <span className="sm:hidden">History</span>
                       </button>
+                      {/* Photo Upload - Available to all users */}
+                      {job.status !== "AWAITING_QC" && job.status !== "COMPLETED" && (
+                        <>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            onChange={(e) => {
+                              e.stopPropagation();
+                              handleJobPhotoSelect(job.id, e);
+                            }}
+                            className="hidden"
+                            id={`photo-upload-mobile-card-${job.id}`}
+                            disabled={job.status === "AWAITING_QC" || job.status === "COMPLETED"}
+                          />
+                          <label
+                            htmlFor={`photo-upload-mobile-card-${job.id}`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="flex-1 min-w-[140px] px-3 py-2.5 text-xs bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 text-blue-700 rounded-lg hover:from-blue-100 hover:to-indigo-100 hover:border-blue-300 transition-all font-semibold min-h-[44px] flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
+                            title="Upload Photos"
+                          >
+                            <span>📷</span>
+                            <span className="hidden sm:inline">Upload Photos</span>
+                            <span className="sm:hidden">Photos</span>
+                          </label>
+                        </>
+                      )}
                       {/* Manager/Admin only buttons */}
                       {canManage && (
                         <>
@@ -2072,6 +2099,65 @@ function JobsPageContent() {
                         </>
                       )}
                     </div>
+                    
+                    {/* Photo Preview and Save Section - Show if photos are selected */}
+                    {(jobPhotoFiles[job.id] || []).length > 0 && (
+                      <div className="mt-3 pt-3 border-t border-gray-200">
+                        <p className="text-xs text-gray-600 mb-2">
+                          Selected: {(jobPhotoFiles[job.id] || []).length} photo(s)
+                        </p>
+                        <div className="grid grid-cols-3 gap-2 mb-3">
+                          {(jobPhotoFiles[job.id] || []).map((file, index) => (
+                            <div
+                              key={index}
+                              className="relative bg-gray-100 border border-gray-200 rounded p-1 flex flex-col items-center gap-1"
+                            >
+                              <div className="w-full h-20 bg-gray-200 rounded overflow-hidden">
+                                <img
+                                  src={URL.createObjectURL(file)}
+                                  alt={`Preview ${index + 1}`}
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  removeJobPhoto(job.id, index);
+                                }}
+                                type="button"
+                                className="text-red-500 hover:text-red-700 text-xs"
+                              >
+                                ✕ Remove
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleSavePhotos(job.id);
+                            }}
+                            disabled={savingPhotos[job.id]}
+                            className="flex-1 px-3 py-2 text-xs bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all font-semibold disabled:bg-gray-300 disabled:cursor-not-allowed min-h-[44px] flex items-center justify-center gap-1.5 shadow-sm"
+                          >
+                            {savingPhotos[job.id] ? "Saving..." : "💾 Save Photos"}
+                          </button>
+                          {onSubmitToQC && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleSubmitToQC(job.id);
+                              }}
+                              disabled={savingPhotos[job.id]}
+                              className="flex-1 px-3 py-2 text-xs bg-white border-2 border-indigo-600 text-indigo-600 rounded-lg hover:bg-indigo-50 transition-all font-semibold disabled:bg-gray-100 disabled:border-gray-300 disabled:text-gray-400 disabled:cursor-not-allowed min-h-[44px] flex items-center justify-center gap-1.5 shadow-sm"
+                            >
+                              ✓ Submit QC
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
