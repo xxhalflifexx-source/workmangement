@@ -765,11 +765,7 @@ function JobsPageContent() {
   };
 
   const openEditModal = (job: Job) => {
-    // Only ADMIN and MANAGER can edit jobs
-    if (!canManage) {
-      setError("You do not have permission to edit jobs. Only administrators and managers can edit job details.");
-      return;
-    }
+    // Employees can edit jobs they created or are assigned to (backend will verify)
     // Prevent editing jobs that are submitted to QC or completed
     if (job.status === "AWAITING_QC" || job.status === "COMPLETED") {
       setError("This job has been submitted to QC and cannot be edited until returned for rework.");
