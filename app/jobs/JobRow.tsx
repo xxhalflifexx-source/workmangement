@@ -674,6 +674,38 @@ export default function JobRow({
                       <span>Materials & Expenses</span>
                     </button>
                   )}
+                  {/* Photo Upload - Available to all users */}
+                  {job.status !== "AWAITING_QC" && job.status !== "COMPLETED" && onPhotoSelect && (
+                    <>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          onPhotoSelect(job.id, e);
+                        }}
+                        className="hidden"
+                        id={`photo-upload-actions-${job.id}`}
+                        disabled={job.status === "AWAITING_QC" || job.status === "COMPLETED"}
+                      />
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const fileInput = document.getElementById(`photo-upload-actions-${job.id}`) as HTMLInputElement;
+                          if (fileInput) {
+                            fileInput.click();
+                          }
+                        }}
+                        className="px-5 py-3 text-sm bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 text-blue-700 rounded-xl hover:from-blue-100 hover:to-indigo-100 hover:border-blue-300 transition-all font-semibold min-h-[44px] flex items-center justify-center gap-2 shadow-sm"
+                        title="Upload photos for this job"
+                      >
+                        <span className="text-base">📷</span>
+                        <span>Upload Photos</span>
+                      </button>
+                    </>
+                  )}
                   {canManage && onQuotation && (
                     <button
                       onClick={(e) => {
