@@ -2021,6 +2021,22 @@ function JobsPageContent() {
                         <span className="hidden sm:inline">History</span>
                         <span className="sm:hidden">History</span>
                       </button>
+                      {/* Submit to QC - Available to all users */}
+                      {job.status !== "AWAITING_QC" && job.status !== "COMPLETED" && job.status !== "CANCELLED" && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSubmitToQC(job.id);
+                          }}
+                          disabled={savingPhotos[job.id]}
+                          className="flex-1 min-w-[140px] px-3 py-2.5 text-xs bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all font-semibold disabled:bg-gray-300 disabled:cursor-not-allowed min-h-[44px] flex items-center justify-center gap-1.5 shadow-md"
+                          title="Submit job to QC"
+                        >
+                          <span>✓</span>
+                          <span className="hidden sm:inline">Job Completed / Send to QC</span>
+                          <span className="sm:hidden">Send to QC</span>
+                        </button>
+                      )}
                       {/* Photo Upload - Available to all users */}
                       {job.status !== "AWAITING_QC" && job.status !== "COMPLETED" && (
                         <>

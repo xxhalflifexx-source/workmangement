@@ -1241,11 +1241,7 @@ export async function submitJobPhotosToQC(formData: FormData) {
     return { ok: false, error: "Job not found" };
   }
 
-  // Employees can only submit their assigned jobs to QC
-  const userRole = (session.user as any).role;
-  if (userRole !== "ADMIN" && userRole !== "MANAGER" && job.assignedTo !== userId) {
-    return { ok: false, error: "Unauthorized: You can only submit jobs assigned to you" };
-  }
+  // All authenticated users can submit jobs to QC
 
   // Check if job is already submitted to QC
   if (job.status === "AWAITING_QC" || job.status === "COMPLETED") {
