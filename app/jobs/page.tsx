@@ -2245,16 +2245,8 @@ function JobsPageContent() {
 
         {(() => {
           const isLocked = !!(editingJob && (editingJob.status === "AWAITING_QC" || editingJob.status === "COMPLETED"));
-          const isEmployee = !canManage;
           return (
             <form onSubmit={handleSubmit} className="space-y-4" data-job-form>
-                    {isEmployee && (
-                      <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                        <p className="text-sm text-red-800 font-medium">
-                          ⚠️ You do not have permission to edit jobs. Only administrators and managers can edit job details.
-                        </p>
-                      </div>
-                    )}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Title *
@@ -2264,7 +2256,7 @@ function JobsPageContent() {
                     type="text"
                     defaultValue={editingJob?.title}
                     required
-                      disabled={isLocked || isEmployee}
+                      disabled={isLocked}
                       className="w-full border border-gray-300 rounded-lg px-4 py-3 text-base min-h-[44px] disabled:bg-gray-100 disabled:cursor-not-allowed"
                   />
                 </div>
@@ -2277,7 +2269,7 @@ function JobsPageContent() {
                     name="description"
                     defaultValue={editingJob?.description || ""}
                     rows={4}
-                      disabled={isLocked || isEmployee}
+                      disabled={isLocked}
                       className="w-full border border-gray-300 rounded-lg px-4 py-3 text-base min-h-[44px] disabled:bg-gray-100 disabled:cursor-not-allowed"
                   />
                 </div>
@@ -2291,7 +2283,7 @@ function JobsPageContent() {
                       name="status"
                   defaultValue={editingJob?.status || "NOT_STARTED"}
                       required
-                      disabled={isLocked || isEmployee}
+                      disabled={isLocked}
                       className="w-full border border-gray-300 rounded-lg px-4 py-3 text-base min-h-[44px] disabled:bg-gray-100 disabled:cursor-not-allowed"
                     >
                   <option value="NOT_STARTED">Not Started</option>
@@ -2311,7 +2303,7 @@ function JobsPageContent() {
                       name="priority"
                       defaultValue={editingJob?.priority || "MEDIUM"}
                       required
-                      disabled={isLocked || isEmployee}
+                      disabled={isLocked}
                       className="w-full border border-gray-300 rounded-lg px-4 py-3 text-base min-h-[44px] disabled:bg-gray-100 disabled:cursor-not-allowed"
                     >
                       <option value="LOW">Low</option>
@@ -2338,7 +2330,7 @@ function JobsPageContent() {
                                 newIds[index] = e.target.value;
                                 setAssignedWorkerIds(newIds);
                               }}
-                              disabled={isLocked || isEmployee}
+                              disabled={isLocked}
                               className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm sm:text-base disabled:bg-gray-100 disabled:cursor-not-allowed min-h-[44px]"
                             >
                               <option value="">Select worker...</option>
@@ -2355,7 +2347,7 @@ function JobsPageContent() {
                                   const newIds = assignedWorkerIds.filter((_, i) => i !== index);
                                   setAssignedWorkerIds(newIds.length > 0 ? newIds : [""]);
                                 }}
-                                disabled={isLocked || isEmployee}
+                                disabled={isLocked}
                                 className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg border border-red-300 disabled:opacity-50 disabled:cursor-not-allowed min-w-[44px] min-h-[44px] flex items-center justify-center text-lg font-bold"
                                 title="Remove worker"
                               >
@@ -2370,7 +2362,7 @@ function JobsPageContent() {
                             onClick={() => {
                               setAssignedWorkerIds([...assignedWorkerIds, ""]);
                             }}
-                            disabled={isLocked || isEmployee}
+                            disabled={isLocked}
                             className="w-full sm:w-auto px-4 py-2 text-sm sm:text-base bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed min-h-[44px] flex items-center justify-center gap-2 font-medium"
                           >
                             <span className="text-lg">+</span>
@@ -2382,7 +2374,7 @@ function JobsPageContent() {
                               const allUserIds = users.map(user => user.id);
                               setAssignedWorkerIds(allUserIds.length > 0 ? allUserIds : [""]);
                             }}
-                            disabled={isLocked || isEmployee || users.length === 0}
+                            disabled={isLocked || users.length === 0}
                             className="w-full sm:w-auto px-4 py-2 text-sm sm:text-base bg-gray-600 text-white rounded-lg hover:bg-gray-700 disabled:bg-gray-300 disabled:cursor-not-allowed min-h-[44px] flex items-center justify-center gap-2 font-medium"
                           >
                             <span>✓</span>
@@ -2456,7 +2448,7 @@ function JobsPageContent() {
                               // Also update the form field
                               e.currentTarget.value = e.target.value;
                             }}
-                            disabled={isLocked || isEmployee}
+                            disabled={isLocked}
                             className="w-full border border-gray-300 rounded-lg px-4 py-3 text-base min-h-[44px] disabled:bg-gray-100 disabled:cursor-not-allowed"
                           >
                             <option value="">No Customer</option>
@@ -2527,7 +2519,7 @@ function JobsPageContent() {
                           name="pricingType"
                           defaultValue={editingJob?.pricingType || "FIXED"}
                           required
-                          disabled={isLocked || isEmployee}
+                          disabled={isLocked}
                           className="w-full border border-gray-300 rounded-lg px-4 py-3 text-base min-h-[44px] disabled:bg-gray-100 disabled:cursor-not-allowed"
                         >
                           <option value="FIXED">Fixed Price</option>
@@ -2548,7 +2540,7 @@ function JobsPageContent() {
                             min="0"
                             defaultValue={editingJob?.estimatedPrice || ""}
                             placeholder="0.00"
-                            disabled={isLocked || isEmployee}
+                            disabled={isLocked}
                             className="w-full border border-gray-300 rounded-lg pl-8 pr-4 py-3 text-base min-h-[44px] disabled:bg-gray-100 disabled:cursor-not-allowed"
                           />
                         </div>
@@ -2569,7 +2561,7 @@ function JobsPageContent() {
                           min="0"
                           defaultValue={editingJob?.finalPrice || ""}
                           placeholder="0.00"
-                            disabled={isLocked || isEmployee}
+                            disabled={isLocked}
                             className="w-full border border-gray-300 rounded-lg pl-8 pr-4 py-3 text-base min-h-[44px] disabled:bg-gray-100 disabled:cursor-not-allowed"
                         />
                       </div>
@@ -2591,7 +2583,7 @@ function JobsPageContent() {
                             value={estimatedDurationValue}
                             onChange={(e) => setEstimatedDurationValue(e.target.value)}
                             placeholder="0"
-                            disabled={isLocked || isEmployee}
+                            disabled={isLocked}
                             className="col-span-2 border border-gray-300 rounded-lg px-3 py-2 text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
                           />
                           <select
@@ -2600,7 +2592,7 @@ function JobsPageContent() {
                             onChange={(e) =>
                               setEstimatedDurationUnit(e.target.value as any)
                             }
-                            disabled={isLocked || isEmployee}
+                            disabled={isLocked}
                             className="border border-gray-300 rounded-lg px-2 py-2 text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
                           >
                             <option value="HOURS">Hours</option>
@@ -2626,7 +2618,7 @@ function JobsPageContent() {
                     name="dueDate"
                     type="date"
                     defaultValue={editingJob?.dueDate ? new Date(editingJob.dueDate).toISOString().split("T")[0] : ""}
-                    disabled={isLocked || isEmployee}
+                            disabled={isLocked}
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 disabled:bg-gray-100 disabled:cursor-not-allowed"
                   />
                 </div>
@@ -2644,7 +2636,7 @@ function JobsPageContent() {
                   </button>
                   <button
                     type="submit"
-                    disabled={isLocked || isEmployee}
+                            disabled={isLocked}
                     className="flex-1 px-6 py-3 text-base sm:text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:bg-gray-300 disabled:cursor-not-allowed min-h-[44px] flex items-center justify-center"
                   >
                     {editingJob ? "Update Job" : "Create Job"}
