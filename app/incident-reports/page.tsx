@@ -89,19 +89,40 @@ function IncidentReportsPageContent() {
     setError(null);
     
     try {
-      const [reportsRes, jobsRes, employeesRes, daysRes] = await Promise.all([
+      console.log("[IncidentReports] About to call getDaysSinceLastAccident");
+      const daysPromise = getDaysSinceLastAccident();
+      console.log("[IncidentReports] Days promise created:", daysPromise);
+
+      // Use Promise.allSettled to handle individual promise failures
+      const results = await Promise.allSettled([
         getIncidentReports({
           status: (filters?.status || statusFilter || undefined) as IncidentStatus | undefined,
           severity: (filters?.severity || severityFilter || undefined) as IncidentSeverity | undefined,
         }),
         getJobsForIncident(),
         getEmployeesForIncident(),
-        getDaysSinceLastAccident(),
+        daysPromise,
       ]);
+
+      // Extract results from Promise.allSettled
+      const reportsRes = results[0].status === 'fulfilled' 
+        ? results[0].value 
+        : { ok: false, error: results[0].reason?.message || String(results[0].reason) };
+      const jobsRes = results[1].status === 'fulfilled' 
+        ? results[1].value 
+        : { ok: false, error: results[1].reason?.message || String(results[1].reason) };
+      const employeesRes = results[2].status === 'fulfilled' 
+        ? results[2].value 
+        : { ok: false, error: results[2].reason?.message || String(results[2].reason) };
+      const daysRes = results[3].status === 'fulfilled' 
+        ? results[3].value 
+        : { ok: false, error: results[3].reason?.message || String(results[3].reason) };
 
       console.log("[IncidentReports] Reports response:", reportsRes);
       console.log("[IncidentReports] Jobs response:", jobsRes);
       console.log("[IncidentReports] Employees response:", employeesRes);
+      console.log("[IncidentReports] Days counter result:", results[3]);
+      console.log("[IncidentReports] Days counter response:", daysRes);
 
       if (reportsRes.ok && reportsRes.reports) {
         setReports(reportsRes.reports as IncidentReportWithRelations[]);
@@ -123,16 +144,19 @@ function IncidentReportsPageContent() {
         console.error("[IncidentReports] Failed to load employees:", employeesRes.error);
       }
 
-      console.log("[IncidentReports] Days counter response:", daysRes);
       if (daysRes.ok) {
         setDaysSinceLastAccident(daysRes.days);
         console.log("[IncidentReports] Days since last accident:", daysRes.days);
       } else {
         console.error("[IncidentReports] Days counter error:", daysRes.error);
+        // Set to null on error so UI shows fallback
+        setDaysSinceLastAccident(null);
       }
     } catch (err) {
       console.error("[IncidentReports] Error loading data:", err);
       setError("Failed to load data");
+      // Ensure counter is set to null on error
+      setDaysSinceLastAccident(null);
     } finally {
       setLoading(false);
     }
