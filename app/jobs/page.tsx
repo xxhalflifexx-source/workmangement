@@ -2069,9 +2069,10 @@ function JobsPageContent() {
                           <span>🗑️</span>
                           <span>Delete</span>
                         </button>
-                      </div>
+                        </>
+                      )}
                     </div>
-                  )}
+                  </div>
                 </div>
               )}
             />
