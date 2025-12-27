@@ -154,6 +154,13 @@ export default function JobRow({
           <div className={`text-sm font-mono font-medium ${isCancelled ? "text-gray-500" : "text-gray-900"}`}>
             {jobNumber}
           </div>
+          {/* Mobile tap indicator - shows only on mobile when not expanded */}
+          {!isExpanded && (
+            <div className="sm:hidden mt-1 text-xs text-indigo-600 font-medium flex items-center gap-1">
+              <span>👆</span>
+              <span>Tap for actions</span>
+            </div>
+          )}
         </td>
         <td className="px-4 sm:px-6 py-4">
           <div className="min-w-0">
@@ -193,10 +200,16 @@ export default function JobRow({
           <div className="text-sm text-gray-600 font-medium">{deadline}</div>
         </td>
         <td className="px-4 sm:px-6 py-4">
-          <div className="flex items-center justify-center">
+          <div className="flex items-center justify-center gap-2">
             <span className={`text-sm font-semibold transition-transform duration-200 ${isExpanded ? 'text-indigo-600 rotate-180' : 'text-gray-400'}`}>
               ▼
             </span>
+            {/* Mobile: Show quick action icons when collapsed */}
+            {!isExpanded && (
+              <span className="sm:hidden text-xs text-gray-400">
+                📷💵
+              </span>
+            )}
           </div>
         </td>
       </tr>
@@ -204,6 +217,78 @@ export default function JobRow({
         <tr>
           <td colSpan={8} className="px-3 sm:px-6 py-4 sm:py-6 bg-gradient-to-br from-indigo-50/30 to-blue-50/30">
             <div className="bg-white border-2 border-indigo-100 rounded-2xl shadow-lg p-6 sm:p-8 space-y-6">
+              {/* Mobile Quick Actions - Shown at top on mobile for easy access */}
+              <div className="sm:hidden">
+                <h3 className="text-sm font-bold text-gray-700 mb-3 uppercase tracking-wide">Quick Actions</h3>
+                <div className="grid grid-cols-2 gap-2">
+                  {onMaterialsAndExpenses && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onMaterialsAndExpenses(job);
+                      }}
+                      disabled={job.status === "AWAITING_QC" || job.status === "COMPLETED"}
+                      className="px-4 py-3 text-sm bg-gradient-to-r from-emerald-50 to-rose-50 border-2 border-emerald-200 text-emerald-700 rounded-xl font-semibold disabled:bg-gray-100 disabled:border-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed min-h-[48px] flex items-center justify-center gap-2 shadow-sm"
+                    >
+                      <span className="text-lg">💵</span>
+                      <span>Expenses</span>
+                    </button>
+                  )}
+                  {job.status !== "COMPLETED" && job.status !== "CANCELLED" && onPhotoSelect && (
+                    <label
+                      htmlFor={`photo-upload-mobile-${job.id}`}
+                      onClick={(e) => e.stopPropagation()}
+                      className={`px-4 py-3 text-sm bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 text-blue-700 rounded-xl font-semibold min-h-[48px] flex items-center justify-center gap-2 shadow-sm cursor-pointer ${
+                        job.status === "AWAITING_QC" ? "opacity-50 cursor-not-allowed" : ""
+                      }`}
+                    >
+                      <span className="text-lg">📷</span>
+                      <span>Photos</span>
+                    </label>
+                  )}
+                  {onActivity && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onActivity(job);
+                      }}
+                      disabled={job.status === "AWAITING_QC" || job.status === "COMPLETED"}
+                      className="px-4 py-3 text-sm bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 text-blue-700 rounded-xl font-semibold disabled:bg-gray-100 disabled:border-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed min-h-[48px] flex items-center justify-center gap-2 shadow-sm"
+                    >
+                      <span className="text-lg">📋</span>
+                      <span>History</span>
+                    </button>
+                  )}
+                  {onSubmitToQC && job.status !== "AWAITING_QC" && job.status !== "COMPLETED" && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onSubmitToQC(job.id);
+                      }}
+                      disabled={savingPhotos[job.id]}
+                      className="px-4 py-3 text-sm bg-white border-2 border-indigo-600 text-indigo-600 rounded-xl font-semibold disabled:bg-gray-100 disabled:border-gray-300 disabled:text-gray-400 disabled:cursor-not-allowed min-h-[48px] flex items-center justify-center gap-2 shadow-sm"
+                    >
+                      <span className="text-lg">✓</span>
+                      <span>Submit QC</span>
+                    </button>
+                  )}
+                </div>
+                {/* Hidden file input for mobile photo button */}
+                {job.status !== "COMPLETED" && job.status !== "CANCELLED" && job.status !== "AWAITING_QC" && onPhotoSelect && (
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={(e) => {
+                      e.stopPropagation();
+                      onPhotoSelect(job.id, e);
+                    }}
+                    className="hidden"
+                    id={`photo-upload-mobile-${job.id}`}
+                  />
+                )}
+              </div>
+
               <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-3">
