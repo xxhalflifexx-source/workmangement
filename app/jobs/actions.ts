@@ -86,9 +86,7 @@ export async function createJob(formData: FormData) {
   const ctx = await getOrgContext();
   if (!ctx.ok) return ctx;
 
-  // Only managers and admins can create jobs
-  const roleCheck = requireRole(ctx, "MANAGER");
-  if (roleCheck) return roleCheck;
+  // All authenticated users (employees, managers, and admins) can create jobs
 
   const data = {
     title: formData.get("title"),

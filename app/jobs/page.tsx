@@ -751,11 +751,7 @@ function JobsPageContent() {
   };
 
   const openCreateModal = () => {
-    // Only ADMIN and MANAGER can create jobs
-    if (!canManage) {
-      setError("You do not have permission to create jobs. Only administrators and managers can create new jobs.");
-      return;
-    }
+    // All authenticated users can create jobs
     setEditingJob(null);
     // Reset customer fields
     setSelectedCustomerId("");
@@ -1723,8 +1719,8 @@ function JobsPageContent() {
               className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 text-base sm:text-sm flex-1 min-w-0 sm:min-w-[200px] min-h-[44px] focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all bg-white shadow-sm"
             />
           </div>
-          {canManage && (
-            <div className="flex gap-2">
+          <div className="flex gap-2">
+            {canManage && (
               <button
                 type="button"
                 onClick={async () => {
@@ -1748,15 +1744,15 @@ function JobsPageContent() {
               >
                 📥 Export CSV
               </button>
-              <button
-                type="button"
-                onClick={openCreateModal}
-                className="w-full md:w-auto min-h-[44px] bg-gradient-to-r from-indigo-600 to-blue-600 text-white px-6 py-3 rounded-xl hover:from-indigo-700 hover:to-blue-700 transition-all font-semibold shadow-md hover:shadow-lg"
-              >
-                + Create Job
-              </button>
-            </div>
-          )}
+            )}
+            <button
+              type="button"
+              onClick={openCreateModal}
+              className="w-full md:w-auto min-h-[44px] bg-gradient-to-r from-indigo-600 to-blue-600 text-white px-6 py-3 rounded-xl hover:from-indigo-700 hover:to-blue-700 transition-all font-semibold shadow-md hover:shadow-lg"
+            >
+              + Create Job
+            </button>
+          </div>
         </div>
 
         {/* Filters */}
@@ -1823,7 +1819,7 @@ function JobsPageContent() {
                   : "No jobs assigned to you yet"
                 : "Try adjusting your filters or search query"}
             </p>
-            {canManage && jobs.length === 0 && (
+            {jobs.length === 0 && (
               <button
                 onClick={openCreateModal}
                 className="mt-4 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium"
