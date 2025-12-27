@@ -40,6 +40,7 @@ export default function UserAccessControlPage() {
     { key: "inventory", label: "Inventory" },
     { key: "adminPanel", label: "Admin Panel" },
     { key: "operationsCommon", label: "Operations Common" },
+    { key: "incidentReports", label: "Incident Reports" },
   ];
 
 

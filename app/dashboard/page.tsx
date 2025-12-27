@@ -304,8 +304,8 @@ export default async function Dashboard() {
                   />
                 )}
 
-                {/* Incident Reports - Admin only */}
-                {role === "ADMIN" && (
+                {/* Incident Reports - Check permission */}
+                {(role === "ADMIN" || (permissions && hasPermission(permissions, "incidentReports"))) && (
                   <DashboardTabLink
                     href="/incident-reports"
                     icon="⚠️"

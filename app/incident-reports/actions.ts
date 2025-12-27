@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { getOrgContext, buildOrgFilter, requireRole } from "@/lib/org-utils";
+import { checkModuleAccess } from "@/lib/user-access";
 
 // Types
 export type IncidentStatus = "OPEN" | "UNDER_REVIEW" | "RESOLVED" | "CLOSED";
@@ -58,9 +59,10 @@ export async function getIncidentReports(filters?: {
   const ctx = await getOrgContext();
   if (!ctx.ok) return ctx;
 
-  // Only admins can manage incident reports
-  const roleCheck = requireRole(ctx, "ADMIN");
-  if (roleCheck) return roleCheck;
+  // Check if user has permission to view incident reports
+  const hasAccess = await checkModuleAccess("incidentReports");
+  const userRole = ctx.role;
+  const canViewAll = userRole === "ADMIN" || userRole === "MANAGER" || hasAccess;
 
   // Super Admins without org can't create org-specific data
   if (!ctx.isSuperAdmin && !ctx.organizationId) {
@@ -70,6 +72,11 @@ export async function getIncidentReports(filters?: {
   try {
     // Build base where clause with org filter
     let where: any = buildOrgFilter(ctx, {});
+    
+    // If user doesn't have permission to view all, only show their own reports
+    if (!canViewAll) {
+      where.createdById = ctx.userId;
+    }
     
     if (filters?.status) {
       where.status = filters.status;
@@ -122,9 +129,10 @@ export async function getIncidentReport(id: string) {
   const ctx = await getOrgContext();
   if (!ctx.ok) return ctx;
 
-  // Only admins can view incident reports
-  const roleCheck = requireRole(ctx, "ADMIN");
-  if (roleCheck) return roleCheck;
+  // Check if user has permission to view incident reports
+  const hasAccess = await checkModuleAccess("incidentReports");
+  const userRole = ctx.role;
+  const canViewAll = userRole === "ADMIN" || userRole === "MANAGER" || hasAccess;
 
   if (!ctx.isSuperAdmin && !ctx.organizationId) {
     return { ok: false, error: "No organization found" };
@@ -132,7 +140,12 @@ export async function getIncidentReport(id: string) {
 
   try {
     // Build where clause with org filter
-    const where = buildOrgFilter(ctx, { id });
+    let where: any = buildOrgFilter(ctx, { id });
+    
+    // If user doesn't have permission to view all, only allow viewing their own reports
+    if (!canViewAll) {
+      where.createdById = ctx.userId;
+    }
 
     const report = await prisma.incidentReport.findFirst({
       where,
@@ -179,9 +192,15 @@ export async function createIncidentReport(data: {
   const ctx = await getOrgContext();
   if (!ctx.ok) return ctx;
 
-  // Only admins can create incident reports
-  const roleCheck = requireRole(ctx, "ADMIN");
-  if (roleCheck) return roleCheck;
+  // Check if user has permission to create incident reports
+  // All authenticated users can create incident reports by default (safety is important)
+  const hasAccess = await checkModuleAccess("incidentReports");
+  const userRole = ctx.role;
+  
+  // Only restrict if explicitly denied (admins/managers always have access)
+  if (userRole !== "ADMIN" && userRole !== "MANAGER" && !hasAccess) {
+    return { ok: false, error: "You do not have permission to create incident reports" };
+  }
 
   // Must have an organization to create reports
   if (!ctx.organizationId) {
@@ -255,12 +274,28 @@ export async function updateIncidentReport(
   const ctx = await getOrgContext();
   if (!ctx.ok) return ctx;
 
-  // Only admins can update incident reports
-  const roleCheck = requireRole(ctx, "ADMIN");
-  if (roleCheck) return roleCheck;
+  // Check permissions
+  const hasAccess = await checkModuleAccess("incidentReports");
+  const userRole = ctx.role;
+  const canManageAll = userRole === "ADMIN" || userRole === "MANAGER" || hasAccess;
 
   if (!ctx.isSuperAdmin && !ctx.organizationId) {
     return { ok: false, error: "No organization found" };
+  }
+
+  // Check if report exists and user has permission
+  const existingReport = await prisma.incidentReport.findFirst({
+    where: buildOrgFilter(ctx, { id }),
+    select: { createdById: true },
+  });
+
+  if (!existingReport) {
+    return { ok: false, error: "Incident report not found" };
+  }
+
+  // Users can only update their own reports unless they have permission to manage all
+  if (!canManageAll && existingReport.createdById !== ctx.userId) {
+    return { ok: false, error: "You can only update your own incident reports" };
   }
 
   try {
@@ -330,9 +365,10 @@ export async function deleteIncidentReport(id: string) {
   const ctx = await getOrgContext();
   if (!ctx.ok) return ctx;
 
-  // Only admins can delete incident reports
-  const roleCheck = requireRole(ctx, "ADMIN");
-  if (roleCheck) return roleCheck;
+  // Check permissions
+  const hasAccess = await checkModuleAccess("incidentReports");
+  const userRole = ctx.role;
+  const canManageAll = userRole === "ADMIN" || userRole === "MANAGER" || hasAccess;
 
   if (!ctx.isSuperAdmin && !ctx.organizationId) {
     return { ok: false, error: "No organization found" };
@@ -341,10 +377,18 @@ export async function deleteIncidentReport(id: string) {
   try {
     // Verify the report belongs to this organization
     const where = buildOrgFilter(ctx, { id });
-    const existing = await prisma.incidentReport.findFirst({ where });
+    const existing = await prisma.incidentReport.findFirst({
+      where,
+      select: { createdById: true },
+    });
 
     if (!existing) {
       return { ok: false, error: "Incident report not found" };
+    }
+
+    // Users can only delete their own reports unless they have permission to manage all
+    if (!canManageAll && existing.createdById !== ctx.userId) {
+      return { ok: false, error: "You can only delete your own incident reports" };
     }
 
     await prisma.incidentReport.delete({
@@ -364,9 +408,13 @@ export async function getJobsForIncident() {
   const ctx = await getOrgContext();
   if (!ctx.ok) return ctx;
 
-  // Only admins can access this
-  const roleCheck = requireRole(ctx, "ADMIN");
-  if (roleCheck) return roleCheck;
+  // Check permissions - users with incidentReports permission can access
+  const hasAccess = await checkModuleAccess("incidentReports");
+  const userRole = ctx.role;
+  
+  if (userRole !== "ADMIN" && userRole !== "MANAGER" && !hasAccess) {
+    return { ok: false, error: "You do not have permission to access this" };
+  }
 
   try {
     // Build where clause that includes both org jobs and legacy jobs (organizationId = null)
@@ -410,9 +458,13 @@ export async function getEmployeesForIncident() {
     return ctx;
   }
 
-  // Only admins can access this
-  const roleCheck = requireRole(ctx, "ADMIN");
-  if (roleCheck) return roleCheck;
+  // Check permissions - users with incidentReports permission can access
+  const hasAccess = await checkModuleAccess("incidentReports");
+  const userRole = ctx.role;
+  
+  if (userRole !== "ADMIN" && userRole !== "MANAGER" && !hasAccess) {
+    return { ok: false, error: "You do not have permission to access this" };
+  }
 
   console.log("[getEmployeesForIncident] organizationId:", ctx.organizationId, "isSuperAdmin:", ctx.isSuperAdmin);
   

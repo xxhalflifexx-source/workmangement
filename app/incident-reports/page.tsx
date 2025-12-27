@@ -18,6 +18,7 @@ import {
 } from "./actions";
 import MobileCardView from "@/components/MobileCardView";
 import MobileModal from "@/components/MobileModal";
+import CheckAccess from "@/components/CheckAccess";
 
 // Status badge colors
 const statusColors: Record<string, string> = {
@@ -42,7 +43,7 @@ const roleColors: Record<string, string> = {
   INJURED: "bg-red-100 text-red-800",
 };
 
-export default function IncidentReportsPage() {
+function IncidentReportsPageContent() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [reports, setReports] = useState<IncidentReportWithRelations[]>([]);
@@ -126,7 +127,7 @@ export default function IncidentReportsPage() {
     }
   }, [statusFilter, severityFilter]);
 
-  // Check authentication and role - only run once
+  // Check authentication and permissions - only run once
   useEffect(() => {
     if (status === "loading") return;
     if (initialized) return;
@@ -136,12 +137,7 @@ export default function IncidentReportsPage() {
       return;
     }
     
-    const role = (session.user as any).role;
-    if (role !== "ADMIN") {
-      router.push("/dashboard");
-      return;
-    }
-    
+    // Check permissions - will be checked via CheckAccess component
     setInitialized(true);
     loadData();
   }, [session, status, router, initialized, loadData]);
@@ -1185,5 +1181,13 @@ export default function IncidentReportsPage() {
             ) : null}
       </MobileModal>
     </div>
+  );
+}
+
+export default function IncidentReportsPage() {
+  return (
+    <CheckAccess module="incidentReports">
+      <IncidentReportsPageContent />
+    </CheckAccess>
   );
 }
