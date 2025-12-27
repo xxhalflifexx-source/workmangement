@@ -10,6 +10,7 @@ import { redirect } from "next/navigation";
 import DashboardTabLink from "./DashboardTabLink";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
+import { getDaysSinceLastAccident } from "../incident-reports/actions";
 import DashboardWrapper from "./DashboardWrapper";
 import { cookies, headers } from "next/headers";
 import DashboardSessionGuard from "./DashboardSessionGuard";
@@ -117,6 +118,17 @@ export default async function Dashboard() {
     unreadCounts = unreadCountsRes.ok && unreadCountsRes.counts ? unreadCountsRes.counts : {};
   } catch (error) {
     console.error("[Dashboard] Error getting unread counts:", error);
+  }
+
+  // Get days since last accident for incident reports
+  let daysSinceLastAccident: number | null = null;
+  try {
+    const daysRes = await getDaysSinceLastAccident();
+    if (daysRes.ok) {
+      daysSinceLastAccident = daysRes.days;
+    }
+  } catch (error) {
+    console.error("[Dashboard] Error getting days since last accident:", error);
   }
 
   // Get company settings for logo
@@ -310,7 +322,7 @@ export default async function Dashboard() {
                     href="/incident-reports"
                     icon="⚠️"
                     title="Incident Reports"
-                    description="Workplace safety incidents"
+                    description={daysSinceLastAccident !== null ? `${daysSinceLastAccident} days since last accident` : "Workplace safety incidents"}
                     notificationCount={unreadCounts["/incident-reports"] || 0}
                     className="hover:border-red-300"
                   />

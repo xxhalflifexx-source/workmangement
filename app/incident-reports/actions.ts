@@ -450,6 +450,47 @@ export async function getJobsForIncident() {
   }
 }
 
+// Get days since last accident
+export async function getDaysSinceLastAccident() {
+  const ctx = await getOrgContext();
+  if (!ctx.ok) return { ok: false, error: ctx.error };
+
+  if (!ctx.isSuperAdmin && !ctx.organizationId) {
+    return { ok: false, error: "No organization found" };
+  }
+
+  try {
+    // Build where clause with org filter
+    const where = buildOrgFilter(ctx, {});
+
+    // Get the most recent incident report by incidentDate
+    const lastReport = await prisma.incidentReport.findFirst({
+      where,
+      select: { incidentDate: true },
+      orderBy: { incidentDate: "desc" },
+    });
+
+    if (!lastReport) {
+      // No incidents yet
+      return { ok: true, days: null, hasIncidents: false };
+    }
+
+    // Calculate days since last accident
+    const lastDate = new Date(lastReport.incidentDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    lastDate.setHours(0, 0, 0, 0);
+    
+    const diffTime = today.getTime() - lastDate.getTime();
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+    return { ok: true, days: diffDays, hasIncidents: true, lastIncidentDate: lastDate };
+  } catch (err) {
+    console.error("[getDaysSinceLastAccident] Error:", err);
+    return { ok: false, error: "Failed to calculate days since last accident" };
+  }
+}
+
 // Get employees for selection
 export async function getEmployeesForIncident() {
   const ctx = await getOrgContext();

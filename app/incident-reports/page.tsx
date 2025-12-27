@@ -11,6 +11,7 @@ import {
   deleteIncidentReport,
   getJobsForIncident,
   getEmployeesForIncident,
+  getDaysSinceLastAccident,
   IncidentReportWithRelations,
   IncidentStatus,
   IncidentSeverity,
@@ -50,6 +51,7 @@ function IncidentReportsPageContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [initialized, setInitialized] = useState(false);
+  const [daysSinceLastAccident, setDaysSinceLastAccident] = useState<number | null>(null);
   
   // Modal state
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -87,13 +89,14 @@ function IncidentReportsPageContent() {
     setError(null);
     
     try {
-      const [reportsRes, jobsRes, employeesRes] = await Promise.all([
+      const [reportsRes, jobsRes, employeesRes, daysRes] = await Promise.all([
         getIncidentReports({
           status: (filters?.status || statusFilter || undefined) as IncidentStatus | undefined,
           severity: (filters?.severity || severityFilter || undefined) as IncidentSeverity | undefined,
         }),
         getJobsForIncident(),
         getEmployeesForIncident(),
+        getDaysSinceLastAccident(),
       ]);
 
       console.log("[IncidentReports] Reports response:", reportsRes);
@@ -118,6 +121,10 @@ function IncidentReportsPageContent() {
         console.log("[IncidentReports] Loaded employees:", employeesRes.employees.length);
       } else {
         console.error("[IncidentReports] Failed to load employees:", employeesRes.error);
+      }
+
+      if (daysRes.ok) {
+        setDaysSinceLastAccident(daysRes.days);
       }
     } catch (err) {
       console.error("[IncidentReports] Error loading data:", err);
@@ -442,22 +449,41 @@ function IncidentReportsPageContent() {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-black border-b-2 border-[#001f3f] shadow-lg sticky top-0 z-40">
-        <div className="w-full px-4 sm:px-6 lg:px-8 py-3 sm:py-4 flex justify-between items-center gap-3">
-          <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
-            <Link href="/dashboard" className="text-white hover:text-gray-300 transition-colors text-base sm:text-sm min-h-[44px] flex items-center">
-              ← Back
-            </Link>
-            <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-white truncate">⚠️ Incident Reports</h1>
+        <div className="w-full px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
+          <div className="flex justify-between items-center gap-3 mb-3">
+            <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
+              <Link href="/dashboard" className="text-white hover:text-gray-300 transition-colors text-base sm:text-sm min-h-[44px] flex items-center">
+                ← Back
+              </Link>
+              <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-white truncate">⚠️ Incident Reports</h1>
+            </div>
+            <button
+              onClick={() => {
+                resetForm();
+                setShowCreateModal(true);
+              }}
+              className="bg-red-600 hover:bg-red-700 text-white px-5 py-3 rounded-lg font-medium transition-colors flex items-center gap-2 min-h-[44px] text-base sm:text-sm"
+            >
+              <span>+</span> New Report
+            </button>
           </div>
-          <button
-            onClick={() => {
-              resetForm();
-              setShowCreateModal(true);
-            }}
-            className="bg-red-600 hover:bg-red-700 text-white px-5 py-3 rounded-lg font-medium transition-colors flex items-center gap-2 min-h-[44px] text-base sm:text-sm"
-          >
-            <span>+</span> New Report
-          </button>
+          {/* Days Since Last Accident Counter */}
+          <div className="bg-gradient-to-r from-green-600 to-emerald-600 rounded-lg px-4 py-3 shadow-lg">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-2xl">📅</span>
+                <span className="text-white font-semibold text-sm sm:text-base">Days Since Last Accident:</span>
+              </div>
+              <div className="bg-white rounded-lg px-4 py-2 shadow-md">
+                <span className="text-2xl sm:text-3xl font-bold text-green-700">
+                  {daysSinceLastAccident !== null ? daysSinceLastAccident : "—"}
+                </span>
+                {daysSinceLastAccident !== null && (
+                  <span className="text-xs text-gray-600 ml-1">days</span>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       </header>
 
