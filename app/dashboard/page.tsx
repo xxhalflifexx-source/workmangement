@@ -126,7 +126,7 @@ export default async function Dashboard() {
     const daysRes = await getDaysSinceLastAccident();
     console.log("[Dashboard] Days counter response:", daysRes);
     if (daysRes.ok) {
-      daysSinceLastAccident = daysRes.days;
+      daysSinceLastAccident = daysRes.days ?? null;
       console.log("[Dashboard] Days since last accident:", daysSinceLastAccident);
     } else {
       console.error("[Dashboard] Days counter error:", daysRes.error);
