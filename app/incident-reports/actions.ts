@@ -452,16 +452,22 @@ export async function getJobsForIncident() {
 
 // Get days since last accident
 export async function getDaysSinceLastAccident() {
+  console.log("[getDaysSinceLastAccident] Starting...");
+  
   const ctx = await getOrgContext();
+  console.log("[getDaysSinceLastAccident] Context:", ctx.ok ? `authenticated, org: ${(ctx as any).organizationId}, role: ${(ctx as any).role}` : (ctx as any).error);
+  
   if (!ctx.ok) return { ok: false, error: ctx.error };
 
   if (!ctx.isSuperAdmin && !ctx.organizationId) {
+    console.log("[getDaysSinceLastAccident] No organization found for user");
     return { ok: false, error: "No organization found" };
   }
 
   try {
     // Build where clause with org filter
     const where = buildOrgFilter(ctx, {});
+    console.log("[getDaysSinceLastAccident] Query where:", JSON.stringify(where));
 
     // Get the most recent incident report by incidentDate
     const lastReport = await prisma.incidentReport.findFirst({
@@ -470,8 +476,11 @@ export async function getDaysSinceLastAccident() {
       orderBy: { incidentDate: "desc" },
     });
 
+    console.log("[getDaysSinceLastAccident] Last report found:", lastReport ? lastReport.incidentDate : "none");
+
     if (!lastReport) {
       // No incidents yet
+      console.log("[getDaysSinceLastAccident] No incidents found, returning null");
       return { ok: true, days: null, hasIncidents: false };
     }
 
@@ -484,6 +493,7 @@ export async function getDaysSinceLastAccident() {
     const diffTime = today.getTime() - lastDate.getTime();
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
+    console.log("[getDaysSinceLastAccident] Days since last accident:", diffDays);
     return { ok: true, days: diffDays, hasIncidents: true, lastIncidentDate: lastDate };
   } catch (err) {
     console.error("[getDaysSinceLastAccident] Error:", err);

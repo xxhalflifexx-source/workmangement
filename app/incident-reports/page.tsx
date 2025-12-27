@@ -123,8 +123,12 @@ function IncidentReportsPageContent() {
         console.error("[IncidentReports] Failed to load employees:", employeesRes.error);
       }
 
+      console.log("[IncidentReports] Days counter response:", daysRes);
       if (daysRes.ok) {
         setDaysSinceLastAccident(daysRes.days);
+        console.log("[IncidentReports] Days since last accident:", daysRes.days);
+      } else {
+        console.error("[IncidentReports] Days counter error:", daysRes.error);
       }
     } catch (err) {
       console.error("[IncidentReports] Error loading data:", err);

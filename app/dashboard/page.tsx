@@ -124,8 +124,12 @@ export default async function Dashboard() {
   let daysSinceLastAccident: number | null = null;
   try {
     const daysRes = await getDaysSinceLastAccident();
+    console.log("[Dashboard] Days counter response:", daysRes);
     if (daysRes.ok) {
       daysSinceLastAccident = daysRes.days;
+      console.log("[Dashboard] Days since last accident:", daysSinceLastAccident);
+    } else {
+      console.error("[Dashboard] Days counter error:", daysRes.error);
     }
   } catch (error) {
     console.error("[Dashboard] Error getting days since last accident:", error);
