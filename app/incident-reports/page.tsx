@@ -104,17 +104,17 @@ function IncidentReportsPageContent() {
         daysPromise,
       ]);
 
-      // Extract results from Promise.allSettled
-      const reportsRes = results[0].status === 'fulfilled' 
+      // Extract results from Promise.allSettled with proper type handling
+      const reportsRes: any = results[0].status === 'fulfilled' 
         ? results[0].value 
         : { ok: false, error: results[0].reason?.message || String(results[0].reason) };
-      const jobsRes = results[1].status === 'fulfilled' 
+      const jobsRes: any = results[1].status === 'fulfilled' 
         ? results[1].value 
         : { ok: false, error: results[1].reason?.message || String(results[1].reason) };
-      const employeesRes = results[2].status === 'fulfilled' 
+      const employeesRes: any = results[2].status === 'fulfilled' 
         ? results[2].value 
         : { ok: false, error: results[2].reason?.message || String(results[2].reason) };
-      const daysRes = results[3].status === 'fulfilled' 
+      const daysRes: any = results[3].status === 'fulfilled' 
         ? results[3].value 
         : { ok: false, error: results[3].reason?.message || String(results[3].reason) };
 
@@ -145,7 +145,7 @@ function IncidentReportsPageContent() {
       }
 
       if (daysRes.ok) {
-        setDaysSinceLastAccident(daysRes.days);
+        setDaysSinceLastAccident(daysRes.days ?? null);
         console.log("[IncidentReports] Days since last accident:", daysRes.days);
       } else {
         console.error("[IncidentReports] Days counter error:", daysRes.error);
