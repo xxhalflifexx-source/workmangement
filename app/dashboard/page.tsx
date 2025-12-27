@@ -322,14 +322,26 @@ export default async function Dashboard() {
 
                 {/* Incident Reports - Check permission */}
                 {(role === "ADMIN" || (permissions && hasPermission(permissions, "incidentReports"))) && (
-                  <DashboardTabLink
+                  <Link
                     href="/incident-reports"
-                    icon="⚠️"
-                    title="Incident Reports"
-                    description={daysSinceLastAccident !== null ? `${daysSinceLastAccident} days since last accident` : "Workplace safety incidents"}
-                    notificationCount={unreadCounts["/incident-reports"] || 0}
-                    className="hover:border-red-300"
-                  />
+                    className="group bg-white rounded-xl shadow-sm border border-gray-200/60 p-6 hover:shadow-md hover:border-red-300 hover:-translate-y-0.5 active:shadow-sm active:border-red-400 active:translate-y-0 flex flex-col items-center justify-center text-center min-h-[140px] relative overflow-hidden touch-manipulation transition-all duration-200 hover:border-red-300"
+                  >
+                    {/* Subtle gradient overlay on hover */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-red-50/0 via-transparent to-transparent group-hover:from-red-50/30 group-hover:via-red-50/10 group-hover:to-transparent transition-all duration-200"></div>
+                    
+                    <div className="relative z-10 w-full">
+                      <div className="text-sm font-medium text-gray-600 mb-2">DAYS SINCE LAST ACCIDENT</div>
+                      <div className="text-6xl sm:text-5xl lg:text-7xl font-bold text-red-600 mb-2">
+                        {daysSinceLastAccident !== null ? daysSinceLastAccident : "—"}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">Incident Reports</div>
+                      {unreadCounts["/incident-reports"] > 0 && (
+                        <div className="absolute top-2 right-2 bg-red-600 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
+                          {unreadCounts["/incident-reports"]}
+                        </div>
+                      )}
+                    </div>
+                  </Link>
                 )}
               </div>
             </div>
