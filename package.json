@@ -17,7 +17,16 @@
     "cap:ios": "npx cap open ios",
     "cap:android": "npx cap open android",
     "cap:build:ios": "npm run build:mobile && npx cap sync ios && npx cap open ios",
-    "cap:build:android": "npm run build:mobile && npx cap sync android && npx cap open android"
+    "cap:build:android": "npm run build:mobile && npx cap sync android && npx cap open android",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:headed": "playwright test --headed",
+    "test:load": "k6 run k6/load-test.js",
+    "test:stress": "k6 run k6/stress-test.js",
+    "test:all": "npm run test && npm run test:e2e"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.4.2",
@@ -49,16 +58,24 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@playwright/test": "^1.57.0",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.1",
     "@types/archiver": "^6.0.2",
     "@types/bcryptjs": "^2.4.6",
+    "@types/jest": "^30.0.0",
     "@types/jspdf": "^1.3.3",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "cross-env": "^10.1.0",
+    "jest": "^30.2.0",
+    "jest-environment-jsdom": "^30.2.0",
+    "msw": "^2.12.7",
     "postcss": "^8",
     "prisma": "^5.18.0",
     "tailwindcss": "^3.4.1",
+    "ts-jest": "^29.4.6",
     "ts-node": "^10.9.2",
     "tsx": "^4.20.6",
     "typescript": "^5"

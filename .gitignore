@@ -8,6 +8,10 @@
 
 # testing
 /coverage
+/test-results/
+/playwright-report/
+/playwright/.auth/user.json
+*.trace.zip
 
 # next.js
 /.next/
