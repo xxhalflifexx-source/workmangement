@@ -2,7 +2,7 @@
 
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 
 /**
  * Client-side session guard component
@@ -13,43 +13,36 @@ export default function DashboardSessionGuard({ children }: { children: React.Re
   const { data: session, status } = useSession();
   const router = useRouter();
   const [checking, setChecking] = useState(true);
-  const [redirected, setRedirected] = useState(false);
+  const hasChecked = useRef(false);
+  const isRedirecting = useRef(false);
 
   useEffect(() => {
+    // Prevent multiple runs
+    if (hasChecked.current || isRedirecting.current) {
+      return;
+    }
+
+    // Only proceed when status is not loading
+    if (status === "loading") {
+      return;
+    }
+
     console.log("[DashboardSessionGuard] Client-side session check");
     console.log("[DashboardSessionGuard] Status:", status);
     console.log("[DashboardSessionGuard] Session:", session ? "Found" : "Not found");
-    console.log("[DashboardSessionGuard] User email:", session?.user?.email || "None");
 
-    // Wait a bit for session to load
-    const checkSession = async () => {
-      // Give time for cookie propagation and session to load
-      await new Promise(resolve => setTimeout(resolve, 500));
+    // Mark as checked to prevent loops
+    hasChecked.current = true;
 
-      console.log("[DashboardSessionGuard] After delay - Status:", status);
-      console.log("[DashboardSessionGuard] After delay - Session:", session ? "Found" : "Not found");
-
-      if (status === "loading") {
-        // Still loading, wait a bit more
-        console.log("[DashboardSessionGuard] Session still loading, waiting...");
-        await new Promise(resolve => setTimeout(resolve, 1000));
-      }
-
-      // Final check
-      if (status === "unauthenticated" || !session?.user) {
-        console.log("[DashboardSessionGuard] No session found after delay - redirecting to login");
-        if (!redirected) {
-          setRedirected(true);
-          router.push("/login?callbackUrl=/dashboard");
-        }
-      } else {
-        console.log("[DashboardSessionGuard] Session confirmed, rendering dashboard");
-        setChecking(false);
-      }
-    };
-
-    checkSession();
-  }, [status, session, router, redirected]);
+    if (status === "authenticated" && session?.user) {
+      console.log("[DashboardSessionGuard] Session confirmed, rendering dashboard");
+      setChecking(false);
+    } else if (status === "unauthenticated") {
+      console.log("[DashboardSessionGuard] No session found - redirecting to login");
+      isRedirecting.current = true;
+      router.push("/login?callbackUrl=/dashboard");
+    }
+  }, [status]); // Only depend on status, not the full session object
 
   // Show loading while checking
   if (checking || status === "loading") {
