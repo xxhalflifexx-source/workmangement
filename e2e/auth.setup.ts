@@ -18,8 +18,9 @@ setup('authenticate', async ({ page }) => {
   const testEmail = process.env.TEST_USER_EMAIL || 'test@example.com';
   const testPassword = process.env.TEST_USER_PASSWORD || 'testpassword123';
 
-  await page.getByLabel(/email/i).fill(testEmail);
-  await page.getByLabel(/password/i).fill(testPassword);
+  // Use placeholder-based selectors (the form uses placeholders, not labels)
+  await page.getByPlaceholder(/email/i).fill(testEmail);
+  await page.getByPlaceholder(/password/i).fill(testPassword);
 
   // Submit the form
   await page.getByRole('button', { name: /sign in/i }).click();

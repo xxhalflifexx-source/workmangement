@@ -62,7 +62,16 @@ export default defineConfig({
       testMatch: /.*\.setup\.ts/,
     },
 
-    // Desktop browsers
+    // Chromium without auth (for login/register tests)
+    {
+      name: 'chromium-no-auth',
+      use: {
+        ...devices['Desktop Chrome'],
+      },
+      testMatch: /auth\.spec\.ts/,
+    },
+
+    // Desktop browsers (with auth)
     {
       name: 'chromium',
       use: {
@@ -70,6 +79,7 @@ export default defineConfig({
         storageState: 'playwright/.auth/user.json',
       },
       dependencies: ['setup'],
+      testIgnore: /auth\.spec\.ts/,
     },
 
     {
