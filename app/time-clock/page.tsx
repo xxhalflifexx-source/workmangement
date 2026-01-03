@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { clockIn, clockOut, getCurrentStatus, getTodayEntries, getRecentEntries, getAvailableJobs, getAssignedJobs, startBreak, endBreak } from "./actions";
+import { clockIn, clockOut, getCurrentStatus, getTodayEntries, getRecentEntries, getAvailableJobs, getAssignedJobs, startBreak, endBreak, getPayPeriodSummary } from "./actions";
 import Link from "next/link";
 import { nowInCentral, formatCentralTime, formatDateShort } from "@/lib/date-utils";
 import PhotoViewerModal from "../qc/PhotoViewerModal";
@@ -34,6 +34,21 @@ interface AssignedJob {
   dueDate: string | null;
 }
 
+interface PayPeriodSummary {
+  periodLabel: string;
+  periodStart: string;
+  periodEnd: string;
+  totalHours: number;
+  regularHours: number;
+  overtimeHours: number;
+  hourlyRate: number;
+  regularPay: number;
+  overtimePay: number;
+  totalPay: number;
+  overtimeEnabled: boolean;
+  overtimeRate: number;
+}
+
 export default function TimeClockPage() {
   const [isClockedIn, setIsClockedIn] = useState(false);
   const [currentEntry, setCurrentEntry] = useState<TimeEntry | null>(null);
@@ -59,6 +74,7 @@ export default function TimeClockPage() {
   const [photoViewerIndex, setPhotoViewerIndex] = useState(0);
   const [currentTime, setCurrentTime] = useState("");
   const [currentDate, setCurrentDate] = useState("");
+  const [payPeriodSummary, setPayPeriodSummary] = useState<PayPeriodSummary | null>(null);
 
   useEffect(() => {
     const updateTime = () => {
@@ -105,12 +121,13 @@ export default function TimeClockPage() {
     setSuccess(undefined);
 
     try {
-      const [statusRes, todayRes, recentRes, jobsRes, assignedRes] = await Promise.all([
+      const [statusRes, todayRes, recentRes, jobsRes, assignedRes, payPeriodRes] = await Promise.all([
         getCurrentStatus(),
         getTodayEntries(),
         getRecentEntries(10),
         getAvailableJobs(),
         getAssignedJobs(),
+        getPayPeriodSummary(),
       ]);
 
       if (statusRes.ok && statusRes.activeEntry) {
@@ -133,6 +150,10 @@ export default function TimeClockPage() {
         setRecentEntries(recentRes.entries as any);
       } else {
         setError(recentRes.error);
+      }
+
+      if (payPeriodRes.ok && 'summary' in payPeriodRes) {
+        setPayPeriodSummary(payPeriodRes.summary as PayPeriodSummary);
       }
 
       if (jobsRes.ok && jobsRes.jobs) {
@@ -571,6 +592,58 @@ export default function TimeClockPage() {
 
           </div>
         </div>
+
+        {/* Pay Period Summary Widget */}
+        {payPeriodSummary && payPeriodSummary.hourlyRate > 0 && (
+          <div className="mt-6 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl shadow-lg p-4 sm:p-6 border border-green-200">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                <span className="text-xl">💰</span>
+                This Pay Period
+              </h2>
+              <Link
+                href="/time-records"
+                className="text-sm text-green-600 hover:text-green-700 font-medium"
+              >
+                View Details →
+              </Link>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <div className="bg-white rounded-lg p-3 border border-green-100 shadow-sm">
+                <p className="text-xs text-gray-500 uppercase font-medium">Period</p>
+                <p className="text-sm font-semibold text-gray-900 mt-1">{payPeriodSummary.periodLabel}</p>
+              </div>
+              <div className="bg-white rounded-lg p-3 border border-green-100 shadow-sm">
+                <p className="text-xs text-gray-500 uppercase font-medium">Hours Worked</p>
+                <p className="text-lg font-bold text-gray-900 mt-1">
+                  {payPeriodSummary.totalHours.toFixed(1)}h
+                </p>
+                {payPeriodSummary.overtimeEnabled && payPeriodSummary.overtimeHours > 0 && (
+                  <p className="text-xs text-amber-600 font-medium">
+                    {payPeriodSummary.overtimeHours.toFixed(1)}h OT
+                  </p>
+                )}
+              </div>
+              <div className="bg-white rounded-lg p-3 border border-green-100 shadow-sm">
+                <p className="text-xs text-gray-500 uppercase font-medium">Hourly Rate</p>
+                <p className="text-lg font-bold text-gray-900 mt-1">
+                  ${payPeriodSummary.hourlyRate.toFixed(2)}/hr
+                </p>
+              </div>
+              <div className="bg-gradient-to-br from-green-100 to-emerald-100 rounded-lg p-3 border border-green-200 shadow-sm">
+                <p className="text-xs text-green-700 uppercase font-medium">Est. Earnings</p>
+                <p className="text-xl font-bold text-green-700 mt-1">
+                  ${payPeriodSummary.totalPay.toFixed(2)}
+                </p>
+                {payPeriodSummary.overtimeEnabled && payPeriodSummary.overtimePay > 0 && (
+                  <p className="text-xs text-green-600 font-medium">
+                    Incl. ${payPeriodSummary.overtimePay.toFixed(2)} OT
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* My Assigned Jobs Panel */}
         {assignedJobs.length > 0 && (

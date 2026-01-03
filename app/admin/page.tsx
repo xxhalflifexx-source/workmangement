@@ -12,6 +12,8 @@ import {
   resetUserPasswordByAdmin,
   getJobNumberSettings,
   updateJobNumberPrefix,
+  getPayrollSettings,
+  updatePayrollSettings,
 } from "./actions";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
@@ -80,6 +82,17 @@ export default function AdminPage() {
   const [jobNumberPreview, setJobNumberPreview] = useState<string>("");
   const [jobNumberSaving, setJobNumberSaving] = useState(false);
   
+  // Payroll Settings state
+  const [payrollSettings, setPayrollSettings] = useState({
+    payPeriodType: "weekly",
+    payDay: "friday",
+    payPeriodStartDate: null as string | null,
+    overtimeEnabled: false,
+    overtimeType: "weekly40",
+    overtimeRate: 1.5,
+  });
+  const [payrollSaving, setPayrollSaving] = useState(false);
+  
   // User Access Control state
   const [accessUsers, setAccessUsers] = useState<UserWithPermissions[]>([]);
   const [accessLoading, setAccessLoading] = useState(false);
@@ -100,10 +113,11 @@ export default function AdminPage() {
     setLoading(true);
     setError(undefined);
 
-    const [usersRes, settingsRes, jobNumRes] = await Promise.all([
+    const [usersRes, settingsRes, jobNumRes, payrollRes] = await Promise.all([
       getAllUsersForAdmin(),
       getCompanySettings(),
       getJobNumberSettings(),
+      getPayrollSettings(),
     ]);
 
     if (!usersRes.ok) {
@@ -120,6 +134,10 @@ export default function AdminPage() {
     if (jobNumRes.ok && 'settings' in jobNumRes && jobNumRes.settings) {
       setJobNumberPrefix(jobNumRes.settings.jobNumberPrefix);
       setJobNumberPreview(jobNumRes.settings.previewJobNumber);
+    }
+
+    if (payrollRes.ok && 'settings' in payrollRes) {
+      setPayrollSettings(payrollRes.settings as any);
     }
 
     setLoading(false);
@@ -1101,6 +1119,164 @@ export default function AdminPage() {
                 <p className="text-xs text-gray-500 mt-2">
                   Format: PREFIX + YEAR + - + NUMBER (resets to 0001 each year)
                 </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Payroll Settings */}
+          <div className="bg-white rounded-xl shadow border border-gray-200 mt-6">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-900">Payroll Settings</h2>
+              <p className="text-sm text-gray-500 mt-1">
+                Configure pay periods and overtime rules for employee time tracking
+              </p>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* Pay Period Type */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Pay Period Type
+                </label>
+                <select
+                  value={payrollSettings.payPeriodType}
+                  onChange={(e) => setPayrollSettings({ ...payrollSettings, payPeriodType: e.target.value })}
+                  className="w-full sm:w-64 border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="weekly">Weekly</option>
+                  <option value="biweekly">Bi-weekly (Every 2 weeks)</option>
+                </select>
+              </div>
+
+              {/* Pay Day */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Pay Day
+                </label>
+                <select
+                  value={payrollSettings.payDay}
+                  onChange={(e) => setPayrollSettings({ ...payrollSettings, payDay: e.target.value })}
+                  className="w-full sm:w-64 border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="monday">Monday</option>
+                  <option value="tuesday">Tuesday</option>
+                  <option value="wednesday">Wednesday</option>
+                  <option value="thursday">Thursday</option>
+                  <option value="friday">Friday</option>
+                  <option value="saturday">Saturday</option>
+                  <option value="sunday">Sunday</option>
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  The day of the week when the pay period ends
+                </p>
+              </div>
+
+              {/* Bi-weekly Anchor Date (only show for bi-weekly) */}
+              {payrollSettings.payPeriodType === "biweekly" && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Bi-weekly Start Date
+                  </label>
+                  <input
+                    type="date"
+                    value={payrollSettings.payPeriodStartDate || ""}
+                    onChange={(e) => setPayrollSettings({ ...payrollSettings, payPeriodStartDate: e.target.value || null })}
+                    className="w-full sm:w-64 border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Anchor date to calculate bi-weekly periods (e.g., a past pay day)
+                  </p>
+                </div>
+              )}
+
+              {/* Overtime Section */}
+              <div className="border-t border-gray-200 pt-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <input
+                    type="checkbox"
+                    id="overtimeEnabled"
+                    checked={payrollSettings.overtimeEnabled}
+                    onChange={(e) => setPayrollSettings({ ...payrollSettings, overtimeEnabled: e.target.checked })}
+                    className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <label htmlFor="overtimeEnabled" className="text-sm font-medium text-gray-900">
+                    Enable Overtime Calculations
+                  </label>
+                </div>
+
+                {payrollSettings.overtimeEnabled && (
+                  <div className="ml-8 space-y-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Overtime Type
+                      </label>
+                      <select
+                        value={payrollSettings.overtimeType}
+                        onChange={(e) => setPayrollSettings({ ...payrollSettings, overtimeType: e.target.value })}
+                        className="w-full sm:w-64 border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                      >
+                        <option value="weekly40">Weekly (after 40 hours/week)</option>
+                        <option value="daily8">Daily (after 8 hours/day)</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Overtime Rate Multiplier
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          step="0.1"
+                          min="1"
+                          max="3"
+                          value={payrollSettings.overtimeRate}
+                          onChange={(e) => setPayrollSettings({ ...payrollSettings, overtimeRate: parseFloat(e.target.value) || 1.5 })}
+                          className="w-24 border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                        />
+                        <span className="text-sm text-gray-600">× regular rate</span>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Common values: 1.5 (time and a half), 2.0 (double time)
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Save Button */}
+              <div className="flex justify-end pt-4 border-t border-gray-200">
+                <button
+                  type="button"
+                  disabled={payrollSaving}
+                  onClick={async () => {
+                    setPayrollSaving(true);
+                    setError(undefined);
+                    setSuccess(undefined);
+                    
+                    const formData = new FormData();
+                    formData.set("payPeriodType", payrollSettings.payPeriodType);
+                    formData.set("payDay", payrollSettings.payDay);
+                    if (payrollSettings.payPeriodStartDate) {
+                      formData.set("payPeriodStartDate", payrollSettings.payPeriodStartDate);
+                    }
+                    formData.set("overtimeEnabled", String(payrollSettings.overtimeEnabled));
+                    formData.set("overtimeType", payrollSettings.overtimeType);
+                    formData.set("overtimeRate", String(payrollSettings.overtimeRate));
+                    
+                    const res = await updatePayrollSettings(formData);
+                    if (res.ok) {
+                      setSuccess("Payroll settings updated successfully");
+                      setTimeout(() => setSuccess(undefined), 3000);
+                    } else {
+                      setError(res.error);
+                    }
+                    setPayrollSaving(false);
+                  }}
+                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold disabled:bg-gray-300 disabled:cursor-not-allowed"
+                >
+                  {payrollSaving ? "Saving..." : "Save Payroll Settings"}
+                </button>
               </div>
             </div>
           </div>

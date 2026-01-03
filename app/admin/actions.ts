@@ -713,3 +713,137 @@ export async function listOpenEstimates() {
   return { ok: true, estimates: jobs };
 }
 
+/**
+ * Get payroll settings for the organization
+ */
+export async function getPayrollSettings() {
+  const ctx = await getOrgContext();
+  if (!ctx.ok) return ctx;
+
+  try {
+    const settings = ctx.organizationId
+      ? await prisma.companySettings.findFirst({
+          where: { organizationId: ctx.organizationId },
+          select: {
+            payPeriodType: true,
+            payDay: true,
+            payPeriodStartDate: true,
+            overtimeEnabled: true,
+            overtimeType: true,
+            overtimeRate: true,
+          },
+        })
+      : null;
+
+    // Return defaults if no settings exist
+    return {
+      ok: true,
+      settings: {
+        payPeriodType: settings?.payPeriodType ?? "weekly",
+        payDay: settings?.payDay ?? "friday",
+        payPeriodStartDate: settings?.payPeriodStartDate?.toISOString() ?? null,
+        overtimeEnabled: settings?.overtimeEnabled ?? false,
+        overtimeType: settings?.overtimeType ?? "weekly40",
+        overtimeRate: settings?.overtimeRate ?? 1.5,
+      },
+    };
+  } catch (error) {
+    console.error("Get payroll settings error:", error);
+    return {
+      ok: true,
+      settings: {
+        payPeriodType: "weekly",
+        payDay: "friday",
+        payPeriodStartDate: null,
+        overtimeEnabled: false,
+        overtimeType: "weekly40",
+        overtimeRate: 1.5,
+      },
+    };
+  }
+}
+
+/**
+ * Update payroll settings for the organization (Admin only)
+ */
+export async function updatePayrollSettings(formData: FormData) {
+  const ctx = await getOrgContext();
+  if (!ctx.ok) return ctx;
+
+  const roleCheck = requireRole(ctx, "ADMIN");
+  if (roleCheck) return roleCheck;
+
+  const payPeriodType = formData.get("payPeriodType")?.toString() || "weekly";
+  const payDay = formData.get("payDay")?.toString() || "friday";
+  const payPeriodStartDateStr = formData.get("payPeriodStartDate")?.toString();
+  const overtimeEnabled = formData.get("overtimeEnabled") === "true";
+  const overtimeType = formData.get("overtimeType")?.toString() || "weekly40";
+  const overtimeRateStr = formData.get("overtimeRate")?.toString();
+  const overtimeRate = overtimeRateStr ? parseFloat(overtimeRateStr) : 1.5;
+
+  // Validate pay period type
+  if (!["weekly", "biweekly"].includes(payPeriodType)) {
+    return { ok: false, error: "Invalid pay period type" };
+  }
+
+  // Validate pay day
+  const validDays = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+  if (!validDays.includes(payDay.toLowerCase())) {
+    return { ok: false, error: "Invalid pay day" };
+  }
+
+  // Validate overtime type
+  if (overtimeEnabled && !["weekly40", "daily8"].includes(overtimeType)) {
+    return { ok: false, error: "Invalid overtime type" };
+  }
+
+  // Validate overtime rate
+  if (overtimeEnabled && (isNaN(overtimeRate) || overtimeRate < 1 || overtimeRate > 3)) {
+    return { ok: false, error: "Overtime rate must be between 1.0 and 3.0" };
+  }
+
+  try {
+    const payPeriodStartDate = payPeriodStartDateStr ? new Date(payPeriodStartDateStr) : null;
+
+    // Try to get existing settings
+    const existing = ctx.organizationId
+      ? await prisma.companySettings.findFirst({
+          where: { organizationId: ctx.organizationId },
+        })
+      : await prisma.companySettings.findFirst();
+
+    if (existing) {
+      await prisma.companySettings.update({
+        where: { id: existing.id },
+        data: {
+          payPeriodType,
+          payDay: payDay.toLowerCase(),
+          payPeriodStartDate,
+          overtimeEnabled,
+          overtimeType: overtimeEnabled ? overtimeType : null,
+          overtimeRate: overtimeEnabled ? overtimeRate : null,
+        },
+      });
+    } else {
+      // Create new settings record
+      await prisma.companySettings.create({
+        data: {
+          companyName: "Company Name",
+          organizationId: ctx.organizationId,
+          payPeriodType,
+          payDay: payDay.toLowerCase(),
+          payPeriodStartDate,
+          overtimeEnabled,
+          overtimeType: overtimeEnabled ? overtimeType : null,
+          overtimeRate: overtimeEnabled ? overtimeRate : null,
+        },
+      });
+    }
+
+    return { ok: true, message: "Payroll settings updated successfully" };
+  } catch (error) {
+    console.error("Update payroll settings error:", error);
+    return { ok: false, error: "Failed to update payroll settings" };
+  }
+}
+

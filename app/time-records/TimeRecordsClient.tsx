@@ -4,6 +4,14 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { formatDateShort } from "@/lib/date-utils";
 import PhotoViewerModal from "../qc/PhotoViewerModal";
+import {
+  PayrollSettings,
+  getCurrentPayPeriod,
+  getPreviousPayPeriod,
+  calculateEarnings,
+  groupEntriesByDay,
+  formatCurrency,
+} from "@/lib/pay-period";
 
 type TimeEntry = {
   id: string;
@@ -22,6 +30,15 @@ type TimeEntry = {
 type Props = {
   entries: TimeEntry[];
   userName: string;
+  hourlyRate: number | null;
+  payrollSettings: {
+    payPeriodType: string;
+    payDay: string;
+    payPeriodStartDate: string | null;
+    overtimeEnabled: boolean;
+    overtimeType: string;
+    overtimeRate: number;
+  };
 };
 
 function formatTime(date: string) {
@@ -48,7 +65,21 @@ function toISODate(date: Date) {
   return date.toISOString().slice(0, 10);
 }
 
-export default function TimeRecordsClient({ entries, userName }: Props) {
+export default function TimeRecordsClient({ entries, userName, hourlyRate, payrollSettings }: Props) {
+  // Convert payroll settings for utility functions
+  const paySettings: PayrollSettings = useMemo(() => ({
+    payPeriodType: payrollSettings.payPeriodType,
+    payDay: payrollSettings.payDay,
+    payPeriodStartDate: payrollSettings.payPeriodStartDate ? new Date(payrollSettings.payPeriodStartDate) : null,
+    overtimeEnabled: payrollSettings.overtimeEnabled,
+    overtimeType: payrollSettings.overtimeType,
+    overtimeRate: payrollSettings.overtimeRate,
+  }), [payrollSettings]);
+
+  // Calculate current and previous pay periods
+  const currentPeriod = useMemo(() => getCurrentPayPeriod(paySettings), [paySettings]);
+  const previousPeriod = useMemo(() => getPreviousPayPeriod(paySettings), [paySettings]);
+
   const defaultStart = useMemo(() => {
     const d = new Date();
     d.setDate(d.getDate() - 30);
@@ -59,7 +90,7 @@ export default function TimeRecordsClient({ entries, userName }: Props) {
   const [from, setFrom] = useState(defaultStart);
   const [to, setTo] = useState(toISODate(new Date()));
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "longest" | "shortest">("newest");
-  const [quickRange, setQuickRange] = useState<"7" | "30" | "month" | "all">("30");
+  const [quickRange, setQuickRange] = useState<"7" | "30" | "month" | "all" | "current-period" | "last-period">("30");
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerPhotos, setViewerPhotos] = useState<string[]>([]);
   const [viewerIndex, setViewerIndex] = useState(0);
@@ -128,18 +159,29 @@ export default function TimeRecordsClient({ entries, userName }: Props) {
       }
     });
 
+    const totalHours = totalMinutes / 60;
+    
+    // Calculate earnings with overtime
+    const entriesByDay = groupEntriesByDay(
+      filtered.map((e) => ({ clockIn: e.clockIn, durationHours: e.durationHours }))
+    );
+    const earnings = hourlyRate
+      ? calculateEarnings(totalHours, hourlyRate, paySettings, entriesByDay)
+      : null;
+
     return {
-      totalHours: (totalMinutes / 60).toFixed(1),
+      totalHours: totalHours.toFixed(1),
       totalShifts: filtered.length,
       completed,
       inProgress,
       reworkHours: (reworkMinutes / 60).toFixed(1),
+      earnings,
     };
-  }, [filtered]);
+  }, [filtered, hourlyRate, paySettings]);
 
-  const applyQuickRange = (range: "7" | "30" | "month" | "all") => {
+  const applyQuickRange = (range: "7" | "30" | "month" | "all" | "current-period" | "last-period") => {
     const today = new Date();
-    setQuickRange(range);
+    setQuickRange(range as any);
 
     if (range === "all") {
       setFrom("");
@@ -151,6 +193,18 @@ export default function TimeRecordsClient({ entries, userName }: Props) {
       const start = new Date(today.getFullYear(), today.getMonth(), 1);
       setFrom(toISODate(start));
       setTo(toISODate(today));
+      return;
+    }
+
+    if (range === "current-period") {
+      setFrom(toISODate(currentPeriod.start));
+      setTo(toISODate(currentPeriod.end));
+      return;
+    }
+
+    if (range === "last-period") {
+      setFrom(toISODate(previousPeriod.start));
+      setTo(toISODate(previousPeriod.end));
       return;
     }
 
@@ -178,23 +232,51 @@ export default function TimeRecordsClient({ entries, userName }: Props) {
         </div>
       </header>
       <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-24 py-6 sm:py-8">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
-        {[
-          { label: "Total hours", value: `${totals.totalHours}h`, sub: "Filtered range" },
-          { label: "Shifts", value: totals.totalShifts.toString(), sub: `Completed: ${totals.completed}` },
-          { label: "In progress", value: totals.inProgress.toString(), sub: "Live shifts" },
-          { label: "Rework hours", value: `${totals.reworkHours}h`, sub: "Time on rework jobs" },
-        ].map((card) => (
-          <div
-            key={card.label}
-            className="bg-white rounded-xl border border-gray-200 p-4 sm:p-5 shadow-sm flex flex-col gap-1.5"
-          >
-            <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">{card.label}</p>
-            <p className="text-2xl font-bold text-gray-900">{card.value}</p>
-            <p className="text-xs text-gray-500">{card.sub}</p>
+        {/* Summary Cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 mb-6">
+          <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-5 shadow-sm flex flex-col gap-1.5">
+            <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">Total hours</p>
+            <p className="text-2xl font-bold text-gray-900">{totals.totalHours}h</p>
+            <p className="text-xs text-gray-500">Filtered range</p>
           </div>
-        ))}
-      </div>
+          <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-5 shadow-sm flex flex-col gap-1.5">
+            <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">Shifts</p>
+            <p className="text-2xl font-bold text-gray-900">{totals.totalShifts}</p>
+            <p className="text-xs text-gray-500">Completed: {totals.completed}</p>
+          </div>
+          <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-5 shadow-sm flex flex-col gap-1.5">
+            <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">In progress</p>
+            <p className="text-2xl font-bold text-gray-900">{totals.inProgress}</p>
+            <p className="text-xs text-gray-500">Live shifts</p>
+          </div>
+          {totals.earnings && hourlyRate ? (
+            <>
+              <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl border border-green-200 p-4 sm:p-5 shadow-sm flex flex-col gap-1.5">
+                <p className="text-xs text-green-700 font-medium uppercase tracking-wide">Estimated Pay</p>
+                <p className="text-2xl font-bold text-green-700">{formatCurrency(totals.earnings.totalPay)}</p>
+                <p className="text-xs text-green-600">
+                  {totals.earnings.overtimeHours > 0 
+                    ? `${totals.earnings.regularHours.toFixed(1)}h reg + ${totals.earnings.overtimeHours.toFixed(1)}h OT`
+                    : `${totals.earnings.regularHours.toFixed(1)}h @ ${formatCurrency(hourlyRate)}/hr`
+                  }
+                </p>
+              </div>
+              {payrollSettings.overtimeEnabled && totals.earnings.overtimeHours > 0 && (
+                <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl border border-amber-200 p-4 sm:p-5 shadow-sm flex flex-col gap-1.5">
+                  <p className="text-xs text-amber-700 font-medium uppercase tracking-wide">Overtime Pay</p>
+                  <p className="text-2xl font-bold text-amber-700">{formatCurrency(totals.earnings.overtimePay)}</p>
+                  <p className="text-xs text-amber-600">{totals.earnings.overtimeHours.toFixed(1)}h @ {payrollSettings.overtimeRate}x</p>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-5 shadow-sm flex flex-col gap-1.5">
+              <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">Rework hours</p>
+              <p className="text-2xl font-bold text-gray-900">{totals.reworkHours}h</p>
+              <p className="text-xs text-gray-500">Time on rework jobs</p>
+            </div>
+          )}
+        </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
         <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4 lg:gap-6 mb-4">
@@ -242,6 +324,29 @@ export default function TimeRecordsClient({ entries, userName }: Props) {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+            {/* Pay Period Filters */}
+            <button
+              onClick={() => applyQuickRange("current-period")}
+              className={`px-3 py-2 rounded-lg text-xs font-semibold border ${
+                quickRange === "current-period"
+                  ? "bg-green-600 text-white border-green-600 shadow-sm"
+                  : "bg-green-50 text-green-700 border-green-200 hover:bg-green-100 hover:border-green-300"
+              } min-h-[36px] transition-colors`}
+            >
+              Current Period
+            </button>
+            <button
+              onClick={() => applyQuickRange("last-period")}
+              className={`px-3 py-2 rounded-lg text-xs font-semibold border ${
+                quickRange === "last-period"
+                  ? "bg-green-600 text-white border-green-600 shadow-sm"
+                  : "bg-green-50 text-green-700 border-green-200 hover:bg-green-100 hover:border-green-300"
+              } min-h-[36px] transition-colors`}
+            >
+              Last Period
+            </button>
+            <span className="text-gray-300 mx-1">|</span>
+            {/* Standard Date Filters */}
             {[
               { key: "7", label: "Last 7 days" },
               { key: "30", label: "Last 30 days" },

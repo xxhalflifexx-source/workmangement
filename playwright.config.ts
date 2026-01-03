@@ -120,11 +120,12 @@ export default defineConfig({
     },
   ],
 
-  // Web server configuration - starts the app before tests
+  // Web server configuration
+  // Uses dotenv-cli to load .env file before starting dev server
   webServer: {
-    command: 'npm run dev',
+    command: 'npx dotenv -e .env -- npm run dev',
     url: 'http://localhost:3000',
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: !process.env.CI, // In CI, start fresh; locally reuse if running
     timeout: 120000,
   },
 });

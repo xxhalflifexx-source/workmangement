@@ -419,3 +419,147 @@ export async function getAssignedJobs() {
   return { ok: true, jobs };
 }
 
+export async function getPayPeriodSummary() {
+  const session = await getServerSession(authOptions);
+  
+  if (!session?.user) {
+    return { ok: false, error: "Not authenticated" };
+  }
+
+  const userId = (session.user as any).id;
+  const organizationId = (session.user as any).organizationId;
+
+  try {
+    // Get user's hourly rate and payroll settings
+    const [user, companySettings] = await Promise.all([
+      prisma.user.findUnique({
+        where: { id: userId },
+        select: { hourlyRate: true },
+      }),
+      organizationId
+        ? prisma.companySettings.findFirst({
+            where: { organizationId },
+            select: {
+              payPeriodType: true,
+              payDay: true,
+              payPeriodStartDate: true,
+              overtimeEnabled: true,
+              overtimeType: true,
+              overtimeRate: true,
+            },
+          })
+        : null,
+    ]);
+
+    // Calculate pay period dates
+    const paySettings = {
+      payPeriodType: companySettings?.payPeriodType ?? "weekly",
+      payDay: companySettings?.payDay ?? "friday",
+      payPeriodStartDate: companySettings?.payPeriodStartDate,
+      overtimeEnabled: companySettings?.overtimeEnabled ?? false,
+      overtimeType: companySettings?.overtimeType ?? "weekly40",
+      overtimeRate: companySettings?.overtimeRate ?? 1.5,
+    };
+
+    // Simple period calculation (Friday to Friday weekly)
+    const now = new Date();
+    const dayOfWeek = now.getDay(); // 0 = Sunday
+    const payDayNum = { sunday: 0, monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6 }[paySettings.payDay] ?? 5;
+    
+    // Find the next pay day
+    let daysUntilPayDay = payDayNum - dayOfWeek;
+    if (daysUntilPayDay < 0) daysUntilPayDay += 7;
+    
+    const periodEnd = new Date(now);
+    periodEnd.setDate(periodEnd.getDate() + daysUntilPayDay);
+    periodEnd.setHours(23, 59, 59, 999);
+    
+    const periodDays = paySettings.payPeriodType === "biweekly" ? 14 : 7;
+    const periodStart = new Date(periodEnd);
+    periodStart.setDate(periodStart.getDate() - periodDays + 1);
+    periodStart.setHours(0, 0, 0, 0);
+
+    // Get time entries for current period
+    const entries = await prisma.timeEntry.findMany({
+      where: {
+        userId,
+        clockIn: {
+          gte: periodStart,
+          lte: periodEnd,
+        },
+        clockOut: { not: null }, // Only completed entries
+      },
+      select: {
+        clockIn: true,
+        clockOut: true,
+        durationHours: true,
+      },
+    });
+
+    // Calculate total hours
+    let totalHours = 0;
+    const hoursByDay: Record<string, number> = {};
+
+    entries.forEach((entry) => {
+      const hours = entry.durationHours || 0;
+      totalHours += hours;
+      
+      const dayKey = entry.clockIn.toISOString().split("T")[0];
+      hoursByDay[dayKey] = (hoursByDay[dayKey] || 0) + hours;
+    });
+
+    // Calculate overtime if enabled
+    let regularHours = totalHours;
+    let overtimeHours = 0;
+
+    if (paySettings.overtimeEnabled) {
+      if (paySettings.overtimeType === "weekly40" && totalHours > 40) {
+        regularHours = 40;
+        overtimeHours = totalHours - 40;
+      } else if (paySettings.overtimeType === "daily8") {
+        regularHours = 0;
+        overtimeHours = 0;
+        Object.values(hoursByDay).forEach((dayHours) => {
+          if (dayHours <= 8) {
+            regularHours += dayHours;
+          } else {
+            regularHours += 8;
+            overtimeHours += dayHours - 8;
+          }
+        });
+      }
+    }
+
+    // Calculate pay
+    const hourlyRate = user?.hourlyRate || 0;
+    const regularPay = regularHours * hourlyRate;
+    const overtimePay = overtimeHours * hourlyRate * paySettings.overtimeRate;
+    const totalPay = regularPay + overtimePay;
+
+    // Format period label
+    const formatDate = (d: Date) => d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    const periodLabel = `${formatDate(periodStart)} - ${formatDate(periodEnd)}`;
+
+    return {
+      ok: true,
+      summary: {
+        periodLabel,
+        periodStart: periodStart.toISOString(),
+        periodEnd: periodEnd.toISOString(),
+        totalHours: Math.round(totalHours * 100) / 100,
+        regularHours: Math.round(regularHours * 100) / 100,
+        overtimeHours: Math.round(overtimeHours * 100) / 100,
+        hourlyRate,
+        regularPay: Math.round(regularPay * 100) / 100,
+        overtimePay: Math.round(overtimePay * 100) / 100,
+        totalPay: Math.round(totalPay * 100) / 100,
+        overtimeEnabled: paySettings.overtimeEnabled,
+        overtimeRate: paySettings.overtimeRate,
+      },
+    };
+  } catch (error) {
+    console.error("Get pay period summary error:", error);
+    return { ok: false, error: "Failed to get pay period summary" };
+  }
+}
+

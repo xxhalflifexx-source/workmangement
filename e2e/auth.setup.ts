@@ -13,10 +13,10 @@ setup('authenticate', async ({ page }) => {
   // Wait for login form to be visible
   await expect(page.getByRole('heading', { name: /sign in/i })).toBeVisible();
 
-  // Fill in credentials (use test account)
-  // In production, these should come from environment variables
-  const testEmail = process.env.TEST_USER_EMAIL || 'test@example.com';
-  const testPassword = process.env.TEST_USER_PASSWORD || 'testpassword123';
+  // Fill in credentials (use test account from seed data)
+  // Default to admin account, can be overridden with env vars
+  const testEmail = process.env.TEST_USER_EMAIL || 'admin@example.com';
+  const testPassword = process.env.TEST_USER_PASSWORD || 'Passw0rd!';
 
   // Use placeholder-based selectors (the form uses placeholders, not labels)
   await page.getByPlaceholder(/email/i).fill(testEmail);

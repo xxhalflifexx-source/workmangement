@@ -313,6 +313,14 @@ model CompanySettings {
   updatedAt      DateTime      @updatedAt
   organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
+  // Pay Period Settings
+  payPeriodType      String?   @default("weekly")  // "weekly" or "biweekly"
+  payDay             String?   @default("friday")  // day of week for pay
+  payPeriodStartDate DateTime? // anchor date for bi-weekly calculation
+  overtimeEnabled    Boolean   @default(false)
+  overtimeType       String?   @default("weekly40") // "weekly40" or "daily8"
+  overtimeRate       Float?    @default(1.5)        // multiplier (1.5x, 2x, etc.)
+
   @@index([organizationId])
 }
 
