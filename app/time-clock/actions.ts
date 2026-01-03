@@ -19,6 +19,7 @@ export async function clockIn(jobId?: string, notes?: string) {
   }
 
   const userId = (session.user as any).id;
+  const organizationId = (session.user as any).organizationId;
 
   // Get current time in Central Time, then convert to UTC for database storage
   const nowCentral = nowInCentral();
@@ -73,6 +74,7 @@ export async function clockIn(jobId?: string, notes?: string) {
   const entry = await prisma.timeEntry.create({
     data: {
       userId,
+      organizationId: organizationId || null,
       jobId: jobId || null,
       clockIn: now,
       isRework,
@@ -439,32 +441,26 @@ export async function getPayPeriodSummary() {
       organizationId
         ? prisma.companySettings.findFirst({
             where: { organizationId },
-            select: {
-              payPeriodType: true,
-              payDay: true,
-              payPeriodStartDate: true,
-              overtimeEnabled: true,
-              overtimeType: true,
-              overtimeRate: true,
-            },
           })
         : null,
     ]);
 
     // Calculate pay period dates
+    const cs = companySettings as any;
     const paySettings = {
-      payPeriodType: companySettings?.payPeriodType ?? "weekly",
-      payDay: companySettings?.payDay ?? "friday",
-      payPeriodStartDate: companySettings?.payPeriodStartDate,
-      overtimeEnabled: companySettings?.overtimeEnabled ?? false,
-      overtimeType: companySettings?.overtimeType ?? "weekly40",
-      overtimeRate: companySettings?.overtimeRate ?? 1.5,
+      payPeriodType: cs?.payPeriodType ?? "weekly",
+      payDay: cs?.payDay ?? "friday",
+      payPeriodStartDate: cs?.payPeriodStartDate,
+      overtimeEnabled: cs?.overtimeEnabled ?? false,
+      overtimeType: cs?.overtimeType ?? "weekly40",
+      overtimeRate: cs?.overtimeRate ?? 1.5,
     };
 
     // Simple period calculation (Friday to Friday weekly)
     const now = new Date();
     const dayOfWeek = now.getDay(); // 0 = Sunday
-    const payDayNum = { sunday: 0, monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6 }[paySettings.payDay] ?? 5;
+    const dayMap: Record<string, number> = { sunday: 0, monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6 };
+    const payDayNum = dayMap[paySettings.payDay] ?? 5;
     
     // Find the next pay day
     let daysUntilPayDay = payDayNum - dayOfWeek;

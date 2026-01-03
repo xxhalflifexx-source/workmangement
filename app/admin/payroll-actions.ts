@@ -70,16 +70,24 @@ export async function getPayrollSummary() {
       where: { organizationId: user.organizationId },
     });
 
+    const cs = companySettings as any;
     const paySettings: PayrollSettings = {
-      payPeriodType: companySettings?.payPeriodType || "weekly",
-      payDay: companySettings?.payDay || "friday",
-      payPeriodStartDate: companySettings?.payPeriodStartDate || null,
-      overtimeEnabled: companySettings?.overtimeEnabled || false,
-      overtimeType: companySettings?.overtimeType || "weekly40",
-      overtimeRate: companySettings?.overtimeRate || 1.5,
+      payPeriodType: cs?.payPeriodType || "weekly",
+      payDay: cs?.payDay || "friday",
+      payPeriodStartDate: cs?.payPeriodStartDate || null,
+      overtimeEnabled: cs?.overtimeEnabled || false,
+      overtimeType: cs?.overtimeType || "weekly40",
+      overtimeRate: cs?.overtimeRate || 1.5,
     };
 
     const currentPeriod = getCurrentPayPeriod(paySettings);
+    
+    console.log("[Payroll] Current period:", {
+      start: currentPeriod.start.toISOString(),
+      end: currentPeriod.end.toISOString(),
+      label: currentPeriod.label,
+      paySettings,
+    });
 
     // Get all employees in the organization
     const employees = await prisma.user.findMany({
@@ -87,21 +95,24 @@ export async function getPayrollSummary() {
         organizationId: user.organizationId,
         status: "APPROVED",
       },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        hourlyRate: true,
-        lastPaidDate: true,
-      },
       orderBy: { name: "asc" },
-    });
+    }) as unknown as Array<{
+      id: string;
+      name: string | null;
+      email: string | null;
+      role: string;
+      hourlyRate: number | null;
+      lastPaidDate: Date | null;
+    }>;
+
+    // Get employee IDs for this organization
+    const employeeIds = employees.map(e => e.id);
 
     // Get time entries for current period for all employees
+    // Query by userId (belonging to org) since some old entries may not have organizationId set
     const timeEntries = await prisma.timeEntry.findMany({
       where: {
-        organizationId: user.organizationId,
+        userId: { in: employeeIds },
         clockIn: {
           gte: currentPeriod.start,
           lte: currentPeriod.end,
@@ -112,6 +123,24 @@ export async function getPayrollSummary() {
         job: { select: { title: true } },
       },
     });
+
+    console.log("[Payroll] Found time entries:", timeEntries.length);
+    console.log("[Payroll] Employee IDs in org:", employeeIds.length);
+    console.log("[Payroll] Period:", currentPeriod.start.toISOString(), "to", currentPeriod.end.toISOString());
+    
+    // Debug: Check recent time entries for these users
+    const recentEntries = await prisma.timeEntry.findMany({
+      where: { userId: { in: employeeIds } },
+      take: 10,
+      orderBy: { clockIn: 'desc' },
+    });
+    console.log("[Payroll] Recent time entries (all dates):", recentEntries.map(e => ({
+      id: e.id.slice(0, 8),
+      userId: e.userId.slice(0, 8),
+      clockIn: e.clockIn.toISOString(),
+      clockOut: e.clockOut?.toISOString() || 'ACTIVE',
+      durationHours: e.durationHours,
+    })));
 
     // Group entries by user
     const entriesByUser = new Map<string, typeof timeEntries>();
@@ -253,7 +282,7 @@ export async function markEmployeeAsPaid(employeeId: string, paidDate?: string) 
     // Update the lastPaidDate
     const payDate = paidDate ? new Date(paidDate) : new Date();
     
-    await prisma.user.update({
+    await (prisma.user.update as any)({
       where: { id: employeeId },
       data: { lastPaidDate: payDate },
     });
@@ -292,7 +321,7 @@ export async function markAllAsPaid(employeeIds: string[], paidDate?: string) {
     const payDate = paidDate ? new Date(paidDate) : new Date();
 
     // Update all employees in the organization
-    const result = await prisma.user.updateMany({
+    const result = await (prisma.user.updateMany as any)({
       where: {
         id: { in: employeeIds },
         organizationId: admin?.organizationId,
