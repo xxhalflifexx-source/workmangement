@@ -153,13 +153,29 @@ export async function getPayrollSummary() {
     // Calculate summary for each employee
     const summaries: EmployeePayrollSummary[] = await Promise.all(
       employees.map(async (emp) => {
-        const empEntries = entriesByUser.get(emp.id) || [];
+        // Determine the start date for "owed" calculation
+        // If lastPaidDate exists, use that; otherwise use period start
+        const owedSinceDate = emp.lastPaidDate 
+          ? (emp.lastPaidDate > currentPeriod.start ? emp.lastPaidDate : currentPeriod.start)
+          : currentPeriod.start;
         
-        // Calculate hours for current period
+        // Get entries since last payment (what's owed)
+        const owedEntries = await prisma.timeEntry.findMany({
+          where: {
+            userId: emp.id,
+            clockIn: { gt: owedSinceDate },
+            clockOut: { not: null },
+          },
+          include: {
+            job: { select: { title: true } },
+          },
+        });
+        
+        // Calculate hours owed (since last payment)
         let totalHours = 0;
         const jobsWorked = new Set<string>();
         
-        empEntries.forEach((entry) => {
+        owedEntries.forEach((entry) => {
           totalHours += entry.durationHours || 0;
           if (entry.job?.title) {
             jobsWorked.add(entry.job.title);
@@ -168,40 +184,21 @@ export async function getPayrollSummary() {
 
         // Calculate earnings
         const entriesByDay = groupEntriesByDay(
-          empEntries.map((e) => ({ clockIn: e.clockIn, durationHours: e.durationHours }))
+          owedEntries.map((e) => ({ clockIn: e.clockIn, durationHours: e.durationHours }))
         );
         const earnings = emp.hourlyRate
           ? calculateEarnings(totalHours, emp.hourlyRate, paySettings, entriesByDay)
           : { regularHours: totalHours, overtimeHours: 0, regularPay: 0, overtimePay: 0, totalPay: 0 };
 
-        // Calculate unpaid since last payment (if applicable)
+        // Calculate unpaid since last payment info
         let unpaidSince = null;
         if (emp.lastPaidDate) {
-          const unpaidEntries = await prisma.timeEntry.findMany({
-            where: {
-              userId: emp.id,
-              clockIn: { gt: emp.lastPaidDate },
-              clockOut: { not: null },
-            },
-          });
-
-          if (unpaidEntries.length > 0) {
-            let unpaidHours = 0;
-            unpaidEntries.forEach((entry) => {
-              unpaidHours += entry.durationHours || 0;
-            });
-
-            const unpaidEarnings = emp.hourlyRate
-              ? calculateEarnings(unpaidHours, emp.hourlyRate, paySettings)
-              : { totalPay: 0 };
-
-            unpaidSince = {
-              start: emp.lastPaidDate.toISOString(),
-              totalHours: Math.round(unpaidHours * 100) / 100,
-              totalPay: unpaidEarnings.totalPay,
-              entriesCount: unpaidEntries.length,
-            };
-          }
+          unpaidSince = {
+            start: emp.lastPaidDate.toISOString(),
+            totalHours: Math.round(totalHours * 100) / 100,
+            totalPay: earnings.totalPay,
+            entriesCount: owedEntries.length,
+          };
         }
 
         return {
@@ -220,7 +217,7 @@ export async function getPayrollSummary() {
             regularPay: earnings.regularPay,
             overtimePay: earnings.overtimePay,
             totalPay: earnings.totalPay,
-            entriesCount: empEntries.length,
+            entriesCount: owedEntries.length,
             jobsWorked: Array.from(jobsWorked),
           },
           unpaidSince,

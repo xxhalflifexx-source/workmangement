@@ -432,11 +432,10 @@ export async function getPayPeriodSummary() {
   const organizationId = (session.user as any).organizationId;
 
   try {
-    // Get user's hourly rate and payroll settings
+    // Get user's hourly rate, lastPaidDate, and payroll settings
     const [user, companySettings] = await Promise.all([
       prisma.user.findUnique({
         where: { id: userId },
-        select: { hourlyRate: true },
       }),
       organizationId
         ? prisma.companySettings.findFirst({
@@ -444,6 +443,9 @@ export async function getPayPeriodSummary() {
           })
         : null,
     ]);
+
+    const userData = user as any; // Type assertion for lastPaidDate
+    const lastPaidDate = userData?.lastPaidDate ? new Date(userData.lastPaidDate) : null;
 
     // Calculate pay period dates
     const cs = companySettings as any;
@@ -475,12 +477,15 @@ export async function getPayPeriodSummary() {
     periodStart.setDate(periodStart.getDate() - periodDays + 1);
     periodStart.setHours(0, 0, 0, 0);
 
-    // Get time entries for current period
+    // Use lastPaidDate if it's more recent than period start (to show owed since last payment)
+    const owedSinceDate = lastPaidDate && lastPaidDate > periodStart ? lastPaidDate : periodStart;
+
+    // Get time entries since last payment (what's owed)
     const entries = await prisma.timeEntry.findMany({
       where: {
         userId,
         clockIn: {
-          gte: periodStart,
+          gt: owedSinceDate, // Greater than last paid date
           lte: periodEnd,
         },
         clockOut: { not: null }, // Only completed entries
@@ -527,20 +532,23 @@ export async function getPayPeriodSummary() {
     }
 
     // Calculate pay
-    const hourlyRate = user?.hourlyRate || 0;
+    const hourlyRate = userData?.hourlyRate || 0;
     const regularPay = regularHours * hourlyRate;
     const overtimePay = overtimeHours * hourlyRate * paySettings.overtimeRate;
     const totalPay = regularPay + overtimePay;
 
-    // Format period label
+    // Format period label - show "since last payment" if applicable
     const formatDate = (d: Date) => d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-    const periodLabel = `${formatDate(periodStart)} - ${formatDate(periodEnd)}`;
+    const isOwedSincePayment = lastPaidDate && lastPaidDate > periodStart;
+    const periodLabel = isOwedSincePayment 
+      ? `Since ${formatDate(lastPaidDate)}` 
+      : `${formatDate(periodStart)} - ${formatDate(periodEnd)}`;
 
     return {
       ok: true,
       summary: {
         periodLabel,
-        periodStart: periodStart.toISOString(),
+        periodStart: owedSinceDate.toISOString(),
         periodEnd: periodEnd.toISOString(),
         totalHours: Math.round(totalHours * 100) / 100,
         regularHours: Math.round(regularHours * 100) / 100,
@@ -551,6 +559,7 @@ export async function getPayPeriodSummary() {
         totalPay: Math.round(totalPay * 100) / 100,
         overtimeEnabled: paySettings.overtimeEnabled,
         overtimeRate: paySettings.overtimeRate,
+        lastPaidDate: lastPaidDate?.toISOString() || null,
       },
     };
   } catch (error) {
