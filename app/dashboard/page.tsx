@@ -178,7 +178,6 @@ export default async function Dashboard() {
     
     return (
       <DashboardWrapper>
-        <DashboardSessionGuard>
         <main className="min-h-screen bg-gray-50">
       {/* Top Header Bar - Black Background */}
       <header className="bg-gray-900 border-b border-gray-800 shadow-sm sticky top-0 z-50 backdrop-blur-sm bg-opacity-95">
@@ -347,7 +346,6 @@ export default async function Dashboard() {
             </div>
       </div>
     </main>
-        </DashboardSessionGuard>
       </DashboardWrapper>
     );
   } catch (error: any) {
