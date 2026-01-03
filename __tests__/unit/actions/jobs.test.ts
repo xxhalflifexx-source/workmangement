@@ -91,7 +91,7 @@ describe('Jobs Actions', () => {
 
   describe('Job Validation', () => {
     it('should require title for job creation', () => {
-      const jobWithoutTitle = {
+      const jobWithoutTitle: { description: string; priority: string; title?: string } = {
         description: 'Some description',
         priority: 'LOW',
       };
