@@ -5,6 +5,20 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authOptions";
 import { nowInCentral, centralToUTC } from "@/lib/date-utils";
 import { createNotification } from "@/app/dashboard/notifications-actions";
+import {
+  TimeEntryState,
+  FlagStatus,
+  createInitialCapFields,
+  prepareStartBreak,
+  prepareEndBreak,
+  prepareClockOut,
+  getNetWorkSeconds,
+  getEffectiveNetWorkHours,
+  applySoftCapFlag,
+  isApproachingCap,
+  type TimeEntryWithCap,
+  type MutableTimeEntry,
+} from "@/lib/time-entry-cap";
 
 // Set timezone for Node.js process
 if (typeof process !== "undefined") {
@@ -35,16 +49,33 @@ export async function clockIn(jobId?: string, notes?: string) {
   });
 
   if (activeEntry) {
+    // Check if previous entry is flagged OVER_CAP - require resolution before new clock-in
+    if (activeEntry.flagStatus === FlagStatus.OVER_CAP) {
+      return { 
+        ok: false, 
+        error: "Your previous time entry exceeded 16 hours net work time and requires review. Please contact a manager to resolve it before clocking in again.",
+        flaggedEntryId: activeEntry.id
+      };
+    }
+
     // Automatically clock out the previous entry before starting a new one.
     // This ends their active shift but DOES NOT move the job to AWAITING_QC.
-    const prevDurationHours =
-      (now.getTime() - activeEntry.clockIn.getTime()) / (1000 * 60 * 60);
+    // Use the soft cap logic for proper clock out
+    const entryWithCap = activeEntry as unknown as MutableTimeEntry;
+    prepareClockOut(entryWithCap, now);
+    
+    const durationHours = entryWithCap.workAccumSeconds / 3600;
 
     await prisma.timeEntry.update({
       where: { id: activeEntry.id },
       data: {
         clockOut: now,
-        durationHours: prevDurationHours,
+        durationHours,
+        state: TimeEntryState.CLOCKED_OUT,
+        workAccumSeconds: entryWithCap.workAccumSeconds,
+        lastStateChangeAt: now,
+        flagStatus: entryWithCap.flagStatus,
+        overCapAt: entryWithCap.overCapAt,
       },
     });
   }
@@ -70,7 +101,10 @@ export async function clockIn(jobId?: string, notes?: string) {
     }
   }
 
-  // Create new time entry
+  // Create initial cap fields for the new entry
+  const capFields = createInitialCapFields(now);
+
+  // Create new time entry with soft cap fields
   const entry = await prisma.timeEntry.create({
     data: {
       userId,
@@ -81,6 +115,13 @@ export async function clockIn(jobId?: string, notes?: string) {
       clockInNotes: notes || null, // Store Clock In description separately
       breakStart: null,
       breakEnd: null,
+      // Soft cap fields
+      state: capFields.state,
+      workAccumSeconds: capFields.workAccumSeconds,
+      lastStateChangeAt: capFields.lastStateChangeAt,
+      capMinutes: capFields.capMinutes,
+      flagStatus: capFields.flagStatus,
+      overCapAt: capFields.overCapAt,
     },
     include: {
       job: { select: { title: true, id: true } },
@@ -146,15 +187,20 @@ export async function clockOut(formData: FormData) {
   // Get current time in Central Time, then convert to UTC for database storage
   const nowCentral = nowInCentral();
   const now = centralToUTC(nowCentral.toDate());
-  const breakMs =
-    activeEntry.breakStart
-      ? (activeEntry.breakEnd ? activeEntry.breakEnd.getTime() : now.getTime()) -
-        activeEntry.breakStart.getTime()
-      : 0;
-  const durationHours = Math.max(
-    (now.getTime() - activeEntry.clockIn.getTime() - Math.max(breakMs, 0)) / (1000 * 60 * 60),
-    0
-  );
+  
+  // Use soft cap logic for clock out
+  const entryWithCap = activeEntry as unknown as MutableTimeEntry;
+  
+  // If currently on break, end break first (auto-close the break)
+  if (entryWithCap.state === TimeEntryState.ON_BREAK) {
+    prepareEndBreak(entryWithCap, now);
+  }
+  
+  // Apply clock out logic with soft cap
+  prepareClockOut(entryWithCap, now);
+  
+  // Calculate duration from accumulated work seconds
+  const durationHours = entryWithCap.workAccumSeconds / 3600;
 
   // Parse image paths if provided
   let imagePaths: string[] = [];
@@ -176,6 +222,12 @@ export async function clockOut(formData: FormData) {
       breakEnd: activeEntry.breakStart && !activeEntry.breakEnd ? now : activeEntry.breakEnd,
       // Store images in TimeEntry if no jobId (for non-job clock-ins)
       images: !activeEntry.jobId && imagePaths.length > 0 ? JSON.stringify(imagePaths) : activeEntry.images,
+      // Soft cap fields
+      state: entryWithCap.state,
+      workAccumSeconds: entryWithCap.workAccumSeconds,
+      lastStateChangeAt: entryWithCap.lastStateChangeAt,
+      flagStatus: entryWithCap.flagStatus,
+      overCapAt: entryWithCap.overCapAt,
     },
   });
 
@@ -199,7 +251,12 @@ export async function clockOut(formData: FormData) {
     }
   }
 
-  return { ok: true, entry };
+  // Return info about flag status
+  return { 
+    ok: true, 
+    entry,
+    isOverCap: entryWithCap.flagStatus === FlagStatus.OVER_CAP,
+  };
 }
 
 export async function startBreak() {
@@ -219,19 +276,41 @@ export async function startBreak() {
     return { ok: false, error: "Not clocked in" };
   }
 
-  if (activeEntry.breakStart && !activeEntry.breakEnd) {
+  // Check state instead of breakStart/breakEnd for soft cap compatibility
+  if (activeEntry.state === TimeEntryState.ON_BREAK) {
     return { ok: false, error: "Break already started" };
   }
 
   const now = centralToUTC(nowInCentral().toDate());
 
+  // Use soft cap logic - settles work time before transitioning to break
+  const entryWithCap = activeEntry as unknown as MutableTimeEntry;
+  prepareStartBreak(entryWithCap, now);
+  
+  // Check if approaching cap and send notification
+  const netWorkSeconds = entryWithCap.workAccumSeconds;
+  const capSeconds = entryWithCap.capMinutes * 60;
+  const isNearCap = netWorkSeconds >= (capSeconds - 30 * 60); // Within 30 minutes
+
   const entry = await prisma.timeEntry.update({
     where: { id: activeEntry.id },
-    data: { breakStart: now, breakEnd: null },
+    data: { 
+      breakStart: now, 
+      breakEnd: null,
+      // Soft cap fields
+      state: entryWithCap.state,
+      workAccumSeconds: entryWithCap.workAccumSeconds,
+      lastStateChangeAt: entryWithCap.lastStateChangeAt,
+    },
     include: { job: { select: { title: true, id: true } } },
   });
 
-  return { ok: true, entry };
+  return { 
+    ok: true, 
+    entry,
+    netWorkSeconds: entryWithCap.workAccumSeconds,
+    isNearCap,
+  };
 }
 
 export async function endBreak() {
@@ -251,23 +330,38 @@ export async function endBreak() {
     return { ok: false, error: "Not clocked in" };
   }
 
-  if (!activeEntry.breakStart) {
+  // Check state instead of breakStart/breakEnd for soft cap compatibility
+  if (activeEntry.state !== TimeEntryState.ON_BREAK) {
     return { ok: false, error: "No break in progress" };
-  }
-
-  if (activeEntry.breakEnd) {
-    return { ok: false, error: "Break already ended" };
   }
 
   const now = centralToUTC(nowInCentral().toDate());
 
+  // Use soft cap logic - sets state back to WORKING
+  const entryWithCap = activeEntry as unknown as MutableTimeEntry;
+  prepareEndBreak(entryWithCap, now);
+  
+  // Apply soft cap flag check after resuming work
+  applySoftCapFlag(entryWithCap, now);
+
   const entry = await prisma.timeEntry.update({
     where: { id: activeEntry.id },
-    data: { breakEnd: now },
+    data: { 
+      breakEnd: now,
+      // Soft cap fields
+      state: entryWithCap.state,
+      lastStateChangeAt: entryWithCap.lastStateChangeAt,
+      flagStatus: entryWithCap.flagStatus,
+      overCapAt: entryWithCap.overCapAt,
+    },
     include: { job: { select: { title: true, id: true } } },
   });
 
-  return { ok: true, entry };
+  return { 
+    ok: true, 
+    entry,
+    isOverCap: entryWithCap.flagStatus === FlagStatus.OVER_CAP,
+  };
 }
 
 export async function getCurrentStatus() {
@@ -288,6 +382,31 @@ export async function getCurrentStatus() {
       job: { select: { title: true, id: true } },
     },
   });
+
+  // If there's an active entry, compute current net work time
+  if (activeEntry) {
+    const now = centralToUTC(nowInCentral().toDate());
+    const entryWithCap = activeEntry as unknown as TimeEntryWithCap;
+    const netWorkSeconds = getNetWorkSeconds(entryWithCap, now);
+    const capSeconds = entryWithCap.capMinutes * 60;
+    const isNearCap = isApproachingCap(entryWithCap, now);
+    const isOverCap = entryWithCap.flagStatus === FlagStatus.OVER_CAP || netWorkSeconds >= capSeconds;
+    
+    return { 
+      ok: true, 
+      activeEntry,
+      softCap: {
+        netWorkSeconds,
+        netWorkHours: netWorkSeconds / 3600,
+        capMinutes: entryWithCap.capMinutes,
+        capSeconds,
+        isNearCap,
+        isOverCap,
+        flagStatus: entryWithCap.flagStatus,
+        state: entryWithCap.state,
+      }
+    };
+  }
 
   return { ok: true, activeEntry };
 }
@@ -565,6 +684,199 @@ export async function getPayPeriodSummary() {
   } catch (error) {
     console.error("Get pay period summary error:", error);
     return { ok: false, error: "Failed to get pay period summary" };
+  }
+}
+
+/**
+ * Evaluate soft cap for all open time entries.
+ * This is called by the background job to flag entries that have exceeded 16h net work time.
+ * Does NOT auto-clock-out any entries.
+ * 
+ * @returns Object with flagged entry count and any errors
+ */
+export async function evaluateSoftCapForOpenEntries() {
+  const now = centralToUTC(nowInCentral().toDate());
+  
+  try {
+    // Find all open entries that are not already flagged as OVER_CAP
+    const openEntries = await prisma.timeEntry.findMany({
+      where: {
+        clockOut: null,
+        flagStatus: { not: FlagStatus.OVER_CAP },
+      },
+      select: {
+        id: true,
+        userId: true,
+        state: true,
+        workAccumSeconds: true,
+        lastStateChangeAt: true,
+        capMinutes: true,
+        flagStatus: true,
+        overCapAt: true,
+      },
+    });
+
+    let flaggedCount = 0;
+    const errors: string[] = [];
+
+    for (const entry of openEntries) {
+      try {
+        const entryWithCap = entry as unknown as MutableTimeEntry;
+        const netWorkSeconds = getNetWorkSeconds(entryWithCap, now);
+        const capSeconds = entryWithCap.capMinutes * 60;
+        
+        if (netWorkSeconds >= capSeconds) {
+          // Apply soft cap flag
+          applySoftCapFlag(entryWithCap, now);
+          
+          // Update in database
+          await prisma.timeEntry.update({
+            where: { id: entry.id },
+            data: {
+              flagStatus: entryWithCap.flagStatus,
+              overCapAt: entryWithCap.overCapAt,
+            },
+          });
+          
+          flaggedCount++;
+          
+          // Create notification for the user
+          try {
+            await createNotification(
+              entry.userId,
+              "Time Entry Over 16 Hours",
+              "Your active time entry has exceeded 16 hours of net work time (breaks excluded). Please clock out or contact a manager.",
+              "WARNING",
+              "/time-clock"
+            );
+            
+            // Also notify managers/admins
+            const managers = await prisma.user.findMany({
+              where: {
+                role: { in: ["ADMIN", "MANAGER"] },
+                isVerified: true,
+                status: "APPROVED",
+              },
+              select: { id: true },
+            });
+            
+            for (const manager of managers) {
+              await createNotification(
+                manager.id,
+                "Employee Time Entry Flagged",
+                `A time entry has exceeded 16 hours of net work time and requires review.`,
+                "WARNING",
+                "/hr"
+              );
+            }
+          } catch (notifError) {
+            // Don't fail the cap evaluation if notification fails
+            console.error("Failed to create over-cap notification:", notifError);
+          }
+        }
+      } catch (entryError) {
+        const errorMsg = `Failed to evaluate entry ${entry.id}: ${entryError}`;
+        console.error(errorMsg);
+        errors.push(errorMsg);
+      }
+    }
+
+    return {
+      ok: true,
+      processed: openEntries.length,
+      flagged: flaggedCount,
+      errors: errors.length > 0 ? errors : undefined,
+    };
+  } catch (error) {
+    console.error("Soft cap evaluation error:", error);
+    return { ok: false, error: "Failed to evaluate soft cap" };
+  }
+}
+
+/**
+ * Get all flagged time entries for admin review.
+ * 
+ * @returns List of flagged entries with user details
+ */
+export async function getFlaggedTimeEntries() {
+  const session = await getServerSession(authOptions);
+  
+  if (!session?.user) {
+    return { ok: false, error: "Not authenticated" };
+  }
+
+  const userRole = (session.user as any).role;
+  if (userRole !== "ADMIN" && userRole !== "MANAGER") {
+    return { ok: false, error: "Not authorized" };
+  }
+
+  try {
+    const flaggedEntries = await prisma.timeEntry.findMany({
+      where: {
+        flagStatus: FlagStatus.OVER_CAP,
+      },
+      include: {
+        user: { select: { id: true, name: true, email: true } },
+        job: { select: { id: true, title: true } },
+      },
+      orderBy: { overCapAt: "asc" },
+    });
+
+    return { ok: true, entries: flaggedEntries };
+  } catch (error) {
+    console.error("Get flagged entries error:", error);
+    return { ok: false, error: "Failed to get flagged entries" };
+  }
+}
+
+/**
+ * Resolve a flagged time entry (admin action).
+ * Sets flagStatus to RESOLVED.
+ * 
+ * @param entryId The time entry ID to resolve
+ * @param resolution Optional resolution notes
+ * @returns Success/failure result
+ */
+export async function resolveFlaggedEntry(entryId: string, resolution?: string) {
+  const session = await getServerSession(authOptions);
+  
+  if (!session?.user) {
+    return { ok: false, error: "Not authenticated" };
+  }
+
+  const userRole = (session.user as any).role;
+  if (userRole !== "ADMIN" && userRole !== "MANAGER") {
+    return { ok: false, error: "Not authorized" };
+  }
+
+  try {
+    const entry = await prisma.timeEntry.findUnique({
+      where: { id: entryId },
+    });
+
+    if (!entry) {
+      return { ok: false, error: "Entry not found" };
+    }
+
+    if (entry.flagStatus !== FlagStatus.OVER_CAP) {
+      return { ok: false, error: "Entry is not flagged as OVER_CAP" };
+    }
+
+    await prisma.timeEntry.update({
+      where: { id: entryId },
+      data: {
+        flagStatus: FlagStatus.RESOLVED,
+        // Optionally append resolution note
+        notes: resolution 
+          ? `${entry.notes || ""}\n[RESOLVED: ${resolution}]`.trim()
+          : entry.notes,
+      },
+    });
+
+    return { ok: true };
+  } catch (error) {
+    console.error("Resolve flagged entry error:", error);
+    return { ok: false, error: "Failed to resolve entry" };
   }
 }
 

@@ -47,6 +47,11 @@ jobs:
         env:
           CI: true
 
+      - name: Run soft cap self-test
+        run: npm run test:soft-cap
+        env:
+          CI: true
+
       - name: Upload coverage reports
         uses: codecov/codecov-action@v4
         if: always()
