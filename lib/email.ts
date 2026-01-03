@@ -306,3 +306,286 @@ export async function sendJobStatusEmail(
   }
 }
 
+/**
+ * Types for EOD Report Email
+ */
+export interface EodEmployeeSummaryEmail {
+  name: string;
+  email: string | null;
+  netWorkHours: number;
+  breakHours: number;
+  paidHours: number;
+  hourlyRate: number;
+  laborCost: number;
+  workDescription: string[];
+  jobsWorked: { title: string; hours: number }[];
+  flags: string[];
+}
+
+export interface EodJobSnapshotEmail {
+  title: string;
+  jobNumber: string | null;
+  revenue: number | null;
+  revenueSource: string | null;
+  costToday: { labor: number; materials: number; other: number; total: number };
+  costToDate: { labor: number; materials: number; other: number; total: number };
+  profit: number | null;
+  margin: number | null;
+  status: string;
+  alerts: string[];
+}
+
+/**
+ * Send End-of-Day report email
+ */
+export async function sendEodReportEmail(
+  to: string[],
+  reportDate: string,
+  orgName: string,
+  summary: {
+    totalLaborHours: number;
+    totalLaborCost: number;
+    employeeCount: number;
+    jobCount: number;
+    flagCount: number;
+  },
+  employees: EodEmployeeSummaryEmail[],
+  jobs: EodJobSnapshotEmail[],
+  exceptions: string[]
+) {
+  if (to.length === 0) {
+    return { success: false, error: "No recipients specified" } as const;
+  }
+
+  if (isEmailDisabled || !resend) {
+    console.error("❌ EMAIL SENDING DISABLED - cannot send EOD report");
+    return {
+      success: false,
+      error: "Email service not configured",
+    } as const;
+  }
+
+  const productionUrl = process.env.PRODUCTION_URL || "https://shoptofield.com/app";
+
+  // Format currency helper
+  const formatCurrency = (amount: number) => `$${amount.toFixed(2)}`;
+  const formatHours = (hours: number) => `${hours.toFixed(1)}h`;
+  const formatPercent = (decimal: number | null) => 
+    decimal !== null ? `${(decimal * 100).toFixed(1)}%` : 'N/A';
+
+  // Build employee cards HTML
+  const employeeCardsHtml = employees.map(emp => `
+    <div style="background: #ffffff; border-radius: 8px; padding: 16px; margin-bottom: 12px; border: 1px solid #e5e7eb;">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+        <div>
+          <strong style="font-size: 15px; color: #111827;">${emp.name}</strong>
+          ${emp.email ? `<div style="font-size: 12px; color: #6b7280;">${emp.email}</div>` : ''}
+        </div>
+        <div style="text-align: right;">
+          <div style="font-size: 16px; font-weight: 600; color: #059669;">${formatCurrency(emp.laborCost)}</div>
+          <div style="font-size: 11px; color: #6b7280;">@ ${formatCurrency(emp.hourlyRate)}/hr</div>
+        </div>
+      </div>
+      <div style="display: flex; gap: 16px; margin-bottom: 8px; font-size: 13px;">
+        <div><span style="color: #6b7280;">Work:</span> <strong>${formatHours(emp.netWorkHours)}</strong></div>
+        <div><span style="color: #6b7280;">Break:</span> ${formatHours(emp.breakHours)}</div>
+        <div><span style="color: #6b7280;">Paid:</span> ${formatHours(emp.paidHours)}</div>
+      </div>
+      ${emp.jobsWorked.length > 0 ? `
+        <div style="font-size: 12px; color: #374151; margin-bottom: 8px;">
+          <strong>Jobs:</strong> ${emp.jobsWorked.map(j => `${j.title} (${formatHours(j.hours)})`).join(', ')}
+        </div>
+      ` : ''}
+      ${emp.workDescription.length > 0 ? `
+        <div style="font-size: 12px; color: #6b7280; background: #f9fafb; padding: 8px; border-radius: 4px; margin-bottom: 8px;">
+          ${emp.workDescription.map(d => `• ${d}`).join('<br>')}
+        </div>
+      ` : ''}
+      ${emp.flags.length > 0 ? `
+        <div style="margin-top: 8px;">
+          ${emp.flags.map(f => `<span style="display: inline-block; background: ${f === 'over_cap' || f === 'open_entry' ? '#fef2f2' : '#fef9c3'}; color: ${f === 'over_cap' || f === 'open_entry' ? '#991b1b' : '#854d0e'}; font-size: 10px; padding: 2px 6px; border-radius: 4px; margin-right: 4px; text-transform: uppercase;">${f.replace('_', ' ')}</span>`).join('')}
+        </div>
+      ` : ''}
+    </div>
+  `).join('');
+
+  // Build job table rows HTML
+  const jobRowsHtml = jobs.map(job => `
+    <tr style="border-bottom: 1px solid #e5e7eb;">
+      <td style="padding: 12px 8px; vertical-align: top;">
+        <div style="font-weight: 600; color: #111827;">${job.title}</div>
+        ${job.jobNumber ? `<div style="font-size: 11px; color: #6b7280;">${job.jobNumber}</div>` : ''}
+        <div style="font-size: 11px; color: #6b7280; margin-top: 2px;">Status: ${job.status}</div>
+      </td>
+      <td style="padding: 12px 8px; text-align: right; vertical-align: top;">
+        <div style="font-weight: 600; color: ${job.revenue !== null ? '#111827' : '#dc2626'};">
+          ${job.revenue !== null ? formatCurrency(job.revenue) : 'MISSING'}
+        </div>
+        ${job.revenueSource ? `<div style="font-size: 10px; color: #6b7280;">${job.revenueSource}</div>` : ''}
+      </td>
+      <td style="padding: 12px 8px; text-align: right; vertical-align: top; font-size: 13px;">
+        <div>${formatCurrency(job.costToday.total)}</div>
+        <div style="font-size: 10px; color: #6b7280;">L: ${formatCurrency(job.costToday.labor)}</div>
+      </td>
+      <td style="padding: 12px 8px; text-align: right; vertical-align: top; font-size: 13px;">
+        <div>${formatCurrency(job.costToDate.total)}</div>
+      </td>
+      <td style="padding: 12px 8px; text-align: right; vertical-align: top;">
+        <div style="font-weight: 600; color: ${job.profit !== null ? (job.profit >= 0 ? '#059669' : '#dc2626') : '#6b7280'};">
+          ${job.profit !== null ? formatCurrency(job.profit) : 'N/A'}
+        </div>
+        <div style="font-size: 11px; color: ${job.margin !== null && job.margin < 0.2 ? '#dc2626' : '#6b7280'};">
+          ${formatPercent(job.margin)}
+        </div>
+      </td>
+    </tr>
+    ${job.alerts.length > 0 ? `
+      <tr>
+        <td colspan="5" style="padding: 4px 8px 12px 8px;">
+          ${job.alerts.map(a => `<span style="display: inline-block; background: #fef2f2; color: #991b1b; font-size: 10px; padding: 2px 6px; border-radius: 4px; margin-right: 4px; text-transform: uppercase;">${a.replace('_', ' ')}</span>`).join('')}
+        </td>
+      </tr>
+    ` : ''}
+  `).join('');
+
+  // Build exceptions list HTML
+  const exceptionsHtml = exceptions.length > 0 ? `
+    <div style="background: #fef2f2; border-radius: 8px; padding: 16px; margin-top: 24px; border: 1px solid #fecaca;">
+      <h3 style="margin: 0 0 12px 0; font-size: 14px; color: #991b1b;">⚠️ Exceptions & Flags (${exceptions.length})</h3>
+      <ul style="margin: 0; padding-left: 20px; font-size: 13px; color: #7f1d1d;">
+        ${exceptions.map(e => `<li style="margin-bottom: 4px;">${e}</li>`).join('')}
+      </ul>
+    </div>
+  ` : '';
+
+  const subject = `Daily Report — ${orgName} — ${reportDate}`;
+
+  try {
+    const { data, error } = await resend.emails.send({
+      from: "TCB Metal Works <noreply@send.tcbmetalworks.com>",
+      to,
+      subject,
+      html: `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <style>
+              body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.5; color: #111827; background-color: #f3f4f6; margin: 0; padding: 0; }
+              .container { max-width: 680px; margin: 0 auto; padding: 24px; }
+              .card { background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+              .header { background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); padding: 24px; color: white; }
+              .header h1 { margin: 0 0 4px 0; font-size: 22px; font-weight: 700; }
+              .header p { margin: 0; font-size: 14px; opacity: 0.9; }
+              .summary-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1px; background: #e5e7eb; }
+              .summary-item { background: #f9fafb; padding: 16px 12px; text-align: center; }
+              .summary-value { font-size: 20px; font-weight: 700; color: #111827; }
+              .summary-label { font-size: 11px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 4px; }
+              .section { padding: 24px; }
+              .section-title { font-size: 16px; font-weight: 600; color: #111827; margin: 0 0 16px 0; padding-bottom: 8px; border-bottom: 2px solid #e5e7eb; }
+              table { width: 100%; border-collapse: collapse; font-size: 13px; }
+              th { text-align: left; padding: 8px; background: #f9fafb; font-size: 11px; text-transform: uppercase; color: #6b7280; letter-spacing: 0.05em; }
+              .footer { padding: 16px 24px; background: #f9fafb; text-align: center; font-size: 12px; color: #6b7280; border-top: 1px solid #e5e7eb; }
+              .footer a { color: #2563eb; text-decoration: none; }
+              @media (max-width: 600px) {
+                .summary-grid { grid-template-columns: repeat(3, 1fr); }
+                .container { padding: 12px; }
+                .section { padding: 16px; }
+              }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="card">
+                <div class="header">
+                  <h1>📊 Daily Report</h1>
+                  <p>${orgName} — ${reportDate}</p>
+                </div>
+
+                <!-- Summary Grid -->
+                <div class="summary-grid">
+                  <div class="summary-item">
+                    <div class="summary-value">${formatHours(summary.totalLaborHours)}</div>
+                    <div class="summary-label">Labor Hours</div>
+                  </div>
+                  <div class="summary-item">
+                    <div class="summary-value">${formatCurrency(summary.totalLaborCost)}</div>
+                    <div class="summary-label">Labor Cost</div>
+                  </div>
+                  <div class="summary-item">
+                    <div class="summary-value">${summary.employeeCount}</div>
+                    <div class="summary-label">Employees</div>
+                  </div>
+                  <div class="summary-item">
+                    <div class="summary-value">${summary.jobCount}</div>
+                    <div class="summary-label">Jobs</div>
+                  </div>
+                  <div class="summary-item">
+                    <div class="summary-value" style="color: ${summary.flagCount > 0 ? '#dc2626' : '#059669'};">${summary.flagCount}</div>
+                    <div class="summary-label">Flags</div>
+                  </div>
+                </div>
+
+                <!-- Employee Section -->
+                ${employees.length > 0 ? `
+                  <div class="section">
+                    <h2 class="section-title">👥 Employee Activity</h2>
+                    ${employeeCardsHtml}
+                  </div>
+                ` : ''}
+
+                <!-- Job Profit Section -->
+                ${jobs.length > 0 ? `
+                  <div class="section" style="padding-top: 0;">
+                    <h2 class="section-title">💼 Job Profit Snapshot</h2>
+                    <div style="overflow-x: auto;">
+                      <table>
+                        <thead>
+                          <tr>
+                            <th>Job</th>
+                            <th style="text-align: right;">Revenue</th>
+                            <th style="text-align: right;">Cost Today</th>
+                            <th style="text-align: right;">Cost to Date</th>
+                            <th style="text-align: right;">Profit / Margin</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          ${jobRowsHtml}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                ` : ''}
+
+                <!-- Exceptions -->
+                ${exceptionsHtml ? `<div class="section" style="padding-top: 0;">${exceptionsHtml}</div>` : ''}
+
+                <!-- Footer -->
+                <div class="footer">
+                  <p style="margin: 0 0 8px 0;">
+                    <a href="${productionUrl}/hr">View HR Dashboard</a> • 
+                    <a href="${productionUrl}/jobs">View Jobs</a> • 
+                    <a href="${productionUrl}/finance">View Finance</a>
+                  </p>
+                  <p style="margin: 0;">&copy; ${new Date().getFullYear()} ${orgName}. Generated automatically.</p>
+                </div>
+              </div>
+            </div>
+          </body>
+        </html>
+      `,
+    });
+
+    if (error) {
+      console.error("❌ EOD Report email send error:", JSON.stringify(error, null, 2));
+      return { success: false, error };
+    }
+
+    console.log(`✅ EOD Report email sent successfully! ID: ${data?.id}, Recipients: ${to.join(', ')}`);
+    return { success: true, data };
+  } catch (error) {
+    console.error("EOD Report email exception:", error);
+    return { success: false, error };
+  }
+}
+

@@ -12,6 +12,10 @@
     {
       "path": "/api/cron/soft-cap-evaluation",
       "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/eod-report",
+      "schedule": "0 0 * * *"
     }
   ]
 }
