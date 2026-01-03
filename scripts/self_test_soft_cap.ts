@@ -5,8 +5,9 @@
  * This script:
  * 1. Verifies Prisma client is generated
  * 2. Runs unit tests for soft cap logic
- * 3. Runs a smoke test scenario simulating:
- *    clockIn -> work 8h -> startBreak 1h -> endBreak -> work 8h -> verify flagged
+ * 
+ * The unit tests include a comprehensive smoke test scenario covering:
+ * clockIn -> work 8h -> startBreak 1h -> endBreak -> work 8h -> verify flagged
  * 
  * Usage:
  *   npx tsx scripts/self_test_soft_cap.ts
@@ -33,7 +34,7 @@ function log(message: string, color: keyof typeof colors = "reset") {
 }
 
 function logStep(step: number, message: string) {
-  log(`\n[$step ${step}] ${message}`, "blue");
+  log(`\n[Step ${step}] ${message}`, "blue");
 }
 
 function logSuccess(message: string) {
@@ -56,87 +57,6 @@ function runCommand(command: string, description: string): boolean {
   }
 }
 
-async function runSmokeTest(): Promise<boolean> {
-  log("\n  Running smoke test for soft cap logic...", "yellow");
-  
-  try {
-    // Import the cap functions
-    const capModule = await import("../lib/time-entry-cap");
-    const {
-      TimeEntryState,
-      FlagStatus,
-      createInitialCapFields,
-      prepareStartBreak,
-      prepareEndBreak,
-      getNetWorkSeconds,
-      applySoftCapFlag,
-    } = capModule;
-    // Simulate: clockIn -> work 8h -> startBreak 1h -> endBreak -> work 8h -> verify flagged
-    const clockIn = new Date("2026-01-03T06:00:00Z");
-    const capFields = createInitialCapFields(clockIn);
-    
-    // Create mock entry matching MutableTimeEntry interface
-    const entry = {
-      id: "smoke-test-entry",
-      clockIn,
-      clockOut: null,
-      state: capFields.state,
-      workAccumSeconds: capFields.workAccumSeconds,
-      lastStateChangeAt: capFields.lastStateChangeAt,
-      capMinutes: capFields.capMinutes,
-      flagStatus: capFields.flagStatus,
-      overCapAt: capFields.overCapAt,
-    };
-
-    // Step 1: Work 8 hours
-    let now = new Date("2026-01-03T14:00:00Z"); // 6am + 8h = 2pm
-    prepareStartBreak(entry, now);
-    
-    if (entry.workAccumSeconds !== 8 * 3600) {
-      throw new Error(`Expected 8h work, got ${entry.workAccumSeconds / 3600}h`);
-    }
-    logSuccess("Work 8 hours accumulated correctly");
-
-    // Step 2: Break 1 hour
-    now = new Date("2026-01-03T15:00:00Z"); // 2pm + 1h = 3pm
-    prepareEndBreak(entry, now);
-    
-    if (entry.workAccumSeconds !== 8 * 3600) {
-      throw new Error(`Break added time incorrectly: ${entry.workAccumSeconds / 3600}h`);
-    }
-    logSuccess("Break did not add to work time");
-
-    // Step 3: Work another 8 hours (total 16h, should trigger flag)
-    now = new Date("2026-01-03T23:00:00Z"); // 3pm + 8h = 11pm
-    const netWork = getNetWorkSeconds(entry, now);
-    
-    if (netWork !== 16 * 3600) {
-      throw new Error(`Expected 16h net work, got ${netWork / 3600}h`);
-    }
-    logSuccess("Net work time calculated correctly (16h)");
-
-    // Step 4: Apply soft cap flag
-    applySoftCapFlag(entry, now);
-    
-    if (entry.flagStatus !== FlagStatus.OVER_CAP) {
-      throw new Error(`Expected OVER_CAP flag, got ${entry.flagStatus}`);
-    }
-    logSuccess("Entry correctly flagged as OVER_CAP");
-
-    // Step 5: Verify overCapAt is set
-    if (!entry.overCapAt) {
-      throw new Error("overCapAt should be set");
-    }
-    logSuccess("overCapAt timestamp recorded");
-
-    logSuccess("Smoke test passed!");
-    return true;
-  } catch (error) {
-    logError(`Smoke test failed: ${error}`);
-    return false;
-  }
-}
-
 async function main() {
   log("\n========================================", "blue");
   log("  Soft Cap Feature Self-Test", "blue");
@@ -150,18 +70,12 @@ async function main() {
     allPassed = false;
   }
 
-  // Step 2: Run unit tests for soft cap
+  // Step 2: Run unit tests for soft cap (includes smoke test scenarios)
   logStep(2, "Running soft cap unit tests");
   if (!runCommand(
-    "npx jest __tests__/unit/lib/time-entry-cap.test.ts --passWithNoTests",
+    "npx jest __tests__/unit/lib/time-entry-cap.test.ts --passWithNoTests --verbose",
     "Soft cap unit tests"
   )) {
-    allPassed = false;
-  }
-
-  // Step 3: Run smoke test
-  logStep(3, "Running smoke test scenario");
-  if (!(await runSmokeTest())) {
     allPassed = false;
   }
 
