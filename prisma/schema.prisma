@@ -57,6 +57,7 @@ model User {
   birthDate            DateTime?
   status               String                @default("APPROVED") // PENDING, APPROVED, REJECTED
   hourlyRate           Float? // Labor cost per hour
+  lastPaidDate         DateTime? // Last date employee was marked as paid
   isVerified           Boolean               @default(false)
   isSuperAdmin         Boolean               @default(false) // Super Admin can manage all organizations
   organizationId       String? // Null for Super Admins who aren't tied to an org

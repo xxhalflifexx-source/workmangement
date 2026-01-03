@@ -15,6 +15,13 @@ import {
   getPayrollSettings,
   updatePayrollSettings,
 } from "./actions";
+import {
+  getPayrollSummary,
+  markEmployeeAsPaid,
+  markAllAsPaid,
+  EmployeePayrollSummary,
+} from "./payroll-actions";
+import { formatCurrency } from "@/lib/pay-period";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { formatDateShort, formatDateInput, formatDateOnlyInput, todayCentralISO, nowInCentral, utcToCentral } from "@/lib/date-utils";
@@ -75,7 +82,7 @@ export default function AdminPage() {
   const [success, setSuccess] = useState<string | undefined>();
   const [logoUrl, setLogoUrl] = useState<string>("");
   const [logoUploading, setLogoUploading] = useState(false);
-  const [activeTab, setActiveTab] = useState<"users" | "settings" | "user-access">("users");
+  const [activeTab, setActiveTab] = useState<"users" | "settings" | "user-access" | "payroll">("users");
   
   // Job Number Settings state
   const [jobNumberPrefix, setJobNumberPrefix] = useState<string>("JOB");
@@ -92,6 +99,13 @@ export default function AdminPage() {
     overtimeRate: 1.5,
   });
   const [payrollSaving, setPayrollSaving] = useState(false);
+  
+  // Payroll Summary state
+  const [payrollSummaries, setPayrollSummaries] = useState<EmployeePayrollSummary[]>([]);
+  const [payrollPeriod, setPayrollPeriod] = useState<{ start: string; end: string; label: string } | null>(null);
+  const [payrollLoading, setPayrollLoading] = useState(false);
+  const [selectedForPay, setSelectedForPay] = useState<Set<string>>(new Set());
+  const [markingPaid, setMarkingPaid] = useState(false);
   
   // User Access Control state
   const [accessUsers, setAccessUsers] = useState<UserWithPermissions[]>([]);
@@ -172,6 +186,43 @@ export default function AdminPage() {
       loadAccessUsers();
     }
   }, [activeTab, isAdmin, loadAccessUsers]);
+
+  // Load payroll data when tab is active
+  const loadPayrollData = useCallback(async () => {
+    setPayrollLoading(true);
+    const res = await getPayrollSummary();
+    if (res.ok && 'summaries' in res && res.summaries && res.currentPeriod) {
+      setPayrollSummaries(res.summaries);
+      setPayrollPeriod(res.currentPeriod);
+    } else if (!res.ok) {
+      setError(res.error);
+    }
+    setPayrollLoading(false);
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === "payroll" && isAdmin) {
+      loadPayrollData();
+    }
+  }, [activeTab, isAdmin, loadPayrollData]);
+
+  // Handle marking employees as paid
+  const handleMarkAsPaid = useCallback(async (employeeIds: string[]) => {
+    setMarkingPaid(true);
+    setError(undefined);
+    setSuccess(undefined);
+    
+    const res = await markAllAsPaid(employeeIds);
+    if (res.ok) {
+      setSuccess(res.message);
+      setSelectedForPay(new Set());
+      // Reload payroll data
+      await loadPayrollData();
+    } else {
+      setError(res.error);
+    }
+    setMarkingPaid(false);
+  }, [loadPayrollData]);
 
   const handleDeleteUser = useCallback(async (userId: string) => {
     setError(undefined);
@@ -476,6 +527,18 @@ export default function AdminPage() {
                   }`}
                 >
                   🔐 <span className="ml-1 sm:ml-0">User Access Control</span>
+                </button>
+              )}
+              {isAdmin && (
+                <button
+                  onClick={() => setActiveTab("payroll")}
+                  className={`py-3 sm:py-4 px-2 sm:px-1 border-b-2 font-medium text-xs sm:text-sm whitespace-nowrap min-h-[44px] flex items-center ${
+                    activeTab === "payroll"
+                      ? "border-green-500 text-green-600"
+                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                  }`}
+                >
+                  💰 <span className="ml-1 sm:ml-0">Payroll</span>
                 </button>
               )}
             </nav>
@@ -1339,6 +1402,223 @@ export default function AdminPage() {
                 setAccessSaving((prev) => ({ ...prev, [userId]: false }));
               }}
             />
+          </div>
+        )}
+
+        {/* Payroll Tab */}
+        {activeTab === "payroll" && isAdmin && (
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200/60">
+            <div className="px-6 sm:px-8 py-5 border-b border-gray-200">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                  <h2 className="text-xl font-semibold text-gray-900">Payroll Overview</h2>
+                  <p className="text-sm text-gray-500 mt-1">
+                    {payrollPeriod 
+                      ? `Current pay period: ${payrollPeriod.label}`
+                      : "View employee hours and earnings"
+                    }
+                  </p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => loadPayrollData()}
+                    disabled={payrollLoading}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+                  >
+                    {payrollLoading ? "Loading..." : "🔄 Refresh"}
+                  </button>
+                  {selectedForPay.size > 0 && (
+                    <button
+                      onClick={() => handleMarkAsPaid(Array.from(selectedForPay))}
+                      disabled={markingPaid}
+                      className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+                    >
+                      {markingPaid ? "Processing..." : `✓ Mark ${selectedForPay.size} as Paid`}
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6">
+              {payrollLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
+                  <span className="ml-3 text-gray-600">Loading payroll data...</span>
+                </div>
+              ) : payrollSummaries.length === 0 ? (
+                <div className="text-center py-12 text-gray-500">
+                  No employees found. Add employees in User Management first.
+                </div>
+              ) : (
+                <>
+                  {/* Summary Cards */}
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-4">
+                      <p className="text-xs text-blue-700 font-medium uppercase tracking-wide">Total Employees</p>
+                      <p className="text-2xl font-bold text-blue-900 mt-1">{payrollSummaries.length}</p>
+                    </div>
+                    <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl border border-green-200 p-4">
+                      <p className="text-xs text-green-700 font-medium uppercase tracking-wide">Total Hours</p>
+                      <p className="text-2xl font-bold text-green-900 mt-1">
+                        {payrollSummaries.reduce((sum, e) => sum + e.currentPeriod.totalHours, 0).toFixed(1)}h
+                      </p>
+                    </div>
+                    <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl border border-amber-200 p-4">
+                      <p className="text-xs text-amber-700 font-medium uppercase tracking-wide">Total Payroll</p>
+                      <p className="text-2xl font-bold text-amber-900 mt-1">
+                        {formatCurrency(payrollSummaries.reduce((sum, e) => sum + e.currentPeriod.totalPay, 0))}
+                      </p>
+                    </div>
+                    <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl border border-purple-200 p-4">
+                      <p className="text-xs text-purple-700 font-medium uppercase tracking-wide">Overtime Hours</p>
+                      <p className="text-2xl font-bold text-purple-900 mt-1">
+                        {payrollSummaries.reduce((sum, e) => sum + e.currentPeriod.overtimeHours, 0).toFixed(1)}h
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Select All */}
+                  <div className="flex items-center gap-3 mb-4 pb-4 border-b border-gray-200">
+                    <input
+                      type="checkbox"
+                      id="selectAll"
+                      checked={selectedForPay.size === payrollSummaries.filter(e => e.currentPeriod.totalHours > 0).length && payrollSummaries.filter(e => e.currentPeriod.totalHours > 0).length > 0}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedForPay(new Set(payrollSummaries.filter(emp => emp.currentPeriod.totalHours > 0).map(emp => emp.id)));
+                        } else {
+                          setSelectedForPay(new Set());
+                        }
+                      }}
+                      className="h-5 w-5 rounded border-gray-300 text-green-600 focus:ring-green-500"
+                    />
+                    <label htmlFor="selectAll" className="text-sm font-medium text-gray-700">
+                      Select all employees with hours
+                    </label>
+                  </div>
+
+                  {/* Employee List */}
+                  <div className="space-y-3">
+                    {payrollSummaries.map((emp) => (
+                      <div
+                        key={emp.id}
+                        className={`border rounded-xl p-4 transition-all ${
+                          selectedForPay.has(emp.id)
+                            ? "border-green-300 bg-green-50"
+                            : "border-gray-200 hover:border-gray-300"
+                        }`}
+                      >
+                        <div className="flex items-start gap-4">
+                          {/* Checkbox */}
+                          <input
+                            type="checkbox"
+                            checked={selectedForPay.has(emp.id)}
+                            onChange={(e) => {
+                              const newSet = new Set(selectedForPay);
+                              if (e.target.checked) {
+                                newSet.add(emp.id);
+                              } else {
+                                newSet.delete(emp.id);
+                              }
+                              setSelectedForPay(newSet);
+                            }}
+                            disabled={emp.currentPeriod.totalHours === 0}
+                            className="mt-1 h-5 w-5 rounded border-gray-300 text-green-600 focus:ring-green-500 disabled:opacity-50"
+                          />
+
+                          {/* Employee Info */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <h3 className="font-semibold text-gray-900 truncate">{emp.name || "Unnamed"}</h3>
+                              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                                emp.role === "ADMIN" ? "bg-red-100 text-red-700" :
+                                emp.role === "MANAGER" ? "bg-blue-100 text-blue-700" :
+                                "bg-gray-100 text-gray-700"
+                              }`}>
+                                {emp.role}
+                              </span>
+                            </div>
+                            <p className="text-sm text-gray-500">{emp.email}</p>
+                            {emp.hourlyRate && (
+                              <p className="text-sm text-gray-600 mt-1">Rate: {formatCurrency(emp.hourlyRate)}/hr</p>
+                            )}
+                            {emp.lastPaidDate && (
+                              <p className="text-xs text-green-600 mt-1">
+                                ✓ Last paid: {new Date(emp.lastPaidDate).toLocaleDateString()}
+                              </p>
+                            )}
+                          </div>
+
+                          {/* Hours & Pay */}
+                          <div className="text-right">
+                            <div className="text-2xl font-bold text-gray-900">
+                              {emp.currentPeriod.totalHours.toFixed(1)}h
+                            </div>
+                            {emp.hourlyRate ? (
+                              <div className="text-lg font-semibold text-green-600">
+                                {formatCurrency(emp.currentPeriod.totalPay)}
+                              </div>
+                            ) : (
+                              <div className="text-sm text-amber-600 font-medium">
+                                No rate set
+                              </div>
+                            )}
+                            {emp.currentPeriod.overtimeHours > 0 && (
+                              <div className="text-xs text-amber-600 mt-1">
+                                +{emp.currentPeriod.overtimeHours.toFixed(1)}h OT
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Jobs Worked */}
+                        {emp.currentPeriod.jobsWorked.length > 0 && (
+                          <div className="mt-3 pt-3 border-t border-gray-100">
+                            <p className="text-xs text-gray-500 mb-1">Jobs worked this period:</p>
+                            <div className="flex flex-wrap gap-1">
+                              {emp.currentPeriod.jobsWorked.slice(0, 5).map((job, idx) => (
+                                <span key={idx} className="px-2 py-0.5 bg-gray-100 text-gray-700 rounded text-xs">
+                                  {job}
+                                </span>
+                              ))}
+                              {emp.currentPeriod.jobsWorked.length > 5 && (
+                                <span className="px-2 py-0.5 bg-gray-100 text-gray-500 rounded text-xs">
+                                  +{emp.currentPeriod.jobsWorked.length - 5} more
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Individual Mark as Paid */}
+                        {emp.currentPeriod.totalHours > 0 && (
+                          <div className="mt-3 pt-3 border-t border-gray-100 flex justify-end">
+                            <button
+                              onClick={async () => {
+                                setMarkingPaid(true);
+                                const res = await markEmployeeAsPaid(emp.id);
+                                if (res.ok) {
+                                  setSuccess(res.message);
+                                  await loadPayrollData();
+                                } else {
+                                  setError(res.error);
+                                }
+                                setMarkingPaid(false);
+                              }}
+                              disabled={markingPaid}
+                              className="text-sm font-medium text-green-600 hover:text-green-700 disabled:opacity-50"
+                            >
+                              ✓ Mark as Paid
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         )}
 
