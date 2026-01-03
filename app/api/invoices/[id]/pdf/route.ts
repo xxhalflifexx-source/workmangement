@@ -53,6 +53,13 @@ export async function GET(
       logoUrl: null,
       createdAt: new Date(),
       updatedAt: new Date(),
+      // Payroll settings (not used in invoices, but required by type)
+      payPeriodType: "weekly",
+      payDay: "friday",
+      payPeriodStartDate: null,
+      overtimeEnabled: false,
+      overtimeType: "weekly40",
+      overtimeRate: 1.5,
     };
   }
 
