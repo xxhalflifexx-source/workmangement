@@ -215,8 +215,8 @@ async function generateEmployeeSummaries(
       clockIn: { gte: dayStart, lte: dayEnd },
     },
     include: {
-      user: { select: { id: true, name: true, email: true, hourlyRate: true } },
-      job: { select: { id: true, title: true, jobNumber: true } },
+      User: { select: { id: true, name: true, email: true, hourlyRate: true } },
+      Job: { select: { id: true, title: true, jobNumber: true } },
     },
     orderBy: { clockIn: 'asc' },
   });
@@ -231,7 +231,7 @@ async function generateEmployeeSummaries(
 
   // Process each user
   for (const [userId, userEntries] of Array.from(entriesByUser.entries())) {
-    const user = userEntries[0].user;
+    const user = userEntries[0].User;
     const flags: string[] = [];
     
     let totalNetWorkHours = 0;
@@ -262,10 +262,10 @@ async function generateEmployeeSummaries(
       totalBreakHours += calculateBreakHours(entry);
 
       // Track job hours
-      if (entry.job) {
+      if (entry.Job) {
         const jobData = jobsMap.get(entry.jobId!) || { 
-          title: entry.job.title, 
-          jobNumber: entry.job.jobNumber,
+          title: entry.Job.title, 
+          jobNumber: entry.Job.jobNumber,
           hours: 0 
         };
         jobData.hours += netWorkHours;
@@ -341,7 +341,7 @@ async function generateJobSnapshots(
     include: {
       expenses: true,
       timeEntries: {
-        include: { user: { select: { hourlyRate: true } } },
+        include: { User: { select: { hourlyRate: true } } },
       },
     },
   });
@@ -376,7 +376,7 @@ async function generateJobSnapshots(
     let hoursToday = 0;
     for (const entry of todayTimeEntries) {
       const hours = getEntryNetWorkHours(entry as any, now);
-      const rate = entry.user.hourlyRate || 0;
+      const rate = entry.User?.hourlyRate || 0;
       hoursToday += hours;
       laborCostToday += hours * rate;
     }
@@ -396,7 +396,7 @@ async function generateJobSnapshots(
     let totalHoursToDate = 0;
     for (const entry of job.timeEntries) {
       const hours = getEntryNetWorkHours(entry as any, now);
-      const rate = entry.user.hourlyRate || 0;
+      const rate = entry.User?.hourlyRate || 0;
       totalHoursToDate += hours;
       laborCostToDate += hours * rate;
     }
@@ -528,8 +528,8 @@ async function generateTimeCorrections(
         },
       },
       include: {
-        user: { select: { id: true, name: true, email: true } },
-        job: { select: { id: true, title: true, jobNumber: true } },
+        User: { select: { id: true, name: true, email: true } },
+        Job: { select: { id: true, title: true, jobNumber: true } },
       },
       orderBy: { correctionAppliedAt: 'asc' },
     });
@@ -543,10 +543,10 @@ async function generateTimeCorrections(
 
       corrections.push({
         entryId: entry.id,
-        employeeName: entry.user.name || 'Unknown',
-        employeeEmail: entry.user.email,
-        jobTitle: entry.job?.title || null,
-        jobNumber: entry.job?.jobNumber || null,
+        employeeName: entry.User?.name || 'Unknown',
+        employeeEmail: entry.User?.email || '',
+        jobTitle: entry.Job?.title || null,
+        jobNumber: entry.Job?.jobNumber || null,
         clockIn: entry.clockIn,
         wrongRecordedHours: Math.round(wrongRecordedHours * 100) / 100,
         correctedHours: Math.round(correctedHours * 100) / 100,
@@ -557,7 +557,7 @@ async function generateTimeCorrections(
 
       // Add to exceptions list
       exceptions.push(
-        `${entry.user.name || entry.user.email}: Forgot to clock out correction (${wrongRecordedHours.toFixed(1)}h → ${correctedHours.toFixed(1)}h)`
+        `${entry.User?.name || entry.User?.email || 'Unknown'}: Forgot to clock out correction (${wrongRecordedHours.toFixed(1)}h → ${correctedHours.toFixed(1)}h)`
       );
     }
   } catch (error) {

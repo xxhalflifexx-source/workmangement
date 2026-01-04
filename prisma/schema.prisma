@@ -1,110 +1,15 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
 datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
 
-generator client {
-  provider = "prisma-client-js"
-}
-
-// Organization model for multi-tenant support
-model Organization {
-  id          String   @id @default(cuid())
-  name        String
-  slug        String   @unique // URL-friendly identifier
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Job numbering settings
-  jobNumberPrefix  String  @default("JOB")  // e.g., "TCB" for TCB Metal Works
-  jobNumberCounter Int     @default(0)      // Current counter for the year
-  jobNumberYear    Int?                     // Year of current counter (resets when year changes)
-
-  // Relations
-  users            User[]
-  jobs             Job[]
-  customers        Customer[]
-  inventoryItems   InventoryItem[]
-  invoices         Invoice[]
-  quotations       Quotation[]
-  materialRequests MaterialRequest[]
-  companySettings  CompanySettings[]
-  timeEntries      TimeEntry[]
-  jobExpenses      JobExpense[]
-  notifications    Notification[]
-  manualFolders    ManualFolder[]
-  manualFiles      ManualFile[]
-  operationsCommonFolders OperationsCommonFolder[]
-  operationsCommonFiles   OperationsCommonFile[]
-  sopDocuments     SOPDocument[]
-  sopTemplates     SOPTemplate[]
-  incidentReports  IncidentReport[]
-
-  @@index([slug])
-  @@index([isActive])
-}
-
-model User {
-  id                   String                @id @default(cuid())
-  name                 String?
-  email                String?               @unique
-  phone                String?
-  passwordHash         String?
-  role                 String                @default("EMPLOYEE")
-  gender               String?
-  birthDate            DateTime?
-  status               String                @default("APPROVED") // PENDING, APPROVED, REJECTED
-  hourlyRate           Float? // Labor cost per hour
-  lastPaidDate         DateTime? // Last date employee was marked as paid
-  isVerified           Boolean               @default(false)
-  isSuperAdmin         Boolean               @default(false) // Super Admin can manage all organizations
-  organizationId       String? // Null for Super Admins who aren't tied to an org
-  verificationCode     String?
-  codeExpiresAt        DateTime?
-  resetToken           String?
-  resetTokenExpiresAt  DateTime?
-  permissions          String?               @default("{}") // JSON string of module permissions
-  createdAt            DateTime              @default(now())
-  updatedAt            DateTime              @updatedAt
-  organization         Organization?         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  accounts             Account[]
-  sessions             Session[]
-  timeEntries          TimeEntry[]
-  assignedJobs         Job[]                 @relation("AssignedJobs")
-  createdJobs          Job[]                 @relation("CreatedJobs")
-  jobAssignments       JobAssignment[]
-  jobActivities        JobActivity[]
-  inventoryAdjustments InventoryAdjustment[]
-  materialRequests     MaterialRequest[]
-  jobExpenses          JobExpense[]
-  /// QC inspections performed by this manager/admin
-  qcRecords            QCRecord[]
-  /// Rework entries where this user was identified as responsible
-  reworkResponsibleFor ReworkEntry[]         @relation("ReworkResponsible")
-  /// Rework entries created/logged by this user (QC/admin)
-  reworkCreated        ReworkEntry[]         @relation("ReworkCreatedBy")
-  notifications        Notification[]
-  manualFolders        ManualFolder[]
-  manualFiles          ManualFile[]
-  operationsCommonFolders OperationsCommonFolder[]
-  operationsCommonFiles   OperationsCommonFile[]
-  sopDocuments         SOPDocument[]
-  sopTemplates         SOPTemplate[]
-  ocrExtractionSuccesses OCRExtractionSuccess[]
-  ocrCorrections       OCRCorrection[]
-  ocrFormatDetections  OCRFormatDetection[]
-  pushTokens           PushToken[]
-  incidentReportsCreated IncidentReport[]
-  incidentInvolvements   IncidentEmployee[]
-
-  @@index([organizationId])
-  @@index([isSuperAdmin])
-}
-
 model Account {
-  id                String  @id @default(cuid())
+  id                String  @id
   userId            String
   type              String
   provider          String
@@ -116,351 +21,488 @@ model Account {
   scope             String?
   id_token          String?
   session_state     String?
-  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  User              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
 }
 
-model Session {
-  id           String   @id @default(cuid())
-  sessionToken String   @unique
-  userId       String
-  expires      DateTime
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
-
-model TimeEntry {
-  id             String        @id @default(cuid())
-  userId         String
-  jobId          String?
-  organizationId String?
-  clockIn        DateTime
-  clockOut       DateTime?
-  breakStart     DateTime?
-  breakEnd       DateTime?
-  durationHours  Float? // Computed on clock out for efficiency metrics
-  isRework       Boolean       @default(false)
-  clockInNotes   String? // Description entered at Clock In
-  notes          String? // Description entered at Clock Out
-  images         String? // JSON array of image paths
-  
-  // Soft cap fields for tracking net work time (breaks excluded)
-  state              String    @default("WORKING") // WORKING | ON_BREAK | CLOCKED_OUT
-  workAccumSeconds   Int       @default(0) // Accumulated work time in seconds (excludes break time)
-  lastStateChangeAt  DateTime? // Timestamp of last state transition (for calculating elapsed time)
-  capMinutes         Int       @default(960) // Soft cap threshold in minutes (default: 16 hours = 960 min)
-  flagStatus         String    @default("NONE") // NONE | OVER_CAP | EDIT_REQUEST_PENDING | RESOLVED | FORGOT_CLOCK_OUT
-  overCapAt          DateTime? // Exact timestamp when net work time reached the cap
-  
-  // Forgot-to-clock-out correction fields
-  // When employee uses "Forgot to clock out", we freeze the wrong hours snapshot here
-  wrongRecordedNetSeconds  Int?       // FROZEN snapshot of net work seconds at correction time (NEVER recompute)
-  correctionNote           String?    // Optional note from employee when submitting correction
-  correctionAppliedAt      DateTime?  // Timestamp when correction was applied
-  
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
-  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  job            Job?          @relation(fields: [jobId], references: [id], onDelete: SetNull)
-  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+model CompanySettings {
+  id                 String    @id
+  companyName        String
+  address            String?
+  city               String?
+  state              String?
+  zipCode            String?
+  phone              String?
+  email              String?
+  website            String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime
+  logoUrl            String?
+  organizationId     String?   @unique
+  overtimeEnabled    Boolean   @default(false)
+  overtimeRate       Float?    @default(1.5)
+  overtimeType       String?   @default("weekly40")
+  payDay             String?   @default("friday")
+  payPeriodStartDate DateTime?
+  payPeriodType      String?   @default("weekly")
 
   @@index([organizationId])
-  @@index([state, flagStatus])
-  @@index([lastStateChangeAt])
 }
 
 model Customer {
-  id             String        @id @default(cuid())
+  id             String      @id
   name           String
   phone          String?
   email          String?
   company        String?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime
   organizationId String?
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
-  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  jobs           Job[]
-  invoices       Invoice[]
-  quotations     Quotation[]
+  Invoice        Invoice[]
+  Job            Job[]
+  Quotation      Quotation[]
 
   @@index([organizationId])
+}
+
+model IncidentEmployee {
+  id               String         @id
+  incidentReportId String
+  userId           String
+  role             String         @default("INVOLVED")
+  IncidentReport   IncidentReport @relation(fields: [incidentReportId], references: [id], onDelete: Cascade)
+  User             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([incidentReportId, userId])
+  @@index([incidentReportId])
+  @@index([userId])
+}
+
+model IncidentReport {
+  id               String             @id
+  title            String
+  description      String
+  incidentDate     DateTime
+  location         String
+  injuryDetails    String?
+  witnesses        String?
+  status           String             @default("OPEN")
+  severity         String             @default("LOW")
+  photos           String[]
+  organizationId   String
+  createdById      String
+  jobId            String?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime
+  IncidentEmployee IncidentEmployee[]
+  User             User               @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  Job              Job?               @relation(fields: [jobId], references: [id])
+  Organization     Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([createdById])
+  @@index([jobId])
+  @@index([organizationId])
+  @@index([severity])
+  @@index([status])
+}
+
+model InventoryAdjustment {
+  id             String        @id
+  itemId         String
+  userId         String
+  quantityChange Int
+  reason         String?
+  notes          String?
+  createdAt      DateTime      @default(now())
+  InventoryItem  InventoryItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  User           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model InventoryItem {
+  id                  String                @id
+  name                String
+  sku                 String?               @unique
+  description         String?
+  category            String?
+  quantity            Int                   @default(0)
+  unit                String                @default("pcs")
+  minStockLevel       Int                   @default(0)
+  location            String?
+  supplier            String?
+  costPerUnit         Float?
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime
+  organizationId      String?
+  photos              String?
+  InventoryAdjustment InventoryAdjustment[]
+
+  @@index([organizationId])
+}
+
+model Invoice {
+  id             String        @id
+  jobId          String?
+  customerId     String?
+  customerName   String?
+  customerEmail  String?
+  status         String        @default("DRAFT")
+  issueDate      DateTime      @default(now())
+  dueDate        DateTime?
+  total          Float         @default(0)
+  balance        Float         @default(0)
+  notes          String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime
+  invoiceNumber  String?       @unique
+  sentDate       DateTime?
+  releaseDate    DateTime?
+  collectionDate DateTime?
+  creditDate     DateTime?
+  pdfFiles       String?
+  remarks        String?
+  deletedAt      DateTime?
+  organizationId String?
+  Customer       Customer?     @relation(fields: [customerId], references: [id])
+  Job            Job?          @relation(fields: [jobId], references: [id])
+  InvoiceLine    InvoiceLine[]
+  Payment        Payment[]
+
+  @@index([organizationId])
+}
+
+model InvoiceLine {
+  id          String  @id
+  invoiceId   String
+  description String
+  quantity    Float   @default(1)
+  rate        Float   @default(0)
+  amount      Float   @default(0)
+  Invoice     Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
 }
 
 model Job {
-  id               String            @id @default(cuid())
-  jobNumber        String?           @unique // Auto-generated: PREFIX+YEAR-NUMBER (e.g., TCB2025-0001)
-  title            String
-  description      String?
-  /// Status lifecycle:
-  /// - NOT_STARTED: job created but no one has worked on it yet
-  /// - IN_PROGRESS: at least one active or recent TimeEntry
-  /// - AWAITING_QC: work appears done and waiting for manager/admin QC
-  /// - REWORK: job failed QC and is back with the shop floor
-  /// - COMPLETED: passed QC (or minor issues) and is considered done
-  /// - CANCELLED: job cancelled
-  status           String            @default("NOT_STARTED")
-  priority         String            @default("MEDIUM")
-  assignedTo       String?
-  createdBy        String
-  customerId       String?
-  organizationId   String?
-  pricingType      String            @default("FIXED") // FIXED or T&M (Time & Materials)
-  estimatedPrice   Float? // Quoted/estimated price
-  finalPrice       Float? // Final agreed price
-  estimatedHours   Float? // Planned hours for efficiency calculations
-  dueDate          DateTime?
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
-  assignee         User?             @relation("AssignedJobs", fields: [assignedTo], references: [id], onDelete: SetNull)
-  creator          User              @relation("CreatedJobs", fields: [createdBy], references: [id], onDelete: Cascade)
-  customer         Customer?         @relation(fields: [customerId], references: [id], onDelete: SetNull)
-  organization     Organization?     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  timeEntries      TimeEntry[]
-  activities       JobActivity[]
-  materialRequests MaterialRequest[]
-  expenses         JobExpense[]
-  invoices         Invoice[]
-  quotations       Quotation[]
-  qcRecords        QCRecord[]
-  reworkEntries    ReworkEntry[]
-  assignments      JobAssignment[]
-  incidentReports  IncidentReport[]
+  id                        String            @id
+  title                     String
+  description               String?
+  status                    String            @default("NOT_STARTED")
+  priority                  String            @default("MEDIUM")
+  assignedTo                String?
+  createdBy                 String
+  customerId                String?
+  pricingType               String            @default("FIXED")
+  estimatedPrice            Float?
+  finalPrice                Float?
+  dueDate                   DateTime?
+  createdAt                 DateTime          @default(now())
+  updatedAt                 DateTime
+  estimatedHours            Float?
+  organizationId            String?
+  jobNumber                 String?           @unique
+  IncidentReport            IncidentReport[]
+  Invoice                   Invoice[]
+  User_Job_assignedToToUser User?             @relation("Job_assignedToToUser", fields: [assignedTo], references: [id])
+  User_Job_createdByToUser  User              @relation("Job_createdByToUser", fields: [createdBy], references: [id], onDelete: Cascade)
+  Customer                  Customer?         @relation(fields: [customerId], references: [id])
+  JobActivity               JobActivity[]
+  JobAssignment             JobAssignment[]
+  JobExpense                JobExpense[]
+  MaterialRequest           MaterialRequest[]
+  QCRecord                  QCRecord[]
+  Quotation                 Quotation[]
+  ReworkEntry               ReworkEntry[]
+  TimeEntry                 TimeEntry[]
 
   @@index([organizationId])
 }
 
+model JobActivity {
+  id          String   @id
+  jobId       String
+  userId      String
+  type        String
+  timeEntryId String?
+  notes       String?
+  images      String?
+  createdAt   DateTime @default(now())
+  Job         Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  User        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
 model JobAssignment {
-  id        String   @id @default(cuid())
+  id        String   @id
   jobId     String
   userId    String
   createdAt DateTime @default(now())
-  job       Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  Job       Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  User      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([jobId, userId])
   @@index([jobId])
   @@index([userId])
 }
 
-model JobActivity {
-  id          String   @id @default(cuid())
-  jobId       String
-  userId      String
-  type        String // "TIME_ENTRY" or "UPDATE"
-  timeEntryId String? // Link to time entry if type is TIME_ENTRY
-  notes       String?
-  images      String? // JSON array of image paths
-  createdAt   DateTime @default(now())
-  job         Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
-
-model InventoryItem {
-  id             String                @id @default(cuid())
-  name           String
-  sku            String?               @unique
-  description    String?               @db.Text // Clear text description
-  photos         String?               // JSON array of image URLs - supports multiple photos showing item, condition, identifying marks
-  category       String?
-  quantity       Int                   @default(0)
-  unit           String                @default("pcs") // pcs, kg, lbs, etc.
-  minStockLevel  Int                   @default(0)
-  location       String?
-  supplier       String?
-  costPerUnit    Float?
+model JobExpense {
+  id             String   @id
+  jobId          String
+  userId         String
+  category       String
+  description    String
+  amount         Float
+  quantity       Float    @default(1)
+  unit           String?
+  receiptUrl     String?
+  notes          String?
+  expenseDate    DateTime @default(now())
+  createdAt      DateTime @default(now())
   organizationId String?
-  createdAt      DateTime              @default(now())
-  updatedAt      DateTime              @updatedAt
-  organization   Organization?         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  adjustments    InventoryAdjustment[]
+  Job            Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  User           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([organizationId])
 }
 
-model InventoryAdjustment {
-  id             String        @id @default(cuid())
-  itemId         String
-  userId         String
-  quantityChange Int // Positive for additions, negative for reductions
-  reason         String?
-  notes          String?
+model ManualFile {
+  id             String        @id
+  name           String
+  originalName   String
+  fileType       String
+  fileSize       Int
+  fileUrl        String
+  folderId       String?
+  createdBy      String
   createdAt      DateTime      @default(now())
-  item           InventoryItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
-  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  updatedAt      DateTime
+  organizationId String?
+  User           User          @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+  ManualFolder   ManualFolder? @relation(fields: [folderId], references: [id], onDelete: Cascade)
+
+  @@index([folderId])
+  @@index([organizationId])
 }
 
+model ManualFolder {
+  id                 String         @id
+  name               String
+  parentId           String?
+  createdBy          String
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime
+  organizationId     String?
+  ManualFile         ManualFile[]
+  User               User           @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+  ManualFolder       ManualFolder?  @relation("ManualFolderToManualFolder", fields: [parentId], references: [id], onDelete: Cascade)
+  other_ManualFolder ManualFolder[] @relation("ManualFolderToManualFolder")
+
+  @@index([organizationId])
+  @@index([parentId])
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model MaterialRequest {
-  id                String        @id @default(cuid())
-  requestNumber     String?       @unique // Auto-generated: MR0001, MR0002, etc.
+  id                String    @id
   jobId             String?
   userId            String
-  organizationId    String?
   itemName          String
   quantity          Int
   unit              String
   description       String?
-  priority          String        @default("MEDIUM") // LOW, MEDIUM, HIGH, URGENT
-  status            String        @default("PENDING") // PENDING, APPROVED, REJECTED, FULFILLED, ON_HOLD
-  amount            Float? // Cost/amount for the material request - required before status update
-  requestedDate     DateTime      @default(now())
+  priority          String    @default("MEDIUM")
+  status            String    @default("PENDING")
+  requestedDate     DateTime  @default(now())
   fulfilledDate     DateTime?
-  dateDelivered     DateTime?
   notes             String?
-  recommendedAction String? // APPROVE, PARTIAL, REJECTED - set by admin/manager
-  orderStatus       String? // TO_ORDER, ORDERED, RECEIVED - set by admin/manager
-  job               Job?          @relation(fields: [jobId], references: [id], onDelete: SetNull)
-  user              User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  organization      Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  requestNumber     String?
+  recommendedAction String?
+  dateDelivered     DateTime?
+  orderStatus       String?
+  amount            Float?
+  organizationId    String?
+  Job               Job?      @relation(fields: [jobId], references: [id])
+  User              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([organizationId])
 }
 
-model CompanySettings {
-  id             String        @id @default(cuid())
-  companyName    String
-  address        String?
-  city           String?
-  state          String?
-  zipCode        String?
-  phone          String?
-  email          String?
-  website        String?
-  logoUrl        String?
-  organizationId String?       @unique // One settings per organization
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
-  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-
-  // Pay Period Settings
-  payPeriodType      String?   @default("weekly")  // "weekly" or "biweekly"
-  payDay             String?   @default("friday")  // day of week for pay
-  payPeriodStartDate DateTime? // anchor date for bi-weekly calculation
-  overtimeEnabled    Boolean   @default(false)
-  overtimeType       String?   @default("weekly40") // "weekly40" or "daily8"
-  overtimeRate       Float?    @default(1.5)        // multiplier (1.5x, 2x, etc.)
-
-  @@index([organizationId])
-}
-
-model JobExpense {
-  id             String        @id @default(cuid())
-  jobId          String
-  userId         String // Who recorded the expense
+model Notification {
+  id             String    @id
+  userId         String
+  title          String
+  message        String?
+  type           String    @default("INFO")
+  isRead         Boolean   @default(false)
+  linkUrl        String?
+  createdAt      DateTime  @default(now())
+  readAt         DateTime?
   organizationId String?
-  category       String // Materials, Equipment, Subcontractor, Other
-  description    String
-  amount         Float
-  quantity       Float         @default(1)
-  unit           String? // pcs, hours, lbs, etc.
-  receiptUrl     String? // Path to receipt image
-  notes          String?
-  expenseDate    DateTime      @default(now())
-  createdAt      DateTime      @default(now())
-  job            Job           @relation(fields: [jobId], references: [id], onDelete: Cascade)
-  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  User           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([organizationId])
+  @@index([userId, createdAt])
+  @@index([userId, isRead])
 }
 
-/// Quality Control record for a job.
-/// QC is always performed by a manager or admin.
-model QCRecord {
-  id        String   @id @default(cuid())
-  jobId     String
-  qcUserId  String
-  /// PASS | FAIL | MINOR_ISSUES
-  qcStatus  String
-  /// 1.0 for PASS, 0.5 for MINOR_ISSUES, 0.0 for FAIL
-  qcScore   Float
-  notes     String?
-  /// JSON array of photo URLs, consistent with other image fields
-  photos    String?
-  createdAt DateTime @default(now())
+model OCRCorrection {
+  id                 String   @id
+  receiptText        String
+  originalAmount     Float
+  correctedAmount    Float
+  correctLinePattern String
+  storeName          String?
+  strategy           String
+  formatId           String?
+  userId             String
+  createdAt          DateTime @default(now())
 
-  job    Job  @relation(fields: [jobId], references: [id], onDelete: Cascade)
-  qcUser User @relation(fields: [qcUserId], references: [id], onDelete: Cascade)
+  @@index([formatId])
+  @@index([storeName])
+  @@index([userId])
 }
 
-/// Rework entry created when a job fails QC.
-/// Tracks who was responsible and how often rework happens.
-model ReworkEntry {
-  id                String   @id @default(cuid())
-  jobId             String
-  responsibleUserId String?
-  createdByUserId   String
-  reason            String
+model OCRExtractionSuccess {
+  id              String   @id
+  receiptText     String
+  extractedAmount Float
+  storeName       String?
+  strategy        String
+  linePattern     String
+  formatId        String?
+  userId          String
+  createdAt       DateTime @default(now())
+
+  @@index([formatId])
+  @@index([storeName])
+  @@index([userId])
+}
+
+model OCRFormatDetection {
+  id                String   @id
+  detectedStoreName String
+  correctStoreName  String
+  ocrTextSnippet    String
+  formatId          String?
+  wasCorrect        Boolean
+  userId            String
   createdAt         DateTime @default(now())
 
-  job             Job   @relation(fields: [jobId], references: [id], onDelete: Cascade)
-  responsibleUser User? @relation("ReworkResponsible", fields: [responsibleUserId], references: [id], onDelete: SetNull)
-  createdBy       User  @relation("ReworkCreatedBy", fields: [createdByUserId], references: [id], onDelete: Cascade)
+  @@index([correctStoreName])
+  @@index([detectedStoreName])
+  @@index([userId])
 }
 
-model Invoice {
-  id             String        @id @default(cuid())
-  invoiceNumber  String?       @unique // Auto-generated: INV-YYYY-####, e.g., INV-2025-0001
-  jobId          String?
-  customerId     String?
-  organizationId String?
-  customerName   String?
-  customerEmail  String?
-  status         String        @default("DRAFT") // DRAFT, SENT, PAID, OVERDUE, VOID
-  issueDate      DateTime      @default(now())
-  dueDate        DateTime?
-  sentDate       DateTime? // When invoice was sent to customer
-  releaseDate    DateTime? // When invoice was released/approved
-  collectionDate DateTime? // When payment was collected
-  creditDate     DateTime? // Credit memo date if applicable
-  total          Float         @default(0)
-  balance        Float         @default(0)
-  notes          String?
-  remarks        String? // Admin notes/remarks
-  pdfFiles       String? // JSON array of PDF file URLs
-  deletedAt      DateTime? // Soft delete - invoice number is preserved to prevent reuse
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
-  job            Job?          @relation(fields: [jobId], references: [id], onDelete: SetNull)
-  customer       Customer?     @relation(fields: [customerId], references: [id], onDelete: SetNull)
-  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  lines          InvoiceLine[]
-  payments       Payment[]
+model OCRPatternStats {
+  id           String   @id
+  pattern      String   @unique
+  successCount Int      @default(0)
+  failureCount Int      @default(0)
+  storeName    String?
+  formatId     String?
+  updatedAt    DateTime
 
+  @@index([formatId])
+  @@index([storeName])
+}
+
+model OperationsCommonFile {
+  id                     String                  @id
+  name                   String
+  originalName           String
+  fileType               String
+  fileSize               Int
+  fileUrl                String
+  folderId               String?
+  createdBy              String
+  createdAt              DateTime                @default(now())
+  updatedAt              DateTime
+  organizationId         String?
+  User                   User                    @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+  OperationsCommonFolder OperationsCommonFolder? @relation(fields: [folderId], references: [id], onDelete: Cascade)
+
+  @@index([folderId])
   @@index([organizationId])
 }
 
-model InvoiceLine {
-  id          String  @id @default(cuid())
-  invoiceId   String
-  description String
-  quantity    Float   @default(1)
-  rate        Float   @default(0)
-  amount      Float   @default(0)
-  invoice     Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+model OperationsCommonFolder {
+  id                           String                   @id
+  name                         String
+  parentId                     String?
+  createdBy                    String
+  createdAt                    DateTime                 @default(now())
+  updatedAt                    DateTime
+  organizationId               String?
+  OperationsCommonFile         OperationsCommonFile[]
+  User                         User                     @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+  OperationsCommonFolder       OperationsCommonFolder?  @relation("OperationsCommonFolderToOperationsCommonFolder", fields: [parentId], references: [id], onDelete: Cascade)
+  other_OperationsCommonFolder OperationsCommonFolder[] @relation("OperationsCommonFolderToOperationsCommonFolder")
+
+  @@index([organizationId])
+  @@index([parentId])
+}
+
+model Organization {
+  id               String           @id
+  name             String
+  slug             String           @unique
+  isActive         Boolean          @default(true)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime
+  jobNumberPrefix  String           @default("JOB")
+  jobNumberCounter Int              @default(0)
+  jobNumberYear    Int?
+  IncidentReport   IncidentReport[]
+
+  @@index([isActive])
+  @@index([slug])
 }
 
 model Payment {
-  id          String   @id @default(cuid())
+  id          String   @id
   invoiceId   String
   amount      Float
   method      String?
   notes       String?
   paymentDate DateTime @default(now())
   createdAt   DateTime @default(now())
-  invoice     Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  Invoice     Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+}
+
+model PushToken {
+  id        String   @id
+  token     String   @unique
+  platform  String
+  deviceId  String?
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+
+  @@index([platform])
+  @@index([userId])
+}
+
+model QCRecord {
+  id        String   @id
+  jobId     String
+  qcUserId  String
+  qcStatus  String
+  qcScore   Float
+  notes     String?
+  photos    String?
+  createdAt DateTime @default(now())
+  Job       Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  User      User     @relation(fields: [qcUserId], references: [id], onDelete: Cascade)
 }
 
 model Quotation {
-  id                   String          @id @default(cuid())
-  quotationNumber      String?         @unique // Auto-generated: QUO-2025-0001, etc.
+  id                   String          @id
+  quotationNumber      String?         @unique
   jobId                String?
   customerId           String?
-  organizationId       String?
   customerName         String?
   customerEmail        String?
   customerAddress      String?
   customerPhone        String?
-  status               String          @default("DRAFT") // DRAFT, SENT, ACCEPTED, REJECTED, EXPIRED
+  status               String          @default("DRAFT")
   issueDate            DateTime        @default(now())
   validUntil           DateTime?
   total                Float           @default(0)
@@ -472,282 +514,146 @@ model Quotation {
   preparedByTitle      String?
   shippingFee          Float           @default(0)
   createdAt            DateTime        @default(now())
-  updatedAt            DateTime        @updatedAt
-  job                  Job?            @relation(fields: [jobId], references: [id], onDelete: SetNull)
-  customer             Customer?       @relation(fields: [customerId], references: [id], onDelete: SetNull)
-  organization         Organization?   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  lines                QuotationLine[]
+  updatedAt            DateTime
+  organizationId       String?
+  Customer             Customer?       @relation(fields: [customerId], references: [id])
+  Job                  Job?            @relation(fields: [jobId], references: [id])
+  QuotationLine        QuotationLine[]
 
   @@index([organizationId])
 }
 
 model QuotationLine {
-  id          String    @id @default(cuid())
+  id          String    @id
   quotationId String
   description String
   quantity    Float     @default(1)
   rate        Float     @default(0)
   amount      Float     @default(0)
-  quotation   Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+  Quotation   Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
 }
 
-model Notification {
-  id             String        @id @default(cuid())
-  userId         String
-  organizationId String?
-  title          String
-  message        String?
-  type           String        @default("INFO") // INFO, WARNING, SUCCESS, ERROR, JOB_UPDATE
-  isRead         Boolean       @default(false)
-  linkUrl        String? // Optional link to navigate when clicked
-  createdAt      DateTime      @default(now())
-  readAt         DateTime?
-  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-
-  @@index([userId, isRead])
-  @@index([userId, createdAt])
-  @@index([organizationId])
+model ReworkEntry {
+  id                                       String   @id
+  jobId                                    String
+  responsibleUserId                        String?
+  createdByUserId                          String
+  reason                                   String
+  createdAt                                DateTime @default(now())
+  User_ReworkEntry_createdByUserIdToUser   User     @relation("ReworkEntry_createdByUserIdToUser", fields: [createdByUserId], references: [id], onDelete: Cascade, map: "ReworkEntry_createdBy_fkey")
+  Job                                      Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  User_ReworkEntry_responsibleUserIdToUser User?    @relation("ReworkEntry_responsibleUserIdToUser", fields: [responsibleUserId], references: [id], map: "ReworkEntry_responsibleUser_fkey")
 }
 
-model ManualFolder {
-  id             String         @id @default(cuid())
-  name           String
-  parentId       String? // For nested folders
-  createdBy      String
-  organizationId String?
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
-  parent         ManualFolder?  @relation("FolderHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
-  children       ManualFolder[] @relation("FolderHierarchy")
-  files          ManualFile[]
-  creator        User           @relation(fields: [createdBy], references: [id], onDelete: Cascade)
-  organization   Organization?  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-
-  @@index([parentId])
-  @@index([organizationId])
-}
-
-model ManualFile {
-  id             String        @id @default(cuid())
-  name           String
-  originalName   String
-  fileType       String // pdf, image, word, excel, cad, etc.
-  fileSize       Int // Size in bytes
-  fileUrl        String // URL to the file (Supabase or other storage)
-  folderId       String?
-  createdBy      String
-  organizationId String?
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
-  folder         ManualFolder? @relation(fields: [folderId], references: [id], onDelete: Cascade)
-  creator        User          @relation(fields: [createdBy], references: [id], onDelete: Cascade)
-  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-
-  @@index([folderId])
-  @@index([organizationId])
-}
-
-model OperationsCommonFolder {
-  id             String                   @id @default(cuid())
-  name           String
-  parentId       String? // For nested folders
-  createdBy      String
-  organizationId String?
-  createdAt      DateTime                 @default(now())
-  updatedAt      DateTime                 @updatedAt
-  parent         OperationsCommonFolder?  @relation("OperationsCommonFolderHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
-  children       OperationsCommonFolder[] @relation("OperationsCommonFolderHierarchy")
-  files          OperationsCommonFile[]
-  sopDocuments   SOPDocument[]
-  creator        User                     @relation(fields: [createdBy], references: [id], onDelete: Cascade)
-  organization   Organization?            @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-
-  @@index([parentId])
-  @@index([organizationId])
-}
-
-model OperationsCommonFile {
-  id             String                  @id @default(cuid())
-  name           String
-  originalName   String
-  fileType       String // pdf, image, word, excel, cad, etc.
-  fileSize       Int // Size in bytes
-  fileUrl        String // URL to the file (Supabase or other storage)
-  folderId       String?
-  createdBy      String
-  organizationId String?
-  createdAt      DateTime                @default(now())
-  updatedAt      DateTime                @updatedAt
-  folder         OperationsCommonFolder? @relation(fields: [folderId], references: [id], onDelete: Cascade)
-  creator        User                    @relation(fields: [createdBy], references: [id], onDelete: Cascade)
-  organization   Organization?           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-
-  @@index([folderId])
-  @@index([organizationId])
-}
-
-// SOP Documents for Operations Common
 model SOPDocument {
-  id             String                  @id @default(cuid())
+  id             String   @id
   title          String
-  content        String                  @db.Text // HTML content from rich text editor
+  content        String
   folderId       String?
   createdBy      String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime
   organizationId String?
-  createdAt      DateTime                @default(now())
-  updatedAt      DateTime                @updatedAt
-  folder         OperationsCommonFolder? @relation(fields: [folderId], references: [id], onDelete: Cascade)
-  creator        User                    @relation(fields: [createdBy], references: [id], onDelete: Cascade)
-  organization   Organization?           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([folderId])
   @@index([organizationId])
 }
 
-// Templates for SOP Documents
 model SOPTemplate {
-  id             String        @id @default(cuid())
+  id             String   @id
   name           String
   description    String?
-  content        String        @db.Text // HTML template content
+  content        String
   createdBy      String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime
   organizationId String?
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
-  creator        User          @relation(fields: [createdBy], references: [id], onDelete: Cascade)
-  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([organizationId])
 }
 
-// OCR Learning - Successful Extractions
-model OCRExtractionSuccess {
-  id              String   @id @default(cuid())
-  receiptText     String   @db.Text  // Snippet of OCR text (max 500 chars)
-  extractedAmount Float
-  storeName       String?
-  strategy        String
-  linePattern     String   // The line that matched
-  formatId        String?
-  userId          String
-  createdAt       DateTime @default(now())
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  @@index([storeName])
-  @@index([formatId])
-  @@index([userId])
+model Session {
+  id           String   @id
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  User         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-// OCR Learning - Corrections
-model OCRCorrection {
-  id                 String   @id @default(cuid())
-  receiptText        String   @db.Text  // Snippet of OCR text (max 500 chars)
-  originalAmount     Float
-  correctedAmount    Float
-  correctLinePattern String
-  storeName          String?
-  strategy           String
-  formatId           String?
-  userId             String
-  createdAt          DateTime @default(now())
-  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  @@index([storeName])
-  @@index([formatId])
-  @@index([userId])
-}
-
-// OCR Learning - Format Detection Results
-model OCRFormatDetection {
-  id                String   @id @default(cuid())
-  detectedStoreName String
-  correctStoreName  String
-  ocrTextSnippet    String   @db.Text  // Snippet of OCR text (max 500 chars)
-  formatId          String?
-  wasCorrect        Boolean
-  userId            String
-  createdAt         DateTime @default(now())
-  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  @@index([detectedStoreName])
-  @@index([correctStoreName])
-  @@index([userId])
-}
-
-// OCR Learning - Aggregated Pattern Stats (computed from above tables)
-model OCRPatternStats {
-  id           String   @id @default(cuid())
-  pattern      String   @unique
-  successCount Int      @default(0)
-  failureCount Int      @default(0)
-  storeName    String?
-  formatId     String?
-  updatedAt    DateTime @updatedAt
-  
-  @@index([storeName])
-  @@index([formatId])
-}
-
-// Push Notification Tokens
-model PushToken {
-  id        String   @id @default(cuid())
-  token     String   @unique
-  platform  String   // 'ios' or 'android'
-  deviceId  String?
-  userId    String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  @@index([userId])
-  @@index([platform])
-}
-
-// Incident Reports for workplace safety
-model IncidentReport {
-  id              String   @id @default(cuid())
-  title           String
-  description     String   @db.Text
-  incidentDate    DateTime
-  location        String
-  injuryDetails   String?  @db.Text
-  witnesses       String?  // Comma-separated names or JSON
-  status          String   @default("OPEN") // OPEN, UNDER_REVIEW, RESOLVED, CLOSED
-  severity        String   @default("LOW") // LOW, MEDIUM, HIGH, CRITICAL
-  photos          String[] // Array of photo URLs
-  
-  // Relations
-  organizationId  String
-  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  createdById     String
-  createdBy       User @relation(fields: [createdById], references: [id], onDelete: Cascade)
-  jobId           String?
-  job             Job? @relation(fields: [jobId], references: [id], onDelete: SetNull)
-  
-  // Employees involved (many-to-many)
-  employeesInvolved IncidentEmployee[]
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+model TimeEntry {
+  id                      String    @id
+  userId                  String
+  jobId                   String?
+  clockIn                 DateTime
+  clockOut                DateTime?
+  notes                   String?
+  images                  String?
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime
+  durationHours           Float?
+  isRework                Boolean   @default(false)
+  clockInNotes            String?
+  breakStart              DateTime?
+  breakEnd                DateTime?
+  organizationId          String?
+  capMinutes              Int       @default(960)
+  flagStatus              String    @default("NONE")
+  lastStateChangeAt       DateTime?
+  overCapAt               DateTime?
+  state                   String    @default("WORKING")
+  workAccumSeconds        Int       @default(0)
+  correctionAppliedAt     DateTime?
+  correctionNote          String?
+  wrongRecordedNetSeconds Int?
+  Job                     Job?      @relation(fields: [jobId], references: [id])
+  User                    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([organizationId])
-  @@index([createdById])
-  @@index([jobId])
-  @@index([status])
-  @@index([severity])
 }
 
-// Junction table for employees involved in incidents
-model IncidentEmployee {
-  id               String @id @default(cuid())
-  incidentReportId String
-  incidentReport   IncidentReport @relation(fields: [incidentReportId], references: [id], onDelete: Cascade)
-  userId           String
-  user             User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  role             String @default("INVOLVED") // INVOLVED, WITNESS, INJURED
+model User {
+  id                                              String                   @id
+  name                                            String?
+  email                                           String?                  @unique
+  phone                                           String?
+  passwordHash                                    String?
+  role                                            String                   @default("EMPLOYEE")
+  hourlyRate                                      Float?
+  isVerified                                      Boolean                  @default(false)
+  verificationCode                                String?
+  codeExpiresAt                                   DateTime?
+  createdAt                                       DateTime                 @default(now())
+  updatedAt                                       DateTime
+  resetToken                                      String?
+  resetTokenExpiresAt                             DateTime?
+  birthDate                                       DateTime?
+  gender                                          String?
+  status                                          String                   @default("APPROVED")
+  permissions                                     String?                  @default("{}")
+  isSuperAdmin                                    Boolean                  @default(false)
+  organizationId                                  String?
+  lastPaidDate                                    DateTime?
+  Account                                         Account[]
+  IncidentEmployee                                IncidentEmployee[]
+  IncidentReport                                  IncidentReport[]
+  InventoryAdjustment                             InventoryAdjustment[]
+  Job_Job_assignedToToUser                        Job[]                    @relation("Job_assignedToToUser")
+  Job_Job_createdByToUser                         Job[]                    @relation("Job_createdByToUser")
+  JobActivity                                     JobActivity[]
+  JobAssignment                                   JobAssignment[]
+  JobExpense                                      JobExpense[]
+  ManualFile                                      ManualFile[]
+  ManualFolder                                    ManualFolder[]
+  MaterialRequest                                 MaterialRequest[]
+  Notification                                    Notification[]
+  OperationsCommonFile                            OperationsCommonFile[]
+  OperationsCommonFolder                          OperationsCommonFolder[]
+  QCRecord                                        QCRecord[]
+  ReworkEntry_ReworkEntry_createdByUserIdToUser   ReworkEntry[]            @relation("ReworkEntry_createdByUserIdToUser")
+  ReworkEntry_ReworkEntry_responsibleUserIdToUser ReworkEntry[]            @relation("ReworkEntry_responsibleUserIdToUser")
+  Session                                         Session[]
+  TimeEntry                                       TimeEntry[]
 
-  @@unique([incidentReportId, userId])
-  @@index([incidentReportId])
-  @@index([userId])
+  @@index([isSuperAdmin])
+  @@index([organizationId])
 }
