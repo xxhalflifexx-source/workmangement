@@ -10,12 +10,20 @@
 export const SESSION_STORAGE_KEY = "nextauth.message";
 export const SESSION_INDICATOR_KEY = "nextauth.session.indicator";
 
+// Track last known indicator to prevent duplicate callbacks
+let lastKnownUserId: string | null = null;
+let lastEventTime = 0;
+const DEBOUNCE_MS = 2000; // Minimum 2 seconds between sync events
+
 /**
  * Store session indicator in localStorage
  * This is NOT the token (which is in httpOnly cookie), but an indicator for cross-tab sync
  */
 export function setSessionIndicator(userId: string, email: string) {
   if (typeof window === "undefined") return;
+  
+  // Update our tracking of the current user
+  lastKnownUserId = userId;
   
   const indicator = {
     userId,
@@ -47,6 +55,7 @@ export function getSessionIndicator(): { userId: string; email: string; timestam
  */
 export function clearSessionIndicator() {
   if (typeof window === "undefined") return;
+  lastKnownUserId = null;
   window.localStorage.removeItem(SESSION_INDICATOR_KEY);
 }
 
@@ -92,24 +101,35 @@ export function setupSessionSync(
   if (typeof window === "undefined") return () => {};
 
   const handleStorageChange = (e: StorageEvent) => {
-    // Handle session event broadcasts
+    const now = Date.now();
+    
+    // Debounce: ignore events that happen too quickly
+    if (now - lastEventTime < DEBOUNCE_MS) {
+      return;
+    }
+    
+    // Handle session event broadcasts (explicit signin/signout/update events)
     if (e.key === SESSION_STORAGE_KEY && e.newValue) {
       try {
         const data = JSON.parse(e.newValue);
         switch (data.event) {
           case "signin":
             // Another tab signed in - restore session in this tab
-            console.log("[SessionSync] Sign in detected in another tab, restoring session...");
+            console.log("[SessionSync] Sign in detected in another tab");
+            lastEventTime = now;
             onSignIn?.();
             break;
           case "signout":
             // Another tab signed out - update this tab
             console.log("[SessionSync] Sign out detected in another tab");
+            lastEventTime = now;
+            lastKnownUserId = null;
             onSignOut?.();
             break;
           case "update":
             // Session updated in another tab
             console.log("[SessionSync] Session update detected in another tab");
+            lastEventTime = now;
             onUpdate?.();
             break;
         }
@@ -119,19 +139,43 @@ export function setupSessionSync(
       }
     }
     
-    // Handle session indicator changes
+    // Handle session indicator changes - ONLY for actual user changes
     if (e.key === SESSION_INDICATOR_KEY) {
       if (e.newValue) {
-        // Session indicator was set (login in another tab)
-        console.log("[SessionSync] Session indicator detected, checking session...");
-        onSignIn?.();
+        try {
+          const indicator = JSON.parse(e.newValue);
+          // Only trigger if this is a DIFFERENT user signing in
+          // (not just an indicator refresh for the same user)
+          if (indicator.userId && indicator.userId !== lastKnownUserId) {
+            console.log("[SessionSync] New user session detected in another tab");
+            lastKnownUserId = indicator.userId;
+            lastEventTime = now;
+            onSignIn?.();
+          }
+          // If same user, just update our tracking silently
+          else if (indicator.userId) {
+            lastKnownUserId = indicator.userId;
+          }
+        } catch {
+          // Ignore parse errors
+        }
       } else {
         // Session indicator was removed (logout in another tab)
-        console.log("[SessionSync] Session indicator removed");
-        onSignOut?.();
+        if (lastKnownUserId !== null) {
+          console.log("[SessionSync] Session indicator removed in another tab");
+          lastKnownUserId = null;
+          lastEventTime = now;
+          onSignOut?.();
+        }
       }
     }
   };
+
+  // Initialize lastKnownUserId from current indicator
+  const currentIndicator = getSessionIndicator();
+  if (currentIndicator) {
+    lastKnownUserId = currentIndicator.userId;
+  }
 
   window.addEventListener("storage", handleStorageChange);
   

@@ -21,6 +21,7 @@ export default function SessionInitializer() {
   // Guard refs to prevent multiple simultaneous calls and infinite loops
   const isUpdating = useRef(false);
   const hasInitialized = useRef(false);
+  const indicatorSetForUser = useRef<string | null>(null);
 
   useEffect(() => {
     // Prevent multiple simultaneous init calls
@@ -37,9 +38,12 @@ export default function SessionInitializer() {
         const result = await initializeSession();
         
         if (result.isAuthenticated && result.user) {
-          // Session is valid - store indicator in localStorage for cross-tab sync
-          setSessionIndicator(result.user.id, result.user.email || "");
-          console.log("[SessionInitializer] Session restored:", result.user.email);
+          // Session is valid - store indicator in localStorage for cross-tab sync (once)
+          if (indicatorSetForUser.current !== result.user.id) {
+            setSessionIndicator(result.user.id, result.user.email || "");
+            indicatorSetForUser.current = result.user.id;
+            console.log("[SessionInitializer] Session restored:", result.user.email);
+          }
         } else {
           // No valid session - check if there's an indicator from another tab
           const indicator = getSessionIndicator();
@@ -62,10 +66,11 @@ export default function SessionInitializer() {
     if (status === "loading" || status === "unauthenticated") {
       initSession();
     } else if (status === "authenticated" && session?.user) {
-      // Session is authenticated - ensure indicator is set
+      // Session is authenticated - ensure indicator is set ONCE per user
       const user = session.user as any;
-      if (user.id && user.email) {
+      if (user.id && user.email && indicatorSetForUser.current !== user.id) {
         setSessionIndicator(user.id, user.email);
+        indicatorSetForUser.current = user.id;
       }
     }
   }, [status, session]); // Removed 'update' from deps to prevent re-trigger loops
