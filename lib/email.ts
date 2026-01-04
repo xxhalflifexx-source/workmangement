@@ -327,10 +327,14 @@ export interface EodJobSnapshotEmail {
   jobNumber: string | null;
   revenue: number | null;
   revenueSource: string | null;
+  budget: number | null;
+  hoursToday: number;
   costToday: { labor: number; materials: number; other: number; total: number };
   costToDate: { labor: number; materials: number; other: number; total: number };
   profit: number | null;
   margin: number | null;
+  budgetRemaining: number | null;
+  budgetUsedPercent: number | null;
   status: string;
   alerts: string[];
 }
@@ -409,44 +413,84 @@ export async function sendEodReportEmail(
     </div>
   `).join('');
 
-  // Build job table rows HTML
-  const jobRowsHtml = jobs.map(job => `
-    <tr style="border-bottom: 1px solid #e5e7eb;">
-      <td style="padding: 12px 8px; vertical-align: top;">
-        <div style="font-weight: 600; color: #111827;">${job.title}</div>
-        ${job.jobNumber ? `<div style="font-size: 11px; color: #6b7280;">${job.jobNumber}</div>` : ''}
-        <div style="font-size: 11px; color: #6b7280; margin-top: 2px;">Status: ${job.status}</div>
-      </td>
-      <td style="padding: 12px 8px; text-align: right; vertical-align: top;">
-        <div style="font-weight: 600; color: ${job.revenue !== null ? '#111827' : '#dc2626'};">
-          ${job.revenue !== null ? formatCurrency(job.revenue) : 'MISSING'}
+  // Build job cards HTML (better for showing budget info)
+  const jobCardsHtml = jobs.map(job => {
+    const budgetUsedPct = job.budgetUsedPercent !== null ? Math.min(job.budgetUsedPercent * 100, 100) : 0;
+    const budgetBarColor = job.budgetUsedPercent !== null 
+      ? (job.budgetUsedPercent > 1 ? '#dc2626' : job.budgetUsedPercent > 0.8 ? '#f59e0b' : '#059669')
+      : '#9ca3af';
+    
+    return `
+    <div style="background: #ffffff; border-radius: 8px; padding: 16px; margin-bottom: 12px; border: 1px solid #e5e7eb;">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+        <div>
+          <div style="font-weight: 600; font-size: 15px; color: #111827;">${job.title}</div>
+          ${job.jobNumber ? `<div style="font-size: 11px; color: #6b7280;">${job.jobNumber}</div>` : ''}
+          <div style="font-size: 11px; color: #6b7280; margin-top: 2px;">Status: ${job.status}</div>
         </div>
-        ${job.revenueSource ? `<div style="font-size: 10px; color: #6b7280;">${job.revenueSource}</div>` : ''}
-      </td>
-      <td style="padding: 12px 8px; text-align: right; vertical-align: top; font-size: 13px;">
-        <div>${formatCurrency(job.costToday.total)}</div>
-        <div style="font-size: 10px; color: #6b7280;">L: ${formatCurrency(job.costToday.labor)}</div>
-      </td>
-      <td style="padding: 12px 8px; text-align: right; vertical-align: top; font-size: 13px;">
-        <div>${formatCurrency(job.costToDate.total)}</div>
-      </td>
-      <td style="padding: 12px 8px; text-align: right; vertical-align: top;">
-        <div style="font-weight: 600; color: ${job.profit !== null ? (job.profit >= 0 ? '#059669' : '#dc2626') : '#6b7280'};">
-          ${job.profit !== null ? formatCurrency(job.profit) : 'N/A'}
+        <div style="text-align: right;">
+          <div style="font-size: 11px; color: #6b7280;">Today: ${formatHours(job.hoursToday)}</div>
         </div>
-        <div style="font-size: 11px; color: ${job.margin !== null && job.margin < 0.2 ? '#dc2626' : '#6b7280'};">
-          ${formatPercent(job.margin)}
+      </div>
+      
+      <!-- Budget/Revenue vs Cost Bar -->
+      ${job.budget !== null ? `
+        <div style="margin-bottom: 12px;">
+          <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px;">
+            <span style="color: #6b7280;">Budget: ${formatCurrency(job.budget)}</span>
+            <span style="color: ${budgetBarColor}; font-weight: 600;">${budgetUsedPct.toFixed(0)}% used</span>
+          </div>
+          <div style="background: #e5e7eb; border-radius: 4px; height: 8px; overflow: hidden;">
+            <div style="background: ${budgetBarColor}; height: 100%; width: ${Math.min(budgetUsedPct, 100)}%; transition: width 0.3s;"></div>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 11px; margin-top: 4px;">
+            <span style="color: #6b7280;">Spent: ${formatCurrency(job.costToDate.total)}</span>
+            <span style="color: ${job.budgetRemaining !== null && job.budgetRemaining >= 0 ? '#059669' : '#dc2626'};">
+              ${job.budgetRemaining !== null ? (job.budgetRemaining >= 0 ? `${formatCurrency(job.budgetRemaining)} remaining` : `${formatCurrency(Math.abs(job.budgetRemaining))} over`) : ''}
+            </span>
+          </div>
         </div>
-      </td>
-    </tr>
-    ${job.alerts.length > 0 ? `
-      <tr>
-        <td colspan="5" style="padding: 4px 8px 12px 8px;">
-          ${job.alerts.map(a => `<span style="display: inline-block; background: #fef2f2; color: #991b1b; font-size: 10px; padding: 2px 6px; border-radius: 4px; margin-right: 4px; text-transform: uppercase;">${a.replace('_', ' ')}</span>`).join('')}
-        </td>
-      </tr>
-    ` : ''}
-  `).join('');
+      ` : `
+        <div style="margin-bottom: 12px; padding: 8px; background: #fef2f2; border-radius: 4px;">
+          <span style="color: #991b1b; font-size: 12px;">⚠️ No budget/price set for this job</span>
+        </div>
+      `}
+      
+      <!-- Cost Breakdown -->
+      <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; font-size: 12px;">
+        <div style="background: #f9fafb; padding: 8px; border-radius: 4px;">
+          <div style="color: #6b7280; font-size: 10px; text-transform: uppercase;">Today's Cost</div>
+          <div style="font-weight: 600; color: #111827;">${formatCurrency(job.costToday.total)}</div>
+          <div style="color: #6b7280; font-size: 10px;">Labor: ${formatCurrency(job.costToday.labor)}</div>
+        </div>
+        <div style="background: #f9fafb; padding: 8px; border-radius: 4px;">
+          <div style="color: #6b7280; font-size: 10px; text-transform: uppercase;">Total Cost</div>
+          <div style="font-weight: 600; color: #111827;">${formatCurrency(job.costToDate.total)}</div>
+          <div style="color: #6b7280; font-size: 10px;">Labor: ${formatCurrency(job.costToDate.labor)}</div>
+        </div>
+      </div>
+      
+      <!-- Profit/Margin -->
+      ${job.profit !== null ? `
+        <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #e5e7eb; display: flex; justify-content: space-between;">
+          <div>
+            <span style="font-size: 11px; color: #6b7280;">Profit: </span>
+            <span style="font-weight: 600; color: ${job.profit >= 0 ? '#059669' : '#dc2626'};">${formatCurrency(job.profit)}</span>
+          </div>
+          <div>
+            <span style="font-size: 11px; color: #6b7280;">Margin: </span>
+            <span style="font-weight: 600; color: ${job.margin !== null && job.margin < 0.2 ? '#dc2626' : '#059669'};">${formatPercent(job.margin)}</span>
+          </div>
+        </div>
+      ` : ''}
+      
+      ${job.alerts.length > 0 ? `
+        <div style="margin-top: 8px;">
+          ${job.alerts.map(a => `<span style="display: inline-block; background: ${a === 'over_budget' ? '#fef2f2' : '#fef9c3'}; color: ${a === 'over_budget' ? '#991b1b' : '#854d0e'}; font-size: 10px; padding: 2px 6px; border-radius: 4px; margin-right: 4px; text-transform: uppercase;">${a.replace(/_/g, ' ')}</span>`).join('')}
+        </div>
+      ` : ''}
+    </div>
+  `}).join('');
 
   // Build exceptions list HTML
   const exceptionsHtml = exceptions.length > 0 ? `
@@ -537,23 +581,8 @@ export async function sendEodReportEmail(
                 <!-- Job Profit Section -->
                 ${jobs.length > 0 ? `
                   <div class="section" style="padding-top: 0;">
-                    <h2 class="section-title">💼 Job Profit Snapshot</h2>
-                    <div style="overflow-x: auto;">
-                      <table>
-                        <thead>
-                          <tr>
-                            <th>Job</th>
-                            <th style="text-align: right;">Revenue</th>
-                            <th style="text-align: right;">Cost Today</th>
-                            <th style="text-align: right;">Cost to Date</th>
-                            <th style="text-align: right;">Profit / Margin</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          ${jobRowsHtml}
-                        </tbody>
-                      </table>
-                    </div>
+                    <h2 class="section-title">💼 Job Budget vs Cost</h2>
+                    ${jobCardsHtml}
                   </div>
                 ` : ''}
 

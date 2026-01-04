@@ -3,8 +3,8 @@ import "./globals.css";
 import { Providers } from "./providers";
 
 export const metadata: Metadata = {
-  title: "NextAuth with Roles",
-  description: "Next.js authentication with role-based access control",
+  title: "Shop to Field",
+  description: "Shop to Field work management application",
 };
 
 export const viewport: Viewport = {

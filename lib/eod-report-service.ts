@@ -51,10 +51,14 @@ export interface EodJobSnapshot {
   jobNumber: string | null;
   revenue: number | null;
   revenueSource: string | null;
+  budget: number | null; // estimatedPrice or finalPrice as budget reference
+  hoursToday: number;
   costToday: { labor: number; materials: number; other: number; total: number };
   costToDate: { labor: number; materials: number; other: number; total: number };
   profit: number | null;
   margin: number | null;
+  budgetRemaining: number | null;
+  budgetUsedPercent: number | null;
   status: string;
   alerts: string[];
 }
@@ -118,37 +122,59 @@ function calculateBreakHours(entry: {
 }
 
 /**
- * Get net work hours for an entry considering soft cap fields
+ * Get net work hours for an entry - handles both old entries and new soft-cap entries
  */
 function getEntryNetWorkHours(entry: {
   clockIn: Date;
   clockOut: Date | null;
-  state: string;
-  workAccumSeconds: number;
-  lastStateChangeAt: Date | null;
-  capMinutes: number;
-  flagStatus: string;
-  overCapAt: Date | null;
+  breakStart?: Date | null;
+  breakEnd?: Date | null;
+  state?: string;
+  workAccumSeconds?: number;
+  lastStateChangeAt?: Date | null;
+  capMinutes?: number;
+  flagStatus?: string;
+  overCapAt?: Date | null;
+  durationHours?: number | null;
 }, now: Date): number {
-  // If entry is clocked out, use workAccumSeconds directly
-  if (entry.state === TimeEntryState.CLOCKED_OUT || entry.clockOut) {
-    return entry.workAccumSeconds / 3600;
+  // If we have durationHours already calculated (legacy field), use it
+  if (entry.durationHours && entry.durationHours > 0) {
+    return entry.durationHours;
   }
   
-  // For open entries, calculate current net work
-  const capEntry: TimeEntryWithCap = {
-    id: '',
-    clockIn: entry.clockIn,
-    clockOut: entry.clockOut,
-    state: entry.state as any,
-    workAccumSeconds: entry.workAccumSeconds,
-    lastStateChangeAt: entry.lastStateChangeAt,
-    capMinutes: entry.capMinutes,
-    flagStatus: entry.flagStatus as any,
-    overCapAt: entry.overCapAt,
-  };
+  // If workAccumSeconds is populated (soft-cap enabled entry), use it
+  if (entry.workAccumSeconds && entry.workAccumSeconds > 0) {
+    if (entry.state === TimeEntryState.CLOCKED_OUT || entry.clockOut) {
+      return entry.workAccumSeconds / 3600;
+    }
+    // For open entries with soft-cap, calculate current net work
+    const capEntry: TimeEntryWithCap = {
+      id: '',
+      clockIn: entry.clockIn,
+      clockOut: entry.clockOut,
+      state: (entry.state || TimeEntryState.WORKING) as any,
+      workAccumSeconds: entry.workAccumSeconds,
+      lastStateChangeAt: entry.lastStateChangeAt || entry.clockIn,
+      capMinutes: entry.capMinutes || 960,
+      flagStatus: (entry.flagStatus || FlagStatus.NONE) as any,
+      overCapAt: entry.overCapAt || null,
+    };
+    return getNetWorkSeconds(capEntry, now) / 3600;
+  }
   
-  return getNetWorkSeconds(capEntry, now) / 3600;
+  // Fallback: Calculate from clockIn/clockOut minus break time (legacy entries)
+  const endTime = entry.clockOut || now;
+  const totalMs = endTime.getTime() - entry.clockIn.getTime();
+  
+  // Subtract break time
+  let breakMs = 0;
+  if (entry.breakStart) {
+    const breakEnd = entry.breakEnd || entry.clockOut || now;
+    breakMs = Math.max(breakEnd.getTime() - entry.breakStart.getTime(), 0);
+  }
+  
+  const netMs = Math.max(totalMs - breakMs, 0);
+  return netMs / (1000 * 60 * 60);
 }
 
 /**
@@ -330,9 +356,11 @@ async function generateJobSnapshots(
     );
 
     let laborCostToday = 0;
+    let hoursToday = 0;
     for (const entry of todayTimeEntries) {
       const hours = getEntryNetWorkHours(entry as any, now);
       const rate = entry.user.hourlyRate || 0;
+      hoursToday += hours;
       laborCostToday += hours * rate;
     }
 
@@ -346,19 +374,14 @@ async function generateJobSnapshots(
       }
     }
 
-    // Calculate costs to date
+    // Calculate costs to date (all time)
     let laborCostToDate = 0;
+    let totalHoursToDate = 0;
     for (const entry of job.timeEntries) {
-      if (entry.clockOut) {
-        const hours = (entry.clockOut.getTime() - entry.clockIn.getTime()) / (1000 * 60 * 60);
-        const rate = entry.user.hourlyRate || 0;
-        laborCostToDate += hours * rate;
-      } else {
-        // Open entry
-        const hours = getEntryNetWorkHours(entry as any, now);
-        const rate = entry.user.hourlyRate || 0;
-        laborCostToDate += hours * rate;
-      }
+      const hours = getEntryNetWorkHours(entry as any, now);
+      const rate = entry.user.hourlyRate || 0;
+      totalHoursToDate += hours;
+      laborCostToDate += hours * rate;
     }
 
     let materialsCostToDate = 0;
@@ -373,6 +396,23 @@ async function generateJobSnapshots(
 
     const totalCostToday = laborCostToday + materialsCostToday + otherCostToday;
     const totalCostToDate = laborCostToDate + materialsCostToDate + otherCostToDate;
+
+    // Budget is the revenue (finalPrice or estimatedPrice)
+    const budget = revenue;
+
+    // Calculate budget remaining and percentage used
+    let budgetRemaining: number | null = null;
+    let budgetUsedPercent: number | null = null;
+    
+    if (budget !== null && budget > 0) {
+      budgetRemaining = budget - totalCostToDate;
+      budgetUsedPercent = totalCostToDate / budget;
+      
+      // Alert if over 80% of budget used
+      if (budgetUsedPercent > 0.8 && budgetUsedPercent < 1) {
+        alerts.push('near_budget');
+      }
+    }
 
     // Calculate profit and margin
     let profit: number | null = null;
@@ -391,6 +431,7 @@ async function generateJobSnapshots(
       // Check if over budget (negative profit)
       if (profit < 0) {
         alerts.push('over_budget');
+        exceptions.push(`Job "${job.title}": Over budget by $${Math.abs(profit).toFixed(2)}`);
       }
     }
 
@@ -400,6 +441,8 @@ async function generateJobSnapshots(
       jobNumber: job.jobNumber,
       revenue,
       revenueSource,
+      budget,
+      hoursToday: Math.round(hoursToday * 100) / 100,
       costToday: {
         labor: Math.round(laborCostToday * 100) / 100,
         materials: Math.round(materialsCostToday * 100) / 100,
@@ -414,6 +457,8 @@ async function generateJobSnapshots(
       },
       profit: profit !== null ? Math.round(profit * 100) / 100 : null,
       margin: margin !== null ? Math.round(margin * 1000) / 1000 : null,
+      budgetRemaining: budgetRemaining !== null ? Math.round(budgetRemaining * 100) / 100 : null,
+      budgetUsedPercent: budgetUsedPercent !== null ? Math.round(budgetUsedPercent * 1000) / 1000 : null,
       status: job.status,
       alerts,
     });
