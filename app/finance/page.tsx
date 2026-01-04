@@ -120,18 +120,6 @@ export default function FinancePage() {
   const [showEditConfirm, setShowEditConfirm] = useState(false);
   const [pendingEditData, setPendingEditData] = useState<any>(null);
 
-  // Wait for session to load
-  if (sessionStatus === "loading") {
-    return (
-      <main className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
-        </div>
-      </main>
-    );
-  }
-
   const loadInvoices = async () => {
     setLoading(true);
     setError(undefined);
@@ -935,6 +923,18 @@ setLoading(false);
       setUploadingPDFs((prev) => ({ ...prev, [invoiceId]: false }));
     }
   };
+
+  // Wait for session to load - must be after all hooks
+  if (sessionStatus === "loading") {
+    return (
+      <main className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </main>
+    );
+  }
 
   // Access control - Check role first, then permissions
   if (!hasAccess) {
