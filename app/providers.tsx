@@ -1,49 +1,43 @@
 "use client";
 
 import { SessionProvider } from "next-auth/react";
-import { ReactNode, useEffect } from "react";
-import { setupSessionSync, getSessionIndicator } from "@/lib/session-sync";
+import { ReactNode, useEffect, useRef } from "react";
+import { setupSessionSync } from "@/lib/session-sync";
 import { useSession } from "next-auth/react";
 import SessionInitializer from "@/components/SessionInitializer";
 
 function SessionSyncHandler() {
-  const { data: session, update, status } = useSession();
+  const { update } = useSession();
+  // Ref to store update function to avoid dependency issues
+  const updateRef = useRef(update);
+  updateRef.current = update;
 
   useEffect(() => {
-    // Check if there's a session indicator from another tab
-    // This handles the case where user logged in another tab
-    const indicator = getSessionIndicator();
-    if (indicator && status === "unauthenticated") {
-      // Session indicator exists but this tab doesn't have session
-      // This means login happened in another tab - restore session
-      console.log("[SessionSync] Session indicator found, restoring session...");
-      update();
-    }
-
-    // Setup cross-tab session synchronization
-    // This does NOT clear sessions - it only syncs state across tabs
+    // Setup cross-tab session synchronization ONLY
+    // Initial session restoration is handled by SessionInitializer
+    // This only listens for storage events from other tabs
     const cleanup = setupSessionSync(
       () => {
-        // Another tab signed in - restore session in this tab (does NOT clear)
+        // Another tab signed in - restore session in this tab
         console.log("[SessionSync] Restoring session from another tab...");
-        update().then(() => {
+        updateRef.current().then(() => {
           console.log("[SessionSync] Session restored successfully");
         });
       },
       () => {
-        // Another tab signed out - update this tab (does NOT clear, just syncs)
+        // Another tab signed out - update this tab
         console.log("[SessionSync] Syncing logout from another tab...");
-        update();
+        updateRef.current();
       },
       () => {
-        // Session updated in another tab - refresh (does NOT clear)
+        // Session updated in another tab - refresh
         console.log("[SessionSync] Syncing session update from another tab...");
-        update();
+        updateRef.current();
       }
     );
 
     return cleanup;
-  }, [update, status]);
+  }, []); // Empty deps - only run once on mount to setup listener
 
   return null;
 }
