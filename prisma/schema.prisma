@@ -149,8 +149,14 @@ model TimeEntry {
   workAccumSeconds   Int       @default(0) // Accumulated work time in seconds (excludes break time)
   lastStateChangeAt  DateTime? // Timestamp of last state transition (for calculating elapsed time)
   capMinutes         Int       @default(960) // Soft cap threshold in minutes (default: 16 hours = 960 min)
-  flagStatus         String    @default("NONE") // NONE | OVER_CAP | EDIT_REQUEST_PENDING | RESOLVED
+  flagStatus         String    @default("NONE") // NONE | OVER_CAP | EDIT_REQUEST_PENDING | RESOLVED | FORGOT_CLOCK_OUT
   overCapAt          DateTime? // Exact timestamp when net work time reached the cap
+  
+  // Forgot-to-clock-out correction fields
+  // When employee uses "Forgot to clock out", we freeze the wrong hours snapshot here
+  wrongRecordedNetSeconds  Int?       // FROZEN snapshot of net work seconds at correction time (NEVER recompute)
+  correctionNote           String?    // Optional note from employee when submitting correction
+  correctionAppliedAt      DateTime?  // Timestamp when correction was applied
   
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt

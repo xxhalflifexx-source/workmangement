@@ -63,6 +63,21 @@ export interface EodJobSnapshot {
   alerts: string[];
 }
 
+// Type for time corrections (forgot to clock out)
+export interface EodTimeCorrection {
+  entryId: string;
+  employeeName: string;
+  employeeEmail: string | null;
+  jobTitle: string | null;
+  jobNumber: string | null;
+  clockIn: Date;
+  wrongRecordedHours: number;
+  correctedHours: number;
+  differenceHours: number;
+  correctionNote: string | null;
+  correctionAppliedAt: Date;
+}
+
 export interface EodReportData {
   reportDate: string;
   organizationId: string;
@@ -73,9 +88,11 @@ export interface EodReportData {
     employeeCount: number;
     jobCount: number;
     flagCount: number;
+    correctionCount: number;
   };
   employees: EodEmployeeSummary[];
   jobs: EodJobSnapshot[];
+  corrections: EodTimeCorrection[];
   exceptions: string[];
 }
 
@@ -488,6 +505,68 @@ async function getPayrollSettings(organizationId: string): Promise<PayrollSettin
 /**
  * Generate the complete EOD report for an organization
  */
+/**
+ * Get time corrections (Forgot to Clock Out) applied today
+ */
+async function generateTimeCorrections(
+  organizationId: string,
+  dayStart: Date,
+  dayEnd: Date
+): Promise<{ corrections: EodTimeCorrection[]; exceptions: string[] }> {
+  const corrections: EodTimeCorrection[] = [];
+  const exceptions: string[] = [];
+
+  try {
+    // Find entries with FORGOT_CLOCK_OUT flag where correction was applied today
+    const correctedEntries = await prisma.timeEntry.findMany({
+      where: {
+        organizationId,
+        flagStatus: FlagStatus.FORGOT_CLOCK_OUT,
+        correctionAppliedAt: {
+          gte: dayStart,
+          lte: dayEnd,
+        },
+      },
+      include: {
+        user: { select: { id: true, name: true, email: true } },
+        job: { select: { id: true, title: true, jobNumber: true } },
+      },
+      orderBy: { correctionAppliedAt: 'asc' },
+    });
+
+    for (const entry of correctedEntries) {
+      const wrongRecordedHours = entry.wrongRecordedNetSeconds 
+        ? entry.wrongRecordedNetSeconds / 3600 
+        : 0;
+      const correctedHours = entry.durationHours || (entry.workAccumSeconds / 3600);
+      const differenceHours = wrongRecordedHours - correctedHours;
+
+      corrections.push({
+        entryId: entry.id,
+        employeeName: entry.user.name || 'Unknown',
+        employeeEmail: entry.user.email,
+        jobTitle: entry.job?.title || null,
+        jobNumber: entry.job?.jobNumber || null,
+        clockIn: entry.clockIn,
+        wrongRecordedHours: Math.round(wrongRecordedHours * 100) / 100,
+        correctedHours: Math.round(correctedHours * 100) / 100,
+        differenceHours: Math.round(differenceHours * 100) / 100,
+        correctionNote: entry.correctionNote,
+        correctionAppliedAt: entry.correctionAppliedAt!,
+      });
+
+      // Add to exceptions list
+      exceptions.push(
+        `${entry.user.name || entry.user.email}: Forgot to clock out correction (${wrongRecordedHours.toFixed(1)}h → ${correctedHours.toFixed(1)}h)`
+      );
+    }
+  } catch (error) {
+    console.error('[EOD Report] Error fetching time corrections:', error);
+  }
+
+  return { corrections, exceptions };
+}
+
 export async function generateEodReport(
   organizationId: string,
   reportDate?: Date
@@ -526,8 +605,15 @@ export async function generateEodReport(
     now
   );
 
+  // Generate time corrections (Forgot to Clock Out)
+  const { corrections, exceptions: correctionExceptions } = await generateTimeCorrections(
+    organizationId,
+    dayStart,
+    dayEnd
+  );
+
   // Combine exceptions
-  const exceptions = [...empExceptions, ...jobExceptions];
+  const exceptions = [...empExceptions, ...jobExceptions, ...correctionExceptions];
 
   // Calculate summary totals
   const totalLaborHours = employees.reduce((sum, e) => sum + e.netWorkHours, 0);
@@ -543,9 +629,11 @@ export async function generateEodReport(
       employeeCount: employees.length,
       jobCount: jobs.length,
       flagCount: totalFlags + jobs.filter(j => j.alerts.length > 0).length,
+      correctionCount: corrections.length,
     },
     employees,
     jobs,
+    corrections,
     exceptions,
   };
 }
@@ -584,6 +672,7 @@ export function formatReportPreview(report: EodReportData): string {
   lines.push(`Employees Active: ${report.summary.employeeCount}`);
   lines.push(`Jobs Touched: ${report.summary.jobCount}`);
   lines.push(`Flags/Alerts: ${report.summary.flagCount}`);
+  lines.push(`Time Corrections: ${report.summary.correctionCount}`);
   
   lines.push('\n--- EMPLOYEES ---');
   for (const emp of report.employees) {
@@ -607,6 +696,24 @@ export function formatReportPreview(report: EodReportData): string {
     lines.push(`  Profit: ${job.profit !== null ? '$' + job.profit.toFixed(2) : 'N/A'}, Margin: ${job.margin !== null ? (job.margin * 100).toFixed(1) + '%' : 'N/A'}`);
     if (job.alerts.length > 0) {
       lines.push(`  Alerts: ${job.alerts.join(', ')}`);
+    }
+  }
+  
+  // Time Corrections Section
+  if (report.corrections && report.corrections.length > 0) {
+    lines.push('\n--- ⚠️ TIME CORRECTIONS (Forgot to Clock Out) ---');
+    for (const correction of report.corrections) {
+      lines.push(`\n${correction.employeeName} (${correction.employeeEmail || 'no email'})`);
+      if (correction.jobTitle) {
+        lines.push(`  Job: ${correction.jobNumber || ''} ${correction.jobTitle}`);
+      }
+      lines.push(`  Wrong Hours (recorded): ${correction.wrongRecordedHours.toFixed(2)}h`);
+      lines.push(`  Corrected Hours (actual): ${correction.correctedHours.toFixed(2)}h`);
+      lines.push(`  Difference: ${correction.differenceHours > 0 ? '-' : '+'}${Math.abs(correction.differenceHours).toFixed(2)}h`);
+      if (correction.correctionNote) {
+        lines.push(`  Note: ${correction.correctionNote}`);
+      }
+      lines.push(`  Status: Applied immediately, flagged for review`);
     }
   }
   

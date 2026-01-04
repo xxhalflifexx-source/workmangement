@@ -145,7 +145,19 @@ export async function GET(request: NextRequest) {
             status: j.status,
             alerts: j.alerts,
           })),
-          reportData.exceptions
+          reportData.exceptions,
+          // Pass time corrections for the email
+          reportData.corrections?.map(c => ({
+            employeeName: c.employeeName,
+            employeeEmail: c.employeeEmail,
+            jobTitle: c.jobTitle,
+            jobNumber: c.jobNumber,
+            clockIn: c.clockIn.toISOString(),
+            wrongRecordedHours: c.wrongRecordedHours,
+            correctedHours: c.correctedHours,
+            differenceHours: c.differenceHours,
+            correctionNote: c.correctionNote,
+          }))
         );
 
         if (emailResult.success) {

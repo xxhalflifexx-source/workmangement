@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { clockIn, clockOut, getCurrentStatus, getTodayEntries, getRecentEntries, getAvailableJobs, getAssignedJobs, startBreak, endBreak, getPayPeriodSummary } from "./actions";
+import { useEffect, useState, useMemo } from "react";
+import { clockIn, clockOut, getCurrentStatus, getTodayEntries, getRecentEntries, getAvailableJobs, getAssignedJobs, startBreak, endBreak, getPayPeriodSummary, forgotClockOut } from "./actions";
 import Link from "next/link";
 import { nowInCentral, formatCentralTime, formatDateShort } from "@/lib/date-utils";
 import PhotoViewerModal from "../qc/PhotoViewerModal";
@@ -75,6 +75,18 @@ export default function TimeClockPage() {
   const [currentTime, setCurrentTime] = useState("");
   const [currentDate, setCurrentDate] = useState("");
   const [payPeriodSummary, setPayPeriodSummary] = useState<PayPeriodSummary | null>(null);
+  
+  // Forgot to clock out modal state
+  const [showForgotClockOutModal, setShowForgotClockOutModal] = useState(false);
+  const [forgotClockOutDate, setForgotClockOutDate] = useState("");
+  const [forgotClockOutTime, setForgotClockOutTime] = useState("");
+  const [forgotClockOutNote, setForgotClockOutNote] = useState("");
+  const [forgotClockOutLoading, setForgotClockOutLoading] = useState(false);
+  const [forgotClockOutPreview, setForgotClockOutPreview] = useState<{
+    wrongHours: number;
+    correctedHours: number;
+    difference: number;
+  } | null>(null);
 
   useEffect(() => {
     const updateTime = () => {
@@ -334,6 +346,141 @@ export default function TimeClockPage() {
     setClockOutPhotos([]);
   };
 
+  // --- FORGOT TO CLOCK OUT HANDLERS ---
+  const openForgotClockOutModal = () => {
+    // Pre-fill with current time minus 1 hour as a reasonable default
+    const now = nowInCentral();
+    const defaultTime = now.subtract(1, 'hour');
+    setForgotClockOutDate(defaultTime.format('YYYY-MM-DD'));
+    setForgotClockOutTime(defaultTime.format('HH:mm'));
+    setForgotClockOutNote("");
+    setForgotClockOutPreview(null);
+    setShowForgotClockOutModal(true);
+  };
+
+  const closeForgotClockOutModal = () => {
+    setShowForgotClockOutModal(false);
+    setForgotClockOutDate("");
+    setForgotClockOutTime("");
+    setForgotClockOutNote("");
+    setForgotClockOutPreview(null);
+  };
+
+  // Calculate preview hours when date/time changes
+  const calculateForgotClockOutPreview = () => {
+    if (!currentEntry || !forgotClockOutDate || !forgotClockOutTime) {
+      setForgotClockOutPreview(null);
+      return;
+    }
+
+    try {
+      const clockInTime = new Date(currentEntry.clockIn).getTime();
+      const actualEndTime = new Date(`${forgotClockOutDate}T${forgotClockOutTime}`).getTime();
+      const nowTime = new Date().getTime();
+
+      if (actualEndTime < clockInTime || actualEndTime > nowTime) {
+        setForgotClockOutPreview(null);
+        return;
+      }
+
+      // Calculate "wrong" hours (from clockIn to now, excluding break)
+      let wrongMs = nowTime - clockInTime;
+      if (currentEntry.breakStart) {
+        const breakStart = new Date(currentEntry.breakStart).getTime();
+        const breakEnd = currentEntry.breakEnd 
+          ? new Date(currentEntry.breakEnd).getTime() 
+          : nowTime;
+        wrongMs -= Math.max(breakEnd - breakStart, 0);
+      }
+      const wrongHours = Math.max(wrongMs / (1000 * 60 * 60), 0);
+
+      // Calculate "corrected" hours (from clockIn to actualEndTime, excluding break)
+      let correctedMs = actualEndTime - clockInTime;
+      if (currentEntry.breakStart) {
+        const breakStart = new Date(currentEntry.breakStart).getTime();
+        let breakEnd = currentEntry.breakEnd 
+          ? new Date(currentEntry.breakEnd).getTime() 
+          : actualEndTime;
+        // Don't count break time beyond the corrected end time
+        if (breakStart < actualEndTime) {
+          breakEnd = Math.min(breakEnd, actualEndTime);
+          correctedMs -= Math.max(breakEnd - breakStart, 0);
+        }
+      }
+      const correctedHours = Math.max(correctedMs / (1000 * 60 * 60), 0);
+
+      setForgotClockOutPreview({
+        wrongHours: Math.round(wrongHours * 100) / 100,
+        correctedHours: Math.round(correctedHours * 100) / 100,
+        difference: Math.round((wrongHours - correctedHours) * 100) / 100,
+      });
+    } catch (e) {
+      setForgotClockOutPreview(null);
+    }
+  };
+
+  // Recalculate preview when inputs change
+  useEffect(() => {
+    calculateForgotClockOutPreview();
+  }, [forgotClockOutDate, forgotClockOutTime, currentEntry]);
+
+  const handleForgotClockOutSubmit = async () => {
+    if (!forgotClockOutDate || !forgotClockOutTime) {
+      setError("Please select both date and time");
+      return;
+    }
+
+    setForgotClockOutLoading(true);
+    setError(undefined);
+    setSuccess(undefined);
+
+    try {
+      const actualEndTime = new Date(`${forgotClockOutDate}T${forgotClockOutTime}`);
+      
+      const res = await forgotClockOut(actualEndTime, forgotClockOutNote || undefined);
+
+      if (!res.ok) {
+        setError(res.error || "Failed to apply correction");
+        setForgotClockOutLoading(false);
+        return;
+      }
+
+      setSuccess(`Correction applied! Wrong: ${res.wrongRecordedHours}h → Corrected: ${res.correctedHours}h. Entry flagged for review.`);
+      closeForgotClockOutModal();
+      await loadData();
+    } catch (err: any) {
+      console.error("Forgot clock out error:", err);
+      setError(err?.message || "Failed to apply correction");
+    } finally {
+      setForgotClockOutLoading(false);
+    }
+  };
+
+  // Validation for forgot clock out form
+  const forgotClockOutValidation = useMemo(() => {
+    if (!currentEntry || !forgotClockOutDate || !forgotClockOutTime) {
+      return { valid: false, error: "Please select date and time" };
+    }
+
+    try {
+      const clockInTime = new Date(currentEntry.clockIn);
+      const actualEndTime = new Date(`${forgotClockOutDate}T${forgotClockOutTime}`);
+      const now = new Date();
+
+      if (actualEndTime < clockInTime) {
+        return { valid: false, error: "End time cannot be before clock in time" };
+      }
+
+      if (actualEndTime > now) {
+        return { valid: false, error: "End time cannot be in the future" };
+      }
+
+      return { valid: true, error: null };
+    } catch (e) {
+      return { valid: false, error: "Invalid date/time" };
+    }
+  }, [currentEntry, forgotClockOutDate, forgotClockOutTime]);
+
   const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const files = Array.from(e.target.files);
@@ -584,6 +731,17 @@ export default function TimeClockPage() {
                       className="min-h-[44px] w-full bg-red-600 text-white py-3 sm:py-4 rounded-xl font-semibold text-base sm:text-lg hover:bg-red-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed shadow-lg"
                     >
                       {loading ? "Processing..." : "Clock Out"}
+                    </button>
+                  </div>
+                  
+                  {/* Forgot to Clock Out Button */}
+                  <div className="mt-4 text-center">
+                    <button
+                      onClick={openForgotClockOutModal}
+                      disabled={loading}
+                      className="text-sm text-amber-600 hover:text-amber-700 font-medium underline underline-offset-2 disabled:text-gray-400 disabled:cursor-not-allowed"
+                    >
+                      ⚠️ Forgot to clock out yesterday?
                     </button>
                   </div>
                 </div>
@@ -892,6 +1050,145 @@ export default function TimeClockPage() {
                 className="flex-1 min-h-[44px] px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 disabled:bg-gray-300"
               >
                 {loading ? "Processing..." : "Yes, end break"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Forgot to Clock Out Modal */}
+      {showForgotClockOutModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4 overflow-y-auto">
+          <div className="bg-white rounded-xl shadow-2xl p-4 sm:p-6 max-w-md w-full my-2 sm:my-4 max-h-[95vh] overflow-y-auto">
+            <div className="text-center mb-4 sm:mb-6">
+              <div className="mx-auto flex items-center justify-center h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-amber-100 mb-3 sm:mb-4">
+                <span className="text-amber-600 text-xl">⚠️</span>
+              </div>
+              <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-1 sm:mb-2">
+                Forgot to Clock Out?
+              </h3>
+              <p className="text-xs sm:text-sm text-gray-600">
+                Set the actual time you stopped working. This will be flagged for review.
+              </p>
+            </div>
+
+            <div className="space-y-4 mb-6">
+              {/* Current Clock In Info */}
+              <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                <div className="text-xs text-gray-500 uppercase font-medium mb-1">Clocked In At</div>
+                <div className="font-semibold text-gray-900">
+                  {currentEntry && formatTime(currentEntry.clockIn)} on {currentEntry && formatDate(currentEntry.clockIn)}
+                </div>
+                {currentEntry?.job && (
+                  <div className="text-sm text-blue-600 mt-1">Job: {currentEntry.job.title}</div>
+                )}
+              </div>
+
+              {/* Date Input */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Actual End Date <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="date"
+                  value={forgotClockOutDate}
+                  onChange={(e) => setForgotClockOutDate(e.target.value)}
+                  max={new Date().toISOString().split('T')[0]}
+                  className="w-full min-h-[44px] border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                />
+              </div>
+
+              {/* Time Input */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Actual End Time <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="time"
+                  value={forgotClockOutTime}
+                  onChange={(e) => setForgotClockOutTime(e.target.value)}
+                  className="w-full min-h-[44px] border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                />
+              </div>
+
+              {/* Hours Comparison Preview */}
+              {forgotClockOutPreview && (
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                  <div className="text-xs text-amber-700 uppercase font-medium mb-3">Hours Comparison</div>
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">Recorded hours (wrong):</span>
+                      <span className="font-semibold text-red-600 line-through">
+                        {forgotClockOutPreview.wrongHours.toFixed(2)}h
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">Corrected hours:</span>
+                      <span className="font-semibold text-green-600">
+                        {forgotClockOutPreview.correctedHours.toFixed(2)}h
+                      </span>
+                    </div>
+                    <div className="border-t border-amber-200 pt-2 mt-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-medium text-gray-700">Difference:</span>
+                        <span className={`font-bold ${forgotClockOutPreview.difference > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                          {forgotClockOutPreview.difference > 0 ? '-' : '+'}{Math.abs(forgotClockOutPreview.difference).toFixed(2)}h
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Validation Error */}
+              {!forgotClockOutValidation.valid && forgotClockOutDate && forgotClockOutTime && (
+                <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                  {forgotClockOutValidation.error}
+                </div>
+              )}
+
+              {/* Note Input */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Note (Optional)
+                </label>
+                <textarea
+                  value={forgotClockOutNote}
+                  onChange={(e) => setForgotClockOutNote(e.target.value)}
+                  placeholder="Explain why you forgot to clock out..."
+                  className="w-full min-h-[44px] border border-gray-300 rounded-lg p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                  rows={2}
+                />
+              </div>
+
+              {/* Warning Box */}
+              <div className="bg-amber-100 border-l-4 border-amber-500 p-3 rounded-r-lg">
+                <div className="flex items-start gap-2">
+                  <span className="text-amber-600 text-lg">⚠️</span>
+                  <div>
+                    <p className="text-sm font-medium text-amber-800">This will be flagged for review</p>
+                    <p className="text-xs text-amber-700 mt-1">
+                      Your manager will see both the wrong and corrected hours. The corrected hours will be used for pay calculations immediately.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+              <button
+                onClick={closeForgotClockOutModal}
+                disabled={forgotClockOutLoading}
+                className="flex-1 min-h-[44px] px-4 py-2.5 sm:py-2 border-2 border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 active:bg-gray-100 transition-colors disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed touch-manipulation"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleForgotClockOutSubmit}
+                disabled={forgotClockOutLoading || !forgotClockOutValidation.valid}
+                className="flex-1 min-h-[44px] px-4 py-2.5 sm:py-2 bg-amber-600 text-white rounded-lg font-medium hover:bg-amber-700 active:bg-amber-800 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed touch-manipulation shadow-md"
+              >
+                {forgotClockOutLoading ? "Applying..." : "Apply Correction"}
               </button>
             </div>
           </div>

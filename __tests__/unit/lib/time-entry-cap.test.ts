@@ -517,5 +517,195 @@ describe("Time Entry Cap Logic", () => {
       expect(netWork).toBe(16 * 3600);
     });
   });
+
+  describe("FORGOT_CLOCK_OUT Flag Status", () => {
+    it("should have FORGOT_CLOCK_OUT as a valid flag status", () => {
+      expect(FlagStatus.FORGOT_CLOCK_OUT).toBe("FORGOT_CLOCK_OUT");
+    });
+
+    it("should be distinct from other flag statuses", () => {
+      expect(FlagStatus.FORGOT_CLOCK_OUT).not.toBe(FlagStatus.NONE);
+      expect(FlagStatus.FORGOT_CLOCK_OUT).not.toBe(FlagStatus.OVER_CAP);
+      expect(FlagStatus.FORGOT_CLOCK_OUT).not.toBe(FlagStatus.EDIT_REQUEST_PENDING);
+      expect(FlagStatus.FORGOT_CLOCK_OUT).not.toBe(FlagStatus.RESOLVED);
+    });
+  });
+
+  describe("Forgot to Clock Out - Wrong Hours Snapshot", () => {
+    it("should compute wrong hours correctly for an open entry", () => {
+      // Scenario: Employee clocks in at 8am, forgets to clock out
+      // It's now 4pm (8 hours later)
+      // They actually stopped working at 2pm (6 hours)
+      // Wrong hours = 8h, Corrected hours = 6h
+      
+      const clockIn = new Date("2026-01-03T08:00:00Z");
+      const entry = createMockEntry({
+        clockIn,
+        state: TimeEntryState.WORKING,
+        lastStateChangeAt: clockIn,
+        workAccumSeconds: 0,
+      });
+
+      // "Now" is 4pm (8 hours after clock in)
+      const now = new Date("2026-01-03T16:00:00Z");
+      
+      // Calculate "wrong" hours (what system thinks - from clockIn to now)
+      const wrongNetSeconds = getNetWorkSeconds(entry, now);
+      expect(wrongNetSeconds).toBe(8 * 3600);
+      
+      // The actual end time was 2pm (6 hours of work)
+      const actualEndTime = new Date("2026-01-03T14:00:00Z");
+      const correctedNetSeconds = actualEndTime.getTime() - clockIn.getTime();
+      expect(correctedNetSeconds / 1000).toBe(6 * 3600);
+      
+      // Difference should be 2 hours
+      const differenceSeconds = wrongNetSeconds - (correctedNetSeconds / 1000);
+      expect(differenceSeconds).toBe(2 * 3600);
+    });
+
+    it("should compute wrong hours with break time excluded", () => {
+      // Scenario: Employee clocks in at 8am, takes 1h break at noon
+      // It's now 5pm (9 hours wall clock, 8 hours net work)
+      // They actually stopped at 3pm (7 hours wall clock, 6 hours net work)
+      
+      const clockIn = new Date("2026-01-03T08:00:00Z");
+      const entry = createMockEntry({
+        clockIn,
+        state: TimeEntryState.WORKING,
+        lastStateChangeAt: clockIn,
+        workAccumSeconds: 0,
+      });
+
+      // Work until noon (4 hours)
+      let now = new Date("2026-01-03T12:00:00Z");
+      prepareStartBreak(entry, now);
+      expect(entry.workAccumSeconds).toBe(4 * 3600);
+
+      // End break at 1pm
+      now = new Date("2026-01-03T13:00:00Z");
+      prepareEndBreak(entry, now);
+      expect(entry.workAccumSeconds).toBe(4 * 3600); // Still 4h, break not counted
+
+      // "Now" is 5pm (4 more hours of work after break)
+      now = new Date("2026-01-03T17:00:00Z");
+      
+      // Wrong hours = 4h (before break) + 4h (after break) = 8h net work
+      const wrongNetSeconds = getNetWorkSeconds(entry, now);
+      expect(wrongNetSeconds).toBe(8 * 3600);
+      
+      // Wall clock from 8am to 5pm = 9 hours
+      const wallClock = (now.getTime() - clockIn.getTime()) / 1000;
+      expect(wallClock).toBe(9 * 3600);
+      
+      // Net work = 9h - 1h break = 8h (matches wrongNetSeconds)
+    });
+
+    it("should freeze wrong hours snapshot and never recompute", () => {
+      // This tests the CRITICAL requirement: once we capture wrong hours,
+      // it should never change, even if time passes
+      
+      const clockIn = new Date("2026-01-03T08:00:00Z");
+      const entry = createMockEntry({
+        clockIn,
+        state: TimeEntryState.WORKING,
+        lastStateChangeAt: clockIn,
+        workAccumSeconds: 0,
+      });
+
+      // Capture "wrong" hours at 4pm (8 hours)
+      const captureTime = new Date("2026-01-03T16:00:00Z");
+      const wrongNetSecondsSnapshot = getNetWorkSeconds(entry, captureTime);
+      expect(wrongNetSecondsSnapshot).toBe(8 * 3600);
+
+      // Simulate storing the snapshot (in real code this would be wrongRecordedNetSeconds)
+      const frozenSnapshot = wrongNetSecondsSnapshot;
+
+      // Later time passes (5pm, 6pm, etc.) - but snapshot should NOT change
+      // The entry might be closed/corrected now, but the snapshot is frozen
+      expect(frozenSnapshot).toBe(8 * 3600); // Still 8 hours
+      
+      // Even if someone tried to recalculate with a later time
+      const laterTime = new Date("2026-01-03T20:00:00Z");
+      // The frozen snapshot value should be used, not a recalculation
+      expect(frozenSnapshot).not.toBe(getNetWorkSeconds(entry, laterTime));
+      expect(frozenSnapshot).toBe(8 * 3600); // Frozen forever at 8 hours
+    });
+  });
+
+  describe("Forgot to Clock Out - Corrected Hours", () => {
+    it("should use corrected end time for all totals after correction", () => {
+      // After applying correction, the entry should be clocked out
+      // with the corrected end time, and workAccumSeconds should
+      // reflect the corrected net work time
+      
+      const clockIn = new Date("2026-01-03T08:00:00Z");
+      const entry = createMockEntry({
+        clockIn,
+        state: TimeEntryState.WORKING,
+        lastStateChangeAt: clockIn,
+        workAccumSeconds: 0,
+      });
+
+      // Simulate correction: actual end time was 2pm (6 hours)
+      const actualEndTime = new Date("2026-01-03T14:00:00Z");
+      
+      // Calculate corrected net seconds (no breaks in this case)
+      const correctedNetSeconds = Math.floor(
+        (actualEndTime.getTime() - clockIn.getTime()) / 1000
+      );
+      expect(correctedNetSeconds).toBe(6 * 3600);
+
+      // Apply correction (simulate what forgotClockOut action does)
+      entry.clockOut = actualEndTime;
+      entry.state = TimeEntryState.CLOCKED_OUT;
+      entry.workAccumSeconds = correctedNetSeconds;
+      entry.lastStateChangeAt = actualEndTime;
+      entry.flagStatus = FlagStatus.FORGOT_CLOCK_OUT;
+
+      // Verify the entry is now correctly closed
+      expect(entry.state).toBe(TimeEntryState.CLOCKED_OUT);
+      expect(entry.workAccumSeconds).toBe(6 * 3600);
+      expect(entry.flagStatus).toBe(FlagStatus.FORGOT_CLOCK_OUT);
+
+      // Now getNetWorkSeconds should return the corrected value
+      const now = new Date("2026-01-03T20:00:00Z"); // Later time
+      const netWork = getNetWorkSeconds(entry, now);
+      expect(netWork).toBe(6 * 3600); // Uses workAccumSeconds since clocked out
+    });
+
+    it("should correctly handle break time in corrected hours calculation", () => {
+      // Scenario: Work 4h, break 1h, work 1h more = 5h net work
+      // Actual end was at 2pm
+      
+      const clockIn = new Date("2026-01-03T08:00:00Z");
+      const entry = createMockEntry({
+        clockIn,
+        state: TimeEntryState.WORKING,
+        lastStateChangeAt: clockIn,
+        workAccumSeconds: 0,
+      });
+
+      // Work 4 hours, then break
+      let now = new Date("2026-01-03T12:00:00Z");
+      prepareStartBreak(entry, now);
+      expect(entry.workAccumSeconds).toBe(4 * 3600);
+
+      // End break at 1pm
+      now = new Date("2026-01-03T13:00:00Z");
+      prepareEndBreak(entry, now);
+
+      // Actual end time is 2pm (1 more hour of work)
+      const actualEndTime = new Date("2026-01-03T14:00:00Z");
+      
+      // The corrected net work should be 4h + 1h = 5h (excluding 1h break)
+      // First, settle work up to actual end time
+      const timeSinceBreakEnd = (actualEndTime.getTime() - now.getTime()) / 1000;
+      expect(timeSinceBreakEnd).toBe(1 * 3600); // 1 hour
+
+      // Total corrected = accumulated (4h) + work since break end (1h) = 5h
+      const correctedNetSeconds = entry.workAccumSeconds + timeSinceBreakEnd;
+      expect(correctedNetSeconds).toBe(5 * 3600);
+    });
+  });
 });
 

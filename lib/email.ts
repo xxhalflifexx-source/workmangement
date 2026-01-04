@@ -339,6 +339,18 @@ export interface EodJobSnapshotEmail {
   alerts: string[];
 }
 
+export interface EodTimeCorrectionEmail {
+  employeeName: string;
+  employeeEmail: string | null;
+  jobTitle: string | null;
+  jobNumber: string | null;
+  clockIn: string;
+  wrongRecordedHours: number;
+  correctedHours: number;
+  differenceHours: number;
+  correctionNote: string | null;
+}
+
 /**
  * Send End-of-Day report email
  */
@@ -352,10 +364,12 @@ export async function sendEodReportEmail(
     employeeCount: number;
     jobCount: number;
     flagCount: number;
+    correctionCount?: number;
   },
   employees: EodEmployeeSummaryEmail[],
   jobs: EodJobSnapshotEmail[],
-  exceptions: string[]
+  exceptions: string[],
+  corrections?: EodTimeCorrectionEmail[]
 ) {
   if (to.length === 0) {
     return { success: false, error: "No recipients specified" } as const;
@@ -492,6 +506,47 @@ export async function sendEodReportEmail(
     </div>
   `}).join('');
 
+  // Build corrections section HTML (Forgot to Clock Out)
+  const correctionsHtml = corrections && corrections.length > 0 ? `
+    <div style="background: #fffbeb; border-radius: 8px; padding: 16px; margin-top: 24px; border: 1px solid #fcd34d;">
+      <h3 style="margin: 0 0 16px 0; font-size: 14px; color: #92400e;">⚠️ Time Corrections Applied Today (${corrections.length})</h3>
+      ${corrections.map(c => `
+        <div style="background: #ffffff; border-radius: 6px; padding: 12px; margin-bottom: 12px; border: 1px solid #fde68a;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+            <div>
+              <strong style="font-size: 14px; color: #111827;">${c.employeeName}</strong>
+              ${c.employeeEmail ? `<div style="font-size: 11px; color: #6b7280;">${c.employeeEmail}</div>` : ''}
+            </div>
+            <span style="background: #fef3c7; color: #92400e; font-size: 10px; padding: 2px 8px; border-radius: 4px; font-weight: 600;">FLAGGED</span>
+          </div>
+          ${c.jobTitle ? `<div style="font-size: 12px; color: #374151; margin-bottom: 8px;">Job: ${c.jobNumber ? c.jobNumber + ' - ' : ''}${c.jobTitle}</div>` : ''}
+          <div style="display: flex; gap: 16px; font-size: 12px; margin-bottom: 8px;">
+            <div>
+              <span style="color: #6b7280;">Clock In:</span> 
+              <span style="color: #111827;">${new Date(c.clockIn).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
+            </div>
+          </div>
+          <div style="background: #f9fafb; border-radius: 4px; padding: 8px; margin-bottom: 8px;">
+            <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px;">
+              <span style="color: #6b7280;">Wrong (recorded):</span>
+              <span style="color: #dc2626; text-decoration: line-through; font-weight: 600;">${c.wrongRecordedHours.toFixed(2)}h</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px;">
+              <span style="color: #6b7280;">Corrected (actual):</span>
+              <span style="color: #059669; font-weight: 600;">${c.correctedHours.toFixed(2)}h</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 12px; border-top: 1px solid #e5e7eb; padding-top: 4px; margin-top: 4px;">
+              <span style="color: #6b7280;">Difference:</span>
+              <span style="color: ${c.differenceHours > 0 ? '#dc2626' : '#059669'}; font-weight: 700;">${c.differenceHours > 0 ? '-' : '+'}${Math.abs(c.differenceHours).toFixed(2)}h</span>
+            </div>
+          </div>
+          ${c.correctionNote ? `<div style="font-size: 11px; color: #6b7280; font-style: italic;">"${c.correctionNote}"</div>` : ''}
+          <div style="font-size: 10px; color: #92400e; margin-top: 8px;">✓ Applied immediately • Flagged for review • Totals use corrected hours</div>
+        </div>
+      `).join('')}
+    </div>
+  ` : '';
+
   // Build exceptions list HTML
   const exceptionsHtml = exceptions.length > 0 ? `
     <div style="background: #fef2f2; border-radius: 8px; padding: 16px; margin-top: 24px; border: 1px solid #fecaca;">
@@ -568,6 +623,12 @@ export async function sendEodReportEmail(
                     <div class="summary-value" style="color: ${summary.flagCount > 0 ? '#dc2626' : '#059669'};">${summary.flagCount}</div>
                     <div class="summary-label">Flags</div>
                   </div>
+                  ${summary.correctionCount && summary.correctionCount > 0 ? `
+                  <div class="summary-item">
+                    <div class="summary-value" style="color: #f59e0b;">${summary.correctionCount}</div>
+                    <div class="summary-label">Corrections</div>
+                  </div>
+                  ` : ''}
                 </div>
 
                 <!-- Employee Section -->
@@ -585,6 +646,9 @@ export async function sendEodReportEmail(
                     ${jobCardsHtml}
                   </div>
                 ` : ''}
+
+                <!-- Time Corrections -->
+                ${correctionsHtml ? `<div class="section" style="padding-top: 0;">${correctionsHtml}</div>` : ''}
 
                 <!-- Exceptions -->
                 ${exceptionsHtml ? `<div class="section" style="padding-top: 0;">${exceptionsHtml}</div>` : ''}

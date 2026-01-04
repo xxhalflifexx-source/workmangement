@@ -23,6 +23,7 @@ export const FlagStatus = {
   OVER_CAP: 'OVER_CAP',
   EDIT_REQUEST_PENDING: 'EDIT_REQUEST_PENDING',
   RESOLVED: 'RESOLVED',
+  FORGOT_CLOCK_OUT: 'FORGOT_CLOCK_OUT', // Employee used "Forgot to clock out" correction
 } as const;
 
 export type FlagStatusType = typeof FlagStatus[keyof typeof FlagStatus];
